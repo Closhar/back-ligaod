@@ -1,0 +1,32 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration {
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('sports', function (Blueprint $table) {
+            $table->id();
+            $table->string('title');
+            $table->string('title_short');
+            $table->text('annotation')->nullable()->default(null);
+            $table->string('icon')->nullable()->default(null);
+            $table->string('slug')->unique()->nullable()->default(null);
+            $table->string('order')->nullable()->default(null);
+            $table->timestamps();
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::dropIfExists('sports');
+    }
+};
