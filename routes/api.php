@@ -19,7 +19,6 @@ use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 //Route::get('/user', function (Request $request) {
