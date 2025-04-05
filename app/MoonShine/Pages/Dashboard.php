@@ -6,6 +6,7 @@ namespace App\MoonShine\Pages;
 
 use MoonShine\Laravel\Pages\Page;
 use MoonShine\Contracts\UI\ComponentContract;
+#[\MoonShine\MenuManager\Attributes\SkipMenu]
 
 class Dashboard extends Page
 {

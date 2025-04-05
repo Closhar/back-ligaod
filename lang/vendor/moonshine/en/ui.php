@@ -48,8 +48,6 @@ return [
         'username' => 'Username',
         'email' => 'E-mail',
         'password' => 'Password',
-        'register' => 'Register',
-        'forget_password' => 'Forget password',
     ],
     'resource' => [
         'system' => 'System',

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\MoonShine\Layouts;
 
 use App\MoonShine\Resources\ArenaResource;
-use App\MoonShine\Resources\Rel\SportSportPropertyResource;
 use App\MoonShine\Resources\SportPropertyResource;
 use App\MoonShine\Resources\SportResource;
 use MoonShine\ColorManager\ColorManager;
