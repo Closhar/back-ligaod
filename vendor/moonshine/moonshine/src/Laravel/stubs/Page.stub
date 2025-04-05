@@ -1,0 +1,35 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {namespace};
+
+use MoonShine\Laravel\Pages\Page;
+use MoonShine\Contracts\UI\ComponentContract;
+{uses}
+
+class DummyClass extends Page
+{
+    /**
+     * @return array<string, string>
+     */
+    public function getBreadcrumbs(): array
+    {
+        return [
+            '#' => $this->getTitle()
+        ];
+    }
+
+    public function getTitle(): string
+    {
+        return $this->title ?: 'DummyTitle';
+    }
+
+    /**
+     * @return list<ComponentContract>
+     */
+    protected function components(): iterable
+	{
+		return [];
+	}
+}

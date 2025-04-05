@@ -1,0 +1,274 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<meta-storm xmlns="meta-storm">
+    <definitions>
+        <classProperty
+            class="\MoonShine\Laravel\Resources\CrudResource"
+            property="column"
+        >
+            <arrayValues xpath="$containingClass.$model.$fillable"/>
+        </classProperty>
+
+        <classProperty
+            class="\MoonShine\Laravel\Resources\ModelResource"
+            property="with"
+            targetInArray="value"
+        >
+            <methods xpath="$containingClass.$model"/>
+        </classProperty>
+
+        <classMethod
+            class="\MoonShine\Contracts\UI\HasIconContract"
+            method="icon"
+            argument="0"
+        >
+            <files extension="blade.php" xpath="$project/vendor/moonshine/moonshine/src/UI/resources/views/icons"/>
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Breadcrumbs"
+            method="prepend"
+            argument="2"
+        >
+            <files extension="blade.php" xpath="$project/vendor/moonshine/moonshine/src/UI/resources/views/icons"/>
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Breadcrumbs"
+            method="add"
+            argument="2"
+        >
+            <files extension="blade.php" xpath="$project/vendor/moonshine/moonshine/src/UI/resources/views/icons"/>
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Icon"
+            method="make"
+            argument="0"
+        >
+            <files extension="blade.php" xpath="$project/vendor/moonshine/moonshine/src/UI/resources/views/icons"/>
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\Laravel\Notifications\MoonShineNotification"
+            method="send"
+            argument="4"
+        >
+            <files extension="blade.php" xpath="$project/vendor/moonshine/moonshine/src/UI/resources/views/icons"/>
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\ActionButton"
+            method="method"
+            argument="0"
+        >
+            <methods xpath="$containingClass" private="false" protected="false" static="false" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\Laravel\Resources\ModelResource"
+            method="getAsyncMethodUrl"
+            argument="0"
+        >
+            <methods xpath="$containingClass" private="false" protected="false" static="false" />
+        </classMethod>
+
+        <classConstructor
+            class="\MoonShine\Support\Attributes\Icon"
+            argument="0"
+        >
+            <files extension="blade.php" xpath="$project/vendor/moonshine/moonshine/src/UI/resources/views/icons"/>
+        </classConstructor>
+
+        <classConstructor
+            class="\MoonShine\MenuManager\Attributes\Group"
+            argument="1"
+        >
+            <files extension="blade.php" xpath="$project/vendor/moonshine/moonshine/src/UI/resources/views/icons"/>
+        </classConstructor>
+
+        <classConstructor
+            class="\MoonShine\MenuManager\Attributes\CanSee"
+            argument="0"
+        >
+            <methods xpath="$containingClass" private="false" protected="false" static="false" />
+        </classConstructor>
+
+        <classMethod
+            class="\MoonShine\AssetManager\InlineJs"
+            method="make"
+            argument="0"
+        >
+            <languageInjection language="JavaScript"/>
+        </classMethod>
+
+        <classConstructor
+            class="\MoonShine\AssetManager\InlineJs"
+            argument="0"
+        >
+            <languageInjection language="JavaScript"/>
+        </classConstructor>
+
+        <classMethod
+            class="\MoonShine\AssetManager\InlineCss"
+            method="make"
+            argument="0"
+        >
+            <languageInjection language="CSS"/>
+        </classMethod>
+
+        <classConstructor
+            class="\MoonShine\AssetManager\InlineCss"
+            argument="0"
+        >
+            <languageInjection language="CSS"/>
+        </classConstructor>
+
+        <classMethod
+            class="\MoonShine\UI\Components\ActionButton"
+            method="onClick"
+            argument="1"
+        >
+            <collection name="onclick-modifiers" argument="1" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\Contracts\UI\FormBuilderContract"
+            method="asyncMethod"
+            argument="0"
+        >
+            <methods xpath="$containingClass" private="false" protected="false" static="false" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\Laravel\Fields\Relationships\ModelRelationField"
+            method="make"
+            argument="1"
+        >
+            <methods xpath="$containingClass.$model" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\Contracts\UI\FieldContract"
+            method="make"
+            argument="1"
+        >
+            <arrayValues xpath="$containingClass.$model.$fillable" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Layout\Flex"
+            method="itemsAlign"
+            argument="0"
+        >
+            <collection name="items-align" argument="0" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Layout\Flex"
+            method="justifyAlign"
+            argument="0"
+        >
+            <collection name="justify-align" argument="0" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\ProgressBar"
+            method="make"
+            argument="1"
+        >
+            <collection name="size" argument="1" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Spinner"
+            method="make"
+            argument="0"
+        >
+            <collection name="size" argument="0" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Popover"
+            method="make"
+            argument="2"
+        >
+            <collection name="placement" argument="2" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Dropdown"
+            method="placement"
+            argument="0"
+        >
+            <collection name="placement" argument="0" />
+        </classMethod>
+
+        <classMethod
+            class="\MoonShine\UI\Components\Dropdown"
+            method="strategy"
+            argument="0"
+        >
+            <collection name="strategy" argument="0" />
+        </classMethod>
+    </definitions>
+    <collections>
+        <strings name="items-align">
+            <value>start</value>
+            <value>end</value>
+            <value>center</value>
+            <value>stretch</value>
+            <value>baseline</value>
+        </strings>
+        <strings name="justify-align">
+            <value>start</value>
+            <value>end</value>
+            <value>center</value>
+            <value>between</value>
+            <value>around</value>
+            <value>evenly</value>
+        </strings>
+        <strings name="size">
+            <value>xs</value>
+            <value>sm</value>
+            <value>md</value>
+            <value>lg</value>
+            <value>xl</value>
+        </strings>
+        <strings name="onclick-modifiers">
+            <value>prevent</value>
+            <value>stop</value>
+            <value>outside</value>
+            <value>window</value>
+            <value>document</value>
+            <value>once</value>
+            <value>debounce</value>
+            <value>throttle</value>
+            <value>self</value>
+            <value>camel</value>
+            <value>dot</value>
+            <value>passive</value>
+            <value>capture</value>
+        </strings>
+        <strings name="placement">
+            <value>top</value>
+            <value>top-start</value>
+            <value>top-end</value>
+            <value>right</value>
+            <value>right-start</value>
+            <value>right-end</value>
+            <value>bottom</value>
+            <value>bottom-start</value>
+            <value>bottom-end</value>
+            <value>left</value>
+            <value>left-start</value>
+            <value>left-end</value>
+            <value>auto</value>
+            <value>auto-start</value>
+            <value>auto-end</value>
+        </strings>
+        <strings name="strategy">
+            <value>absolute</value>
+            <value>fixed</value>
+        </strings>
+    </collections>
+</meta-storm>

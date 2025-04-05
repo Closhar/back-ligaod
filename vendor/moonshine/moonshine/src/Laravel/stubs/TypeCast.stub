@@ -1,0 +1,29 @@
+<?php
+
+declare(strict_types=1);
+
+namespace {namespace};
+
+use MoonShine\Contracts\Core\TypeCasts\DataCasterContract;
+use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
+use MoonShine\Contracts\Core\Paginator\PaginatorContract;
+
+/**
+ * @template T
+ * @implements DataCasterContract<T>
+ */
+final class DummyClass implements DataCasterContract
+{
+    /**
+     * @return DataWrapperContract<T>
+     */
+    public function cast(mixed $data): DataWrapperContract
+    {
+        //
+    }
+
+    public function paginatorCast(mixed $data): ?PaginatorContract
+    {
+        //
+    }
+}

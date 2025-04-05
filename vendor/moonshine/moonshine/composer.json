@@ -1,0 +1,108 @@
+{
+    "name": "moonshine/moonshine",
+    "description": "Laravel administration panel",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "admin",
+        "dashboard",
+        "moonshine"
+    ],
+    "authors": [
+        {
+            "name": "Danil Shutsky",
+            "email": "info@cutcode.ru",
+            "homepage": "https://cutcode.dev"
+        }
+    ],
+    "homepage": "https://moonshine-laravel.com",
+    "support": {
+        "issues": "https://github.com/moonshine-software/moonshine/issues",
+        "source": "https://github.com/moonshine-software/moonshine"
+    },
+    "require": {
+        "php": "^8.2",
+        "ext-curl": "*",
+        "ext-json": "*",
+        "illuminate/contracts": "^10|^11|^12",
+        "illuminate/support": "^10|^11|^12",
+        "illuminate/view": "^10|^11|^12",
+        "lee-to/fast-attributes": "^0.3.0",
+        "lee-to/laravel-package-command": "^0.9",
+        "nyholm/psr7": "^1.8",
+        "symfony/psr-http-message-bridge": "^7.2"
+    },
+    "require-dev": {
+        "friendsofphp/php-cs-fixer": "^3.68",
+        "larastan/larastan": "^3.0",
+        "moonshine/import-export": "^1",
+        "orchestra/testbench": "^9.9",
+        "pestphp/pest": "^3",
+        "pestphp/pest-plugin-laravel": "^3",
+        "rector/rector": "^2",
+        "symplify/monorepo-builder": "^11.2"
+    },
+    "replace": {
+        "moonshine/asset-manager": "self.version",
+        "moonshine/color-manager": "self.version",
+        "moonshine/contracts": "self.version",
+        "moonshine/core": "self.version",
+        "moonshine/laravel": "self.version",
+        "moonshine/menu-manager": "self.version",
+        "moonshine/support": "self.version",
+        "moonshine/ui": "self.version"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "MoonShine\\": "src/",
+            "MoonShine\\AssetManager\\": "src/AssetManager/src",
+            "MoonShine\\ColorManager\\": "src/ColorManager/src",
+            "MoonShine\\Contracts\\": "src/Contracts/src",
+            "MoonShine\\Core\\": "src/Core/src",
+            "MoonShine\\Laravel\\": "src/Laravel/src",
+            "MoonShine\\Laravel\\Database\\Factories\\": "src/Laravel/database/factories/",
+            "MoonShine\\MenuManager\\": "src/MenuManager/src",
+            "MoonShine\\Support\\": "src/Support/src",
+            "MoonShine\\UI\\": "src/UI/src"
+        },
+        "files": [
+            "src/Laravel/src/helpers.php",
+            "src/Support/src/helpers.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "App\\": "app/",
+            "MoonShine\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "MoonShine\\Laravel\\Providers\\MoonShineServiceProvider"
+            ]
+        }
+    },
+    "scripts": {
+        "analyse": "vendor/bin/phpstan analyse src --memory-limit=-1",
+        "rector": "vendor/bin/rector process --clear-cache",
+        "rector:dry": "vendor/bin/rector process --clear-cache --dry-run",
+        "test": "vendor/bin/pest",
+        "test:bail": "vendor/bin/pest --bail",
+        "test:fresh": [
+            "rm -rf vendor/orchestra",
+            "composer install",
+            "vendor/bin/pest --bail"
+        ],
+        "format": "vendor/bin/php-cs-fixer fix --allow-risky=yes",
+        "monorepo:merge": "vendor/bin/monorepo-builder merge"
+    }
+}
