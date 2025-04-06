@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin\Data;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Sport;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use App\Models\AdminPage;
 use Illuminate\Support\Facades\DB;
@@ -397,7 +398,9 @@ class EventController extends Controller
                 'title' => 'string|max:255|nullable',
                 'result' => 'string|max:255|nullable',
                 'result_dop' => 'string|max:255|nullable',
-                'date_from' => 'datetime|nullable',
+                'date' => 'sometimes|date_format:Y-m-d',
+                'time' => 'sometimes|date_format:H:i:s|date_format:H:i',
+                'date_from' => 'sometimes|date',
                 'arena_id' => 'integer|exists:arenas,id',
                 'club1_id' => 'integer|exists:clubs,id',
                 'club2_id' => 'integer|exists:clubs,id',
@@ -406,12 +409,29 @@ class EventController extends Controller
             ]);
 
             // Затем поиск и обновление
-            $item = Event::findOrFail($id);
-            $item->update($validated);
+            $event = Event::findOrFail($id);
+            $currentDateTime = Carbon::parse($event->date_from);
+
+            if (isset($validated['date'])) {
+                $newDate = Carbon::parse($validated['date']);
+                $event->date_from = $newDate->format('Y-m-d') . ' ' . $currentDateTime->format('H:i:s');
+            }
+
+            if (isset($validated['time'])) {
+                $newTime = Carbon::parse($validated['time']);
+                $event->date_from = $currentDateTime->format('Y-m-d') . ' ' . $newTime->format('H:i:s');
+            }
+
+            // Полное обновление
+            if (isset($validated['date_from'])) {
+                $event->date_from = $validated['date_from'];
+            }
+
+            $event->update($validated);
 
             return response()->json([
                 'success' => true,
-                'data' => $item,
+                'data' => $event,
                 'message' => 'Updated successfully'
             ]);
 
