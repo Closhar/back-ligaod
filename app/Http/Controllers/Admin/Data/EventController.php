@@ -56,7 +56,7 @@ class EventController extends Controller
 
         // Основной запрос с фильтрацией
         $query = Event::query()
-            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id',
+            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'event_image_path', 'competition_id', 'arena_id',
                 'club1_id', 'club2_id', 'event_name')
             ->with([
                 'competition' => function ($query) {
@@ -312,6 +312,7 @@ class EventController extends Controller
                 'result' => $event->result,
                 'result_dop' => $event->result_dop,
                 'image' => $event->image,
+                'event_image_path' => $event->event_image_path,
                 'competition_id' => $event->competition_id,
                 'arena_id' => $event->arena_id,
                 'club1_id' => $event->club1_id,
