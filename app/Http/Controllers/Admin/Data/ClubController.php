@@ -24,6 +24,8 @@ class ClubController extends Controller
             $perPage = $request->input('per_page', 10);
             $searchQuery = $request->input('q');
             $type = $request->input('type');
+            $perPage = $request->query('per_page', 10); // Количество элементов на странице (по умолчанию 10)
+            $limit = $request->input('limit', $perPage);
 
             // Основной запрос
             $query = Club::query()
@@ -37,6 +39,7 @@ class ClubController extends Controller
                     'clubs.age_id',
                     'clubs.is_alien',
                     'clubs.image',
+                    DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info'),
                     DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path')
                 ])
                 ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
@@ -56,7 +59,7 @@ class ClubController extends Controller
 
             // Если запрошен простой вывод
             if ($type) {
-                return $query->get()->toArray();
+                return $query->limit($limit)->get()->toArray();
             }
 
             // Стандартный вывод с пагинацией (как в предыдущей версии)
