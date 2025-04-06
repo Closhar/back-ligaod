@@ -56,23 +56,7 @@ class ClubController extends Controller
 
             // Если запрошен простой вывод
             if ($type) {
-                return Club::query()
-                    ->select(
-                        'clubs.id',
-                        'clubs.title',
-                        'clubs.slug',
-                        DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path'),
-                        'city_id',
-                        'sport_id',
-                        'gender_id',
-                        'age_id',
-                        'is_alien',
-                        DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info')
-                    )
-                    ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
-                    ->join('cities as city', 'clubs.city_id', '=', 'city.id')
-                    ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id')
-                    ->limit(10)->get()->toArray();
+                return $query->get()->toArray();
             }
 
             // Стандартный вывод с пагинацией (как в предыдущей версии)
