@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\AdminPage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class EventController extends Controller
@@ -519,7 +520,7 @@ class EventController extends Controller
             ], 422);
         } catch (\Exception $e) {
             // В случае ошибки удаляем загруженное изображение (если было)
-            if (isset($fileName) {
+            if (isset($fileName)) {
                 Storage::disk('public')->delete($fileName);
             }
 
