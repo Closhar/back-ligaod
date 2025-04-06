@@ -394,9 +394,10 @@ class EventController extends Controller
     {
         try {
             $event = Event::findOrFail($id);
-            // Получаем текущие значения даты и времени из базы
-            $dbDate = $event->date_from ? Carbon::parse($event->date_from)->format('Y-m-d') : null;
-            $dbTime = $event->date_from ? Carbon::parse($event->date_from)->format('H:i:s') : null;
+            // Получаем полную дату/время из базы
+            $existingDateTime = $event->date_from
+                ? Carbon::parse($event->date_from)
+                : null;
 
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
@@ -415,15 +416,23 @@ class EventController extends Controller
 
                 // Если пришла дата в формате YYYY-MM-DD
                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
-                    // Используем новую дату + существующее время из базы
-                    // Если времени в базе нет, используем 00:00:00
-                    $validated['date_from'] = $input . ' ' . ($dbTime ?? '00:00:00');
+                    if ($existingDateTime) {
+                        // Комбинируем новую дату с существующим временем из базы
+                        $validated['date_from'] = $input . ' ' . $existingDateTime->format('H:i:s');
+                    } else {
+                        // Если в базе не было даты, используем новую дату с 00:00:00
+                        $validated['date_from'] = $input . ' 00:00:00';
+                    }
                 }
                 // Если пришло время в формате HH:ii
                 elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
-                    // Используем существующую дату из базы + новое время
-                    // Если даты в базе нет, используем текущую дату
-                    $validated['date_from'] = ($dbDate ?? now()->format('Y-m-d')) . ' ' . $input . ':00';
+                    if ($existingDateTime) {
+                        // Комбинируем существующую дату с новым временем
+                        $validated['date_from'] = $existingDateTime->format('Y-m-d') . ' ' . $input . ':00';
+                    } else {
+                        // Если в базе не было даты, используем текущую дату с новым временем
+                        $validated['date_from'] = now()->format('Y-m-d') . ' ' . $input . ':00';
+                    }
                 } else {
                     return response()->json([
                         'success' => false,
