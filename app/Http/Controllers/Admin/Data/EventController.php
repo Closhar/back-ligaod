@@ -400,8 +400,6 @@ class EventController extends Controller
                 'title' => 'string|max:255|nullable',
                 'result' => 'string|max:255|nullable',
                 'result_dop' => 'string|max:255|nullable',
-                'date' => 'sometimes|date_format:Y-m-d H:i:s',
-                'time' => 'sometimes|date_format:Y-m-d H:i:s',
                 'date_from' => 'sometimes|date',
                 'arena_id' => 'integer|exists:arenas,id',
                 'club1_id' => 'integer|exists:clubs,id',
@@ -410,25 +408,26 @@ class EventController extends Controller
             ]);
 
 
-            // Извлекаем части из текущего значения
-            $currentDate = $current->format('Y-m-d');
-            $currentTime = $current->format('H:i:s');
-
-            // Обработка даты (извлекаем только дату)
-            if (isset($validated['date'])) {
-                $newDate = explode(' ', $validated['date'])[0]; // Берем только дату
-                $event->date_from = "$newDate $currentTime"; // Комбинируем с текущим временем
-            }
-
-            // Обработка времени (извлекаем только время)
-            if (isset($validated['time'])) {
-                $newTime = explode(' ', $validated['time'])[1]; // Берем только время
-                $event->date_from = "$currentDate $newTime"; // Комбинируем с текущей датой
-            }
-
-            // Полное обновление
             if (isset($validated['date_from'])) {
-                $event->date_from = $validated['date_from'];
+                // Try to parse as date only (Y-m-d)
+                $dateOnly = Carbon::createFromFormat('Y-m-d', $validated['date_from']);
+                if ($dateOnly !== false && !$dateOnly->isInvalid()) {
+                    // If it's a valid date, keep the date part but use current time
+                    $event->date_from = $dateOnly->format('Y-m-d') . ' ' . $current->format('H:i:s');
+                } else {
+                    // Try to parse as time only (H:i:s)
+                    $timeOnly = Carbon::createFromFormat('H:i:s', $validated['date_from']);
+                    if ($timeOnly !== false && !$timeOnly->isInvalid()) {
+                        // If it's a valid time, keep the time part but use current date
+                        $event->date_from = $current->format('Y-m-d') . ' ' . $timeOnly->format('H:i:s');
+                    } else {
+                        // Try to parse as full datetime
+                        $dateTime = Carbon::parse($validated['date_from']);
+                        if ($dateTime !== false && !$dateTime->isInvalid()) {
+                            $event->date_from = $dateTime;
+                        }
+                    }
+                }
             }
 
             $event->update($validated);
