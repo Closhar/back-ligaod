@@ -408,24 +408,29 @@ class EventController extends Controller
             ]);
 
 
+            // Handle date_from field
             if (isset($validated['date_from'])) {
+                $input = $validated['date_from'];
+
                 // Try to parse as date only (Y-m-d)
-                $dateOnly = Carbon::createFromFormat('Y-m-d', $validated['date_from']);
-                if ($dateOnly !== false && !$dateOnly->isInvalid()) {
-                    // If it's a valid date, keep the date part but use current time
-                    $event->date_from = $dateOnly->format('Y-m-d') . ' ' . $current->format('H:i:s');
-                } else {
-                    // Try to parse as time only (H:i:s)
-                    $timeOnly = Carbon::createFromFormat('H:i:s', $validated['date_from']);
-                    if ($timeOnly !== false && !$timeOnly->isInvalid()) {
-                        // If it's a valid time, keep the time part but use current date
-                        $event->date_from = $current->format('Y-m-d') . ' ' . $timeOnly->format('H:i:s');
-                    } else {
-                        // Try to parse as full datetime
-                        $dateTime = Carbon::parse($validated['date_from']);
-                        if ($dateTime !== false && !$dateTime->isInvalid()) {
-                            $event->date_from = $dateTime;
-                        }
+                $dateOnly = Carbon::createFromFormat('Y-m-d', $input);
+                if ($dateOnly && $dateOnly->format('Y-m-d') === $input) {
+                    // Valid date format, combine with current time
+                    $event->date_from = $input . ' ' . $current->format('H:i:s');
+                }
+                // Try to parse as time only (H:i or H:i:s)
+                else if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $input)) {
+                    // Valid time format, combine with current date
+                    $event->date_from = $current->format('Y-m-d') . ' ' . $input;
+                }
+                // Try to parse as full datetime
+                else {
+                    try {
+                        $dateTime = Carbon::parse($input);
+                        $event->date_from = $dateTime;
+                    } catch (\Exception $e) {
+                        // Invalid datetime format - you might want to handle this case
+                        throw new \Exception("Invalid date/time format provided");
                     }
                 }
             }
