@@ -410,17 +410,18 @@ class EventController extends Controller
 
             // Handle date_from field
             if (isset($validated['date_from'])) {
-                $input = $validated['date_from'];
+                $input = trim($validated['date_from']);
 
                 // Try to parse as date only (Y-m-d)
-                $dateOnly = Carbon::createFromFormat('Y-m-d', $input);
-                if ($dateOnly && $dateOnly->format('Y-m-d') === $input) {
-                    // Valid date format, combine with current time
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
                     $event->date_from = $input . ' ' . $current->format('H:i:s');
                 }
-                // Try to parse as time only (H:i or H:i:s)
-                else if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $input)) {
-                    // Valid time format, combine with current date
+                // Try to parse as time (H:i or H:i:s)
+                elseif (preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $input)) {
+                    // If time doesn't have seconds, append :00
+                    if (substr_count($input, ':') === 1) {
+                        $input .= ':00';
+                    }
                     $event->date_from = $current->format('Y-m-d') . ' ' . $input;
                 }
                 // Try to parse as full datetime
@@ -429,8 +430,11 @@ class EventController extends Controller
                         $dateTime = Carbon::parse($input);
                         $event->date_from = $dateTime;
                     } catch (\Exception $e) {
-                        // Invalid datetime format - you might want to handle this case
-                        throw new \Exception("Invalid date/time format provided");
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Invalid date/time format. Accepted formats: YYYY-MM-DD, HH:MM, HH:MM:SS, or full datetime',
+                            'error' => $e->getMessage()
+                        ], 422);
                     }
                 }
             }
