@@ -48,10 +48,12 @@ class ClubController extends Controller
 
             // Улучшенный поиск по нескольким словам
             if ($searchQuery) {
-                    $query->where(function ($q) {
-                                $q->where('clubs.title', 'LIKE', "%{$q}%")
-                                    ->orWhereHas('city', 'LIKE', "%{$q}%");
-                            });
+                $query->where(function ($q) use ($searchQuery) {
+                    $q->where('clubs.title', 'LIKE', "%{$searchQuery}%")
+                        ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
+                            $cityQuery->where('cities.title', 'LIKE', "%{$searchQuery}%");
+                        });
+                });
             }
 
             // Дополнительные фильтры (остаются без изменений)
