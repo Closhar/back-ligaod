@@ -394,6 +394,8 @@ class EventController extends Controller
             // Сначала валидация
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
+                'result' => 'string|max:255|nullable',
+                'result_dop' => 'string|max:255|nullable',
                 'date_from' => 'datetime|nullable',
                 'arena_id' => 'integer|exists:arenas,id',
                 // Добавьте другие поля при необходимости
