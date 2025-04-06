@@ -400,8 +400,8 @@ class EventController extends Controller
                 'title' => 'string|max:255|nullable',
                 'result' => 'string|max:255|nullable',
                 'result_dop' => 'string|max:255|nullable',
-                'date' => 'sometimes|date_format:Y-m-d',
-                'time' => 'sometimes|date_format:H:i:s|date_format:H:i',
+                'date' => 'sometimes|date_format:Y-m-d H:i:s',
+                'time' => 'sometimes|date_format:Y-m-d H:i:s',
                 'date_from' => 'sometimes|date',
                 'arena_id' => 'integer|exists:arenas,id',
                 'club1_id' => 'integer|exists:clubs,id',
@@ -410,16 +410,20 @@ class EventController extends Controller
             ]);
 
 
-            // Обработка только даты
+            // Извлекаем части из текущего значения
+            $currentDate = $current->format('Y-m-d');
+            $currentTime = $current->format('H:i:s');
+
+            // Обработка даты (извлекаем только дату)
             if (isset($validated['date'])) {
-                $dateParts = explode('-', $validated['date']);
-                $event->date_from = $current->setDate($dateParts[0], $dateParts[1], $dateParts[2]);
+                $newDate = explode(' ', $validated['date'])[0]; // Берем только дату
+                $event->date_from = "$newDate $currentTime"; // Комбинируем с текущим временем
             }
 
-            // Обработка только времени
+            // Обработка времени (извлекаем только время)
             if (isset($validated['time'])) {
-                $timeParts = explode(':', $validated['time']);
-                $event->date_from = $current->setTime($timeParts[0], $timeParts[1]);
+                $newTime = explode(' ', $validated['time'])[1]; // Берем только время
+                $event->date_from = "$currentDate $newTime"; // Комбинируем с текущей датой
             }
 
             // Полное обновление
