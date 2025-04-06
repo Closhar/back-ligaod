@@ -394,7 +394,10 @@ class EventController extends Controller
     {
         try {
             $event = Event::findOrFail($id);
-            $currentDateFrom = $event->date_from ? Carbon::parse($event->date_from) : now();
+            // Всегда используем дату/время из базы, если они есть
+            $currentDateTime = $event->date_from
+                ? Carbon::parse($event->date_from)
+                : now(); // Только для новых записей
 
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
@@ -411,21 +414,19 @@ class EventController extends Controller
             if (isset($validated['date_from'])) {
                 $input = trim($validated['date_from']);
 
-                // Если пришла только дата (YYYY-MM-DD)
+                // Если пришла полная дата (YYYY-MM-DD)
                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
-                    // Берем время из существующей записи
-                    $timePart = $currentDateFrom->format('H:i:s');
-                    $validated['date_from'] = $input . ' ' . $timePart;
+                    // Сохраняем новую дату + старое время из базы
+                    $validated['date_from'] = $input . ' ' . $currentDateTime->format('H:i:s');
                 }
                 // Если пришло только время (HH:ii)
                 elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
-                    // Берем дату из существующей записи
-                    $datePart = $currentDateFrom->format('Y-m-d');
-                    $validated['date_from'] = $datePart . ' ' . $input . ':00';
+                    // Сохраняем старую дату из базы + новое время
+                    $validated['date_from'] = $currentDateTime->format('Y-m-d') . ' ' . $input . ':00';
                 } else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Invalid format. Use either YYYY-MM-DD or HH:ii'
+                        'message' => 'Неправильный формат. Используйте либо YYYY-MM-DD, либо HH:ii'
                     ], 422);
                 }
             }
