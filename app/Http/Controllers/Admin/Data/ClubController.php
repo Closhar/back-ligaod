@@ -39,12 +39,9 @@ class ClubController extends Controller
                     'clubs.image',
                     DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path')
                 ])
-                ->with([
-                    'city' => fn($q) => $q->select(['id', 'title', 'title_short']),
-                    'sport' => fn($q) => $q->select(['id', 'title', 'title_short', 'slug', 'icon']),
-                    'age' => fn($q) => $q->select(['id', 'title', 'title_short']),
-                    'gender' => fn($q) => $q->select(['id', 'title', 'title_short', 'icon'])
-                ]);
+                ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
+                ->join('cities as city', 'clubs.city_id', '=', 'city.id')
+                ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id');
 
 
             if ($searchQuery) {
