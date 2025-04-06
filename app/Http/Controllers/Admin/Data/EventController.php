@@ -394,6 +394,7 @@ class EventController extends Controller
             // Сначала валидация
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
+                'time' => 'datetime|nullable',
                 // Добавьте другие поля при необходимости
             ]);
 
