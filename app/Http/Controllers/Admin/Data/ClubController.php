@@ -52,16 +52,11 @@ class ClubController extends Controller
                 $terms = array_filter($terms, fn($t) => strlen($t) >= 2);
 
                 if (!empty($terms)) {
-                    $query->where(function ($q) use ($terms) {
-                        foreach ($terms as $term) {
-                            $q->where(function ($q) use ($term) {
-                                $q->where('clubs.title', 'LIKE', "%{$term}%")
-                                    ->orWhereHas('city', fn($c) => $c->where('title', 'LIKE', "%{$term}%"))
-                                    ->orWhereHas('sport', fn($s) => $s->where('title', 'LIKE', "%{$term}%"));
+                    $query->where(function ($q) {
+                                $q->where('clubs.title', 'LIKE', "%{$q}%")
+                                    ->orWhereHas('city', 'LIKE', "%{$q}%");
                             });
                         }
-                    });
-                }
             }
 
             // Дополнительные фильтры (остаются без изменений)
