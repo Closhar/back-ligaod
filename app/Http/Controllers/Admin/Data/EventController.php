@@ -411,29 +411,81 @@ class EventController extends Controller
                 'club1_id' => 'integer|exists:clubs,id',
                 'club2_id' => 'integer|exists:clubs,id',
                 'competition_id' => 'integer|exists:competitions,id',
+                'image' => 'sometimes|string|nullable', // Добавлено для поля изображения
+                'delete_image' => 'sometimes|boolean' // Флаг для удаления изображения
             ]);
 
+            // Обработка удаления изображения
+            if ($request->has('delete_image') && $request->delete_image) {
+                if ($event->image) {
+                    // Удаляем файл изображения
+                    Storage::disk('public')->delete($event->image);
+                    $validated['image'] = null;
+                }
+            }
 
+            // Обработка нового изображения (если пришел base64 или URL)
+            if ($request->has('image') && $request->image) {
+                // Если это base64 изображение
+                if (preg_match('/^data:image\/(\w+);base64,/', $request->image, $matches)) {
+                    $imageData = substr($request->image, strpos($request->image, ',') + 1);
+                    $imageType = strtolower($matches[1]);
+
+                    // Проверяем допустимый тип изображения
+                    if (!in_array($imageType, ['jpeg', 'jpg', 'png', 'gif'])) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Недопустимый формат изображения. Используйте JPG, PNG или GIF.'
+                        ], 422);
+                    }
+
+                    // Декодируем base64
+                    $decodedImage = base64_decode($imageData);
+                    if ($decodedImage === false) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Ошибка декодирования изображения'
+                        ], 422);
+                    }
+
+                    // Генерируем уникальное имя файла
+                    $fileName = 'events/' . Str::uuid() . '.' . $imageType;
+
+                    // Сохраняем файл
+                    Storage::disk('public')->put($fileName, $decodedImage);
+
+                    // Если было старое изображение - удаляем его
+                    if ($event->image) {
+                        Storage::disk('public')->delete($event->image);
+                    }
+
+                    $validated['image'] = $fileName;
+                }
+                // Если это URL (уже загруженное изображение)
+                elseif (filter_var($request->image, FILTER_VALIDATE_URL)) {
+                    $validated['image'] = $request->image;
+                }
+                // Если это путь к файлу (уже сохраненному)
+                else {
+                    $validated['image'] = $request->image;
+                }
+            }
+
+            // Обработка даты (прежняя логика)
             if (isset($validated['date_from'])) {
                 $input = trim($validated['date_from']);
 
-                // Если пришла дата в формате YYYY-MM-DD
                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
                     if ($existingDateTime) {
-                        // Комбинируем новую дату с существующим временем из базы
                         $validated['date_from'] = $input . ' ' . $existingDateTime->format('H:i:s');
                     } else {
-                        // Если в базе не было даты, используем новую дату с 00:00:00
                         $validated['date_from'] = $input . ' 00:00:00';
                     }
                 }
-                // Если пришло время в формате HH:ii
                 elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
                     if ($existingDateTime) {
-                        // Комбинируем существующую дату с новым временем
                         $validated['date_from'] = $existingDateTime->format('Y-m-d') . ' ' . $input . ':00';
                     } else {
-                        // Если в базе не было даты, используем текущую дату с новым временем
                         $validated['date_from'] = now()->format('Y-m-d') . ' ' . $input . ':00';
                     }
                 } else {
@@ -445,6 +497,13 @@ class EventController extends Controller
             }
 
             $event->update($validated);
+
+            // Если нужно вернуть полный URL изображения
+            if (isset($validated['image']) && $validated['image'] && !filter_var($validated['image'], FILTER_VALIDATE_URL)) {
+                $event->image_url = Storage::disk('public')->url($validated['image']);
+            } else {
+                $event->image_url = $validated['image'] ?? null;
+            }
 
             return response()->json([
                 'success' => true,
@@ -459,6 +518,11 @@ class EventController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
+            // В случае ошибки удаляем загруженное изображение (если было)
+            if (isset($fileName) {
+                Storage::disk('public')->delete($fileName);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error',
