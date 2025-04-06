@@ -56,8 +56,10 @@ class EventController extends Controller
 
         // Основной запрос с фильтрацией
         $query = Event::query()
-            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'event_image_path', 'competition_id', 'arena_id',
-                'club1_id', 'club2_id', 'event_name')
+            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id',
+                'club1_id', 'club2_id', 'event_name',
+                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path')
+            )
             ->with([
                 'competition' => function ($query) {
                     $query->select([
