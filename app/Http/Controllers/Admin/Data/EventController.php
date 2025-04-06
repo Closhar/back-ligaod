@@ -394,10 +394,9 @@ class EventController extends Controller
     {
         try {
             $event = Event::findOrFail($id);
-            // Всегда используем дату/время из базы, если они есть
-            $currentDateTime = $event->date_from
-                ? Carbon::parse($event->date_from)
-                : now(); // Только для новых записей
+            // Получаем текущие значения даты и времени из базы
+            $dbDate = $event->date_from ? Carbon::parse($event->date_from)->format('Y-m-d') : null;
+            $dbTime = $event->date_from ? Carbon::parse($event->date_from)->format('H:i:s') : null;
 
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
@@ -414,19 +413,21 @@ class EventController extends Controller
             if (isset($validated['date_from'])) {
                 $input = trim($validated['date_from']);
 
-                // Если пришла полная дата (YYYY-MM-DD)
+                // Если пришла дата в формате YYYY-MM-DD
                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
-                    // Сохраняем новую дату + старое время из базы
-                    $validated['date_from'] = $input . ' ' . $currentDateTime->format('H:i:s');
+                    // Используем новую дату + существующее время из базы
+                    // Если времени в базе нет, используем 00:00:00
+                    $validated['date_from'] = $input . ' ' . ($dbTime ?? '00:00:00');
                 }
-                // Если пришло только время (HH:ii)
+                // Если пришло время в формате HH:ii
                 elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
-                    // Сохраняем старую дату из базы + новое время
-                    $validated['date_from'] = $currentDateTime->format('Y-m-d') . ' ' . $input . ':00';
+                    // Используем существующую дату из базы + новое время
+                    // Если даты в базе нет, используем текущую дату
+                    $validated['date_from'] = ($dbDate ?? now()->format('Y-m-d')) . ' ' . $input . ':00';
                 } else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Неправильный формат. Используйте либо YYYY-MM-DD, либо HH:ii'
+                        'message' => 'Некорректный формат. Используйте либо YYYY-MM-DD (дата), либо HH:ii (время)'
                     ], 422);
                 }
             }
