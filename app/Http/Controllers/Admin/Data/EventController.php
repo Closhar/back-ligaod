@@ -394,7 +394,7 @@ class EventController extends Controller
     {
         try {
             $event = Event::findOrFail($id);
-            $current = $event->date_from ? Carbon::parse($event->date_from) : now();
+            $currentDateFrom = $event->date_from ? Carbon::parse($event->date_from) : now();
 
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
@@ -408,34 +408,25 @@ class EventController extends Controller
             ]);
 
 
-            // Handle date_from field
             if (isset($validated['date_from'])) {
                 $input = trim($validated['date_from']);
 
-                // Try to parse as date only (Y-m-d)
+                // Если пришла только дата (YYYY-MM-DD)
                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
-                    $validated['date_from'] = $input . ' ' . $current->format('H:i:s');
+                    // Берем время из существующей записи
+                    $timePart = $currentDateFrom->format('H:i:s');
+                    $validated['date_from'] = $input . ' ' . $timePart;
                 }
-                // Try to parse as time (H:i or H:i:s)
-                elseif (preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $input)) {
-                    // If time doesn't have seconds, append :00
-                    if (substr_count($input, ':') === 1) {
-                        $input .= ':00';
-                    }
-                    $validated['date_from'] = $current->format('Y-m-d') . ' ' . $input;
-                }
-                // Try to parse as full datetime
-                else {
-                    try {
-                        $dateTime = Carbon::parse($input);
-                        $validated['date_from'] = $dateTime->format('Y-m-d H:i:s');
-                    } catch (\Exception $e) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Invalid date/time format. Accepted formats: YYYY-MM-DD, HH:MM, HH:MM:SS, or full datetime',
-                            'error' => $e->getMessage()
-                        ], 422);
-                    }
+                // Если пришло только время (HH:ii)
+                elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
+                    // Берем дату из существующей записи
+                    $datePart = $currentDateFrom->format('Y-m-d');
+                    $validated['date_from'] = $datePart . ' ' . $input . ':00';
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Invalid format. Use either YYYY-MM-DD or HH:ii'
+                    ], 422);
                 }
             }
 
