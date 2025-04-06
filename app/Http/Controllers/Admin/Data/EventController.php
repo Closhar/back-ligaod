@@ -393,7 +393,7 @@ class EventController extends Controller
         try {
             // Сначала валидация
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
+                'title' => 'string|max:255',
                 // Добавьте другие поля при необходимости
             ]);
 
