@@ -309,6 +309,7 @@ class EventController extends Controller
                 'date_from' => $event->date_from,
                 'date_to' => $event->date_to,
                 'result' => $event->result,
+                'result_dop' => $event->result_dop,
                 'image' => $event->image,
                 'competition_id' => $event->competition_id,
                 'arena_id' => $event->arena_id,
