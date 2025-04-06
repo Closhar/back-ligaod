@@ -393,9 +393,8 @@ class EventController extends Controller
     public function update(Request $request, $id)
     {
         try {
-
             $event = Event::findOrFail($id);
-            $current = Carbon::parse($event->date_from);
+            $current = $event->date_from ? Carbon::parse($event->date_from) : now();
 
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
@@ -410,15 +409,17 @@ class EventController extends Controller
                 'competition_id' => 'integer|exists:competitions,id',
             ]);
 
-            // Обработка частичного обновления
+
+            // Обработка только даты
             if (isset($validated['date'])) {
-                $newDate = Carbon::parse($validated['date']);
-                $event->date_from = $newDate->format('Y-m-d') . ' ' . $current->format('H:i:s');
+                $dateParts = explode('-', $validated['date']);
+                $event->date_from = $current->setDate($dateParts[0], $dateParts[1], $dateParts[2]);
             }
 
+            // Обработка только времени
             if (isset($validated['time'])) {
-                $newTime = Carbon::parse($validated['time']);
-                $event->date_from = $current->format('Y-m-d') . ' ' . $newTime->format('H:i:s');
+                $timeParts = explode(':', $validated['time']);
+                $event->date_from = $current->setTime($timeParts[0], $timeParts[1]);
             }
 
             // Полное обновление
