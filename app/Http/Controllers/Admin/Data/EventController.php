@@ -414,7 +414,7 @@ class EventController extends Controller
 
                 // Try to parse as date only (Y-m-d)
                 if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
-                    $event->date_from = $input . ' ' . $current->format('H:i:s');
+                    $validated['date_from'] = $input . ' ' . $current->format('H:i:s');
                 }
                 // Try to parse as time (H:i or H:i:s)
                 elseif (preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $input)) {
@@ -422,13 +422,13 @@ class EventController extends Controller
                     if (substr_count($input, ':') === 1) {
                         $input .= ':00';
                     }
-                    $event->date_from = $current->format('Y-m-d') . ' ' . $input;
+                    $validated['date_from'] = $current->format('Y-m-d') . ' ' . $input;
                 }
                 // Try to parse as full datetime
                 else {
                     try {
                         $dateTime = Carbon::parse($input);
-                        $event->date_from = $dateTime;
+                        $validated['date_from'] = $dateTime->format('Y-m-d H:i:s');
                     } catch (\Exception $e) {
                         return response()->json([
                             'success' => false,
