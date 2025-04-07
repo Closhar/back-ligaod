@@ -19,6 +19,7 @@ use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 //Route::get('/user', function (Request $request) {
@@ -117,6 +118,7 @@ Route::apiResource('admin-pages', AdminPageController::class);
 Route::apiResource('events', EventController::class);
 Route::post('events/{id}/upload-image', [EventController::class, 'uploadImage']);
 Route::delete('events/{id}/image', [EventController::class, 'destroyImage']);
+Route::post('events/{id}/delete-image', [EventController::class, 'deleteImage']);
 Route::apiResource('competitions', CompetitionController::class);
 Route::apiResource('clubs', ClubController::class);
 

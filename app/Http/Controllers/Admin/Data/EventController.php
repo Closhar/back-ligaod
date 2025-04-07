@@ -554,4 +554,35 @@ class EventController extends Controller
         }
     }
 
+    public function deleteImage(Request $request, $id): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $model = Event::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No image to delete'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting image',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
 }
