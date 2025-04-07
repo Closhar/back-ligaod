@@ -488,13 +488,12 @@ class EventController extends Controller
             $field = $request->input('field', 'image');
 
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:' . (1024 * 10), // 10MB
                 'field' => 'sometimes|string'
             ], [
-                'image.required' => 'Файл изображения обязателен',
                 'image.image' => 'Файл должен быть изображением',
-                'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif',
-                'image.max' => 'Максимальный размер файла 4MB'
+                'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
+                'image.max' => 'Максимальный размер файла 10MB'
             ]);
 
             // Удаляем старое изображение, если есть
@@ -523,7 +522,7 @@ class EventController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при загрузке изображения: ' . $e->getMessage()
+                'message' => $e->getMessage()
             ], 500);
         }
     }
