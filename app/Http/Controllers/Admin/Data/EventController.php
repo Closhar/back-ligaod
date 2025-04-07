@@ -493,7 +493,7 @@ class EventController extends Controller
                     'required',
                     'image',
                     'mimes:jpeg,png,jpg,gif,webp',
-                    'max:10240' // 10MB
+                    'max:2048' // 10MB
                 ],
                 'field' => 'sometimes|string'
             ], [
