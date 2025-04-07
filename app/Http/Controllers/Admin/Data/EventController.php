@@ -60,7 +60,7 @@ class EventController extends Controller
         // Основной запрос с фильтрацией
         $query = Event::query()
             ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id',
-                'club1_id', 'club2_id', 'event_name',
+                'club1_id', 'club2_id', 'event_name', "is_active",
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path')
             )
             ->with([
@@ -317,6 +317,7 @@ class EventController extends Controller
                 'result' => $event->result,
                 'result_dop' => $event->result_dop,
                 'image' => $event->image,
+                'is_active' => $event->is_active,
                 'event_image_path' => $event->event_image_path,
                 'competition_id' => $event->competition_id,
                 'arena_id' => $event->arena_id,
