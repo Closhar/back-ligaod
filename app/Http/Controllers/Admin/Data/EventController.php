@@ -490,6 +490,11 @@ class EventController extends Controller
             $request->validate([
                 'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
                 'field' => 'sometimes|string'
+            ], [
+                'image.required' => 'Файл изображения обязателен',
+                'image.image' => 'Файл должен быть изображением',
+                'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif',
+                'image.max' => 'Максимальный размер файла 2MB'
             ]);
 
             // Удаляем старое изображение, если есть
@@ -506,33 +511,33 @@ class EventController extends Controller
                 'success' => true,
                 'image_path' => $path,
                 'full_path' => Storage::disk('public')->url($path),
-                'message' => 'Image uploaded successfully'
+                'message' => 'Изображение успешно загружено'
             ]);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
+                'message' => 'Ошибка валидации',
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error uploading image',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'message' => 'Ошибка при загрузке изображения: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    public function destroyImage($id, $field = 'image')
+    public function deleteImage(Request $request, $id)
     {
         try {
             $model = Event::findOrFail($id);
+            $field = $request->input('field', 'image');
 
             if (!$model->{$field}) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No image to delete'
+                    'message' => 'Нет изображения для удаления'
                 ], 404);
             }
 
@@ -542,23 +547,21 @@ class EventController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Image deleted successfully'
+                'message' => 'Изображение успешно удалено'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error deleting image',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
             ], 500);
         }
     }
 
-    public function deleteImage(Request $request, $id): \Illuminate\Http\JsonResponse
+    public function destroyImage($id, $field = 'image')
     {
         try {
             $model = Event::findOrFail($id);
-            $field = $request->input('field', 'image');
 
             if (!$model->{$field}) {
                 return response()->json([
