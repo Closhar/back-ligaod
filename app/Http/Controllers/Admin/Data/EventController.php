@@ -488,7 +488,7 @@ class EventController extends Controller
             $field = $request->input('field', 'image');
 
             $request->validate([
-                'image' => 'required|image', // 10MB
+                'image' => 'required', // 10MB
                 'field' => 'sometimes|string'
             ], [
                 'image.image' => 'Файл должен быть изображением',
