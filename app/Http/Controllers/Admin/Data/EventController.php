@@ -11,6 +11,7 @@ use App\Models\AdminPage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class EventController extends Controller
@@ -412,65 +413,7 @@ class EventController extends Controller
                 'club1_id' => 'integer|exists:clubs,id',
                 'club2_id' => 'integer|exists:clubs,id',
                 'competition_id' => 'integer|exists:competitions,id',
-                'image' => 'sometimes|string|nullable', // Добавлено для поля изображения
-                'delete_image' => 'sometimes|boolean' // Флаг для удаления изображения
             ]);
-
-            // Обработка удаления изображения
-            if ($request->has('delete_image') && $request->delete_image) {
-                if ($event->image) {
-                    // Удаляем файл изображения
-                    Storage::disk('public')->delete($event->image);
-                    $validated['image'] = null;
-                }
-            }
-
-            // Обработка нового изображения (если пришел base64 или URL)
-            if ($request->has('image') && $request->image) {
-                // Если это base64 изображение
-                if (preg_match('/^data:image\/(\w+);base64,/', $request->image, $matches)) {
-                    $imageData = substr($request->image, strpos($request->image, ',') + 1);
-                    $imageType = strtolower($matches[1]);
-
-                    // Проверяем допустимый тип изображения
-                    if (!in_array($imageType, ['jpeg', 'jpg', 'png', 'gif'])) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Недопустимый формат изображения. Используйте JPG, PNG или GIF.'
-                        ], 422);
-                    }
-
-                    // Декодируем base64
-                    $decodedImage = base64_decode($imageData);
-                    if ($decodedImage === false) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => 'Ошибка декодирования изображения'
-                        ], 422);
-                    }
-
-                    // Генерируем уникальное имя файла
-                    $fileName = 'events/' . Str::uuid() . '.' . $imageType;
-
-                    // Сохраняем файл
-                    Storage::disk('public')->put($fileName, $decodedImage);
-
-                    // Если было старое изображение - удаляем его
-                    if ($event->image) {
-                        Storage::disk('public')->delete($event->image);
-                    }
-
-                    $validated['image'] = $fileName;
-                }
-                // Если это URL (уже загруженное изображение)
-                elseif (filter_var($request->image, FILTER_VALIDATE_URL)) {
-                    $validated['image'] = $request->image;
-                }
-                // Если это путь к файлу (уже сохраненному)
-                else {
-                    $validated['image'] = $request->image;
-                }
-            }
 
             // Обработка даты (прежняя логика)
             if (isset($validated['date_from'])) {
@@ -498,13 +441,6 @@ class EventController extends Controller
             }
 
             $event->update($validated);
-
-            // Если нужно вернуть полный URL изображения
-            if (isset($validated['image']) && $validated['image'] && !filter_var($validated['image'], FILTER_VALIDATE_URL)) {
-                $event->image_url = Storage::disk('public')->url($validated['image']);
-            } else {
-                $event->image_url = $validated['image'] ?? null;
-            }
 
             return response()->json([
                 'success' => true,
@@ -544,4 +480,78 @@ class EventController extends Controller
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
+
+    public function uploadImage(Request $request, $id)
+    {
+        try {
+            $model = Event::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            $request->validate([
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'field' => 'sometimes|string'
+            ]);
+
+            // Удаляем старое изображение, если есть
+            if ($model->{$field}) {
+                Storage::disk('public')->delete($model->{$field});
+            }
+
+            // Сохраняем новое изображение
+            $path = $request->file('image')->store('images', 'public');
+            $model->{$field} = $path;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'image_path' => $path,
+                'full_path' => Storage::disk('public')->url($path),
+                'message' => 'Image uploaded successfully'
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error uploading image',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    public function destroyImage($id, $field = 'image')
+    {
+        try {
+            $model = Event::findOrFail($id);
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No image to delete'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting image',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
 }
