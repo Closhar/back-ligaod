@@ -488,13 +488,13 @@ class EventController extends Controller
             $field = $request->input('field', 'image');
 
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:4096',
                 'field' => 'sometimes|string'
             ], [
                 'image.required' => 'Файл изображения обязателен',
                 'image.image' => 'Файл должен быть изображением',
                 'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif',
-                'image.max' => 'Максимальный размер файла 2MB'
+                'image.max' => 'Максимальный размер файла 4MB'
             ]);
 
             // Удаляем старое изображение, если есть
@@ -503,7 +503,7 @@ class EventController extends Controller
             }
 
             // Сохраняем новое изображение
-            $path = $request->file('image')->store('images', 'public');
+            $path = $request->file('image')->store('events', 'public');
             $model->{$field} = $path;
             $model->save();
 
