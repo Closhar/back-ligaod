@@ -487,22 +487,37 @@ class EventController extends Controller
             $model = Event::findOrFail($id);
             $field = $request->input('field', 'image');
 
-            $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:' . (1024 * 10), // 10MB
+            $validator = Validator::make($request->all(), [
+                'image' => [
+                    'required',
+                    'image',
+                    'mimes:jpeg,png,jpg,gif,webp',
+                    'max:10240' // 10MB
+                ],
                 'field' => 'sometimes|string'
             ], [
+                'image.required' => 'Файл изображения обязателен',
                 'image.image' => 'Файл должен быть изображением',
                 'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
                 'image.max' => 'Максимальный размер файла 10MB'
             ]);
 
-            // Удаляем старое изображение, если есть
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Обработка изображения
+            $path = $request->file('image')->store('images', 'public');
+
+            // Удаляем старое изображение
             if ($model->{$field}) {
                 Storage::disk('public')->delete($model->{$field});
             }
 
-            // Сохраняем новое изображение
-            $path = $request->file('image')->store('events', 'public');
             $model->{$field} = $path;
             $model->save();
 
@@ -513,16 +528,10 @@ class EventController extends Controller
                 'message' => 'Изображение успешно загружено'
             ]);
 
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка валидации',
-                'errors' => $e->errors()
-            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Ошибка сервера: ' . $e->getMessage()
             ], 500);
         }
     }
