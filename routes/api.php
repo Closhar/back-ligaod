@@ -23,6 +23,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -171,8 +172,6 @@ Route::post('/upload-image', function(Request $request) {
         ]);
 
     } catch (\Exception $e) {
-        Log::error('Image upload failed: ' . $e->getMessage());
-
         return response()->json([
             'success' => false,
             'message' => 'File upload failed',
