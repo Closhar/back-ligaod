@@ -178,5 +178,6 @@ Route::post('/upload-image', function(Request $request) {
             'error' => config('app.debug') ? $e->getMessage() : null
         ], 500);
     }
-})->middleware('auth:sanctum');
+});
+    //->middleware('auth:sanctum');
 
