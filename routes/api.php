@@ -155,7 +155,7 @@ Route::post('/upload-image', function(Request $request) {
         $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
 
         // Сохранение с указанием явного пути
-        $path = $file->storeAs('public/editor-images/' . date('Y/m/d'), $fileName);
+        $path = $file->storeAs('public/images/' . date('Y/m/d'), $fileName);
 
         // Генерация URL без использования asset() для API
         $url = Storage::url($path);
