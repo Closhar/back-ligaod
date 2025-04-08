@@ -514,7 +514,7 @@ class EventController extends Controller
             }
 
             // Обработка изображения
-            $path = $request->file('image')->store('images', 'public');
+            $path = $request->file('image')->store('events', 'public');
 
             // Удаляем старое изображение
             if ($model->{$field}) {

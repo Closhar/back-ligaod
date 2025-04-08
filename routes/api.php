@@ -21,6 +21,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -126,11 +128,26 @@ Route::get('/sanctum/csrf-cookie', function (Request $request) {
     return response()->noContent();
 })->middleware('web'); // Важно использовать web middleware
 
-Route::post('/test-auth', function () {
-    return response()->json([
-        'authenticated' => auth()->check(),
-        'user' => auth()->user() ? auth()->user()->only('id', 'email', 'is_admin') : null,
-        'token_valid' => auth('sanctum')->check()
+Route::post('/upload-image', function(Request $request) {
+    $validator = Validator::make($request->all(), [
+        'image' => 'required|image|max:6144'
     ]);
-});
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    $path = $request->file('image')->store('public/editor-images');
+    $url = Storage::url($path);
+
+    return response()->json([
+        'success' => true,
+        'file' => [
+            'url' => asset($url)
+        ]
+    ]);
+})->middleware('auth:api');
 
