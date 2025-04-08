@@ -130,24 +130,54 @@ Route::get('/sanctum/csrf-cookie', function (Request $request) {
 
 Route::post('/upload-image', function(Request $request) {
     $validator = Validator::make($request->all(), [
-        'image' => 'required|image|max:6144'
+        'image' => [
+            'required',
+            'image',
+            'mimes:jpeg,png,jpg,gif,webp', // Явное указание разрешенных типов
+            'max:6144', // ~6MB
+            'dimensions:max_width=3840,max_height=2160' // 4K макс. разрешение
+        ]
     ]);
 
     if ($validator->fails()) {
         return response()->json([
             'success' => false,
+            'message' => 'Validation failed',
             'errors' => $validator->errors()
         ], 422);
     }
 
-    $path = $request->file('image')->store('public/editor-images');
-    $url = Storage::url($path);
+    try {
+        $file = $request->file('image');
 
-    return response()->json([
-        'success' => true,
-        'file' => [
-            'url' => asset($url)
-        ]
-    ]);
+        // Генерация уникального имени файла
+        $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+
+        // Сохранение с указанием явного пути
+        $path = $file->storeAs('public/editor-images/' . date('Y/m/d'), $fileName);
+
+        // Генерация URL без использования asset() для API
+        $url = Storage::url($path);
+
+        return response()->json([
+            'success' => true,
+            'file' => [
+                'url' => $url,
+                'path' => $path,
+                'name' => $fileName,
+                'size' => Storage::size($path),
+                'mime' => Storage::mimeType($path)
+            ]
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error('Image upload failed: ' . $e->getMessage());
+
+        return response()->json([
+            'success' => false,
+            'message' => 'File upload failed',
+            'error' => config('app.debug') ? $e->getMessage() : null
+        ], 500);
+    }
 })->middleware('auth:api');
 
