@@ -504,7 +504,7 @@ class EventController extends Controller
                 'image.required' => 'Файл изображения обязателен',
                 'image.image' => 'Файл должен быть изображением',
                 'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
-                'image.max' => 'Максимальный размер файла 10MB'
+                'image.max' => 'Максимальный размер файла 2MB'
             ]);
 
             if ($validator->fails()) {

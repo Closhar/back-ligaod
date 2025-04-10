@@ -152,7 +152,8 @@ Route::post('/upload-image', function(Request $request) {
         $file = $request->file('image');
 
         // Генерация уникального имени файла
-        $fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        //$fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
+        $fileName = $file;
 
         // Сохранение с указанием явного пути
         $path = $file->storeAs('images/' . date('Y/m'), $fileName);
