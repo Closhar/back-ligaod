@@ -371,14 +371,6 @@ class EventController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
-                'result' => 'string|max:255|nullable',
-                'result_dop' => 'string|max:255|nullable',
-                'date_from' => 'sometimes',
-                'arena_id' => 'integer|exists:arenas,id',
-                'club1_id' => 'integer|exists:clubs,id|nullable',
-                'club2_id' => 'integer|exists:clubs,id|nullable',
-                'competition_id' => 'integer|exists:competitions,id',
-                'is_active' => 'boolean',
             ]);
 
             $item = Event::create($validated);
