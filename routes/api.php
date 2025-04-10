@@ -156,7 +156,8 @@ Route::post('/upload-image', function(Request $request) {
         $fileName = $file;
 
         // Сохранение с указанием явного пути
-        $path = $file->storeAs('images/' . date('Y/m'), $fileName);
+        //$path = $file->storeAs('images/' . date('Y/m'), $fileName);
+        $path = $request->file('image')->store('images/' . date('Y/m'), 'public');
 
         // Генерация URL без использования asset() для API
         $url = Storage::url($path);
