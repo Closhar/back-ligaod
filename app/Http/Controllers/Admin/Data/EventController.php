@@ -417,7 +417,7 @@ class EventController extends Controller
                 'club2_id' => 'integer|exists:clubs,id|nullable',
                 'competition_id' => 'integer|exists:competitions,id',
                 'is_active' => 'boolean',
-                'about' => 'string|max:50000',
+                'about' => 'string|max:50000|nullable',
             ]);
 
             // Обработка даты (прежняя логика)
