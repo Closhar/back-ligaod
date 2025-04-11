@@ -382,6 +382,8 @@ class EventController extends Controller
                 'is_active' => 'boolean',
             ]);
 
+            $validated['date_from'] = date('Y-m-d H:i:s', strtotime($validated['date_from']));
+
             $item = Event::create($validated);
 
             return response()->json($item, 201);
