@@ -374,10 +374,10 @@ class EventController extends Controller
                 'result' => 'string|max:255|nullable',
                 'result_dop' => 'string|max:255|nullable',
                 'date_from' => 'sometimes',
-                'arena_id' => 'integer|exists:arenas,id',
+                'arena_id' => 'required|integer|exists:arenas,id',
                 'club1_id' => 'integer|exists:clubs,id|nullable',
                 'club2_id' => 'integer|exists:clubs,id|nullable',
-                'competition_id' => 'integer|exists:competitions,id',
+                'competition_id' => 'required|integer|exists:competitions,id',
                 'is_active' => 'boolean',
             ]);
 
