@@ -17,11 +17,6 @@ use Illuminate\Validation\ValidationException;
 
 class EventController extends Controller
 {
-//    public function __construct()
-//    {
-//        $this->middleware('auth:sanctum');
-//    }
-
     public function index(Request $request)
     {
         // Получаем параметры фильтрации из запроса
@@ -272,6 +267,9 @@ class EventController extends Controller
                             ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
                                 $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
                             });
+                    })
+                    ->orWhereHas('arena', function ($clubQuery) use ($searchQuery) {
+                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
                     });
             });
         }
