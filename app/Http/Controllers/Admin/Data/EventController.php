@@ -391,7 +391,8 @@ class EventController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Internal Server Error'], 500);
+            return response()->json(['message' => 'Internal Server Error',
+                'errors' => $e->errors()], 500);
         }
     }
 
