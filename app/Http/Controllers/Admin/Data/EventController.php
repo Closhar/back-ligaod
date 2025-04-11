@@ -369,6 +369,7 @@ class EventController extends Controller
     public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
+
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
                 'result' => 'string|max:255|nullable',
@@ -380,6 +381,31 @@ class EventController extends Controller
                 'competition_id' => 'required|integer|exists:competitions,id',
                 'is_active' => 'boolean',
             ]);
+
+            // Обработка даты (прежняя логика)
+            if (isset($validated['date_from'])) {
+                $input = trim($validated['date_from']);
+
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
+                    if ($existingDateTime) {
+                        $validated['date_from'] = $input . ' ' . $existingDateTime->format('H:i:s');
+                    } else {
+                        $validated['date_from'] = $input . ' 00:00:00';
+                    }
+                }
+                elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
+                    if ($existingDateTime) {
+                        $validated['date_from'] = $existingDateTime->format('Y-m-d') . ' ' . $input . ':00';
+                    } else {
+                        $validated['date_from'] = now()->format('Y-m-d') . ' ' . $input . ':00';
+                    }
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Некорректный формат. Используйте либо YYYY-MM-DD (дата), либо HH:ii (время)'
+                    ], 422);
+                }
+            }
 
             $item = Event::create($validated);
 
