@@ -370,7 +370,7 @@ class EventController extends Controller
     {
         try {
             $validated = $request->validate([
-                'title' => 'string|max:255',
+                'title' => 'string|max:255|nullable',
                 'result' => 'string|max:255|nullable',
                 'result_dop' => 'string|max:255|nullable',
                 'date_from' => 'sometimes',
