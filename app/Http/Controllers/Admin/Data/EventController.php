@@ -384,27 +384,14 @@ class EventController extends Controller
 
             // Обработка даты (прежняя логика)
             if (isset($validated['date_from'])) {
-                $input = trim($validated['date_from']);
+                $event = trim($validated['date_from']);
 
-                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
-                    if ($existingDateTime) {
-                        $validated['date_from'] = $input . ' ' . $existingDateTime->format('H:i:s');
-                    } else {
-                        $validated['date_from'] = $input . ' 00:00:00';
-                    }
-                }
-                elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
-                    if ($existingDateTime) {
-                        $validated['date_from'] = $existingDateTime->format('Y-m-d') . ' ' . $input . ':00';
-                    } else {
-                        $validated['date_from'] = now()->format('Y-m-d') . ' ' . $input . ':00';
-                    }
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Некорректный формат. Используйте либо YYYY-MM-DD (дата), либо HH:ii (время)'
-                    ], 422);
-                }
+                $existingDateTime = $event->date_from
+                    ? Carbon::parse($event->date_from)
+                    : null;
+
+                $validated['date_from'] = $existingDateTime;
+
             }
 
             $item = Event::create($validated);
