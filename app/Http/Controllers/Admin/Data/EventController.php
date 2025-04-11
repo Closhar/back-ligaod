@@ -253,6 +253,7 @@ class EventController extends Controller
         if ($searchQuery) {
             $query->where(function ($q) use ($searchQuery) {
                 $q->where('title', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('date_from', 'LIKE', "%{$searchQuery}%")
                     ->orWhereHas('competition', function ($clubQuery) use ($searchQuery) {
                         $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
                     })
@@ -271,9 +272,7 @@ class EventController extends Controller
                     ->orWhereHas('arena', function ($clubQuery) use ($searchQuery) {
                         $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
                     });
-            })
-            ->orWhere('title', 'LIKE', "%{$searchQuery}%")
-            ->orWhere('date_from', 'LIKE', "%{$searchQuery}%");
+            });
         }
 
         $sortDirection = strtolower($sortDirection);
