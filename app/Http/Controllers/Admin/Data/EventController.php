@@ -374,25 +374,13 @@ class EventController extends Controller
                 'title' => 'string|max:255|nullable',
                 'result' => 'string|max:255|nullable',
                 'result_dop' => 'string|max:255|nullable',
-                'date_from' => 'sometimes',
+                'date_from' => 'required|date',
                 'arena_id' => 'required|integer|exists:arenas,id',
                 'club1_id' => 'integer|exists:clubs,id|nullable',
                 'club2_id' => 'integer|exists:clubs,id|nullable',
                 'competition_id' => 'required|integer|exists:competitions,id',
                 'is_active' => 'boolean',
             ]);
-
-            // Обработка даты (прежняя логика)
-            if (isset($validated['date_from'])) {
-                $event = trim($validated['date_from']);
-
-                $existingDateTime = $event->date_from
-                    ? Carbon::parse($event->date_from)
-                    : null;
-
-                $validated['date_from'] = $existingDateTime;
-
-            }
 
             $item = Event::create($validated);
 
@@ -404,8 +392,10 @@ class EventController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Internal Server Error',
-                'errors' => $e->errors()], 500);
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage() // Исправлено с errors() на getMessage()
+            ], 500);
         }
     }
 
