@@ -255,7 +255,8 @@ class EventController extends Controller
                 $q->where('title', 'LIKE', "%{$searchQuery}%")
                     ->orWhere('date_from', 'LIKE', "%{$searchQuery}%")
                     ->orWhereHas('competition', function ($clubQuery) use ($searchQuery) {
-                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                            ->orWhere('title_short', 'LIKE', "%{$searchQuery}%");
                     })
                     ->orWhereHas('club1', function ($clubQuery) use ($searchQuery) {
                         $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
