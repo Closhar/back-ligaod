@@ -40,6 +40,7 @@ class EventController extends Controller
         $genderId = $request->input('gender_id');
         $sort = $request->input('sort', 'date_from_asc');
         $show = $request->input('show');
+        $with_team = $request->input('with_team');
         $empty_result = $request->input('empty_result', false);
         $empty_time = $request->input('empty_time', false);
         $searchQuery = $request->input('q');
@@ -149,6 +150,25 @@ class EventController extends Controller
             $show_concrete_date = true;
         } elseif ($dateTo) {
             $query->whereDate('date_from', '<=', $dateTo);
+        }
+
+        if ($with_team) {
+            switch ($with_team) {
+                case 1:
+                    $query->where(function ($q) {
+                        $q->whereNotNull('club1_id')
+                            ->whereNotNull('club2_id');
+                    });
+                    break;
+                case 2:
+                    $query->where(function ($q) {
+                        $q->whereNull('club1_id')
+                            ->orWhereNull('club2_id');
+                    });
+                    break;
+                default:
+                    break;
+            }
         }
 
         if ((!$show_concrete_date) && ($show)) {
