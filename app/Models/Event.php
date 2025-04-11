@@ -16,6 +16,8 @@ class Event extends Model
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
     protected $appends = ['sport_icon', 'gender_icon', 'event_name', 'event_name_top', 'event_image_path', 'date_formatted', 'time_formatted', 'date_to_formatted', 'time_to_formatted'];
 
+    protected $dates = ['date_from'];
+
     public function competition(): BelongsTo
     {
         return $this->belongsTo(Competition::class);
@@ -53,6 +55,16 @@ class Event extends Model
 
     }
 
+    public function getDateFromAttribute($value)
+    {
+        return $value; // Возвращаем как есть
+    }
+
+    public function setDateFromAttribute($value)
+    {
+        $this->attributes['date_from'] = $value; // Сохраняем без преобразований
+    }
+
     public function getDateToFormattedAttribute()
     {
         return \Carbon\Carbon::parse($this->date_to)->format('d.m.Y.');
@@ -85,7 +97,7 @@ class Event extends Model
         if (!$this->club1) return $this->title . ' (' . $this->date_formatted . ' - ' . $this->date_to_formatted . ')';
         else
             return $this->date_formatted . ' ' . ($this->club1->title ?? 'Клуб 1') . ' (' . ($this->club1->city->title ?? 'Город не указан') . ') - ' . ($this->club2->title ?? 'Клуб 2') . ' (' . ($this->club2->city->title ?? 'Город не указан') . ') ' . $this->result;
-        
+
     }
 
     public function getEventNameTopAttribute()
