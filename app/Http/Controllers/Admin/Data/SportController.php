@@ -24,6 +24,8 @@ class SportController extends Controller
     public function index(Request $request)
     {
         $searchQuery = $request->query('q'); // Параметр поиска
+        $perPage = $request->query('per_page', 15); // Количество элементов на странице
+
         $query = Sport::query()
             ->select(
                 'id',
@@ -32,21 +34,42 @@ class SportController extends Controller
                 'annotation',
                 'icon',
                 'image',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
+                DB::raw('CONCAT("' . config('app.url') . '", "/storage/sports/", image) AS full_image_path'),
                 'slug',
                 'vin')
             ->with([
                 'sport_properties' => function ($query) {
                     $query->select([
-                        'sport_properties.id', // Явно указываем таблицу
+                        'sport_properties.id',
                         'sport_properties.title',
                         'sport_properties.icon'
                     ]);
                 }]);
 
         // Применяем поиск по параметру q
-        if ($searchQuery) $query->where('title', 'LIKE', "%{$searchQuery}%");
-        return $query->get()->toArray();
+        if ($searchQuery) {
+            $query->where('title', 'LIKE', "%{$searchQuery}%");
+        }
+
+        // Получаем пагинированные результаты
+        $sports = $query->paginate($perPage);
+        $total = $sports->total();
+
+        return [
+            'current_page' => $sports->currentPage(),
+            'data' => $sports->items(),
+            'first_page_url' => $sports->url(1),
+            'from' => $sports->firstItem(),
+            'last_page' => $sports->lastPage(),
+            'last_page_url' => $sports->url($sports->lastPage()),
+            'links' => $sports->links(),
+            'next_page_url' => $sports->nextPageUrl(),
+            'path' => $sports->path(),
+            'per_page' => $sports->perPage(),
+            'prev_page_url' => $sports->previousPageUrl(),
+            'to' => $sports->lastItem(),
+            'total' => $total,
+        ];
     }
 
     public function store(Request $request): \Illuminate\Http\JsonResponse
