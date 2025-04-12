@@ -34,7 +34,7 @@ class SportController extends Controller
                 'annotation',
                 'icon',
                 'image',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/sports/", image) AS full_image_path'),
+                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 'slug',
                 'vin')
             ->with([
