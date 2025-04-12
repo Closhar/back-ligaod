@@ -76,7 +76,11 @@ class SportController extends Controller
     {
         try {
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
+                'title' => 'string|max:255',
+                'title_short' => 'string|max:255',
+                'icon' => 'string|max:255',
+                'slug' => 'string|max:255',
+                'about' => 'string|max:50000|nullable',
             ]);
 
             $item = Sport::create($validated);
@@ -109,8 +113,11 @@ class SportController extends Controller
         try {
             // Сначала валидация
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                // Добавьте другие поля при необходимости
+                'title' => 'string|max:255',
+                'title_short' => 'string|max:255',
+                'icon' => 'string|max:255',
+                'slug' => 'string|max:255',
+                'about' => 'string|max:50000|nullable',
             ]);
 
             // Затем поиск и обновление
