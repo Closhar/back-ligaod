@@ -1,0 +1,246 @@
+<?php
+
+namespace App\Http\Controllers\Admin\Data;
+
+use App\Http\Controllers\Controller;
+use App\Http\Requests\Api\ApiGenderRequest;
+use App\Models\Age;
+use App\Models\Arena;
+use App\Models\Event;
+use App\Models\Gender;
+use App\Models\Sport;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\ValidationException;
+
+class SportController extends Controller
+{
+    /**
+     * Display a listing of the resource.
+     */
+
+    public function index(Request $request)
+    {
+        $searchQuery = $request->query('q'); // Параметр поиска
+        $query = Sport::query()
+            ->select(
+                'id',
+                'title',
+                'title_short',
+                'annotation',
+                'icon',
+                'image',
+                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
+                'slug',
+                'vin')
+            ->with([
+                'sport_properties' => function ($query) {
+                    $query->select([
+                        'sport_properties.id', // Явно указываем таблицу
+                        'sport_properties.title',
+                        'sport_properties.icon'
+                    ]);
+                }]);
+
+        // Применяем поиск по параметру q
+        if ($searchQuery) $query->where('title', 'LIKE', "%{$searchQuery}%");
+        return $query->get()->toArray();
+    }
+
+    public function store(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+            ]);
+
+            $item = Sport::create($validated);
+
+            return response()->json($item, 201);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }
+
+    public function show($id)
+    {
+        try {
+            $item = Sport::findOrFail($id);
+            return response()->json($item);
+
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Not Found'], 404);
+        }
+    }
+
+    public function update(Request $request, $id)
+    {
+        try {
+            // Сначала валидация
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                // Добавьте другие поля при необходимости
+            ]);
+
+            // Затем поиск и обновление
+            $item = Sport::findOrFail($id);
+            $item->update($validated);
+
+            return response()->json([
+                'success' => true,
+                'data' => $item,
+                'message' => 'Updated successfully'
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal Server Error',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+    public function destroy($id)
+    {
+        try {
+            $item = Sport::findOrFail($id);
+            $item->delete();
+
+            return response()->json(null, 204);
+
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }
+
+    public function uploadImage(Request $request, $id)
+    {
+        try {
+            $model = Sport::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            $validator = Validator::make($request->all(), [
+                'image' => [
+                    'required',
+                    'image',
+                    'mimes:jpeg,png,jpg,gif,webp',
+                    'max:2048' // 2MB
+                ],
+                'field' => 'sometimes|string'
+            ], [
+                'image.required' => 'Файл изображения обязателен',
+                'image.image' => 'Файл должен быть изображением',
+                'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
+                'image.max' => 'Максимальный размер файла 2MB'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Обработка изображения
+            $path = $request->file('image')->store('sports', 'public');
+
+            // Удаляем старое изображение
+            if ($model->{$field}) {
+                Storage::disk('public')->delete($model->{$field});
+            }
+
+            $model->{$field} = $path;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'image_path' => $path,
+                'full_path' => Storage::disk('public')->url($path),
+                'message' => 'Изображение успешно загружено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка сервера: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteImage(Request $request, $id)
+    {
+        try {
+            $model = Sport::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Нет изображения для удаления'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Изображение успешно удалено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroyImage($id, $field = 'image')
+    {
+        try {
+            $model = Sport::findOrFail($id);
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No image to delete'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting image',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
+}

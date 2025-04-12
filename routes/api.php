@@ -4,6 +4,7 @@ use App\Http\Controllers\Admin\Data\AdminPageController;
 use App\Http\Controllers\Admin\Data\ClubController;
 use App\Http\Controllers\Admin\Data\CompetitionController;
 use App\Http\Controllers\Admin\Data\EventController;
+use App\Http\Controllers\Admin\Data\SportController;
 use App\Http\Controllers\Api\ApiAgeController;
 use App\Http\Controllers\Api\ApiArenaController;
 use App\Http\Controllers\Api\ApiArticleController;
@@ -118,10 +119,17 @@ Route::middleware('auth:sanctum')->group(function () {
     //});
 });
 Route::apiResource('admin-pages', AdminPageController::class);
+
 Route::apiResource('events', EventController::class);
 Route::post('events/{id}/upload-image', [EventController::class, 'uploadImage']);
 Route::delete('events/{id}/image', [EventController::class, 'destroyImage']);
 Route::post('events/{id}/delete-image', [EventController::class, 'deleteImage']);
+
+Route::apiResource('sports', SportController::class);
+Route::post('sports/{id}/upload-image', [SportController::class, 'uploadImage']);
+Route::delete('sports/{id}/image', [SportController::class, 'destroyImage']);
+Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage']);
+
 Route::apiResource('competitions', CompetitionController::class);
 Route::apiResource('clubs', ClubController::class);
 
