@@ -80,7 +80,7 @@ class SportController extends Controller
                 'title_short' => 'string|max:255',
                 'icon' => 'string|max:255',
                 'slug' => 'string|max:255',
-                'about' => 'string|max:50000|nullable',
+                'annotation' => 'string|max:50000|nullable',
             ]);
 
             $item = Sport::create($validated);
@@ -117,7 +117,7 @@ class SportController extends Controller
                 'title_short' => 'string|max:255',
                 'icon' => 'string|max:255',
                 'slug' => 'string|max:255',
-                'about' => 'string|max:50000|nullable',
+                'annotation' => 'string|max:50000|nullable',
             ]);
 
             // Затем поиск и обновление
