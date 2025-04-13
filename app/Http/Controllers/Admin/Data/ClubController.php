@@ -39,10 +39,6 @@ class ClubController extends Controller
                     'clubs.age_id',
                     'clubs.is_alien',
                     'clubs.image',
-                    'city.title',
-                    'gender.title',
-                    'gender.title_short',
-                    'gender.icon',
                     DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info'),
                     DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path')
                 ])
