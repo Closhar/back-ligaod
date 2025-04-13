@@ -131,7 +131,11 @@ Route::delete('sports/{id}/image', [SportController::class, 'destroyImage']);
 Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage']);
 
 Route::apiResource('competitions', CompetitionController::class);
+
 Route::apiResource('clubs', ClubController::class);
+Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
+Route::delete('clubs/{id}/image', [ClubController::class, 'destroyImage']);
+Route::post('clubs/{id}/delete-image', [ClubController::class, 'deleteImage']);
 
 Route::get('/sanctum/csrf-cookie', function (Request $request) {
     return response()->noContent();
