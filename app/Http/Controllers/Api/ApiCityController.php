@@ -27,7 +27,7 @@ class ApiCityController extends Controller
 
         if ($limit) $c = $c->take($limit);
 
-        return $c->get()->toArray();
+        return $c->orderBy('title')->get()->toArray();
     }
 
     /**
