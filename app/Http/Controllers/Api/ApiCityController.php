@@ -17,12 +17,17 @@ class ApiCityController extends Controller
     public function index(Request $request): array
     {
         $limit = $request->query('limit'); // Количество элементов на странице
+        $searchQuery = $request->query('q'); // Параметр поиска
 
-        $c = City::all();
+        $c = City::query()->select('*');
+
+        if ($searchQuery) {
+            $c->where('title', 'LIKE', "%{$searchQuery}%");
+        }
 
         if ($limit) $c = $c->take($limit);
 
-        return $c->toArray();
+        return $c->get()->toArray();
     }
 
     /**
