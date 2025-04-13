@@ -76,10 +76,10 @@ class SportController extends Controller
     {
         try {
             $validated = $request->validate([
-                'title' => 'string|max:255',
+                'title' => 'string|max:255|unique:sports',
                 'title_short' => 'string|max:255',
                 'icon' => 'string|max:255',
-                'slug' => 'string|max:255',
+                'slug' => 'string|max:255|unique:sports',
                 'annotation' => 'string|max:50000|nullable',
             ]);
 
@@ -116,10 +116,10 @@ class SportController extends Controller
         try {
             // Сначала валидация
             $validated = $request->validate([
-                'title' => 'string|max:255',
+                'title' => 'string|max:255|unique:sports',
                 'title_short' => 'string|max:255',
                 'icon' => 'string|max:255',
-                'slug' => 'string|max:255',
+                'slug' => 'string|max:255|unique:sports',
                 'annotation' => 'string|max:50000|nullable',
             ]);
 
