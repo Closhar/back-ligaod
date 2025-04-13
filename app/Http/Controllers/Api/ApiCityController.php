@@ -14,9 +14,15 @@ class ApiCityController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): array
+    public function index(Request $request): array
     {
-        return City::all()->toArray();
+        $limit = $request->query('limit'); // Количество элементов на странице
+
+        $c = City::all();
+
+        if ($limit) $c = $c->take($limit);
+
+        return $c->toArray();
     }
 
     /**
