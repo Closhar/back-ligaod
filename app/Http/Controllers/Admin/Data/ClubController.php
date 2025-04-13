@@ -46,9 +46,9 @@ class ClubController extends Controller
                     DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info'),
                     DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path')
                 ])
-//                ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
-//                ->join('cities as city', 'clubs.city_id', '=', 'city.id')
-//                ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id');
+                ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
+                ->join('cities as city', 'clubs.city_id', '=', 'city.id')
+                ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id')
             ->with('city')
                 ->with('gender')
                 ->with('sport');
