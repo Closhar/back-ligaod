@@ -24,6 +24,10 @@ class CityController extends Controller
                 $query->where('title', 'LIKE', "%{$searchQuery}%");
             }
 
+            if ($request->has('type') && $request->input('type') === 'async') {
+                return $query->orderBy('title')->get()->toArray();
+            }
+
             $cities = $query->orderBy('title')->paginate($perPage);
 
             return [
@@ -152,4 +156,4 @@ class CityController extends Controller
             ], 500);
         }
     }
-} 
+}
