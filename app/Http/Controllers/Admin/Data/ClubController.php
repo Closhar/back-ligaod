@@ -33,6 +33,7 @@ class ClubController extends Controller
                     'clubs.id',
                     'clubs.title',
                     'clubs.title_short',
+                    'clubs.about',
                     'clubs.address',
                     'clubs.phones',
                     'clubs.emails',
