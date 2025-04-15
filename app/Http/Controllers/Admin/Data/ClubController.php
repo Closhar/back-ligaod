@@ -58,6 +58,10 @@ class ClubController extends Controller
             if ($request->has('sport')) {
                 $query->whereHas('sport', fn($q) => $q->where('slug', $request->input('sport')));
             }
+
+            if ($request->has('gender_id')) {
+                $query->where('clubs.gender_id', $request->input('gender_id'));
+            }
             // ... остальные фильтры
 
             // Если запрошен простой вывод
