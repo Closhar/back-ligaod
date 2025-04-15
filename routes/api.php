@@ -131,6 +131,7 @@ Route::delete('sports/{id}/image', [SportController::class, 'destroyImage']);
 Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage']);
 
 Route::apiResource('competitions', CompetitionController::class);
+Route::apiResource('cities', CityController::class);
 
 Route::apiResource('clubs', ClubController::class);
 Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
