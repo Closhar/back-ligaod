@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\Data\AdminPageController;
 use App\Http\Controllers\Admin\Data\ClubController;
 use App\Http\Controllers\Admin\Data\CompetitionController;
+use App\Http\Controllers\Admin\Data\CityController;
 use App\Http\Controllers\Admin\Data\EventController;
 use App\Http\Controllers\Admin\Data\SportController;
 use App\Http\Controllers\Api\ApiAgeController;
