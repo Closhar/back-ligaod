@@ -18,6 +18,8 @@ class ApiSportController extends Controller
     public function index(Request $request): array
     {
         $searchQuery = $request->query('q'); // Параметр поиска
+        $perPage = $request->input('per_page', 10);
+        $limit = $request->input('limit', $perPage);
         $query = Sport::query()
             ->select(
                 'id',
@@ -40,8 +42,7 @@ class ApiSportController extends Controller
 
         // Применяем поиск по параметру q
         if ($searchQuery) $query->where('title', 'LIKE', "%{$searchQuery}%");
-        return $query->get()->toArray();
-
+        return $query->limit($limit)->get()->toArray();
     }
 
     /**
