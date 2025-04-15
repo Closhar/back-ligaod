@@ -17,6 +17,7 @@ class CityController extends Controller
         try {
             $perPage = $request->input('per_page', 10);
             $searchQuery = $request->input('q');
+            $limit = $request->input('limit', $perPage);
 
             $query = City::query();
 
@@ -25,7 +26,7 @@ class CityController extends Controller
             }
 
             if ($request->has('type') && $request->input('type') === 'async') {
-                return $query->orderBy('title')->get()->toArray();
+                return $query->orderBy('title')->limit($limit)->get()->toArray();
             }
 
             $cities = $query->orderBy('title')->paginate($perPage);
