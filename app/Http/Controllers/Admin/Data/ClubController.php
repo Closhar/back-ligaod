@@ -30,10 +30,32 @@ class ClubController extends Controller
             // Основной запрос
             $query = Club::query()
                 ->select([
-                    '*',
+                    'clubs.id',
+                    'clubs.title',
+                    'clubs.title_short',
+                    'clubs.address',
+                    'clubs.phones',
+                    'clubs.emails',
+                    'clubs.sites',
+                    'clubs.vks',
+                    'clubs.instagrams',
+                    'clubs.youtubes',
+                    'clubs.facebooks',
+                    'clubs.xs',
+                    'clubs.map',
+                    'clubs.slug',
+                    'clubs.city_id',
+                    'clubs.gallery_id',
+                    'clubs.sport_id',
+                    'clubs.gender_id',
+                    'clubs.age_id',
+                    'clubs.is_alien',
+                    'clubs.image',
+                    'clubs.image_bg',
                     DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info'),
-                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path')
-                ])
+                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path'),
+                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image_bg) AS full_image_bg_path')
+                    ])
                 ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
                 ->join('cities as city', 'clubs.city_id', '=', 'city.id')
                 ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id')
