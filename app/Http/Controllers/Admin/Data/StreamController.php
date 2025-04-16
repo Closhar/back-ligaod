@@ -60,6 +60,20 @@ class StreamController extends Controller
             ? Carbon::parse($stream->data)
             : null;
 
+            // Преобразование даты из формата ISO 8601 в нужный формат
+            if ($request->has('date')) {
+                $dateInput = $request->input('date');
+                try {
+                    $date = Carbon::parse($dateInput);
+                    $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Некорректный формат даты. Используйте ISO 8601 или YYYY-MM-DD HH:ii:ss'
+                    ], 422);
+                }
+            }
+
             $validated = $request->validate([
                 'date' => 'date_format:Y-m-d H:i:s',
                 'title' => 'string|max:255',
