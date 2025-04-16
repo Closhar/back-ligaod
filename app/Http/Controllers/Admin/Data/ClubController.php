@@ -128,6 +128,27 @@ class ClubController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
+                'title_short' => 'nullable|string|max:100',
+                'about' => 'nullable|string',
+                'address' => 'nullable|string|max:500',
+                'phones' => 'nullable|array',
+                'emails' => 'nullable|array',
+                'sites' => 'nullable|array',
+                'vks' => 'nullable|array',
+                'instagrams' => 'nullable|array',
+                'youtubes' => 'nullable|array',
+                'facebooks' => 'nullable|array',
+                'xs' => 'nullable|array',
+                'map' => 'nullable|string',
+                'slug' => 'nullable|string|max:255|unique:clubs,slug',
+                'city_id' => 'required|exists:cities,id',
+                'gallery_id' => 'nullable|exists:galleries,id',
+                'sport_id' => 'required|exists:sports,id',
+                'gender_id' => 'required|exists:genders,id',
+                'age_id' => 'nullable|exists:ages,id',
+                'is_alien' => 'boolean',
+                'image' => 'nullable|string|max:255',
+                'image_bg' => 'nullable|string|max:255'
             ]);
 
             $item = Club::create($validated);
@@ -158,13 +179,31 @@ class ClubController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            // Сначала валидация
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                // Добавьте другие поля при необходимости
+                'title' => 'string|max:255',
+                'title_short' => 'string|max:100',
+                'about' => 'nullable|string',
+                'address' => 'nullable|string|max:500',
+                'phones' => 'nullable|array',
+                'emails' => 'nullable|array',
+                'sites' => 'nullable|array',
+                'vks' => 'nullable|array',
+                'instagrams' => 'nullable|array',
+                'youtubes' => 'nullable|array',
+                'facebooks' => 'nullable|array',
+                'xs' => 'nullable|array',
+                'map' => 'nullable|string',
+                'slug' => 'nullable|string|max:255|unique:clubs,slug,' . $id,
+                'city_id' => 'exists:cities,id',
+                'gallery_id' => 'nullable|exists:galleries,id',
+                'sport_id' => 'exists:sports,id',
+                'gender_id' => 'exists:genders,id',
+                'age_id' => 'nullable|exists:ages,id',
+                'is_alien' => 'boolean',
+                'image' => 'nullable|string|max:255',
+                'image_bg' => 'nullable|string|max:255'
             ]);
 
-            // Затем поиск и обновление
             $item = Club::findOrFail($id);
             $item->update($validated);
 
