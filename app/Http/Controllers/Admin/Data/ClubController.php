@@ -105,7 +105,9 @@ class ClubController extends Controller
                     'total' => $clubs->total(),
                     'per_page' => $clubs->perPage(),
                     'current_page' => $clubs->currentPage(),
-                    'last_page' => $clubs->lastPage()
+                    'last_page' => $clubs->lastPage(),
+                    'from' => $clubs->firstItem(),
+                    'to' => $clubs->lastItem(),
                 ]
             ];
 
