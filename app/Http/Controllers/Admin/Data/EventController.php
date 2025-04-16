@@ -42,8 +42,7 @@ class EventController extends Controller
         $show_concrete_date = false;
         $id = $request->input('id');
         // Сортировка
-        $sortField = $request->input('sort_field', 'id');
-        $sortDirection = $request->input('sort_direction', 'asc');
+        
 
 
         $sportSlugItem = $request->input('sport_item');

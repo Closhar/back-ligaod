@@ -20,8 +20,8 @@ class StreamController extends Controller
     {
         try {
             // Преобразование даты из формата ISO 8601 в нужный формат
-            if ($request->has('data')) {
-                $dateInput = $request->input('data');
+            if ($request->has('date')) {
+                $dateInput = $request->input('date');
                 try {
                     $date = Carbon::parse($dateInput);
                     $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
@@ -78,8 +78,8 @@ class StreamController extends Controller
             : null;
 
             // Преобразование даты из формата ISO 8601 в нужный формат
-            if ($request->has('data')) {
-                $dateInput = $request->input('data');
+            if ($request->has('date')) {
+                $dateInput = $request->input('date');
                 try {
                     $date = Carbon::parse($dateInput);
                     $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
