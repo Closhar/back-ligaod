@@ -20,8 +20,8 @@ class StreamController extends Controller
     {
         try {
             // Преобразование даты из формата ISO 8601 в нужный формат
-            if ($request->has('date')) {
-                $dateInput = $request->input('date');
+            if ($request->has('data')) {
+                $dateInput = $request->input('data');
                 try {
                     $date = Carbon::parse($dateInput);
                     $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
@@ -78,8 +78,8 @@ class StreamController extends Controller
             : null;
 
             // Преобразование даты из формата ISO 8601 в нужный формат
-            if ($request->has('date')) {
-                $dateInput = $request->input('date');
+            if ($request->has('data')) {
+                $dateInput = $request->input('data');
                 try {
                     $date = Carbon::parse($dateInput);
                     $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
@@ -89,6 +89,11 @@ class StreamController extends Controller
                         'message' => 'Некорректный формат даты. Используйте ISO 8601 или YYYY-MM-DD HH:ii:ss'
                     ], 422);
                 }
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Поле дата обязательно.'
+                ], 422);
             }
 
             $validated = $request->validate([
@@ -107,8 +112,7 @@ class StreamController extends Controller
                     } else {
                         $validated['data'] = $input . ' 00:00:00';
                     }
-                }
-                elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
+                } elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
                     if ($existingDateTime) {
                         $validated['data'] = $existingDateTime->format('Y-m-d') . ' ' . $input . ':00';
                     } else {
