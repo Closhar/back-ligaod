@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Stream;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Carbon\Carbon;
 
 class StreamController extends Controller
 {
@@ -54,11 +55,41 @@ class StreamController extends Controller
     {
         try {
             $stream = Stream::findOrFail($id);
+
+            $existingDateTime = $stream->data
+            ? Carbon::parse($stream->data)
+            : null;
+
             $validated = $request->validate([
                 'date' => 'date_format:Y-m-d H:i:s',
                 'title' => 'string|max:255',
                 'link' => 'url',
             ]);
+
+            // Обработка даты (прежняя логика)
+            if (isset($validated['data'])) {
+                $input = trim($validated['data']);
+
+                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
+                    if ($existingDateTime) {
+                        $validated['data'] = $input . ' ' . $existingDateTime->format('H:i:s');
+                    } else {
+                        $validated['data'] = $input . ' 00:00:00';
+                    }
+                }
+                elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
+                    if ($existingDateTime) {
+                        $validated['data'] = $existingDateTime->format('Y-m-d') . ' ' . $input . ':00';
+                    } else {
+                        $validated['data'] = now()->format('Y-m-d') . ' ' . $input . ':00';
+                    }
+                } else {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Некорректный формат. Используйте либо YYYY-MM-DD (дата), либо HH:ii (время)'
+                    ], 422);
+                }
+            }
 
             $stream->update($validated);
 
