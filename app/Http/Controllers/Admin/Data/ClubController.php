@@ -24,6 +24,8 @@ class ClubController extends Controller
             $perPage = $request->input('per_page', 10);
             $searchQuery = $request->input('q');
             $type = $request->input('type');
+            $sortField = $request->input('sort_field', 'id'); // Поле для сортировки
+            $sortDirection = $request->input('sort_direction', 'asc'); // Направление сортировки
             $perPage = $request->query('per_page', 10); // Количество элементов на странице (по умолчанию 10)
             $limit = $request->input('limit', $perPage);
 
@@ -62,7 +64,8 @@ class ClubController extends Controller
                 ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id')
             ->with('city')
                 ->with('gender')
-                ->with('sport');
+                ->with('sport')
+                ->orderBy($sortField, $sortDirection); // Применение сортировки
 
 
             if ($searchQuery) {
