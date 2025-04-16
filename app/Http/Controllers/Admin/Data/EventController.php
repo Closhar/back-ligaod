@@ -41,8 +41,12 @@ class EventController extends Controller
         $searchQuery = $request->input('q');
         $show_concrete_date = false;
         $id = $request->input('id');
+
+
+        $sortField = $request->input('sort_field', 'id'); // Поле для сортировки
+        $sortDirection = $request->input('sort_direction', 'asc'); // Направление сортировки
         // Сортировка
-        
+
 
 
         $sportSlugItem = $request->input('sport_item');
