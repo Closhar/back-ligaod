@@ -40,10 +40,165 @@ class EventController extends Controller
         $empty_time = $request->input('empty_time', false);
         $searchQuery = $request->input('q');
         $show_concrete_date = false;
+        $id = $request->input('id');
         // Сортировка
         $sortField = $request->input('sort_field', 'id');
         $sortDirection = $request->input('sort_direction', 'asc');
 
+        // Если указан ID, возвращаем только одну запись
+        if ($id) {
+            $event = Event::with([
+                'competition' => function ($query) {
+                    $query->select([
+                        'id',
+                        'title',
+                        'title_short',
+                        'image',
+                        'bg_image',
+                        'sport_id',
+                        'gender_id',
+                    ])->with(['sport:id,title,title_short,icon', 'gender']);
+                },
+                'club1' => function ($query) {
+                    $query->select([
+                        'clubs.id',
+                        'clubs.title',
+                        'clubs.image',
+                        'clubs.slug',
+                        'clubs.city_id',
+                        'clubs.age_id',
+                        'clubs.gender_id',
+                        'clubs.sport_id',
+                    ])->with([
+                        'sport' => function ($q) {
+                            $q->select('id', 'title_short');
+                        },
+                        'city' => function ($cityQuery) {
+                            $cityQuery->select('id', 'title', 'title_short');
+                        },
+                        'age' => function ($ageQuery) {
+                            $ageQuery->select('id', 'title_short');
+                        },
+                        'gender' => function ($genderQuery) {
+                            $genderQuery->select('id', 'title_short');
+                        }
+                    ]);
+                },
+                'club2' => function ($query) {
+                    $query->select([
+                        'clubs.id',
+                        'clubs.title',
+                        'clubs.image',
+                        'clubs.slug',
+                        'clubs.city_id',
+                        'clubs.age_id',
+                        'clubs.gender_id',
+                        'clubs.sport_id',
+                    ])->with([
+                        'sport' => function ($q) {
+                            $q->select('id', 'title_short');
+                        },
+                        'city' => function ($cityQuery) {
+                            $cityQuery->select('id', 'title', 'title_short');
+                        },
+                        'age' => function ($ageQuery) {
+                            $ageQuery->select('id', 'title_short');
+                        },
+                        'gender' => function ($genderQuery) {
+                            $genderQuery->select('id', 'title_short');
+                        }
+                    ]);
+                },
+                'arena' => function ($query) {
+                    $query->select([
+                        'id',
+                        'title',
+                        'city_id',
+                        'slug',
+                        'image',
+                    ])->with([
+                        'city' => function ($cityQuery) {
+                            $cityQuery->select(['id', 'title']);
+                        }
+                    ]);
+                },
+            ])->find($id);
+
+            if (!$event) {
+                return response()->json(['message' => 'Event not found'], 404);
+            }
+
+            // Формируем club_info для club1
+            $club1Info = null;
+            if ($event->club1) {
+                $club1Info = sprintf('%s (%s) | %s | %s',
+                    $event->club1->title,
+                    $event->club1->city->title_short ?? '',
+                    $event->club1->sport->title_short ?? '',
+                    $event->club1->gender->title_short ?? ''
+                );
+            }
+
+            // Формируем club_info для club2
+            $club2Info = null;
+            if ($event->club2) {
+                $club2Info = sprintf('%s (%s) | %s | %s',
+                    $event->club2->title,
+                    $event->club2->city->title_short ?? '',
+                    $event->club2->sport->title_short ?? '',
+                    $event->club2->gender->title_short ?? ''
+                );
+            }
+
+            // Формируем URL изображений
+            $club1Image = $event->club1 && $event->club1->image
+                ? config('app.url') . '/storage/' . $event->club1->image
+                : null;
+
+            $club2Image = $event->club2 && $event->club2->image
+                ? config('app.url') . '/storage/' . $event->club2->image
+                : null;
+
+            $arenaImage = $event->arena && $event->arena->image
+                ? config('app.url') . '/storage/' . $event->arena->image
+                : null;
+
+            $transformedEvent = [
+                'id' => $event->id,
+                'title' => $event->title,
+                'date_from' => $event->date_from,
+                'date_to' => $event->date_to,
+                'result' => $event->result,
+                'result_dop' => $event->result_dop,
+                'image' => $event->image,
+                'is_active' => $event->is_active,
+                'about' => $event->about,
+                'event_image_path' => config('app.url') . '/storage/' . $event->image,
+                'competition_id' => $event->competition_id,
+                'arena_id' => $event->arena_id,
+                'club1_id' => $event->club1_id,
+                'club2_id' => $event->club2_id,
+                'event_name' => $event->event_name,
+                'sport_icon' => $event->competition->sport->icon,
+                'gender_icon' => $event->competition->gender->icon,
+                'date_formatted' => \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.'),
+                'time' => \Carbon\Carbon::parse($event->date_from)->format('H:i'),
+                'competition' => $event->competition,
+                'club1' => $event->club1 ? array_merge($event->club1->toArray(), [
+                    'club_info' => $club1Info,
+                    'image' => $club1Image
+                ]) : null,
+                'club2' => $event->club2 ? array_merge($event->club2->toArray(), [
+                    'club_info' => $club2Info,
+                    'image' => $club2Image
+                ]) : null,
+                'arena' => $event->arena ? array_merge($event->arena->toArray(), [
+                    'image' => $arenaImage
+                ]) : null,
+            ];
+
+            return response()->json($transformedEvent);
+        }
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
