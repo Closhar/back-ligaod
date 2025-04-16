@@ -49,6 +49,11 @@ class Event extends Model
         return $this->morphToMany(Article::class, 'articleable');
     }
 
+    public function streams(): MorphToMany
+    {
+        return $this->belongsToMany(Stream::class);
+    }
+
     public function getDateFormattedAttribute()
     {
         return \Carbon\Carbon::parse($this->date_from)->format('d.m.Y.');
