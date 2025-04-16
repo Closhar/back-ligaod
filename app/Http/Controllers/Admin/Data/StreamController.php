@@ -30,6 +30,10 @@ class StreamController extends Controller
                         'message' => 'Некорректный формат даты. Используйте ISO 8601 или YYYY-MM-DD HH:ii:ss'
                     ], 422);
                 }
+            } else {
+                return response()->json([
+                    'message' => 'Поле дата обязательно.'
+                ], 422);
             }
 
             $validated = $request->validate([
