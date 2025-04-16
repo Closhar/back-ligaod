@@ -45,160 +45,6 @@ class EventController extends Controller
         $sortField = $request->input('sort_field', 'id');
         $sortDirection = $request->input('sort_direction', 'asc');
 
-        // Если указан ID, возвращаем только одну запись
-        if ($id) {
-            $event = Event::with([
-                'competition' => function ($query) {
-                    $query->select([
-                        'id',
-                        'title',
-                        'title_short',
-                        'image',
-                        'bg_image',
-                        'sport_id',
-                        'gender_id',
-                    ])->with(['sport:id,title,title_short,icon', 'gender']);
-                },
-                'club1' => function ($query) {
-                    $query->select([
-                        'clubs.id',
-                        'clubs.title',
-                        'clubs.image',
-                        'clubs.slug',
-                        'clubs.city_id',
-                        'clubs.age_id',
-                        'clubs.gender_id',
-                        'clubs.sport_id',
-                    ])->with([
-                        'sport' => function ($q) {
-                            $q->select('id', 'title_short');
-                        },
-                        'city' => function ($cityQuery) {
-                            $cityQuery->select('id', 'title', 'title_short');
-                        },
-                        'age' => function ($ageQuery) {
-                            $ageQuery->select('id', 'title_short');
-                        },
-                        'gender' => function ($genderQuery) {
-                            $genderQuery->select('id', 'title_short');
-                        }
-                    ]);
-                },
-                'club2' => function ($query) {
-                    $query->select([
-                        'clubs.id',
-                        'clubs.title',
-                        'clubs.image',
-                        'clubs.slug',
-                        'clubs.city_id',
-                        'clubs.age_id',
-                        'clubs.gender_id',
-                        'clubs.sport_id',
-                    ])->with([
-                        'sport' => function ($q) {
-                            $q->select('id', 'title_short');
-                        },
-                        'city' => function ($cityQuery) {
-                            $cityQuery->select('id', 'title', 'title_short');
-                        },
-                        'age' => function ($ageQuery) {
-                            $ageQuery->select('id', 'title_short');
-                        },
-                        'gender' => function ($genderQuery) {
-                            $genderQuery->select('id', 'title_short');
-                        }
-                    ]);
-                },
-                'arena' => function ($query) {
-                    $query->select([
-                        'id',
-                        'title',
-                        'city_id',
-                        'slug',
-                        'image',
-                    ])->with([
-                        'city' => function ($cityQuery) {
-                            $cityQuery->select(['id', 'title']);
-                        }
-                    ]);
-                },
-            ])->find($id);
-
-            if (!$event) {
-                return response()->json(['message' => 'Event not found'], 404);
-            }
-
-            // Формируем club_info для club1
-            $club1Info = null;
-            if ($event->club1) {
-                $club1Info = sprintf('%s (%s) | %s | %s',
-                    $event->club1->title,
-                    $event->club1->city->title_short ?? '',
-                    $event->club1->sport->title_short ?? '',
-                    $event->club1->gender->title_short ?? ''
-                );
-            }
-
-            // Формируем club_info для club2
-            $club2Info = null;
-            if ($event->club2) {
-                $club2Info = sprintf('%s (%s) | %s | %s',
-                    $event->club2->title,
-                    $event->club2->city->title_short ?? '',
-                    $event->club2->sport->title_short ?? '',
-                    $event->club2->gender->title_short ?? ''
-                );
-            }
-
-            // Формируем URL изображений
-            $club1Image = $event->club1 && $event->club1->image
-                ? config('app.url') . '/storage/' . $event->club1->image
-                : null;
-
-            $club2Image = $event->club2 && $event->club2->image
-                ? config('app.url') . '/storage/' . $event->club2->image
-                : null;
-
-            $arenaImage = $event->arena && $event->arena->image
-                ? config('app.url') . '/storage/' . $event->arena->image
-                : null;
-
-            $transformedEvent = [
-                'id' => $event->id,
-                'title' => $event->title,
-                'date_from' => $event->date_from,
-                'date_to' => $event->date_to,
-                'result' => $event->result,
-                'result_dop' => $event->result_dop,
-                'image' => $event->image,
-                'is_active' => $event->is_active,
-                'about' => $event->about,
-                'event_image_path' => config('app.url') . '/storage/' . $event->image,
-                'competition_id' => $event->competition_id,
-                'arena_id' => $event->arena_id,
-                'club1_id' => $event->club1_id,
-                'club2_id' => $event->club2_id,
-                'event_name' => $event->event_name,
-                'sport_icon' => $event->competition->sport->icon,
-                'gender_icon' => $event->competition->gender->icon,
-                'date_formatted' => \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.'),
-                'time' => \Carbon\Carbon::parse($event->date_from)->format('H:i'),
-                'competition' => $event->competition,
-                'club1' => $event->club1 ? array_merge($event->club1->toArray(), [
-                    'club_info' => $club1Info,
-                    'image' => $club1Image
-                ]) : null,
-                'club2' => $event->club2 ? array_merge($event->club2->toArray(), [
-                    'club_info' => $club2Info,
-                    'image' => $club2Image
-                ]) : null,
-                'arena' => $event->arena ? array_merge($event->arena->toArray(), [
-                    'image' => $arenaImage
-                ]) : null,
-            ];
-
-            return response()->json($transformedEvent);
-        }
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -291,149 +137,149 @@ class EventController extends Controller
                 },
             ]);
 
-        // Если указан ID, применяем только этот фильтр
-        if ($id) {
-            $query->where('id', $id);
-        } else {
-            // Применяем фильтр по date_from и date_to
-            if ($dateFrom && $dateTo) {
-                $query->whereDate('date_from', '>=', $dateFrom)
-                    ->whereDate('date_from', '<=', $dateTo);
-            } elseif ($dateFrom) {
-                $query->whereDate('date_from', '=', $dateFrom);
-                $show_concrete_date = true;
-            } elseif ($dateTo) {
-                $query->whereDate('date_from', '<=', $dateTo);
-            }
+        // Применяем фильтр по ID
+        if ($request->has('id')) {
+            $query->where('id', $request->input('id'));
+        }
 
-            if ($with_team) {
-                switch ($with_team) {
-                    case 1:
-                        $query->where(function ($q) {
-                            $q->whereNotNull('club1_id')
-                                ->whereNotNull('club2_id');
-                        });
-                        break;
-                    case 2:
-                        $query->where(function ($q) {
-                            $q->whereNull('club1_id')
-                                ->orWhereNull('club2_id');
-                        });
-                        break;
-                    default:
-                        break;
-                }
-            }
+        // Применяем фильтр по date_from и date_to
+        if ($dateFrom && $dateTo) {
+            $query->whereDate('date_from', '>=', $dateFrom)
+                ->whereDate('date_from', '<=', $dateTo);
+        } elseif ($dateFrom) {
+            $query->whereDate('date_from', '=', $dateFrom);
+            $show_concrete_date = true;
+        } elseif ($dateTo) {
+            $query->whereDate('date_from', '<=', $dateTo);
+        }
 
-            if ((!$show_concrete_date) && ($show)) {
-                $today = now()->toDateString();
-                switch ($show) {
-                    case 1:
-                        $query->whereDate('date_from', '>=', $today);
-                        break;
-                    case 2:
-                        $query->where(function ($q) use ($today) {
-                            $q->whereDate('date_from', '<=', $today);
-                        });
-                        $sort = "date_from_desc";
-                        break;
-                    case 3:
-                        $query->whereDate('date_from', '=', $today);
-                        break;
-                    case 4:
-                        break;
-                    default:
-                        $query->whereDate('date_from', '>=', $today);
-                        break;
-                }
-            }
-
-            // Применяем фильтры по sport, club, arena
-            if ($sportSlug) {
-                $query->whereHas('competition.sport', function ($q) use ($sportSlug) {
-                    $q->where('slug', $sportSlug);
-                });
-            }
-            if ($sportId) {
-                $query->whereHas('competition.sport', function ($q) use ($sportId) {
-                    $q->where('id', $sportId);
-                });
-            }
-
-            if ($clubSlug) {
-                $query->where(function ($q) use ($clubSlug) {
-                    $q->whereHas('club1', function ($clubQuery) use ($clubSlug) {
-                        $clubQuery->where('slug', $clubSlug);
-                    })->orWhereHas('club2', function ($clubQuery) use ($clubSlug) {
-                        $clubQuery->where('slug', $clubSlug);
+        if ($with_team) {
+            switch ($with_team) {
+                case 1:
+                    $query->where(function ($q) {
+                        $q->whereNotNull('club1_id')
+                            ->whereNotNull('club2_id');
                     });
-                });
-            }
-            if ($clubId) {
-                $query->where(function ($q) use ($clubId) {
-                    $q->whereHas('club1', function ($clubQuery) use ($clubId) {
-                        $clubQuery->where('id', $clubId);
-                    })->orWhereHas('club2', function ($clubQuery) use ($clubId) {
-                        $clubQuery->where('id', $clubId);
+                    break;
+                case 2:
+                    $query->where(function ($q) {
+                        $q->whereNull('club1_id')
+                            ->orWhereNull('club2_id');
                     });
-                });
+                    break;
+                default:
+                    break;
             }
+        }
 
-            if ($arenaSlug) {
-                $query->whereHas('arena', function ($q) use ($arenaSlug) {
-                    $q->where('slug', $arenaSlug);
-                });
+        if ((!$show_concrete_date) && ($show)) {
+            $today = now()->toDateString();
+            switch ($show) {
+                case 1:
+                    $query->whereDate('date_from', '>=', $today);
+                    break;
+                case 2:
+                    $query->where(function ($q) use ($today) {
+                        $q->whereDate('date_from', '<=', $today);
+                    });
+                    $sort = "date_from_desc";
+                    break;
+                case 3:
+                    $query->whereDate('date_from', '=', $today);
+                    break;
+                case 4:
+                    break;
+                default:
+                    $query->whereDate('date_from', '>=', $today);
+                    break;
             }
-            if ($arenaId) {
-                $query->where('arena_id', $arenaId);
-            }
+        }
 
-            if ($competitionId) {
-                $query->where('competition_id', $competitionId);
-            }
-            if ($genderId) {
-                $query->whereHas('competition', function ($q) use ($genderId) {
-                    $q->where('gender_id', $genderId);
-                });
-            }
+        // Применяем фильтры по sport, club, arena
+        if ($sportSlug) {
+            $query->whereHas('competition.sport', function ($q) use ($sportSlug) {
+                $q->where('slug', $sportSlug);
+            });
+        }
+        if ($sportId) {
+            $query->whereHas('competition.sport', function ($q) use ($sportId) {
+                $q->where('id', $sportId);
+            });
+        }
 
-            if ($empty_result) {
-                $query->where(function ($q) {
-                    $q->where('result', '=', '')
-                        ->orWhereNull('result');
+        if ($clubSlug) {
+            $query->where(function ($q) use ($clubSlug) {
+                $q->whereHas('club1', function ($clubQuery) use ($clubSlug) {
+                    $clubQuery->where('slug', $clubSlug);
+                })->orWhereHas('club2', function ($clubQuery) use ($clubSlug) {
+                    $clubQuery->where('slug', $clubSlug);
                 });
-            }
-
-            if ($empty_time) {
-                $query->whereTime('date_from', '=', '00:00:00');
-            }
-
-            // Применяем поиск по параметру q
-            if ($searchQuery) {
-                $query->where(function ($q) use ($searchQuery) {
-                    $q->where('title', 'LIKE', "%{$searchQuery}%")
-                        ->orWhere('date_from', 'LIKE', "%{$searchQuery}%")
-                        ->orWhereHas('competition', function ($clubQuery) use ($searchQuery) {
-                            $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                ->orWhere('title_short', 'LIKE', "%{$searchQuery}%");
-                        })
-                        ->orWhereHas('club1', function ($clubQuery) use ($searchQuery) {
-                            $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
-                                    $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                                });
-                        })
-                        ->orWhereHas('club2', function ($clubQuery) use ($searchQuery) {
-                            $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
-                                    $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                                });
-                        })
-                        ->orWhereHas('arena', function ($clubQuery) use ($searchQuery) {
-                            $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                        });
+            });
+        }
+        if ($clubId) {
+            $query->where(function ($q) use ($clubId) {
+                $q->whereHas('club1', function ($clubQuery) use ($clubId) {
+                    $clubQuery->where('id', $clubId);
+                })->orWhereHas('club2', function ($clubQuery) use ($clubId) {
+                    $clubQuery->where('id', $clubId);
                 });
-            }
+            });
+        }
+
+        if ($arenaSlug) {
+            $query->whereHas('arena', function ($q) use ($arenaSlug) {
+                $q->where('slug', $arenaSlug);
+            });
+        }
+        if ($arenaId) {
+            $query->where('arena_id', $arenaId);
+        }
+
+        if ($competitionId) {
+            $query->where('competition_id', $competitionId);
+        }
+        if ($genderId) {
+            $query->whereHas('competition', function ($q) use ($genderId) {
+                $q->where('gender_id', $genderId);
+            });
+        }
+
+        if ($empty_result) {
+            $query->where(function ($q) {
+                $q->where('result', '=', '')
+                    ->orWhereNull('result');
+            });
+        }
+
+        if ($empty_time) {
+            $query->whereTime('date_from', '=', '00:00:00');
+        }
+
+        // Применяем поиск по параметру q
+        if ($searchQuery) {
+            $query->where(function ($q) use ($searchQuery) {
+                $q->where('title', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('date_from', 'LIKE', "%{$searchQuery}%")
+                    ->orWhereHas('competition', function ($clubQuery) use ($searchQuery) {
+                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                            ->orWhere('title_short', 'LIKE', "%{$searchQuery}%");
+                    })
+                    ->orWhereHas('club1', function ($clubQuery) use ($searchQuery) {
+                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                            ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
+                                $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                            });
+                    })
+                    ->orWhereHas('club2', function ($clubQuery) use ($searchQuery) {
+                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                            ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
+                                $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                            });
+                    })
+                    ->orWhereHas('arena', function ($clubQuery) use ($searchQuery) {
+                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                    });
+            });
         }
 
         $sortDirection = strtolower($sortDirection);
