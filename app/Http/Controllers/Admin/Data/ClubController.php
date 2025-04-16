@@ -10,6 +10,8 @@ use App\Models\Gender;
 use App\Models\Sport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\ValidationException;
 
 class ClubController extends Controller
@@ -241,6 +243,121 @@ class ClubController extends Controller
 
         } catch (\Exception $e) {
             return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }
+
+    public function uploadImage(Request $request, $id, $folder = 'clubs')
+    {
+        try {
+            $model = Club::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            $validator = Validator::make($request->all(), [
+                'image' => [
+                    'required',
+                    'image',
+                    'mimes:jpeg,png,jpg,gif,webp',
+                    'max:2048' // 10MB
+                ],
+                'field' => 'sometimes|string'
+            ], [
+                'image.required' => 'Файл изображения обязателен',
+                'image.image' => 'Файл должен быть изображением',
+                'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
+                'image.max' => 'Максимальный размер файла 2MB'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Обработка изображения
+            $path = $request->file('image')->store($folder, 'public');
+
+            // Удаляем старое изображение
+            if ($model->{$field}) {
+                Storage::disk('public')->delete($model->{$field});
+            }
+
+            $model->{$field} = $path;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'image_path' => $path,
+                'full_path' => Storage::disk('public')->url($path),
+                'message' => 'Изображение успешно загружено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка сервера: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteImage(Request $request, $id)
+    {
+        try {
+            $model = Event::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Нет изображения для удаления'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Изображение успешно удалено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroyImage($id, $field = 'image')
+    {
+        try {
+            $model = Event::findOrFail($id);
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No image to delete'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting image',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 }
