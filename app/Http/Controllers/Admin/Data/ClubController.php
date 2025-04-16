@@ -96,19 +96,23 @@ class ClubController extends Controller
                 return $query->limit($limit)->get()->toArray();
             }
 
-            // Стандартный вывод с пагинацией (как в предыдущей версии)
+            // Стандартный вывод с пагинацией
             $clubs = $query->paginate($perPage);
 
             return [
+                'current_page' => $clubs->currentPage(),
                 'data' => $clubs->items(),
-                'pagination' => [
-                    'total' => $clubs->total(),
-                    'per_page' => $clubs->perPage(),
-                    'current_page' => $clubs->currentPage(),
-                    'last_page' => $clubs->lastPage(),
-                    'from' => $clubs->firstItem(),
-                    'to' => $clubs->lastItem(),
-                ]
+                'first_page_url' => $clubs->url(1),
+                'from' => $clubs->firstItem(),
+                'last_page' => $clubs->lastPage(),
+                'last_page_url' => $clubs->url($clubs->lastPage()),
+                'links' => $clubs->links(),
+                'next_page_url' => $clubs->nextPageUrl(),
+                'path' => $clubs->path(),
+                'per_page' => $clubs->perPage(),
+                'prev_page_url' => $clubs->previousPageUrl(),
+                'to' => $clubs->lastItem(),
+                'total' => $clubs->total(),
             ];
 
         } catch (\Exception $e) {
