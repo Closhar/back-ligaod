@@ -24,7 +24,7 @@ class StreamController extends Controller
                 $dateInput = $request->input('data');
                 try {
                     $date = Carbon::parse($dateInput);
-                    $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
+                    $request->merge(['data' => $date->format('Y-m-d H:i:s')]);
                 } catch (\Exception $e) {
                     return response()->json([
                         'message' => 'Некорректный формат даты. Используйте ISO 8601 или YYYY-MM-DD HH:ii:ss'
