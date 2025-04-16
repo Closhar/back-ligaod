@@ -19,6 +19,19 @@ class StreamController extends Controller
     public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
+            // Преобразование даты из формата ISO 8601 в нужный формат
+            if ($request->has('date')) {
+                $dateInput = $request->input('date');
+                try {
+                    $date = Carbon::parse($dateInput);
+                    $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
+                } catch (\Exception $e) {
+                    return response()->json([
+                        'message' => 'Некорректный формат даты. Используйте ISO 8601 или YYYY-MM-DD HH:ii:ss'
+                    ], 422);
+                }
+            }
+
             $validated = $request->validate([
                 'date' => 'required|date_format:Y-m-d H:i:s',
                 'title' => 'required|string|max:255',
