@@ -17,6 +17,8 @@ class Event extends Model
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
     protected $appends = ['sport_icon', 'gender_icon', 'event_name', 'event_name_top', 'event_image_path', 'date_formatted', 'time_formatted', 'date_to_formatted', 'time_to_formatted'];
 
+    // This enables automatic counting when loading Events
+    protected $withCount = ['streams'];
     protected $dates = ['date_from'];
 
     public function competition(): BelongsTo

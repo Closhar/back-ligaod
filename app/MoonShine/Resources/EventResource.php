@@ -27,6 +27,7 @@ use MoonShine\UI\Fields\ID;
 use MoonShine\Contracts\UI\FieldContract;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\UI\Fields\Text;
+use MoonShine\UI\Fields\HasMany;
 
 /**
  * @extends ModelResource<Event>
@@ -100,6 +101,13 @@ class EventResource extends ModelResource implements HasImportExportContract
             Text::make(__('admin.field.title'), 'title')
                 ->sortable()
                 ->updateOnPreview(),
+            HasMany::make('Стримы', 'streams')
+                ->hideOnForm()
+                ->badge('blue', function($item) {
+                    return $item->streams_count ?? 0;
+                })
+                ->fullWidth()
+                ->icon('heroicons.video-camera'),
         ];
     }
 

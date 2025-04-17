@@ -139,7 +139,7 @@ Route::apiResource('cities', CityController::class);
 Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
 Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
 
-Route::apiResource('streams', StreamController::class)->only(['update', 'destroy']);
+Route::apiResource('streams', StreamController::class)->only(['index', 'update', 'destroy']);
 
 Route::apiResource('clubs', ClubController::class);
 Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
