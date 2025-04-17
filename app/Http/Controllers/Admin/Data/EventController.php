@@ -47,6 +47,7 @@ class EventController extends Controller
         $sortDirection = $request->input('sort_direction', 'asc'); // Направление сортировки
         // Сортировка
 
+        $type = $request->query('type');
 
 
         $sportSlugItem = $request->input('sport_item');
@@ -63,6 +64,7 @@ class EventController extends Controller
                 'club1_id', 'club2_id', 'event_name', "is_active", 'about',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path')
             )
+            ->withCount('streams')
             ->with([
                 'competition' => function ($query) {
                     $query->select([
@@ -284,6 +286,8 @@ class EventController extends Controller
                 });
             }
         }
+
+        if ($type) return $query->limit($limit)->get()->toArray();
 
         $sortDirection = strtolower($sortDirection);
         if (!in_array($sortDirection, ['asc', 'desc'])) {
