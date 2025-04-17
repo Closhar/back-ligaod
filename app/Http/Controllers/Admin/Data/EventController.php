@@ -48,6 +48,7 @@ class EventController extends Controller
         // Сортировка
 
         $type = $request->query('type');
+        $limit = $request->query('limit', $perPage);
 
 
         $sportSlugItem = $request->input('sport_item');
