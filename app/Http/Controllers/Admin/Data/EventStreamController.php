@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
@@ -40,41 +40,5 @@ class EventStreamController extends Controller
         $stream = $event->streams()->create($validator->validated());
 
         return response()->json($stream, 201);
-    }
-}
-
-/**
- * Контроллер для управления отдельным стримом
- */
-class StreamController extends Controller
-{
-    /**
-     * Обновить существующий стрим
-     */
-    public function update(Request $request, Stream $stream)
-    {
-        $validator = Validator::make($request->all(), [
-            'date' => 'sometimes|required|date',
-            'title' => 'sometimes|required|string|max:255',
-            'link' => 'nullable|url|max:500'
-        ]);
-
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
-
-        $stream->update($validator->validated());
-
-        return response()->json($stream);
-    }
-
-    /**
-     * Удалить стрим
-     */
-    public function destroy(Stream $stream)
-    {
-        $stream->delete();
-
-        return response()->json(null, 204);
     }
 }

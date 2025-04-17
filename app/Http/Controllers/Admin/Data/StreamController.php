@@ -7,7 +7,11 @@ use App\Models\Stream;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\Validator;
 
+/**
+ * Контроллер для управления отдельным стримом
+ */
 class StreamController extends Controller
 {
     public function index(Request $request)
@@ -68,95 +72,33 @@ class StreamController extends Controller
         }
     }
 
-    public function update(Request $request, $id)
+    /**
+     * Обновить существующий стрим
+     */
+    public function update(Request $request, Stream $stream)
     {
-        try {
-            $stream = Stream::findOrFail($id);
+        $validator = Validator::make($request->all(), [
+            'date' => 'sometimes|required|date',
+            'title' => 'sometimes|required|string|max:255',
+            'link' => 'nullable|url|max:500'
+        ]);
 
-            $existingDateTime = $stream->data
-            ? Carbon::parse($stream->data)
-            : null;
-
-            // Преобразование даты из формата ISO 8601 в нужный формат
-            if ($request->has('date')) {
-                $dateInput = $request->input('date');
-                try {
-                    $date = Carbon::parse($dateInput);
-                    $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
-                } catch (\Exception $e) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Некорректный формат даты. Используйте ISO 8601 или YYYY-MM-DD HH:ii:ss'
-                    ], 422);
-                }
-            } else {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Поле дата обязательно.'
-                ], 422);
-            }
-
-            $validated = $request->validate([
-                'date' => 'date_format:Y-m-d H:i:s',
-                'title' => 'string|max:255',
-                'link' => 'url',
-            ]);
-
-            // Обработка даты (прежняя логика)
-            if (isset($validated['data'])) {
-                $input = trim($validated['data']);
-
-                if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $input)) {
-                    if ($existingDateTime) {
-                        $validated['data'] = $input . ' ' . $existingDateTime->format('H:i:s');
-                    } else {
-                        $validated['data'] = $input . ' 00:00:00';
-                    }
-                } elseif (preg_match('/^(\d{2}):(\d{2})$/', $input)) {
-                    if ($existingDateTime) {
-                        $validated['data'] = $existingDateTime->format('Y-m-d') . ' ' . $input . ':00';
-                    } else {
-                        $validated['data'] = now()->format('Y-m-d') . ' ' . $input . ':00';
-                    }
-                } else {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Некорректный формат. Используйте либо YYYY-MM-DD (дата), либо HH:ii (время)'
-                    ], 422);
-                }
-            }
-
-            $stream->update($validated);
-
-            return response()->json([
-                'success' => true,
-                'data' => $stream,
-                'message' => 'Updated successfully'
-            ]);
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
-            ], 500);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
+
+        $stream->update($validator->validated());
+
+        return response()->json($stream);
     }
 
-    public function destroy($id)
+    /**
+     * Удалить стрим
+     */
+    public function destroy(Stream $stream)
     {
-        try {
-            $stream = Stream::findOrFail($id);
-            $stream->delete();
+        $stream->delete();
 
-            return response()->json(null, 204);
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Internal Server Error'], 500);
-        }
+        return response()->json(null, 204);
     }
 }

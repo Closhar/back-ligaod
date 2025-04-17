@@ -136,7 +136,9 @@ Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage'])
 Route::apiResource('competitions', CompetitionController::class);
 Route::apiResource('cities', CityController::class);
 
-Route::apiResource('events.streams', EventStreamController::class)->except(['show']);
+Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
+Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
+
 Route::apiResource('streams', StreamController::class)->only(['update', 'destroy']);
 
 Route::apiResource('clubs', ClubController::class);
