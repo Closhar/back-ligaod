@@ -8,8 +8,8 @@ class Stream extends Model
 {
     protected $guarded = [];
 
-    public function events()
+    public function event()
     {
-        return $this->belongsTo(Event::class);
+        return $this->belongsTo(Event::class)->with(['club1.city', 'club2.city', 'competition.sport', 'competition.gender']);
     }
 }
