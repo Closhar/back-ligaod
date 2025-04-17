@@ -138,6 +138,7 @@ Route::apiResource('cities', CityController::class);
 
 Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
 Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
+Route::post('relations/detach', [EventStreamController::class, 'detach']);
 
 Route::apiResource('streams', StreamController::class);
 
