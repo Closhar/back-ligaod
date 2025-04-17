@@ -5,6 +5,7 @@ use App\Http\Controllers\Admin\Data\ClubController;
 use App\Http\Controllers\Admin\Data\CompetitionController;
 use App\Http\Controllers\Admin\Data\CityController;
 use App\Http\Controllers\Admin\Data\EventController;
+use App\Http\Controllers\Admin\Data\EventStreamController;
 use App\Http\Controllers\Admin\Data\SportController;
 use App\Http\Controllers\Admin\Data\StreamController;
 use App\Http\Controllers\Api\ApiAgeController;
@@ -134,7 +135,9 @@ Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage'])
 
 Route::apiResource('competitions', CompetitionController::class);
 Route::apiResource('cities', CityController::class);
-Route::apiResource('streams', StreamController::class);
+
+Route::apiResource('events.streams', EventStreamController::class)->except(['show']);
+Route::apiResource('streams', StreamController::class)->only(['update', 'destroy']);
 
 Route::apiResource('clubs', ClubController::class);
 Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
