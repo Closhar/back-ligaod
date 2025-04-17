@@ -1,50 +1,76 @@
 <?php
 
-namespace App\Http\Controllers\Admin\Data;
+namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Stream;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
-// app/Http/Controllers/EventStreamController.php
 class EventStreamController extends Controller
 {
-    // Get all streams for an event
-    public function index(Event $event)
+    /**
+     * Получить список всех стримов для конкретного события
+     */
+    public function index(Request $request, Event $event)
     {
-        return response()->json($event->streams);
+        $streams = $event->streams()
+            ->orderBy('date', 'desc')
+            ->get();
+
+        return response()->json($streams);
     }
 
-    // Create a new stream for an event
+    /**
+     * Создать новый стрим для конкретного события
+     */
     public function store(Request $request, Event $event)
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'date' => 'required|date',
             'title' => 'required|string|max:255',
-            'link' => 'nullable|url'
+            'link' => 'nullable|url|max:500'
         ]);
 
-        $stream = $event->streams()->create($validated);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $stream = $event->streams()->create($validator->validated());
 
         return response()->json($stream, 201);
     }
+}
 
-    // Update a stream
+/**
+ * Контроллер для управления отдельным стримом
+ */
+class StreamController extends Controller
+{
+    /**
+     * Обновить существующий стрим
+     */
     public function update(Request $request, Stream $stream)
     {
-        $validated = $request->validate([
-            'date' => 'required|date',
-            'title' => 'required|string|max:255',
-            'link' => 'nullable|url'
+        $validator = Validator::make($request->all(), [
+            'date' => 'sometimes|required|date',
+            'title' => 'sometimes|required|string|max:255',
+            'link' => 'nullable|url|max:500'
         ]);
 
-        $stream->update($validated);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $stream->update($validator->validated());
 
         return response()->json($stream);
     }
 
-    // Delete a stream
+    /**
+     * Удалить стрим
+     */
     public function destroy(Stream $stream)
     {
         $stream->delete();
