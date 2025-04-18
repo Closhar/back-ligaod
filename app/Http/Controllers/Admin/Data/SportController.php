@@ -26,6 +26,7 @@ class SportController extends Controller
         $searchQuery = $request->query('q'); // Параметр поиска
         $perPage = $request->query('per_page', 15); // Количество элементов на странице
         $searchId = $request->query('id'); // Параметр поиска по ID
+        $fieldParam = $request->query('field'); // Параметр для фильтрации по конкретному полю
 
         $query = Sport::query()
             ->select(
@@ -52,9 +53,15 @@ class SportController extends Controller
             $query->where('id', $searchId);
         }
 
-        // Применяем поиск по параметру q
+        // Применяем поиск по параметру q и field
         if ($searchQuery) {
-            $query->where('title', 'LIKE', "%{$searchQuery}%");
+            if ($fieldParam) {
+                // Если указано конкретное поле, ищем по нему
+                $query->where($fieldParam, 'LIKE', "%{$searchQuery}%");
+            } else {
+                // Если поле не указано, ищем по title (существующая логика)
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
+            }
         }
 
         // Получаем пагинированные результаты
