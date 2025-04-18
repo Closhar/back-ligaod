@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\Data\EventController;
 use App\Http\Controllers\Admin\Data\EventStreamController;
 use App\Http\Controllers\Admin\Data\SportController;
 use App\Http\Controllers\Admin\Data\StreamController;
+use App\Http\Controllers\Admin\Data\SportPropertyController;
 use App\Http\Controllers\Api\ApiAgeController;
 use App\Http\Controllers\Api\ApiArenaController;
 use App\Http\Controllers\Api\ApiArticleController;
@@ -28,7 +29,6 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use app\Http\Controllers\Admin\Data\SportPropertyController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
