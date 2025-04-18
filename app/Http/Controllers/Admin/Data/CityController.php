@@ -19,6 +19,7 @@ class CityController extends Controller
             $searchQuery = $request->input('q');
             $limit = $request->input('limit', $perPage);
             $cityId = $request->input('id');
+            $field = $request->input('field');
 
             $query = City::query();
 
@@ -28,6 +29,10 @@ class CityController extends Controller
 
             if ($cityId) {
                 $query->where('id', $cityId);
+            }
+
+            if ($field) {
+                return $this->getFieldStatistics($query, $field);
             }
 
             if ($request->has('type') && $request->input('type') === 'async') {
@@ -52,6 +57,33 @@ class CityController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Get statistics for a specific field.
+     */
+    private function getFieldStatistics($query, $field)
+    {
+        if (!in_array($field, ['title', 'title_short'])) {
+            return response()->json([
+                'error' => 'Invalid field',
+                'message' => "Field '{$field}' is not allowed for statistics"
+            ], 400);
+        }
+
+        $result = $query->select($field, 'id')
+            ->selectRaw('COUNT(*) as count')
+            ->groupBy($field, 'id')
+            ->get()
+            ->map(function($item) use ($field) {
+                return [
+                    'id' => $item->id,
+                    $field => $item->{$field},
+                    'count' => $item->count
+                ];
+            });
+
+        return $result;
     }
 
     /**
