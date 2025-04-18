@@ -38,6 +38,7 @@ class EventController extends Controller
         $with_team = $request->input('with_team');
         $empty_result = $request->input('empty_result', false);
         $empty_time = $request->input('empty_time', false);
+        $isActive = $request->input('is_active');
         $searchQuery = $request->input('q');
         $show_concrete_date = false;
         $id = $request->input('id');
@@ -260,6 +261,11 @@ class EventController extends Controller
                 $query->whereTime('date_from', '=', '00:00:00');
             }
 
+            // Применяем фильтр по is_active
+            if ($isActive !== null) {
+                $query->where('is_active', (bool)$isActive);
+            }
+
             // Применяем поиск по параметру q
             if ($searchQuery) {
                 $query->where(function ($q) use ($searchQuery) {
@@ -273,16 +279,8 @@ class EventController extends Controller
                             // Проверяем, существуют ли события с этой датой
                             $eventsCount = Event::whereRaw('DATE(date_from) = ?', [$date])->count();
 
-                            // Логируем для отладки
-                            Log::info('Поиск по дате', [
-                                'исходная дата' => $searchQuery,
-                                'преобразованная дата' => $date,
-                                'существующие события' => $eventsCount
-                            ]);
-
                             // Если нет событий на эту дату и тип запроса async, создаем тестовое событие
                             if ($eventsCount == 0 && isset($request) && $request->input('type') == 'async') {
-                                Log::info('Создаем тестовое событие для даты', ['дата' => $date]);
 
                                 // Получаем первые ID для создания тестового события
                                 $firstCompetition = DB::table('competitions')->first();
@@ -300,18 +298,12 @@ class EventController extends Controller
                                     }
                                     $testEvent->is_active = true;
                                     $testEvent->save();
-
-                                    Log::info('Создано тестовое событие', ['id' => $testEvent->id]);
                                 }
                             }
 
                             // Используем whereRaw для более точного совпадения с датой
                             $q->whereRaw('DATE(date_from) = ?', [$date]);
                         } catch (\Exception $e) {
-                            Log::error('Ошибка преобразования даты', [
-                                'дата' => $searchQuery,
-                                'ошибка' => $e->getMessage()
-                            ]);
                             // Если дата некорректная, пытаемся искать как текст
                             $q->where('title', 'LIKE', "%{$searchQuery}%");
                         }
@@ -345,12 +337,6 @@ class EventController extends Controller
         if ($type) {
             // Добавляем дебаг-информацию для отладки API
             if ($searchQuery && preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $searchQuery)) {
-                Log::info('API запрос с датой', [
-                    'query' => $searchQuery,
-                    'sql' => $query->toSql(),
-                    'bindings' => $query->getBindings(),
-                    'count' => $query->count()
-                ]);
             }
             return $query->limit($limit)->get()->toArray();
         }
