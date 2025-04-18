@@ -263,7 +263,12 @@ class EventController extends Controller
 
             // Применяем фильтр по is_active
             if ($isActive !== null) {
-                $query->where('is_active', (bool)$isActive);
+                // Конвертируем строковые значения 'true' и 'false' в соответствующие булевы значения
+                if ($isActive === 'true' || $isActive === '1') {
+                    $query->where('is_active', 1);
+                } elseif ($isActive === 'false' || $isActive === '0') {
+                    $query->where('is_active', 0);
+                }
             }
 
             // Применяем поиск по параметру q
