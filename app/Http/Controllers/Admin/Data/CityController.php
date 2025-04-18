@@ -71,7 +71,7 @@ class CityController extends Controller
             ], 400);
         }
 
-        if ($searchQuery && $field !== 'title') {
+        if ($searchQuery) {
             $query->where('title', 'LIKE', "%{$searchQuery}%");
         }
 
