@@ -159,14 +159,20 @@ class ClubController extends Controller
 
             // Обработка поля city_title, если оно присутствует
             if ($request->has('city_title')) {
+                // Корректно получаем UTF-8 строку
+                $cityTitle = trim($request->city_title);
+
                 // Ищем город по названию
-                $city = \Illuminate\Support\Facades\DB::table('cities')->where('title', $request->city_title)->first();
+                $city = \Illuminate\Support\Facades\DB::table('cities')->where('title', $cityTitle)->first();
 
                 if (!$city) {
                     // Если город не найден, создаем новый
+                    // Получаем первые три символа названия города в корректной кодировке
+                    $titleShort = mb_substr($cityTitle, 0, 3, 'UTF-8');
+
                     $cityId = \Illuminate\Support\Facades\DB::table('cities')->insertGetId([
-                        'title' => $request->city_title,
-                        'title_short' => substr($request->city_title, 0, 3),
+                        'title' => $cityTitle,
+                        'title_short' => $titleShort,
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);
