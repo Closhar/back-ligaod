@@ -146,8 +146,7 @@ class ClubController extends Controller
                 'xs' => 'nullable|array',
                 'map' => 'nullable|string',
                 'slug' => 'nullable|string|max:255|unique:clubs,slug',
-                'city_id' => 'required_without:city_title|exists:cities,id',
-                'city_title' => 'required_without:city_id|string|max:255',
+                'city_id' => 'required|exists:cities,id',
                 'gallery_id' => 'nullable|exists:galleries,id',
                 'sport_id' => 'required|exists:sports,id',
                 'gender_id' => 'required|exists:genders,id',
@@ -156,35 +155,6 @@ class ClubController extends Controller
                 'image' => 'nullable|string|max:255',
                 'image_bg' => 'nullable|string|max:255'
             ]);
-
-            // Обработка поля city_title, если оно присутствует
-            if ($request->has('city_title')) {
-                // Корректно получаем UTF-8 строку
-                $cityTitle = trim($request->city_title);
-
-                // Ищем город по названию
-                $city = \Illuminate\Support\Facades\DB::table('cities')->where('title', $cityTitle)->first();
-
-                if (!$city) {
-                    // Если город не найден, создаем новый
-                    // Получаем первые три символа названия города в корректной кодировке
-                    $titleShort = mb_substr($cityTitle, 0, 3, 'UTF-8');
-
-                    $cityId = \Illuminate\Support\Facades\DB::table('cities')->insertGetId([
-                        'title' => $cityTitle,
-                        'title_short' => $titleShort,
-                        'created_at' => now(),
-                        'updated_at' => now()
-                    ]);
-                    $validated['city_id'] = $cityId;
-                } else {
-                    // Если город найден, используем его id
-                    $validated['city_id'] = $city->id;
-                }
-
-                // Удаляем поле city_title из данных перед созданием записи
-                unset($validated['city_title']);
-            }
 
             $item = Club::create($validated);
 
@@ -196,11 +166,7 @@ class ClubController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Internal Server Error',
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ], 500);
+            return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
 

@@ -23,6 +23,9 @@ class StreamController extends Controller
             $query->where('id', $request->input('id'));
         }
 
+        // Загрузка связи с событием
+        $query->with('event');
+
         // Retrieve streams with filtering and pagination
         return $query->paginate($request->input('per_page', 10));
     }
