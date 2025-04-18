@@ -160,17 +160,17 @@ class ClubController extends Controller
             // Обработка поля city_title, если оно присутствует
             if ($request->has('city_title')) {
                 // Ищем город по названию
-                $city = DB::table('cities')->where('title', $request->city_title)->first();
+                $city = \Illuminate\Support\Facades\DB::table('cities')->where('title', $request->city_title)->first();
 
                 if (!$city) {
                     // Если город не найден, создаем новый
-                    $city = DB::table('cities')->insertGetId([
+                    $cityId = \Illuminate\Support\Facades\DB::table('cities')->insertGetId([
                         'title' => $request->city_title,
                         'title_short' => substr($request->city_title, 0, 3),
                         'created_at' => now(),
                         'updated_at' => now()
                     ]);
-                    $validated['city_id'] = $city;
+                    $validated['city_id'] = $cityId;
                 } else {
                     // Если город найден, используем его id
                     $validated['city_id'] = $city->id;
@@ -187,7 +187,11 @@ class ClubController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Internal Server Error'], 500);
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
         }
     }
 
