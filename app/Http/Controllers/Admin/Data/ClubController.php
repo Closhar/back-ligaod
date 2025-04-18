@@ -146,7 +146,8 @@ class ClubController extends Controller
                 'xs' => 'nullable|array',
                 'map' => 'nullable|string',
                 'slug' => 'nullable|string|max:255|unique:clubs,slug',
-                'city_id' => 'required|exists:cities,id',
+                'city_id' => 'required_without:city_title|exists:cities,id',
+                'city_title' => 'required_without:city_id|string|max:255',
                 'gallery_id' => 'nullable|exists:galleries,id',
                 'sport_id' => 'required|exists:sports,id',
                 'gender_id' => 'required|exists:genders,id',
@@ -155,6 +156,26 @@ class ClubController extends Controller
                 'image' => 'nullable|string|max:255',
                 'image_bg' => 'nullable|string|max:255'
             ]);
+
+            // Обработка поля city_title, если оно присутствует
+            if ($request->has('city_title')) {
+                // Ищем город по названию
+                $city = DB::table('cities')->where('title', $request->city_title)->first();
+
+                if (!$city) {
+                    // Если город не найден, создаем новый
+                    $city = DB::table('cities')->insertGetId([
+                        'title' => $request->city_title,
+                        'title_short' => substr($request->city_title, 0, 3),
+                        'created_at' => now(),
+                        'updated_at' => now()
+                    ]);
+                    $validated['city_id'] = $city;
+                } else {
+                    // Если город найден, используем его id
+                    $validated['city_id'] = $city->id;
+                }
+            }
 
             $item = Club::create($validated);
 

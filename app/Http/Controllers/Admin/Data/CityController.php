@@ -23,16 +23,16 @@ class CityController extends Controller
 
             $query = City::query();
 
-            if ($searchQuery) {
-                $query->where('title', 'LIKE', "%{$searchQuery}%");
-            }
-
             if ($cityId) {
                 $query->where('id', $cityId);
             }
 
             if ($field) {
                 return $this->getFieldStatistics($query, $field, $searchQuery);
+            }
+
+            if ($searchQuery) {
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
             }
 
             if ($request->has('type') && $request->input('type') === 'async') {
@@ -72,7 +72,11 @@ class CityController extends Controller
         }
 
         if ($searchQuery) {
-            $query->where('title', 'LIKE', "%{$searchQuery}%");
+            if ($field === 'title') {
+                $query->where($field, 'LIKE', "%{$searchQuery}%");
+            } else {
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
+            }
         }
 
         $result = $query->select($field, 'id')
