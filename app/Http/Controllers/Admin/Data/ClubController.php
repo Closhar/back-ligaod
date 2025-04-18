@@ -119,9 +119,11 @@ class ClubController extends Controller
             }
             // ... остальные фильтры
 
-            // Если запрошен простой вывод
-            if ($type) {
-                return $query->limit($limit)->get()->toArray();
+            // Если запрошен простой вывод или указан лимит, но не запрошена пагинация
+            if ($type || ($request->has('limit') && !$request->has('page'))) {
+                // Используем указанный лимит или значение по умолчанию
+                $resultLimit = $request->input('limit', 10);
+                return $query->limit($resultLimit)->get()->toArray();
             }
 
             // Получаем SQL запрос для отладки
@@ -158,7 +160,8 @@ class ClubController extends Controller
                     'requested_field' => $request->input('field'),
                     'requested_q' => $request->input('q'),
                     'decoded_q' => $value ?? null,
-                    'count_results' => $countResults
+                    'count_results' => $countResults,
+                    'limit' => $request->input('limit')
                 ];
             }
 
