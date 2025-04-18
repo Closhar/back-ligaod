@@ -16,8 +16,15 @@ class StreamController extends Controller
 {
     public function index(Request $request)
     {
+        $query = Stream::query();
+
+        // Фильтрация по ID
+        if ($request->has('id')) {
+            $query->where('id', $request->input('id'));
+        }
+
         // Retrieve streams with filtering and pagination
-        return Stream::paginate($request->input('per_page', 10));
+        return $query->paginate($request->input('per_page', 10));
     }
 
     public function store(Request $request): \Illuminate\Http\JsonResponse
