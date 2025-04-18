@@ -25,6 +25,7 @@ class SportController extends Controller
     {
         $searchQuery = $request->query('q'); // Параметр поиска
         $perPage = $request->query('per_page', 15); // Количество элементов на странице
+        $searchId = $request->query('id'); // Параметр поиска по ID
 
         $query = Sport::query()
             ->select(
@@ -45,6 +46,11 @@ class SportController extends Controller
                         'sport_properties.icon'
                     ]);
                 }]);
+
+        // Применяем поиск по ID, если указан
+        if ($searchId) {
+            $query->where('id', $searchId);
+        }
 
         // Применяем поиск по параметру q
         if ($searchQuery) {
