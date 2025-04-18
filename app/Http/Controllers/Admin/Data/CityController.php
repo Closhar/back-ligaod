@@ -18,11 +18,16 @@ class CityController extends Controller
             $perPage = $request->input('per_page', 10);
             $searchQuery = $request->input('q');
             $limit = $request->input('limit', $perPage);
+            $cityId = $request->input('id');
 
             $query = City::query();
 
             if ($searchQuery) {
                 $query->where('title', 'LIKE', "%{$searchQuery}%");
+            }
+
+            if ($cityId) {
+                $query->where('id', $cityId);
             }
 
             if ($request->has('type') && $request->input('type') === 'async') {
