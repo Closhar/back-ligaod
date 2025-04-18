@@ -28,6 +28,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use app\Http\Controllers\Admin\Data\SportPropertyController;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -135,6 +136,7 @@ Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage'])
 
 Route::apiResource('competitions', CompetitionController::class);
 Route::apiResource('cities', CityController::class);
+Route::apiResource('sport_properties', SportPropertyController::class);
 
 Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
 Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
