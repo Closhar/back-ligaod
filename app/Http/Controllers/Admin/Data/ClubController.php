@@ -175,6 +175,9 @@ class ClubController extends Controller
                     // Если город найден, используем его id
                     $validated['city_id'] = $city->id;
                 }
+
+                // Удаляем поле city_title из данных перед созданием записи
+                unset($validated['city_title']);
             }
 
             $item = Club::create($validated);
