@@ -64,20 +64,21 @@ class ClubController extends Controller
                 ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
                 ->join('cities as city', 'clubs.city_id', '=', 'city.id')
                 ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id')
-            ->with('city')
+                ->with('city')
                 ->with('gender')
                 ->with('sport')
                 ->orderBy($sortField, $sortDirection); // Применение сортировки
 
-
-            if ($searchQuery) {
+            // Общий поиск (работает только по заголовку, если нет параметра field)
+            if ($searchQuery && !$request->has('field')) {
                 $query->where('clubs.title', 'LIKE', "%{$searchQuery}%");
             }
 
             // Фильтрация по произвольному полю
-            if ($request->has('field') && $request->has('q')) {
+            if ($request->has('field')) {
                 $field = $request->input('field');
-                $value = $request->input('q');
+                // Получаем значение из параметра q и декодируем URL-кодирование
+                $value = urldecode($request->input('q', ''));
 
                 // Проверка, является ли поле допустимым для избежания SQL-инъекций
                 $allowedFields = [
@@ -123,10 +124,17 @@ class ClubController extends Controller
                 return $query->limit($limit)->get()->toArray();
             }
 
+            // Получаем SQL запрос для отладки
+            $sql = $query->toSql();
+            $bindings = $query->getBindings();
+
             // Стандартный вывод с пагинацией
             $clubs = $query->paginate($perPage);
 
-            return [
+            // Количество результатов для информирования
+            $countResults = $clubs->total();
+
+            $result = [
                 'current_page' => $clubs->currentPage(),
                 'data' => $clubs->items(),
                 'first_page_url' => $clubs->url(1),
@@ -141,6 +149,20 @@ class ClubController extends Controller
                 'to' => $clubs->lastItem(),
                 'total' => $clubs->total(),
             ];
+
+            // Добавляем отладочную информацию в режиме разработки
+            if (config('app.debug')) {
+                $result['_debug'] = [
+                    'sql' => $sql,
+                    'bindings' => $bindings,
+                    'requested_field' => $request->input('field'),
+                    'requested_q' => $request->input('q'),
+                    'decoded_q' => $value ?? null,
+                    'count_results' => $countResults
+                ];
+            }
+
+            return $result;
 
         } catch (\Exception $e) {
             return response()->json([
