@@ -61,7 +61,7 @@ class CityController extends Controller
     {
         try {
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
+                'title' => 'required|string|max:255|unique:cities,title',
                 'title_short' => 'required|string|max:50',
             ]);
 
@@ -114,7 +114,7 @@ class CityController extends Controller
     {
         try {
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
+                'title' => 'required|string|max:255|unique:cities,title,' . $id,
                 'title_short' => 'required|string|max:50',
             ]);
 
