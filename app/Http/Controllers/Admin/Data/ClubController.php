@@ -74,6 +74,28 @@ class ClubController extends Controller
                 $query->where('clubs.title', 'LIKE', "%{$searchQuery}%");
             }
 
+            // Фильтрация по произвольному полю
+            if ($request->has('field') && $request->has('q')) {
+                $field = $request->input('field');
+                $value = $request->input('q');
+
+                // Проверка, является ли поле допустимым для избежания SQL-инъекций
+                $allowedFields = [
+                    'id', 'title', 'title_short', 'about', 'address', 'slug',
+                    'city_id', 'sport_id', 'gender_id', 'age_id', 'is_alien'
+                ];
+
+                if (in_array($field, $allowedFields)) {
+                    // Для текстовых полей используем LIKE
+                    if (in_array($field, ['title', 'title_short', 'about', 'address', 'slug'])) {
+                        $query->where('clubs.' . $field, 'LIKE', "%{$value}%");
+                    } else {
+                        // Для других полей используем точное соответствие
+                        $query->where('clubs.' . $field, $value);
+                    }
+                }
+            }
+
             // Дополнительные фильтры (остаются без изменений)
             if ($request->has('sport')) {
                 $query->whereHas('sport', fn($q) => $q->where('slug', $request->input('sport')));
