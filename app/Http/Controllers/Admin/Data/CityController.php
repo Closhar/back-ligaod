@@ -32,7 +32,7 @@ class CityController extends Controller
             }
 
             if ($field) {
-                return $this->getFieldStatistics($query, $field);
+                return $this->getFieldStatistics($query, $field, $searchQuery);
             }
 
             if ($request->has('type') && $request->input('type') === 'async') {
@@ -62,13 +62,17 @@ class CityController extends Controller
     /**
      * Get statistics for a specific field.
      */
-    private function getFieldStatistics($query, $field)
+    private function getFieldStatistics($query, $field, $searchQuery = null)
     {
         if (!in_array($field, ['title', 'title_short'])) {
             return response()->json([
                 'error' => 'Invalid field',
                 'message' => "Field '{$field}' is not allowed for statistics"
             ], 400);
+        }
+
+        if ($searchQuery && $field !== 'title') {
+            $query->where('title', 'LIKE', "%{$searchQuery}%");
         }
 
         $result = $query->select($field, 'id')
