@@ -263,27 +263,34 @@ class EventController extends Controller
             // Применяем поиск по параметру q
             if ($searchQuery) {
                 $query->where(function ($q) use ($searchQuery) {
-                    $q->where('title', 'LIKE', "%{$searchQuery}%")
-                        ->orWhere('date_from', 'LIKE', "%{$searchQuery}%")
-                        ->orWhereHas('competition', function ($clubQuery) use ($searchQuery) {
-                            $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                ->orWhere('title_short', 'LIKE', "%{$searchQuery}%");
-                        })
-                        ->orWhereHas('club1', function ($clubQuery) use ($searchQuery) {
-                            $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
-                                    $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                                });
-                        })
-                        ->orWhereHas('club2', function ($clubQuery) use ($searchQuery) {
-                            $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
-                                    $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                                });
-                        })
-                        ->orWhereHas('arena', function ($clubQuery) use ($searchQuery) {
-                            $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                        });
+                    // Проверяем, является ли поисковый запрос датой в формате XX.XX.XXXX
+                    if (preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $searchQuery)) {
+                        // Преобразуем дату из формата DD.MM.YYYY в YYYY-MM-DD
+                        $date = Carbon::createFromFormat('d.m.Y', $searchQuery)->format('Y-m-d');
+                        $q->whereDate('date_from', $date);
+                    } else {
+                        $q->where('title', 'LIKE', "%{$searchQuery}%")
+                            ->orWhere('date_from', 'LIKE', "%{$searchQuery}%")
+                            ->orWhereHas('competition', function ($clubQuery) use ($searchQuery) {
+                                $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                                    ->orWhere('title_short', 'LIKE', "%{$searchQuery}%");
+                            })
+                            ->orWhereHas('club1', function ($clubQuery) use ($searchQuery) {
+                                $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                                    ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
+                                        $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                                    });
+                            })
+                            ->orWhereHas('club2', function ($clubQuery) use ($searchQuery) {
+                                $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                                    ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
+                                        $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                                    });
+                            })
+                            ->orWhereHas('arena', function ($clubQuery) use ($searchQuery) {
+                                $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                            });
+                    }
                 });
             }
         }
