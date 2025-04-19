@@ -42,13 +42,19 @@ class CityController extends Controller
             $cities = $query->orderBy('title')->paginate($perPage);
 
             return [
+                'current_page' => $cities->currentPage(),
                 'data' => $cities->items(),
-                'pagination' => [
-                    'total' => $cities->total(),
-                    'per_page' => $cities->perPage(),
-                    'current_page' => $cities->currentPage(),
-                    'last_page' => $cities->lastPage()
-                ]
+                'first_page_url' => $cities->url(1),
+                'from' => $cities->firstItem(),
+                'last_page' => $cities->lastPage(),
+                'last_page_url' => $cities->url($cities->lastPage()),
+                'links' => $cities->links(),
+                'next_page_url' => $cities->nextPageUrl(),
+                'path' => $cities->path(),
+                'per_page' => $cities->perPage(),
+                'prev_page_url' => $cities->previousPageUrl(),
+                'to' => $cities->lastItem(),
+                'total' => $cities->total(),
             ];
 
         } catch (\Exception $e) {
