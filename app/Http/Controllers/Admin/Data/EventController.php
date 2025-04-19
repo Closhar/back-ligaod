@@ -456,6 +456,42 @@ class EventController extends Controller
         }
     }
 
+    public function checkField($id, Request $request)
+    {
+        try {
+            $field = $request->query('field');
+
+            if (!$field) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Параметр field обязателен'
+                ], 400);
+            }
+
+            $event = Event::findOrFail($id);
+
+            // Проверяем, существует ли запрошенное поле в модели
+            if (!array_key_exists($field, $event->getAttributes())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Указанное поле не существует'
+                ], 400);
+            }
+
+            return response()->json([
+                'success' => true,
+                'field' => $field,
+                'value' => $event->$field
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
     public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         try {

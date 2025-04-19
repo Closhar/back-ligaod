@@ -125,6 +125,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::apiResource('admin-pages', AdminPageController::class);
 
 Route::apiResource('events', EventController::class);
+Route::get('events/{id}/check-field', [EventController::class, 'checkField']);
 Route::post('events/{id}/upload-image', [EventController::class, 'uploadImage']);
 Route::delete('events/{id}/image', [EventController::class, 'destroyImage']);
 Route::post('events/{id}/delete-image', [EventController::class, 'deleteImage']);
