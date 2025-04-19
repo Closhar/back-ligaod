@@ -20,6 +20,8 @@ class CityController extends Controller
             $limit = $request->input('limit', $perPage);
             $cityId = $request->input('id');
             $field = $request->input('field');
+            $sortField = $request->input('sort_field', 'title');
+            $sortDirection = $request->input('sort_direction', 'asc');
 
             $query = City::query();
 
@@ -36,10 +38,10 @@ class CityController extends Controller
             }
 
             if ($request->has('type') && $request->input('type') === 'async') {
-                return $query->orderBy('title')->limit($limit)->get()->toArray();
+                return $query->orderBy($sortField, $sortDirection)->limit($limit)->get()->toArray();
             }
 
-            $cities = $query->orderBy('title')->paginate($perPage);
+            $cities = $query->orderBy($sortField, $sortDirection)->paginate($perPage);
 
             return [
                 'current_page' => $cities->currentPage(),
