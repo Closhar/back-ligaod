@@ -97,8 +97,6 @@ class AdminPageController extends Controller
                 'image' => 'string|max:255|nullable',
                 'menu' => 'boolean|nullable'
             ]);
-                // Добавьте другие поля при необходимости
-            ]);
 
             $item = AdminPage::create($validated);
 
