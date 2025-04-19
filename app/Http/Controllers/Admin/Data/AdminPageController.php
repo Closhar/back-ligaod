@@ -91,6 +91,12 @@ class AdminPageController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
+                'description' => 'string|max:50000|nullable',
+                'slug' => 'required|string|max:255|unique:admin_pages,slug',
+                'icon' => 'string|max:255|nullable',
+                'image' => 'string|max:255|nullable',
+                'menu' => 'boolean|nullable'
+            ]);
                 // Добавьте другие поля при необходимости
             ]);
 
@@ -134,7 +140,11 @@ class AdminPageController extends Controller
             // Сначала валидация
             $validated = $request->validate([
                 'title' => 'string|max:255',
-                // Добавьте другие поля при необходимости
+                'description' => 'string|max:50000|nullable',
+                'slug' => 'string|max:255|unique:admin_pages,slug',
+                'icon' => 'string|max:255|nullable',
+                'image' => 'string|max:255|nullable',
+                'menu' => 'boolean|nullable'
             ]);
 
             // Затем поиск и обновление
