@@ -3,34 +3,30 @@
 namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
+use App\Models\Region;
 use Illuminate\Http\Request;
-use App\Models\AdminPage;
-use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
-class AdminPageController extends Controller
+class RegionController extends Controller
 {
-//    public function __construct()
-//    {
-//        $this->middleware('auth:sanctum');
-//    }
-
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
         $searchQuery = $request->query('q'); // Параметр поиска
-        $perPage = $request->query('per_page', 10); // Количество элементов на странице
+        $perPage = $request->query('per_page', 15); // Количество элементов на странице
         $searchId = $request->query('id'); // Параметр поиска по ID
         $fieldParam = $request->query('field'); // Параметр для фильтрации по конкретному полю
 
-        $query = AdminPage::query()
+        $query = Region::query()
             ->select(
                 'id',
                 'title',
-                'description',
-                'slug'
+                'title_short',
+                'subdomain'
             );
 
         // Применяем поиск по ID, если указан
@@ -44,38 +40,28 @@ class AdminPageController extends Controller
                 // Если указано конкретное поле, ищем по нему
                 $query->where($fieldParam, 'LIKE', "%{$searchQuery}%");
             } else {
-                // Если поле не указано, ищем по нескольким полям
-                $query->where(function ($q) use ($searchQuery) {
-                    $q->where('title', 'like', "%{$searchQuery}%")
-                        ->orWhere('description', 'like', "%{$searchQuery}%")
-                        ->orWhere('slug', 'like', "%{$searchQuery}%");
-                });
+                // Если поле не указано, ищем по title (существующая логика)
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
             }
         }
 
-        // Сортировка
-        if ($request->has('sort_field')) {
-            $sortDirection = $request->input('sort_direction', 'asc');
-            $query->orderBy($request->input('sort_field'), $sortDirection);
-        }
-
         // Получаем пагинированные результаты
-        $items = $query->paginate($perPage);
-        $total = $items->total();
+        $regions = $query->paginate($perPage);
+        $total = $regions->total();
 
         return [
-            'current_page' => $items->currentPage(),
-            'data' => $items->items(),
-            'first_page_url' => $items->url(1),
-            'from' => $items->firstItem(),
-            'last_page' => $items->lastPage(),
-            'last_page_url' => $items->url($items->lastPage()),
-            'links' => $items->links(),
-            'next_page_url' => $items->nextPageUrl(),
-            'path' => $items->path(),
-            'per_page' => $items->perPage(),
-            'prev_page_url' => $items->previousPageUrl(),
-            'to' => $items->lastItem(),
+            'current_page' => $regions->currentPage(),
+            'data' => $regions->items(),
+            'first_page_url' => $regions->url(1),
+            'from' => $regions->firstItem(),
+            'last_page' => $regions->lastPage(),
+            'last_page_url' => $regions->url($regions->lastPage()),
+            'links' => $regions->links(),
+            'next_page_url' => $regions->nextPageUrl(),
+            'path' => $regions->path(),
+            'per_page' => $regions->perPage(),
+            'prev_page_url' => $regions->previousPageUrl(),
+            'to' => $regions->lastItem(),
             'total' => $total,
         ];
     }
@@ -88,10 +74,11 @@ class AdminPageController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
-                // Добавьте другие поля при необходимости
+                'title_short' => 'required|string|max:255',
+                'subdomain' => 'required|string|max:255|unique:regions',
             ]);
 
-            $item = AdminPage::create($validated);
+            $item = Region::create($validated);
 
             return response()->json($item, 201);
 
@@ -114,7 +101,7 @@ class AdminPageController extends Controller
     public function show($id)
     {
         try {
-            $item = AdminPage::findOrFail($id);
+            $item = Region::findOrFail($id);
             return response()->json($item);
 
         } catch (\Exception $e) {
@@ -131,11 +118,12 @@ class AdminPageController extends Controller
             // Сначала валидация
             $validated = $request->validate([
                 'title' => 'string|max:255',
-                // Добавьте другие поля при необходимости
+                'title_short' => 'string|max:255',
+                'subdomain' => 'string|max:255|unique:regions,subdomain,'.$id,
             ]);
 
             // Затем поиск и обновление
-            $item = AdminPage::findOrFail($id);
+            $item = Region::findOrFail($id);
             $item->update($validated);
 
             return response()->json([
@@ -165,7 +153,7 @@ class AdminPageController extends Controller
     public function destroy($id)
     {
         try {
-            $item = AdminPage::findOrFail($id);
+            $item = Region::findOrFail($id);
             $item->delete();
 
             return response()->json(null, 204);
