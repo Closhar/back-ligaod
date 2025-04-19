@@ -139,7 +139,7 @@ class AdminPageController extends Controller
             $validated = $request->validate([
                 'title' => 'string|max:255',
                 'description' => 'string|max:50000|nullable',
-                'slug' => 'string|max:255|unique:admin_pages,slug',
+                'slug' => 'string|max:255|unique:admin_pages,slug,' . $id,
                 'icon' => 'string|max:255|nullable',
                 'image' => 'string|max:255|nullable',
                 'menu' => 'boolean|nullable'
