@@ -30,7 +30,10 @@ class AdminPageController extends Controller
                 'id',
                 'title',
                 'description',
-                'slug'
+                'slug',
+                'icon',
+                'image',
+                'menu'
             );
 
         // Применяем поиск по ID, если указан
