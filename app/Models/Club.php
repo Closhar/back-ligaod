@@ -35,6 +35,11 @@ class Club extends Model
         return $this->belongsTo(City::class);
     }
 
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
+
     public function gender(): BelongsTo
     {
         return $this->belongsTo(Gender::class);

@@ -6,6 +6,7 @@ use App\Traits\KTranslateTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Article extends Model
 {
@@ -21,6 +22,11 @@ class Article extends Model
         static::addGlobalScope('order', function ($builder) {
             $builder->orderBy('title', 'asc'); // или 'desc' для сортировки по убыванию
         });
+    }
+
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
     }
 
     public function sports(): MorphToMany

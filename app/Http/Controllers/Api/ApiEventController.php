@@ -30,7 +30,6 @@ class ApiEventController extends Controller
         $arenaId = $request->input('arena_id');
         $competitionId = $request->input('competition_id');
         $genderId = $request->input('gender_id');
-        $sort = $request->input('sort', 'date_from_asc'); // По умолчанию сортировка по date_from по возрастанию
         $show = $request->input('show'); // По умолчанию показываем события с date_from >= сегодня
         $searchQuery = $request->input('q'); // Параметр поиска
         $show_concrete_date = false; // индикатор, что фильтруем по конкретной дате - при true игнорируется фильтр ВРЕМЕННОЙ ПРОМЕЖУТОК
@@ -151,9 +150,7 @@ class ApiEventController extends Controller
                         $query->where(function ($q) use ($today) {
                             $q->whereDate('date_from', '<=', $today);
                         });
-                        $sort = "date_from_desc";
                     }
-
                     break;
                 case 3: // date_from = сегодня
                     $query->whereDate('date_from', '=', $today); // Фильтр по сегодняшней дате, игнорируя время
@@ -238,32 +235,22 @@ class ApiEventController extends Controller
         }
 
         // Применяем сортировку
-        switch ($sort) {
-            case 'date_from_asc':
-                $query->orderBy('date_from', 'asc');
-                break;
-            case 'date_from_desc':
-                $query->orderBy('date_from', 'desc');
-                break;
-            case 'title_asc':
-                $query->orderBy('title', 'asc');
-                break;
-            case 'title_desc':
-                $query->orderBy('title', 'desc');
-                break;
-            case 'competition_asc':
-                $query->join('competitions', 'events.competition_id', '=', 'competitions.id')
-                    ->orderBy('competitions.title', 'asc')
-                    ->select('events.*'); // Важно сохранить выборку полей events
-                break;
-            case 'competition_desc':
-                $query->join('competitions', 'events.competition_id', '=', 'competitions.id')
-                    ->orderBy('competitions.title', 'desc')
-                    ->select('events.*'); // Важно сохранить выборку полей events
-                break;
-            default:
-                $query->orderBy('date_from', 'asc'); // По умолчанию сортировка по date_from по возрастанию
-                break;
+        $sortField = $request->input('sort_field', 'date_from'); // Поле для сортировки по умолчанию - date_from
+        $sortDirection = $request->input('sort_direction', 'asc'); // Направление сортировки по умолчанию - asc
+
+        $sortDirection = strtolower($sortDirection);
+        if (!in_array($sortDirection, ['asc', 'desc'])) {
+            $sortDirection = 'asc';
+        }
+
+        // Обработка специальных случаев сортировки, требующих join
+        if ($sortField === 'competition_title') {
+            $query->join('competitions', 'events.competition_id', '=', 'competitions.id')
+                ->orderBy('competitions.title', $sortDirection)
+                ->select('events.*'); // Важно сохранить выборку полей events
+        } else {
+            // Применяем стандартную сортировку
+            $query->orderBy($sortField, $sortDirection);
         }
 
         // Получаем общее количество записей с учетом фильтрации

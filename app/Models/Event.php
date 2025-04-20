@@ -42,6 +42,11 @@ class Event extends Model
         return $this->belongsTo(Arena::class);
     }
 
+    public function region(): BelongsTo
+    {
+        return $this->belongsTo(Region::class);
+    }
+
     public function gallery(): BelongsTo
     {
         return $this->belongsTo(Gallery::class);
