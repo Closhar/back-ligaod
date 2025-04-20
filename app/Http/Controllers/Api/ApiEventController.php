@@ -267,6 +267,11 @@ class ApiEventController extends Controller
 
         // преобразуем дату и время
         $events->transform(function ($event) {
+            if ($event->competition && $event->competition->sport) {
+                $event->sport_title = $event->competition->sport->title;
+            } else {
+                $event->sport_title = null;
+            }
             // Преобразуем date_from в формат "DD.MM.YYYY."
             $event->date_formatted = \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.');
 
