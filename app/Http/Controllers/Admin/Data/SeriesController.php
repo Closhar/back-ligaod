@@ -20,6 +20,8 @@ class SeriesController extends Controller
         $perPage = $request->query('per_page', 15); // Количество элементов на странице
         $searchId = $request->query('id'); // Параметр поиска по ID
         $fieldParam = $request->query('field'); // Параметр для фильтрации по конкретному полю
+        $type = $request->query('type'); // Параметр типа ответа
+        $limit = $request->query('limit', $perPage); // Лимит для async запросов
 
         $query = Series::query()
             ->select(
@@ -43,6 +45,18 @@ class SeriesController extends Controller
                 // Если поле не указано, ищем по title (существующая логика)
                 $query->where('title', 'LIKE', "%{$searchQuery}%");
             }
+        }
+
+        // Для async запросов
+        if ($type === 'async') {
+            return $query->limit($limit)->get()->map(function ($series) {
+                return [
+                    'id' => $series->id,
+                    'title' => $series->title,
+                    'title_short' => $series->title_short,
+                    'description' => $series->description
+                ];
+            })->toArray();
         }
 
         // Получаем пагинированные результаты
