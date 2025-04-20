@@ -33,6 +33,8 @@ class EventController extends Controller
         $arenaId = $request->input('arena_id');
         $competitionId = $request->input('competition_id');
         $genderId = $request->input('gender_id');
+        $regionId = $request->input('region_id');
+        $seriesId = $request->input('series_id');
         $sort = $request->input('sort', 'date_from_asc');
         $show = $request->input('show');
         $with_team = $request->input('with_team');
@@ -216,6 +218,16 @@ class EventController extends Controller
             if ($sportId) {
                 $query->whereHas('competition.sport', function ($q) use ($sportId) {
                     $q->where('id', $sportId);
+                });
+            }
+            if ($regionId) {
+                $query->whereHas('region', function ($q) use ($regionId) {
+                    $q->where('id', $regionId);
+                });
+            }
+            if ($seriesId) {
+                $query->whereHas('series', function ($q) use ($seriesId) {
+                    $q->where('id', $seriesId);
                 });
             }
 
