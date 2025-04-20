@@ -20,6 +20,7 @@ class RegionController extends Controller
         $perPage = $request->query('per_page', 15); // Количество элементов на странице
         $searchId = $request->query('id'); // Параметр поиска по ID
         $fieldParam = $request->query('field'); // Параметр для фильтрации по конкретному полю
+        $type = $request->query('type'); // Параметр для изменения структуры ответа
 
         $query = Region::query()
             ->select(
@@ -43,6 +44,18 @@ class RegionController extends Controller
                 // Если поле не указано, ищем по title (существующая логика)
                 $query->where('title', 'LIKE', "%{$searchQuery}%");
             }
+        }
+
+        // Для async запросов
+        if ($type === 'async') {
+            return $query->get()->map(function ($region) {
+                return [
+                    'id' => $region->id,
+                    'title' => $region->title,
+                    'title_short' => $region->title_short,
+                    'subdomain' => $region->subdomain
+                ];
+            })->toArray();
         }
 
         // Получаем пагинированные результаты
