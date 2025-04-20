@@ -66,9 +66,11 @@ class EventController extends Controller
                 'club1_id', 'club2_id', 'event_name', "is_active", 'about',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path')
             )
-            ->with('region')
             ->withCount('streams')
             ->with([
+                'region' => function ($query) {
+                    $query->select('id', 'title', 'title_short', 'subdomain');
+                },
                 'competition' => function ($query) {
                     $query->select([
                         'id',
