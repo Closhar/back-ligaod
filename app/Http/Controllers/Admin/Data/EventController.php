@@ -417,8 +417,8 @@ class EventController extends Controller
                 'event_name' => $event->event_name,
                 'sport_icon' => $event->competition->sport->icon,
                 'gender_icon' => $event->competition->gender->icon,
-                'date_formatted' => \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.'),
-                'time' => \Carbon\Carbon::parse($event->date_from)->format('H:i'),
+                'date_formatted' => Carbon::parse($event->date_from)->format('d.m.Y.'),
+                'time' => Carbon::parse($event->date_from)->format('H:i'),
                 'competition' => $event->competition,
                 'club1' => $event->club1 ? array_merge($event->club1->toArray(), [
                     'club_info' => $club1Info,

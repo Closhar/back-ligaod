@@ -75,7 +75,7 @@ class RegionController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'title_short' => 'required|string|max:255',
-                'subdomain' => 'required|string|max:255|unique:regions',
+                'subdomain' => 'string|max:255|unique:regions',
             ]);
 
             $item = Region::create($validated);
@@ -119,7 +119,7 @@ class RegionController extends Controller
             $validated = $request->validate([
                 'title' => 'string|max:255',
                 'title_short' => 'string|max:255',
-                'subdomain' => 'string|max:255|unique:regions,subdomain,'.$id,
+                'subdomain' => "string|max:255|nullable|unique:regions,subdomain,{$id}",
             ]);
 
             // Затем поиск и обновление
