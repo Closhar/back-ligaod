@@ -8,6 +8,7 @@ use App\Models\Gender;
 use DB;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use App\Models\Event;
 
 class CompetitionController extends Controller
 {
@@ -277,7 +278,6 @@ class CompetitionController extends Controller
             return response()->json($item);
 
         } catch (\Exception $e) {
-            Log::error('AdminPageController show error: ' . $e->getMessage());
             return response()->json(['message' => 'Not Found'], 404);
         }
     }
@@ -308,7 +308,6 @@ class CompetitionController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            Log::error('AdminPageController update error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error',
@@ -326,7 +325,6 @@ class CompetitionController extends Controller
             return response()->json(null, 204);
 
         } catch (\Exception $e) {
-            Log::error('AdminPageController destroy error: ' . $e->getMessage());
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
