@@ -431,6 +431,7 @@ class EventController extends Controller
                 'competition_id' => $event->competition_id,
                 'arena_id' => $event->arena_id,
                 'region_id' => $event->region_id,
+                'series_id' => $event->series_id,
                 'club1_id' => $event->club1_id,
                 'club2_id' => $event->club2_id,
                 'event_name' => $event->event_name,
