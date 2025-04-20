@@ -427,6 +427,8 @@ class EventController extends Controller
                 'date_formatted' => Carbon::parse($event->date_from)->format('d.m.Y.'),
                 'time' => Carbon::parse($event->date_from)->format('H:i'),
                 'competition' => $event->competition,
+                'region' => $event->region,
+                'series' => $event->series,
                 'club1' => $event->club1 ? array_merge($event->club1->toArray(), [
                     'club_info' => $club1Info,
                     'image' => $club1Image
