@@ -527,6 +527,8 @@ class EventController extends Controller
                 'arena_id' => 'required|integer|exists:arenas,id',
                 'club1_id' => 'integer|exists:clubs,id|nullable',
                 'club2_id' => 'integer|exists:clubs,id|nullable',
+                'region_id' => 'integer|exists:regions,id|nullable',
+                'series_id' => 'integer|exists:series,id|nullable',
                 'competition_id' => 'required|integer|exists:competitions,id',
                 'is_active' => 'boolean',
             ]);
