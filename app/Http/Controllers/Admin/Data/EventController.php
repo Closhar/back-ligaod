@@ -145,6 +145,9 @@ class EventController extends Controller
                         }
                     ]);
                 },
+                'series' => function ($query) {
+                    $query->select('id', 'title', 'title_short', 'description');
+                },
             ]);
 
         // Если указан ID, применяем только этот фильтр
