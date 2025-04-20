@@ -124,12 +124,12 @@ class Event extends Model
 
     public function getSportIconAttribute()
     {
-        return $this->competition->sport->icon ?? null;
+        return $this->competition?->sport?->icon ?? null;
     }
 
     public function getGenderIconAttribute()
     {
-        return $this->competition->gender->icon ?? null;
+        return $this->competition?->gender?->icon ?? null;
     }
 
 }
