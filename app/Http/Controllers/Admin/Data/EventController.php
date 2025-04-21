@@ -516,7 +516,7 @@ class EventController extends Controller
         }
     }
 
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function store(Request $request): JsonResponse
     {
         try {
 
