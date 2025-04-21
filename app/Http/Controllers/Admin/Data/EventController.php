@@ -788,25 +788,44 @@ class EventController extends Controller
  *   "updated_at": string|null // дата последнего обновления
  * }
  */
-public function checkFieldFreshness(Request $request)
+public function checkFieldFreshness(Request $request, $id)
 {
-    $request->validate([
-        'id' => 'required|integer|exists:events,id',
-        'field' => 'required|string|in:result,result_dop',
-        'value' => 'nullable|string'
-    ]);
+    try {
+        $field = $request->query('field');
+        $value = $request->query('value');
 
-    $event = Event::findOrFail($request->id);
+        if (!$field) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Параметр field обязателен'
+            ], 400);
+        }
 
-    // Получаем текущее значение поля на сервере
-    $serverValue = $event->{$request->field};
-    $isFresh = $serverValue === $request->value;
+        $event = Event::findOrFail($id);
 
-    return response()->json([
-        'is_fresh' => $isFresh,
-        'server_value' => $isFresh ? null : $serverValue,
-        'updated_at' => $isFresh ? null : $event->updated_at
-    ]);
+        // Проверяем, существует ли запрошенное поле в модели
+        if (!array_key_exists($field, $event->getAttributes())) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Указанное поле не существует'
+            ], 400);
+        }
+
+        $serverValue = $event->$field;
+        $isFresh = $serverValue === $value;
+
+        return response()->json([
+            'is_fresh' => $isFresh,
+            'server_value' => $isFresh ? null : $serverValue,
+            'updated_at' => $isFresh ? null : $event->updated_at
+        ]);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Ошибка: ' . $e->getMessage()
+        ], 500);
+    }
 }
 
 }
