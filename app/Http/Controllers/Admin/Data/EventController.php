@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\JsonResponse;
 
 class EventController extends Controller
 {
@@ -767,5 +768,45 @@ class EventController extends Controller
             ], 500);
         }
     }
+
+
+    /**
+ * Проверяет свежесть значения поля для события
+ *
+ * @param Request $request
+ * @return JsonResponse
+ *
+ * Параметры запроса:
+ * - id: ID события
+ * - field: имя поля для проверки
+ * - value: текущее значение поля
+ *
+ * Возвращает:
+ * {
+ *   "is_fresh": boolean, // true если значение актуально
+ *   "server_value": string|null, // значение на сервере, если отличается
+ *   "updated_at": string|null // дата последнего обновления
+ * }
+ */
+public function checkFieldFreshness(Request $request)
+{
+    $request->validate([
+        'id' => 'required|integer|exists:events,id',
+        'field' => 'required|string|in:result,result_dop',
+        'value' => 'nullable|string'
+    ]);
+
+    $event = Event::findOrFail($request->id);
+
+    // Получаем текущее значение поля на сервере
+    $serverValue = $event->{$request->field};
+    $isFresh = $serverValue === $request->value;
+
+    return response()->json([
+        'is_fresh' => $isFresh,
+        'server_value' => $isFresh ? null : $serverValue,
+        'updated_at' => $isFresh ? null : $event->updated_at
+    ]);
+}
 
 }
