@@ -6,6 +6,7 @@ use App\Http\Controllers\Admin\Data\CompetitionController;
 use App\Http\Controllers\Admin\Data\CityController;
 use App\Http\Controllers\Admin\Data\EventController;
 use App\Http\Controllers\Admin\Data\EventStreamController;
+use App\Http\Controllers\Admin\Data\GenderController;
 use App\Http\Controllers\Admin\Data\SportController;
 use App\Http\Controllers\Admin\Data\StreamController;
 use App\Http\Controllers\Admin\Data\SportPropertyController;
@@ -147,6 +148,7 @@ Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
 Route::post('relations/detach', [EventStreamController::class, 'detach']);
 
 Route::apiResource('streams', StreamController::class);
+Route::apiResource('genders', GenderController::class);
 
 Route::apiResource('clubs', ClubController::class);
 Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
