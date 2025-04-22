@@ -222,9 +222,7 @@ class EventController extends Controller
                 });
             }
             if ($regionId) {
-                $query->whereHas('region', function ($q) use ($regionId) {
-                    $q->where('id', $regionId);
-                });
+                $query->where('region_id', $regionId);
             }
             if ($seriesId) {
                 $query->whereHas('series', function ($q) use ($seriesId) {
