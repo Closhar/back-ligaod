@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Api\ApiGenderRequest;
 use App\Models\Age;
 use App\Models\Club;
+use App\Models\Event;
 use App\Models\Gender;
 use App\Models\Sport;
 use Illuminate\Http\Request;
