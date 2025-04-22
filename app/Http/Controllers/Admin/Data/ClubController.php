@@ -55,6 +55,7 @@ class ClubController extends Controller
                     'clubs.sport_id',
                     'clubs.gender_id',
                     'clubs.age_id',
+                    'clubs.region_id',
                     'clubs.is_alien',
                     'clubs.image',
                     'clubs.image_bg',
