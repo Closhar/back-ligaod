@@ -84,13 +84,18 @@ class ClubController extends Controller
                 // Проверка, является ли поле допустимым для избежания SQL-инъекций
                 $allowedFields = [
                     'id', 'title', 'title_short', 'about', 'address', 'slug',
-                    'city_id', 'sport_id', 'gender_id', 'age_id', 'is_alien'
+                    'city_id', 'sport_id', 'gender_id', 'age_id', 'is_alien',
+                    'club_info'
                 ];
 
                 if (in_array($field, $allowedFields)) {
                     // Для текстовых полей используем LIKE
-                    if (in_array($field, ['title', 'title_short', 'about', 'address', 'slug'])) {
-                        $query->where('clubs.' . $field, 'LIKE', "%{$value}%");
+                    if (in_array($field, ['title', 'title_short', 'about', 'address', 'slug', 'club_info'])) {
+                        if ($field === 'club_info') {
+                            $query->where(DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short)'), 'LIKE', "%{$value}%");
+                        } else {
+                            $query->where('clubs.' . $field, 'LIKE', "%{$value}%");
+                        }
                     } else {
                         // Для других полей используем точное соответствие
                         $query->where('clubs.' . $field, $value);
