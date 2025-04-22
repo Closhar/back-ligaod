@@ -109,27 +109,27 @@ class ClubController extends Controller
             }
 
             // Дополнительные фильтры (остаются без изменений)
-            if ($request->has('sport')) {
+            if ($request->has('sport') && $request->input('sport') !== null) {
                 $query->whereHas('sport', fn($q) => $q->where('slug', $request->input('sport')));
             }
 
-            if ($request->has('gender_id')) {
+            if ($request->has('gender_id') && $request->input('gender_id') !== null) {
                 $query->where('clubs.gender_id', $request->input('gender_id'));
             }
 
-            if ($request->has('sport_id')) {
+            if ($request->has('sport_id') && $request->input('sport_id') !== null) {
                 $query->where('clubs.sport_id', $request->input('sport_id'));
             }
 
-            if ($request->has('city_id')) {
+            if ($request->has('city_id') && $request->input('city_id') !== null) {
                 $query->where('clubs.city_id', $request->input('city_id'));
             }
 
-            if ($request->has('region_id')) {
+            if ($request->has('region_id') && $request->input('region_id') !== null) {
                 $query->where('clubs.region_id', $request->input('region_id'));
             }
 
-            if ($request->has('id')) {
+            if ($request->has('id') && $request->input('id') !== null) {
                 $query->where('clubs.id', $request->input('id'));
             }
             // ... остальные фильтры
