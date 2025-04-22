@@ -369,7 +369,7 @@ class ClubController extends Controller
     public function deleteImage(Request $request, $id)
     {
         try {
-            $model = Event::findOrFail($id);
+            $model = Club::findOrFail($id);
             $field = $request->input('field', 'image');
 
             if (!$model->{$field}) {
