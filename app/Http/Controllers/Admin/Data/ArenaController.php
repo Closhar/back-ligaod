@@ -10,7 +10,10 @@ use App\Models\Gender;
 use App\Models\Sport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Http\JsonResponse;
 
 class ArenaController extends Controller
 {
@@ -20,114 +23,80 @@ class ArenaController extends Controller
 
     public function index(Request $request)
     {
+        // Получаем параметры фильтрации из запроса
+        $perPage = $request->input('per_page', 10);
+        $page = $request->input('page', 1);
+        $searchQuery = $request->input('q');
+        $regionId = $request->input('region_id');
+        $cityId = $request->input('city_id');
+        $sortField = $request->input('sort_field', 'id');
+        $sortDirection = $request->input('sort_direction', 'asc');
+
+        // Основной запрос с фильтрацией
         $query = Arena::query()
-            ->select(
-                'id',
-                'title',
-                'address',
-                'slug',
-                'image',
-                'city_id',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path')
-            )
+            ->select('id', 'region_id', 'title', 'slug', 'city_id', 'about', 'sites', 'vks', 'youtubes',
+                'emails', 'phones', 'telegrams', 'instagrams', 'facebooks', 'xs', 'address',
+                'dop_info', 'map', 'image', 'gallery_id')
             ->with([
+                'region' => function ($query) {
+                    $query->select('id', 'title', 'title_short', 'subdomain');
+                },
                 'city' => function ($query) {
-                    $query->select(['id', 'title']);
-                },
-                'sports' => function ($query) {
-                    $query->select(['sports.id', 'title', 'title_short', 'slug', 'icon']);
-                },
-                'clubs' => function ($query) {
-                    $query->select([
-                        'clubs.id',
-                        'title',
-                        'city_id',
-                        'slug',
-                        DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path')
-                    ]);
+                    $query->select('id', 'title', 'title_short');
                 }
             ]);
 
-        // Фильтрация по спорту
-        if ($request->filled('sport')) {
-            $query->whereHas('sports', function ($q) use ($request) {
-                $q->where('slug', $request->input('sport'));
+        // Применяем фильтры
+        if ($regionId) {
+            $query->where('region_id', $regionId);
+        }
+
+        if ($cityId) {
+            $query->where('city_id', $cityId);
+        }
+
+        // Применяем поиск
+        if ($searchQuery) {
+            $query->where(function ($q) use ($searchQuery) {
+                $q->where('title', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('address', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('about', 'LIKE', "%{$searchQuery}%")
+                    ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
+                        $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                    });
             });
         }
 
-        // Фильтрация по команде
-        if ($request->filled('club')) {
-            $query->whereHas('clubs', function ($q) use ($request) {
-                $q->where('slug', $request->input('club'));
-            });
-        }
+        // Применяем сортировку
+        $query->orderBy($sortField, $sortDirection);
 
-        // Поиск по названию
-        if ($request->filled('q')) {
-            $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', '%' . $request->input('q') . '%')
-                    ->orWhere('address', 'like', '%' . $request->input('q') . '%');
-            });
-        }
+        // Получаем данные с пагинацией
+        $arenas = $query->paginate($perPage, ['*'], 'page', $page);
 
-        // Для асинхронных запросов
-        if ($request->input('type') === 'async') {
-            return $query->limit($request->input('limit', 10))->get()->map(function ($arena) {
-                return [
-                    'id' => $arena->id,
-                    'title' => $arena->title,
-                    'address' => $arena->address,
-                    'slug' => $arena->slug,
-                    'image' => $arena->image,
-                    'full_image_path' => $arena->full_image_path,
-                    'city_id' => $arena->city_id,
-                    'city' => $arena->city,
-                    'sports' => $arena->sports,
-                    'clubs' => $arena->clubs
-                ];
-            })->toArray();
-        }
-
-        // Сортировка (добавлена поддержка сортировки)
-        if ($request->filled('sort_field') && $request->filled('sort_direction')) {
-            $query->orderBy($request->input('sort_field'), $request->input('sort_direction'));
-        } else {
-            $query->orderBy('title', 'asc');
-        }
-
-        // Пагинация
-        $perPage = $request->input('per_page', 15);
-        $arenas = $query->paginate($perPage);
-
-        // Трансформация данных
+        // Преобразуем данные для ответа
         $transformedArenas = $arenas->map(function ($arena) {
             return [
                 'id' => $arena->id,
                 'title' => $arena->title,
-                'address' => $arena->address,
                 'slug' => $arena->slug,
+                'about' => $arena->about,
+                'sites' => $arena->sites,
+                'vks' => $arena->vks,
+                'youtubes' => $arena->youtubes,
+                'emails' => $arena->emails,
+                'phones' => $arena->phones,
+                'telegrams' => $arena->telegrams,
+                'instagrams' => $arena->instagrams,
+                'facebooks' => $arena->facebooks,
+                'xs' => $arena->xs,
+                'address' => $arena->address,
+                'dop_info' => $arena->dop_info,
+                'map' => $arena->map,
                 'image' => $arena->image,
-                'full_image_path' => $arena->full_image_path,
-                'city_id' => $arena->city_id,
+                'gallery_id' => $arena->gallery_id,
+                'region' => $arena->region,
                 'city' => $arena->city,
-                'sports' => $arena->sports->map(function ($sport) {
-                    return [
-                        'id' => $sport->id,
-                        'title' => $sport->title,
-                        'title_short' => $sport->title_short,
-                        'slug' => $sport->slug,
-                        'icon' => $sport->icon
-                    ];
-                }),
-                'clubs' => $arena->clubs->map(function ($club) {
-                    return [
-                        'id' => $club->id,
-                        'title' => $club->title,
-                        'city_id' => $club->city_id,
-                        'slug' => $club->slug,
-                        'full_image_path' => $club->full_image_path
-                    ];
-                })
+                'image_path' => $arena->image ? config('app.url') . '/storage/' . $arena->image : null,
             ];
         });
 
@@ -148,11 +117,28 @@ class ArenaController extends Controller
         ];
     }
 
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function store(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
+                'slug' => 'required|string|max:255|unique:arenas',
+                'region_id' => 'required|integer|exists:regions,id',
+                'city_id' => 'required|integer|exists:cities,id',
+                'about' => 'nullable|string',
+                'sites' => 'nullable|string',
+                'vks' => 'nullable|string',
+                'youtubes' => 'nullable|string',
+                'emails' => 'nullable|string',
+                'phones' => 'nullable|string',
+                'telegrams' => 'nullable|string',
+                'instagrams' => 'nullable|string',
+                'facebooks' => 'nullable|string',
+                'xs' => 'nullable|string',
+                'address' => 'nullable|string',
+                'dop_info' => 'nullable|string',
+                'map' => 'nullable|string',
+                'gallery_id' => 'nullable|integer|exists:galleries,id',
             ]);
 
             $item = Arena::create($validated);
@@ -165,7 +151,10 @@ class ArenaController extends Controller
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Internal Server Error'], 500);
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage()
+            ], 500);
         }
     }
 
@@ -183,19 +172,34 @@ class ArenaController extends Controller
     public function update(Request $request, $id)
     {
         try {
-            // Сначала валидация
+            $arena = Arena::findOrFail($id);
+
             $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                // Добавьте другие поля при необходимости
+                'title' => 'string|max:255',
+                'slug' => 'string|max:255|unique:arenas,slug,' . $id,
+                'region_id' => 'integer|exists:regions,id',
+                'city_id' => 'integer|exists:cities,id',
+                'about' => 'nullable|string',
+                'sites' => 'nullable|string',
+                'vks' => 'nullable|string',
+                'youtubes' => 'nullable|string',
+                'emails' => 'nullable|string',
+                'phones' => 'nullable|string',
+                'telegrams' => 'nullable|string',
+                'instagrams' => 'nullable|string',
+                'facebooks' => 'nullable|string',
+                'xs' => 'nullable|string',
+                'address' => 'nullable|string',
+                'dop_info' => 'nullable|string',
+                'map' => 'nullable|string',
+                'gallery_id' => 'nullable|integer|exists:galleries,id',
             ]);
 
-            // Затем поиск и обновление
-            $item = Arena::findOrFail($id);
-            $item->update($validated);
+            $arena->update($validated);
 
             return response()->json([
                 'success' => true,
-                'data' => $item,
+                'data' => $arena,
                 'message' => 'Updated successfully'
             ]);
 
@@ -209,7 +213,7 @@ class ArenaController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -224,6 +228,130 @@ class ArenaController extends Controller
 
         } catch (\Exception $e) {
             return response()->json(['message' => 'Internal Server Error'], 500);
+        }
+    }
+
+    public function uploadImage(Request $request, $id)
+    {
+        try {
+            $model = Arena::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            $validator = Validator::make($request->all(), [
+                'image' => [
+                    'required',
+                    'image',
+                    'mimes:jpeg,png,jpg,gif,webp',
+                    'max:2048' // 2MB
+                ],
+                'field' => 'sometimes|string'
+            ], [
+                'image.required' => 'Файл изображения обязателен',
+                'image.image' => 'Файл должен быть изображением',
+                'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
+                'image.max' => 'Максимальный размер файла 2MB'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Обработка изображения
+            $path = $request->file('image')->store('arenas', 'public');
+
+            // Удаляем старое изображение
+            if ($model->{$field}) {
+                Storage::disk('public')->delete($model->{$field});
+            }
+
+            $model->{$field} = $path;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'image_path' => $path,
+                'full_path' => Storage::disk('public')->url($path),
+                'message' => 'Изображение успешно загружено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка сервера: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function deleteImage(Request $request, $id)
+    {
+        try {
+            $model = Arena::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Нет изображения для удаления'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Изображение успешно удалено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function checkFieldFreshness(Request $request, $id)
+    {
+        try {
+            $field = $request->query('field');
+            $value = $request->query('value');
+
+            if (!$field) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Параметр field обязателен'
+                ], 400);
+            }
+
+            $arena = Arena::findOrFail($id);
+
+            if (!array_key_exists($field, $arena->getAttributes())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Указанное поле не существует'
+                ], 400);
+            }
+
+            $serverValue = $arena->$field;
+            $isFresh = $serverValue === $value;
+
+            return response()->json([
+                'is_fresh' => $isFresh,
+                'server_value' => $isFresh ? null : $serverValue,
+                'updated_at' => $isFresh ? null : $arena->updated_at
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
