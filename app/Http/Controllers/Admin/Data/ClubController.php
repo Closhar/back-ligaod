@@ -193,7 +193,8 @@ class ClubController extends Controller
                 'xs' => 'nullable|string',
                 'map' => 'nullable|string',
                 'slug' => 'nullable|string|max:255|unique:clubs,slug',
-                'city_id' => 'required|exists:cities,id',
+                'city_id' => 'required_without:city_title|exists:cities,id',
+                'city_title' => 'required_without:city_id|string|max:255',
                 'gallery_id' => 'nullable|exists:galleries,id',
                 'sport_id' => 'required|exists:sports,id',
                 'gender_id' => 'required|exists:genders,id',
@@ -202,6 +203,22 @@ class ClubController extends Controller
                 'image' => 'nullable|string|max:255',
                 'image_bg' => 'nullable|string|max:255'
             ]);
+
+            // Обработка city_title
+            if (isset($validated['city_title'])) {
+                $city = \App\Models\City::where('title', $validated['city_title'])->first();
+
+                if (!$city) {
+                    $city = \App\Models\City::create([
+                        'title' => $validated['city_title'],
+                        'title_short' => $validated['city_title'],
+                        'slug' => \Illuminate\Support\Str::slug($validated['city_title'])
+                    ]);
+                }
+
+                $validated['city_id'] = $city->id;
+                unset($validated['city_title']);
+            }
 
             $item = Club::create($validated);
 
