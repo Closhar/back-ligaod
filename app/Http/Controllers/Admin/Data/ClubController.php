@@ -125,6 +125,10 @@ class ClubController extends Controller
                 $query->where('clubs.city_id', $request->input('city_id'));
             }
 
+            if ($request->has('region_id')) {
+                $query->where('clubs.region_id', $request->input('region_id'));
+            }
+
             if ($request->has('id')) {
                 $query->where('clubs.id', $request->input('id'));
             }
