@@ -99,12 +99,10 @@ class ApiClubController extends Controller
         }
 
         // Применяем поиск по параметру q
-        if ($searchQuery) {
-            $query->where(function ($q) use ($searchQuery) {
+        if ($searchQuery && !$request->has('field')) {
+            $query->where(function($q) use ($searchQuery) {
                 $q->where('clubs.title', 'LIKE', "%{$searchQuery}%")
-                    ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
-                        $cityQuery->where('cities.title', 'LIKE', "%{$searchQuery}%");
-                    });
+                  ->orWhere(DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short)'), 'LIKE', "%{$searchQuery}%");
             });
         }
 
