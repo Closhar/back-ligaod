@@ -69,6 +69,7 @@ class ClubController extends Controller
                 ->with('city')
                 ->with('gender')
                 ->with('sport')
+                ->with('region')
                 ->orderBy($sortField, $sortDirection); // Применение сортировки
 
             // Общий поиск (работает только по заголовку, если нет параметра field)
