@@ -525,7 +525,7 @@ class EventController extends Controller
                 'result' => 'string|max:255|nullable',
                 'result_dop' => 'string|max:255|nullable',
                 'date_from' => 'required|date',
-                'arena_id' => 'required|integer|exists:arenas,id',
+                'arena_id' => 'integer|exists:arenas,id',
                 'club1_id' => 'integer|exists:clubs,id|nullable',
                 'club2_id' => 'integer|exists:clubs,id|nullable',
                 'region_id' => 'integer|exists:regions,id|nullable',
