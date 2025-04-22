@@ -72,7 +72,10 @@ class ClubController extends Controller
 
             // Общий поиск (работает только по заголовку, если нет параметра field)
             if ($searchQuery && !$request->has('field')) {
-                $query->where('clubs.title', 'LIKE', "%{$searchQuery}%");
+                $query->where(function($q) use ($searchQuery) {
+                    $q->where('clubs.title', 'LIKE', "%{$searchQuery}%")
+                      ->orWhere(DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short)'), 'LIKE', "%{$searchQuery}%");
+                });
             }
 
             // Фильтрация по произвольному полю
