@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Admin\Data\AdminPageController;
+use App\Http\Controllers\Admin\Data\ArenaController;
 use App\Http\Controllers\Admin\Data\ClubController;
 use App\Http\Controllers\Admin\Data\CompetitionController;
 use App\Http\Controllers\Admin\Data\CityController;
@@ -149,6 +150,7 @@ Route::post('relations/detach', [EventStreamController::class, 'detach']);
 
 Route::apiResource('streams', StreamController::class);
 Route::apiResource('genders', GenderController::class);
+Route::apiResource('arenas', ArenaController::class);
 
 Route::apiResource('clubs', ClubController::class);
 Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
