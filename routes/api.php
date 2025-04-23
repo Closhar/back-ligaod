@@ -142,6 +142,10 @@ Route::delete('sports/{id}/image', [SportController::class, 'destroyImage']);
 Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage']);
 
 Route::apiResource('competitions', CompetitionController::class);
+Route::post('competitions/{id}/upload-image', [CompetitionController::class, 'uploadImage']);
+Route::delete('competitions/{id}/image', [CompetitionController::class, 'destroyImage']);
+Route::post('competitions/{id}/delete-image', [CompetitionController::class, 'deleteImage']);
+
 Route::apiResource('cities', CityController::class);
 Route::apiResource('sport_properties', SportPropertyController::class);
 Route::apiResource('regions', \App\Http\Controllers\Admin\Data\RegionController::class);
