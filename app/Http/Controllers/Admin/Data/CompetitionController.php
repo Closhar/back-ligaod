@@ -264,6 +264,15 @@ class CompetitionController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
+                'about' => 'nullable|string',
+                'sites' => 'nullable|string',
+                'vks' => 'nullable|string',
+                'youtubes' => 'nullable|string',
+                'telegrams' => 'nullable|string',
+                'instagrams' => 'nullable|string',
+                'facebooks' => 'nullable|string',
+                'xs' => 'nullable|string',
+                'gallery_id' => 'nullable|exists:galleries,id'
             ]);
 
             $item = Event::create($validated);
@@ -283,7 +292,7 @@ class CompetitionController extends Controller
     public function show($id)
     {
         try {
-            $item = Event::findOrFail($id);
+            $item = Event::with('gallery')->findOrFail($id);
             return response()->json($item);
 
         } catch (\Exception $e) {
@@ -297,7 +306,15 @@ class CompetitionController extends Controller
             // Сначала валидация
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
-                // Добавьте другие поля при необходимости
+                'about' => 'nullable|string',
+                'sites' => 'nullable|string',
+                'vks' => 'nullable|string',
+                'youtubes' => 'nullable|string',
+                'telegrams' => 'nullable|string',
+                'instagrams' => 'nullable|string',
+                'facebooks' => 'nullable|string',
+                'xs' => 'nullable|string',
+                'gallery_id' => 'nullable|exists:galleries,id'
             ]);
 
             // Затем поиск и обновление
