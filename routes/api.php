@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\Data\EventController;
 use App\Http\Controllers\Admin\Data\EventStreamController;
 use App\Http\Controllers\Admin\Data\GalleryController;
 use App\Http\Controllers\Admin\Data\GenderController;
+use App\Http\Controllers\Admin\Data\ImageController;
 use App\Http\Controllers\Admin\Data\SportController;
 use App\Http\Controllers\Admin\Data\StreamController;
 use App\Http\Controllers\Admin\Data\SportPropertyController;
@@ -145,6 +146,12 @@ Route::apiResource('competitions', CompetitionController::class);
 Route::post('competitions/{id}/upload-image', [CompetitionController::class, 'uploadImage']);
 Route::delete('competitions/{id}/image', [CompetitionController::class, 'destroyImage']);
 Route::post('competitions/{id}/delete-image', [CompetitionController::class, 'deleteImage']);
+
+Route::apiResource('images', ImageController::class);
+Route::post('images/{id}/upload-image', [ImageController::class, 'uploadImage']);
+Route::delete('images/{id}/image', [ImageController::class, 'destroyImage']);
+Route::post('images/{id}/delete-image', [ImageController::class, 'deleteImage']);
+
 
 Route::apiResource('cities', CityController::class);
 Route::apiResource('sport_properties', SportPropertyController::class);
