@@ -317,7 +317,7 @@ class CompetitionController extends Controller
                 'gallery_id' => 'nullable|exists:galleries,id'
             ]);
 
-            $item = Event::create($validated);
+            $item = Competition::create($validated);
 
             return response()->json($item, 201);
 
@@ -334,7 +334,7 @@ class CompetitionController extends Controller
     public function show($id)
     {
         try {
-            $item = Event::with('gallery')->findOrFail($id);
+            $item = Competition::with('gallery')->findOrFail($id);
             return response()->json($item);
 
         } catch (\Exception $e) {
@@ -366,7 +366,7 @@ class CompetitionController extends Controller
             ]);
 
             // Затем поиск и обновление
-            $item = Event::findOrFail($id);
+            $item = Competition::findOrFail($id);
             $item->update($validated);
 
             return response()->json([
@@ -393,7 +393,7 @@ class CompetitionController extends Controller
     public function destroy($id)
     {
         try {
-            $item = Event::findOrFail($id);
+            $item = Competition::findOrFail($id);
             $item->delete();
 
             return response()->json(null, 204);
