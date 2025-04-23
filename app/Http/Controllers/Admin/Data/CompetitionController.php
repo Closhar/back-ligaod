@@ -184,6 +184,8 @@ class CompetitionController extends Controller
                 return [
                     'id' => $competition->id,
                     'title' => $competition->title,
+                    'title_short' => $competition->title_short,
+                    'slug' => $competition->slug,
                     'sport_id' => $competition->sport_id,
                     'gender_id' => $competition->gender_id,
                     'date_from' => $competition->date_from,
