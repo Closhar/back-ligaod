@@ -38,6 +38,7 @@ class CompetitionController extends Controller
         $show = $request->input('show', 4);
         $searchQuery = $request->input('q');
         $limit = $request->input('limit', $perPage);
+        $field = $request->input('field');
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -173,8 +174,12 @@ class CompetitionController extends Controller
 
         // Поиск
         if ($searchQuery) {
-            $query->where('title', 'LIKE', "%{$searchQuery}%")
-                ->orWhere('title_short', 'LIKE', "%{$searchQuery}%");
+            if ($field) {
+                $query->where($field, 'LIKE', "%{$searchQuery}%");
+            } else {
+                $query->where('title', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('title_short', 'LIKE', "%{$searchQuery}%");
+            }
         }
 
         // Сортировка
