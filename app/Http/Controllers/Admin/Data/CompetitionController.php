@@ -58,6 +58,15 @@ class CompetitionController extends Controller
                 'date_to',
                 'image',
                 'bg_image',
+                'about',
+                'sites',
+                'vks',
+                'youtubes',
+                'telegrams',
+                'instagrams',
+                'facebooks',
+                'xs',
+                'gallery_id',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", bg_image) AS full_bg_image_path')
             )
@@ -70,6 +79,9 @@ class CompetitionController extends Controller
                 },
                 'arenas' => function ($query) {
                     $query->select(['arenas.id', 'title']);
+                },
+                'gallery' => function ($query) {
+                    $query->select(['id', 'title']);
                 }
             ]);
 
@@ -196,11 +208,21 @@ class CompetitionController extends Controller
                     'full_image_path' => $competition->full_image_path,
                     'bg_image' => $competition->bg_image,
                     'full_bg_image_path' => $competition->full_bg_image_path,
+                    'about' => $competition->about,
+                    'sites' => $competition->sites,
+                    'vks' => $competition->vks,
+                    'youtubes' => $competition->youtubes,
+                    'telegrams' => $competition->telegrams,
+                    'instagrams' => $competition->instagrams,
+                    'facebooks' => $competition->facebooks,
+                    'xs' => $competition->xs,
+                    'gallery_id' => $competition->gallery_id,
                     'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
                     'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
                     'gender' => $competition->gender,
                     'sport' => $competition->sport,
-                    'arenas' => $competition->arenas
+                    'arenas' => $competition->arenas,
+                    'gallery' => $competition->gallery
                 ];
             })->toArray();
         }
@@ -229,11 +251,21 @@ class CompetitionController extends Controller
                 'full_image_path' => $competition->full_image_path,
                 'bg_image' => $competition->bg_image,
                 'full_bg_image_path' => $competition->full_bg_image_path,
+                'about' => $competition->about,
+                'sites' => $competition->sites,
+                'vks' => $competition->vks,
+                'youtubes' => $competition->youtubes,
+                'telegrams' => $competition->telegrams,
+                'instagrams' => $competition->instagrams,
+                'facebooks' => $competition->facebooks,
+                'xs' => $competition->xs,
+                'gallery_id' => $competition->gallery_id,
                 'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
                 'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
                 'gender' => $competition->gender,
                 'sport' => $competition->sport,
-                'arenas' => $competition->arenas
+                'arenas' => $competition->arenas,
+                'gallery' => $competition->gallery
             ];
         });
 
