@@ -406,7 +406,7 @@ class CompetitionController extends Controller
     public function uploadImage(Request $request, $id)
     {
         try {
-            $model = Event::findOrFail($id);
+            $model = Competition::findOrFail($id);
             $field = $request->input('field', 'image');
 
             $validator = Validator::make($request->all(), [
