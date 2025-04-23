@@ -147,8 +147,8 @@ class ArenaController extends Controller
 
                 if (!$city) {
                     $city = \App\Models\City::create([
-                        'title' => $validated['city_title'],
-                        'title_short' => substr($validated['city_title'], 0, 3)
+                        'title' => mb_convert_encoding($validated['city_title'], 'UTF-8', 'auto'),
+                        'title_short' => mb_substr(mb_convert_encoding($validated['city_title'], 'UTF-8', 'auto'), 0, 3)
                     ]);
                 }
 
