@@ -57,7 +57,9 @@ class CompetitionController extends Controller
                 'date_from',
                 'date_to',
                 'image',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path')
+                'bg_image',
+                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
+                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", bg_image) AS full_bg_image_path')
             )
             ->with([
                 'gender' => function ($query) {
@@ -192,6 +194,8 @@ class CompetitionController extends Controller
                     'date_to' => $competition->date_to,
                     'image' => $competition->image,
                     'full_image_path' => $competition->full_image_path,
+                    'bg_image' => $competition->bg_image,
+                    'full_bg_image_path' => $competition->full_bg_image_path,
                     'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
                     'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
                     'gender' => $competition->gender,
