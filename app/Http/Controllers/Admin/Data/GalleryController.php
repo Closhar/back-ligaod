@@ -16,7 +16,8 @@ class GalleryController extends Controller
         $page = $request->input('page', 1);
         $searchQuery = $request->input('q');
 
-        $query = Gallery::query();
+        $query = Gallery::query()
+            ->with('image');
 
         if ($searchQuery) {
             $query->where('title', 'LIKE', "%{$searchQuery}%");
