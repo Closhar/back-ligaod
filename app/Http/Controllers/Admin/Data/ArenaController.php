@@ -124,7 +124,8 @@ class ArenaController extends Controller
                 'title' => 'required|string|max:255',
                 'slug' => 'required|string|max:255|unique:arenas',
                 'region_id' => 'required|integer|exists:regions,id',
-                'city_id' => 'required|integer|exists:cities,id',
+                'city_id' => 'required_without:city_title|exists:cities,id',
+                'city_title' => 'required_without:city_id|string|max:255',
                 'about' => 'nullable|string',
                 'sites' => 'nullable|string',
                 'vks' => 'nullable|string',
@@ -140,6 +141,21 @@ class ArenaController extends Controller
                 'map' => 'nullable|string',
                 'gallery_id' => 'nullable|integer|exists:galleries,id',
             ]);
+
+            if (isset($validated['city_title'])) {
+                $city = \App\Models\City::where('title', $validated['city_title'])->first();
+
+                if (!$city) {
+                    $city = \App\Models\City::create([
+                        'title' => $validated['city_title'],
+                        'title_short' => $validated['city_title'],
+                        'slug' => \Illuminate\Support\Str::slug($validated['city_title'])
+                    ]);
+                }
+
+                $validated['city_id'] = $city->id;
+                unset($validated['city_title']);
+            }
 
             $item = Arena::create($validated);
 
