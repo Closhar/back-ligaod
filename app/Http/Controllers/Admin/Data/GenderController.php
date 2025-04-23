@@ -70,7 +70,7 @@ class GenderController extends Controller
                 'title' => 'required|string|max:255|unique:genders',
                 'title_short' => 'required|string|max:255',
                 'icon' => 'string|max:255',
-                'slug' => 'required|string|max:255|unique:genders',
+                'slug' => 'string|max:255|unique:genders',
             ]);
 
             $item = Gender::create($validated);
@@ -108,7 +108,7 @@ class GenderController extends Controller
                 'title' => 'string|max:255|unique:genders,title,' . $id,
                 'title_short' => 'string|max:255',
                 'icon' => 'string|max:255',
-                'slug' => 'string|max:255|unique:genders,slug,' . $id,
+                'slug' => 'string|max:255|nullable|unique:genders,slug,' . $id,
             ]);
 
             $item = Gender::findOrFail($id);
