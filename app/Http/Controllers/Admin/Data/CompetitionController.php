@@ -33,6 +33,8 @@ class CompetitionController extends Controller
         $clubSlug = $request->input('club');
         $clubId = $request->input('club_id');
         $sort = $request->input('sort', 'date_from_asc');
+        $sortField = $request->input('sort_field', 'date_from');
+        $sortDirection = $request->input('sort_direction', 'asc');
         $show = $request->input('show', 4);
         $searchQuery = $request->input('q');
         $limit = $request->input('limit', $perPage);
@@ -176,22 +178,26 @@ class CompetitionController extends Controller
         }
 
         // Сортировка
-        switch ($sort) {
-            case 'date_from_asc':
-                $query->orderBy('date_from', 'asc');
-                break;
-            case 'date_from_desc':
-                $query->orderBy('date_from', 'desc');
-                break;
-            case 'title_asc':
-                $query->orderBy('title', 'asc');
-                break;
-            case 'title_desc':
-                $query->orderBy('title', 'desc');
-                break;
-            default:
-                $query->orderBy('date_from', 'asc');
-                break;
+        if ($sortField && in_array($sortField, ['id', 'title', 'date_from', 'date_to'])) {
+            $query->orderBy($sortField, $sortDirection === 'desc' ? 'desc' : 'asc');
+        } else {
+            switch ($sort) {
+                case 'date_from_asc':
+                    $query->orderBy('date_from', 'asc');
+                    break;
+                case 'date_from_desc':
+                    $query->orderBy('date_from', 'desc');
+                    break;
+                case 'title_asc':
+                    $query->orderBy('title', 'asc');
+                    break;
+                case 'title_desc':
+                    $query->orderBy('title', 'desc');
+                    break;
+                default:
+                    $query->orderBy('date_from', 'asc');
+                    break;
+            }
         }
 
         // Для async запросов
@@ -236,6 +242,13 @@ class CompetitionController extends Controller
         } else {
             $competitions = $query->paginate($perPage, ['*'], 'page', $page);
             $total = $competitions->total();
+        }
+
+        // Логируем первый элемент для проверки полей
+        if ($competitions->count() > 0) {
+            \Log::info('Competition fields check:', [
+                'first_item' => $competitions->first()->toArray()
+            ]);
         }
 
         // Трансформируем данные
