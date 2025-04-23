@@ -297,62 +297,49 @@ class EventController extends Controller
                             // Преобразуем дату из формата DD.MM.YYYY в YYYY-MM-DD для SQL запроса
                             $dateTime = Carbon::createFromFormat('d.m.Y', $searchQuery);
                             $date = $dateTime->format('Y-m-d');
-
-                            // Проверяем, существуют ли события с этой датой
-                            $eventsCount = Event::whereRaw('DATE(date_from) = ?', [$date])->count();
-
-                            // Если нет событий на эту дату и тип запроса async, создаем тестовое событие
-                            if ($eventsCount == 0 && isset($request) && $request->input('type') == 'async') {
-
-                                // Получаем первые ID для создания тестового события
-                                $firstCompetition = DB::table('competitions')->first();
-                                $firstArena = DB::table('arenas')->first();
-                                $firstClub = DB::table('clubs')->first();
-
-                                if ($firstCompetition && $firstArena) {
-                                    $testEvent = new Event();
-                                    $testEvent->title = "Тестовое событие на " . $searchQuery;
-                                    $testEvent->date_from = $date . " 12:00:00";
-                                    $testEvent->competition_id = $firstCompetition->id;
-                                    $testEvent->arena_id = $firstArena->id;
-                                    if ($firstClub) {
-                                        $testEvent->club1_id = $firstClub->id;
-                                    }
-                                    $testEvent->is_active = true;
-                                    $testEvent->save();
-                                }
-                            }
-
-                            // Используем whereRaw для более точного совпадения с датой
                             $q->whereRaw('DATE(date_from) = ?', [$date]);
                         } catch (\Exception $e) {
-                            // Если дата некорректная, пытаемся искать как текст
-                            $q->where('title', 'LIKE', "%{$searchQuery}%");
+                            // Если дата некорректная, продолжаем поиск по другим полям
                         }
-                    } else {
-                        $q->where('title', 'LIKE', "%{$searchQuery}%")
-                        ->orWhere('id', 'LIKE', "%{$searchQuery}%")
-                            ->orWhere('date_from', 'LIKE', "%{$searchQuery}%")
-                            ->orWhereHas('competition', function ($clubQuery) use ($searchQuery) {
-                                $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                    ->orWhere('title_short', 'LIKE', "%{$searchQuery}%");
-                            })
-                            ->orWhereHas('club1', function ($clubQuery) use ($searchQuery) {
-                                $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                    ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
-                                        $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                                    });
-                            })
-                            ->orWhereHas('club2', function ($clubQuery) use ($searchQuery) {
-                                $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
-                                    ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
-                                        $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                                    });
-                            })
-                            ->orWhereHas('arena', function ($clubQuery) use ($searchQuery) {
-                                $clubQuery->where('title', 'LIKE', "%{$searchQuery}%");
-                            });
                     }
+
+                    // Поиск по основным полям
+                    $q->where('title', 'LIKE', "%{$searchQuery}%")
+                        ->orWhere('result', 'LIKE', "%{$searchQuery}%")
+                        ->orWhere('result_dop', 'LIKE', "%{$searchQuery}%")
+                        ->orWhere('id', 'LIKE', "%{$searchQuery}%");
+
+                    // Поиск по связанным моделям
+                    $q->orWhereHas('competition', function ($competitionQuery) use ($searchQuery) {
+                        $competitionQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                    })
+                    ->orWhereHas('club1', function ($clubQuery) use ($searchQuery) {
+                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                            ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
+                                $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                            });
+                    })
+                    ->orWhereHas('club2', function ($clubQuery) use ($searchQuery) {
+                        $clubQuery->where('title', 'LIKE', "%{$searchQuery}%")
+                            ->orWhereHas('city', function ($cityQuery) use ($searchQuery) {
+                                $cityQuery->where('title', 'LIKE', "%{$searchQuery}%");
+                            });
+                    });
+
+                    // Поиск по event_name (используем CONCAT для формирования строки)
+                    $q->orWhereRaw("CONCAT(
+                        COALESCE(DATE_FORMAT(date_from, '%d.%m.%Y.'), ''),
+                        ' ',
+                        COALESCE((SELECT title FROM clubs WHERE id = events.club1_id), 'Клуб 1'),
+                        ' (',
+                        COALESCE((SELECT title FROM cities WHERE id = (SELECT city_id FROM clubs WHERE id = events.club1_id)), 'Город не указан'),
+                        ') - ',
+                        COALESCE((SELECT title FROM clubs WHERE id = events.club2_id), 'Клуб 2'),
+                        ' (',
+                        COALESCE((SELECT title FROM cities WHERE id = (SELECT city_id FROM clubs WHERE id = events.club2_id)), 'Город не указан'),
+                        ') ',
+                        COALESCE(result, '')
+                    ) LIKE ?", ["%{$searchQuery}%"]);
                 });
             }
         }
