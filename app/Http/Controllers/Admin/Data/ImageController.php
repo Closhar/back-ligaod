@@ -34,6 +34,8 @@ class ImageController extends Controller
                     'images.position',
                     DB::raw('CONCAT("' . config('app.url') . '", "/storage/", images.image) AS full_image_path')
                 ])
+                ->with('gallery')
+                ->with('image')
                 ->orderBy($sortField, $sortDirection);
 
             if ($searchQuery && !$request->has('field')) {
