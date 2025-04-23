@@ -148,8 +148,7 @@ class ArenaController extends Controller
                 if (!$city) {
                     $city = \App\Models\City::create([
                         'title' => $validated['city_title'],
-                        'title_short' => $validated['city_title'],
-                        'slug' => \Illuminate\Support\Str::slug($validated['city_title'])
+                        'title_short' => substr($validated['city_title'], 0, 3)
                     ]);
                 }
 
