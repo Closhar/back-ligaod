@@ -61,7 +61,7 @@ class CompetitionController extends Controller
             )
             ->with([
                 'gender' => function ($query) {
-                    $query->select(['id', 'title', 'icon']);
+                    $query->select(['id', 'title','title_short', 'icon']);
                 },
                 'sport' => function ($query) {
                     $query->select(['id', 'title', 'icon']);
