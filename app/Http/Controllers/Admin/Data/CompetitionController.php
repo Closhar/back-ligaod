@@ -461,7 +461,7 @@ class CompetitionController extends Controller
     public function deleteImage(Request $request, $id)
     {
         try {
-            $model = Event::findOrFail($id);
+            $model = Competition::findOrFail($id);
             $field = $request->input('field', 'image');
 
             if (!$model->{$field}) {
@@ -491,7 +491,7 @@ class CompetitionController extends Controller
     public function destroyImage($id, $field = 'image')
     {
         try {
-            $model = Event::findOrFail($id);
+            $model = Competition::findOrFail($id);
 
             if (!$model->{$field}) {
                 return response()->json([
