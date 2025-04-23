@@ -154,6 +154,7 @@ Route::post('relations/detach', [EventStreamController::class, 'detach']);
 Route::apiResource('streams', StreamController::class);
 Route::apiResource('genders', GenderController::class);
 Route::apiResource('arenas', ArenaController::class);
+Route::post('arenas/{id}/upload-image', [ArenaController::class, 'uploadImage']);
 Route::apiResource('articles', ArticleController::class);
 Route::apiResource('galleries', GalleryController::class);
 Route::apiResource('videos', VideoController::class);
