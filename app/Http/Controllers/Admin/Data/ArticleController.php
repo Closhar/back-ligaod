@@ -23,7 +23,7 @@ class ArticleController extends Controller
         $sortDirection = $request->input('sort_direction', 'desc');
         $id = $request->input('id');
 
-        $query = Article::query();
+        $query = Article::query()->with('region');
 
         if ($id) {
             $query->where('id', $id);
