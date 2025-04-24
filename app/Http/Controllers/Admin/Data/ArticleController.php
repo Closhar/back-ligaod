@@ -21,8 +21,13 @@ class ArticleController extends Controller
         $published = $request->input('published');
         $sortField = $request->input('sort_field', 'id');
         $sortDirection = $request->input('sort_direction', 'desc');
+        $id = $request->input('id');
 
         $query = Article::query();
+
+        if ($id) {
+            $query->where('id', $id);
+        }
 
         if ($searchQuery) {
             $query->where(function ($q) use ($searchQuery) {

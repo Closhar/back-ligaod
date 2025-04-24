@@ -17,8 +17,13 @@ class VideoController extends Controller
         $searchQuery = $request->input('q');
         $sortField = $request->input('sort_field', 'id');
         $sortDirection = $request->input('sort_direction', 'desc');
+        $id = $request->input('id');
 
         $query = Video::query();
+
+        if ($id) {
+            $query->where('id', $id);
+        }
 
         if ($searchQuery) {
             $query->where('title', 'LIKE', "%{$searchQuery}%");

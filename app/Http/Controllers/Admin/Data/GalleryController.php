@@ -17,10 +17,15 @@ class GalleryController extends Controller
         $searchQuery = $request->input('q');
         $sortField = $request->input('sort_field', 'id');
         $sortDirection = $request->input('sort_direction', 'desc');
+        $id = $request->input('id');
 
         $query = Gallery::query()
         ->with('main_image')
         ->with('images');
+
+        if ($id) {
+            $query->where('id', $id);
+        }
 
         if ($searchQuery) {
             $query->where('title', 'LIKE', "%{$searchQuery}%");
