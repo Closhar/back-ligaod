@@ -71,12 +71,14 @@ class ArticleController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'required|string|max:1000',
-                'data' => 'required|date_format:Y-m-d\TH:i:s.u\Z',
+                'data' => 'required|date',
                 'content' => 'required|string',
                 'region_id' => 'nullable|integer|exists:regions,id',
                 'published' => 'boolean',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ]);
+
+            $validated['data'] = date('Y-m-d H:i:s', strtotime($validated['data']));
 
             $article = Article::create($validated);
 
