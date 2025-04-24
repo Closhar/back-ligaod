@@ -72,6 +72,7 @@ class ArticleController extends Controller
                 'title' => 'required|string|max:255',
                 'description' => 'required|string|max:1000',
                 'data' => 'required|date',
+                'slug' => 'required|string|max:255',
                 'content' => 'required|string',
                 'region_id' => 'nullable|integer|exists:regions,id',
                 'published' => 'boolean',
@@ -125,6 +126,7 @@ class ArticleController extends Controller
             $validated = $request->validate([
                 'title' => 'string|max:255',
                 'data' => 'date_format:Y-m-d H:i:s',
+                'slug' => 'string|max:255',
                 'description' => 'string|max:1000',
                 'content' => 'string',
                 'region_id' => 'nullable|integer|exists:regions,id',
