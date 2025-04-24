@@ -167,6 +167,7 @@ Route::apiResource('genders', GenderController::class);
 Route::apiResource('arenas', ArenaController::class);
 Route::post('arenas/{id}/upload-image', [ArenaController::class, 'uploadImage']);
 Route::apiResource('articles', ArticleController::class);
+Route::post('articles/{id}/upload-image', [ArticleController::class, 'uploadImage']);
 Route::apiResource('galleries', GalleryController::class);
 Route::apiResource('videos', VideoController::class);
 
