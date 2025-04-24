@@ -48,7 +48,7 @@ class GalleryController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
-                'image_id' => 'required|integer|exists:images,id',
+                'image_id' => 'integer|exists:images,id',
             ]);
 
             $gallery = Gallery::create($validated);
