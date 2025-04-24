@@ -112,6 +112,10 @@ class ArticleController extends Controller
 
     public function update(Request $request, $id)
     {
+        if ($request->input('published') === 'on') {
+            return response()->json([], 200);
+        }
+
         try {
             $article = Article::findOrFail($id);
 
