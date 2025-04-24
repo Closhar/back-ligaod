@@ -25,12 +25,14 @@ class ClubController extends Controller
         try {
             // Базовые параметры
             $perPage = $request->input('per_page', 10);
+            $page = $request->input('page', 1);
             $searchQuery = $request->input('q');
             $type = $request->input('type');
             $sortField = $request->input('sort_field', 'id'); // Поле для сортировки
             $sortDirection = $request->input('sort_direction', 'asc'); // Направление сортировки
             $perPage = $request->query('per_page', 10); // Количество элементов на странице (по умолчанию 10)
             $limit = $request->input('limit', $perPage);
+            $offset = $request->input('offset', 0); // Смещение для пагинации
 
             // Основной запрос
             $query = Club::query()
@@ -139,6 +141,11 @@ class ClubController extends Controller
                 // Используем указанный лимит или значение по умолчанию
                 $resultLimit = $request->input('limit', 10);
                 return $query->limit($resultLimit)->get()->toArray();
+            }
+
+            // Применяем смещение если указано
+            if ($offset > 0) {
+                $query->skip($offset);
             }
 
             // Получаем SQL запрос для отладки

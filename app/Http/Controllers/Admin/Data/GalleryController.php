@@ -15,6 +15,8 @@ class GalleryController extends Controller
         $perPage = $request->input('per_page', 10);
         $page = $request->input('page', 1);
         $searchQuery = $request->input('q');
+        $sortField = $request->input('sort_field', 'id');
+        $sortDirection = $request->input('sort_direction', 'desc');
 
         $query = Gallery::query()
         ->with('main_image')
@@ -24,6 +26,7 @@ class GalleryController extends Controller
             $query->where('title', 'LIKE', "%{$searchQuery}%");
         }
 
+        $query->orderBy($sortField, $sortDirection);
         $galleries = $query->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([

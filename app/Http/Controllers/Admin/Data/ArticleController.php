@@ -19,6 +19,8 @@ class ArticleController extends Controller
         $searchQuery = $request->input('q');
         $regionId = $request->input('region_id');
         $published = $request->input('published');
+        $sortField = $request->input('sort_field', 'id');
+        $sortDirection = $request->input('sort_direction', 'desc');
 
         $query = Article::query();
 
@@ -38,6 +40,7 @@ class ArticleController extends Controller
             $query->where('published', $published);
         }
 
+        $query->orderBy($sortField, $sortDirection);
         $articles = $query->paginate($perPage, ['*'], 'page', $page);
 
         return response()->json([
