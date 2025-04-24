@@ -72,7 +72,7 @@ class ArticleController extends Controller
                 'title' => 'required|string|max:255',
                 'description' => 'required|string|max:1000',
                 'content' => 'required|string',
-                'region_id' => 'required|integer|exists:regions,id',
+                'region_id' => 'nullable|integer|exists:regions,id',
                 'published' => 'boolean',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ]);
@@ -119,7 +119,7 @@ class ArticleController extends Controller
                 'title' => 'string|max:255',
                 'description' => 'string|max:1000',
                 'content' => 'string',
-                'region_id' => 'integer|exists:regions,id',
+                'region_id' => 'nullable|integer|exists:regions,id',
                 'published' => 'boolean',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ]);
