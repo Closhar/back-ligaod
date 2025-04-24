@@ -71,6 +71,7 @@ class ArticleController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'description' => 'required|string|max:1000',
+                'data' => 'required|date_format:Y-m-d H:i:s',
                 'content' => 'required|string',
                 'region_id' => 'nullable|integer|exists:regions,id',
                 'published' => 'boolean',
@@ -121,7 +122,7 @@ class ArticleController extends Controller
 
             $validated = $request->validate([
                 'title' => 'string|max:255',
-                'data' => 'required|date_format:Y-m-d H:i:s',
+                'data' => 'date_format:Y-m-d H:i:s',
                 'description' => 'string|max:1000',
                 'content' => 'string',
                 'region_id' => 'nullable|integer|exists:regions,id',
