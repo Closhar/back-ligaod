@@ -166,9 +166,19 @@ Route::apiResource('streams', StreamController::class);
 Route::apiResource('genders', GenderController::class);
 Route::apiResource('arenas', ArenaController::class);
 Route::post('arenas/{id}/upload-image', [ArenaController::class, 'uploadImage']);
+Route::delete('arenas/{id}/image', [ArenaController::class, 'destroyImage']);
+Route::post('arenas/{id}/delete-image', [ArenaController::class, 'deleteImage']);
+
 Route::apiResource('articles', ArticleController::class);
 Route::post('articles/{id}/upload-image', [ArticleController::class, 'uploadImage']);
+Route::delete('articles/{id}/image', [ArticleController::class, 'destroyImage']);
+Route::post('articles/{id}/delete-image', [ArticleController::class, 'deleteImage']);
+
 Route::apiResource('galleries', GalleryController::class);
+Route::post('galleries/{id}/upload-image', [GalleryController::class, 'uploadImage']);
+Route::delete('galleries/{id}/image', [GalleryController::class, 'destroyImage']);
+Route::post('galleries/{id}/delete-image', [GalleryController::class, 'deleteImage']);
+
 Route::apiResource('videos', VideoController::class);
 
 Route::apiResource('clubs', ClubController::class);
