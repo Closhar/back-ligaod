@@ -465,6 +465,26 @@ class EventController extends Controller
         }
     }
 
+    public function swapFields(Request $request, $id)
+{
+    $model = Event::findOrFail($id);
+
+    $field1 = $request->input('field1');
+    $field2 = $request->input('field2');
+
+    // Получаем текущие значения
+    $value1 = $model->$field1;
+    $value2 = $model->$field2;
+
+    // Меняем местами
+    $model->$field1 = $value2;
+    $model->$field2 = $value1;
+
+    $model->save();
+
+    return response()->json(['success' => true]);
+}
+
     public function checkField($id, Request $request)
     {
         try {

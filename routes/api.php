@@ -160,6 +160,7 @@ Route::apiResource('series', \App\Http\Controllers\Admin\Data\SeriesController::
 
 Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
 Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
+Route::post('events/{event}/swap-fields', [EventController::class, 'swapFields']);
 Route::post('relations/detach', [EventStreamController::class, 'detach']);
 
 Route::apiResource('streams', StreamController::class);
