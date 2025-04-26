@@ -94,7 +94,7 @@ class SeriesController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'match_info' => 'nullable|string|max:255',
-                'title_short' => 'required|string|max:255',
+                'title_short' => 'required|string|max:255|unique:series,title_short',
                 'description' => 'nullable|string|max:50000',
             ]);
 
@@ -139,7 +139,7 @@ class SeriesController extends Controller
             $validated = $request->validate([
                 'title' => 'string|max:255',
                 'match_info' => 'nullable|string|max:255',
-                'title_short' => 'string|max:255',
+                'title_short' => 'string|max:255|unique:series,title_short,' . $id,
                 'description' => 'nullable|string|max:50000',
             ]);
 
