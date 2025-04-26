@@ -27,6 +27,7 @@ class SeriesController extends Controller
             ->select(
                 'id',
                 'title',
+                'match_info',
                 'title_short',
                 'description'
             );
@@ -43,7 +44,10 @@ class SeriesController extends Controller
                 $query->where($fieldParam, 'LIKE', "%{$searchQuery}%");
             } else {
                 // Если поле не указано, ищем по title (существующая логика)
-                $query->where('title', 'LIKE', "%{$searchQuery}%");
+                $query->where('title', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('match_info', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('title_short', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('description', 'LIKE', "%{$searchQuery}%");
             }
         }
 
@@ -54,6 +58,7 @@ class SeriesController extends Controller
                     'id' => $series->id,
                     'title' => $series->title,
                     'title_short' => $series->title_short,
+                    'match_info' => $series->match_info,
                     'description' => $series->description
                 ];
             })->toArray();
@@ -88,6 +93,7 @@ class SeriesController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
+                'match_info' => 'nullable|string|max:255',
                 'title_short' => 'required|string|max:255',
                 'description' => 'nullable|string|max:50000',
             ]);
@@ -132,6 +138,7 @@ class SeriesController extends Controller
             // Сначала валидация
             $validated = $request->validate([
                 'title' => 'string|max:255',
+                'match_info' => 'nullable|string|max:255',
                 'title_short' => 'string|max:255',
                 'description' => 'nullable|string|max:50000',
             ]);
