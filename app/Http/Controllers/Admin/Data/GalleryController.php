@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
 use Storage;
+use Validator;
 
 class GalleryController extends Controller
 {
@@ -144,7 +145,7 @@ class GalleryController extends Controller
     public function uploadImage(Request $request, $id, $folder = 'galleries')
     {
         try {
-            $model = Club::findOrFail($id);
+            $model = Gallery::findOrFail($id);
             $field = $request->input('field', 'image');
 
             $validator = Validator::make($request->all(), [
