@@ -466,24 +466,24 @@ class EventController extends Controller
     }
 
     public function swapFields(Request $request, $id)
-{
-    $model = Event::findOrFail($id);
+    {
+        $model = Event::findOrFail($id);
 
-    $field1 = $request->input('field1');
-    $field2 = $request->input('field2');
+        $field1 = $request->input('field1');
+        $field2 = $request->input('field2');
 
-    // Получаем текущие значения
-    $value1 = $model->$field1;
-    $value2 = $model->$field2;
+        // Получаем текущие значения
+        $value1 = $model->$field1;
+        $value2 = $model->$field2;
 
-    // Меняем местами
-    $model->$field1 = $value2;
-    $model->$field2 = $value1;
+        // Меняем местами
+        $model->$field1 = $value2;
+        $model->$field2 = $value1;
 
-    $model->save();
+        $model->save();
 
-    return response()->json(['success' => true]);
-}
+        return response()->json(['success' => true]);
+    }
 
     public function checkField($id, Request $request)
     {
@@ -524,7 +524,6 @@ class EventController extends Controller
     public function store(Request $request): JsonResponse
     {
         try {
-
             $validated = $request->validate([
                 'title' => 'string|max:255|nullable',
                 'result' => 'string|max:255|nullable',
@@ -537,13 +536,47 @@ class EventController extends Controller
                 'series_id' => 'integer|exists:series,id|nullable',
                 'competition_id' => 'required|integer|exists:competitions,id',
                 'is_active' => 'boolean',
+                'max_matches' => 'integer',
+                'event_type' => 'integer|in:1,2',
             ]);
 
             $validated['date_from'] = date('Y-m-d H:i:s', strtotime($validated['date_from']));
+            $maxMatches = $request->input('max_matches', 1);
+            $eventType = $request->input('event_type', 1);
+            $series = null;
 
-            $item = Event::create($validated);
+            if ($validated['series_id']) {
+                $series = \App\Models\Series::find($validated['series_id']);
+            }
 
-            return response()->json($item, 201);
+            $createdEvents = [];
+
+            if ($eventType == 1) {
+                // Создаем max_matches одинаковых событий с нумерацией
+                for ($i = 1; $i <= $maxMatches; $i++) {
+                    $eventData = $validated;
+                    if ($series && $series->match_info) {
+                        $eventData['title'] = $series->match_info . ' Матч ' . $i;
+                    }
+                    $item = Event::create($eventData);
+                    $createdEvents[] = $item;
+                }
+            } else {
+                // Создаем один основной матч и N-1 матчей без команд
+                $mainEvent = Event::create($validated);
+                $createdEvents[] = $mainEvent;
+
+                for ($i = 2; $i <= $maxMatches; $i++) {
+                    $eventData = $validated;
+                    $eventData['club1_id'] = null;
+                    $eventData['club2_id'] = null;
+                    $eventData['title'] = null;
+                    $item = Event::create($eventData);
+                    $createdEvents[] = $item;
+                }
+            }
+
+            return response()->json($createdEvents, 201);
 
         } catch (ValidationException $e) {
             return response()->json([
@@ -553,7 +586,7 @@ class EventController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Internal Server Error',
-                'error' => $e->getMessage() // Исправлено с errors() на getMessage()
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -776,61 +809,61 @@ class EventController extends Controller
 
 
     /**
- * Проверяет свежесть значения поля для события
- *
- * @param Request $request
- * @return JsonResponse
- *
- * Параметры запроса:
- * - id: ID события
- * - field: имя поля для проверки
- * - value: текущее значение поля
- *
- * Возвращает:
- * {
- *   "is_fresh": boolean, // true если значение актуально
- *   "server_value": string|null, // значение на сервере, если отличается
- *   "updated_at": string|null // дата последнего обновления
- * }
- */
-public function checkFieldFreshness(Request $request, $id)
-{
-    try {
-        $field = $request->query('field');
-        $value = $request->query('value');
+     * Проверяет свежесть значения поля для события
+     *
+     * @param Request $request
+     * @return JsonResponse
+     *
+     * Параметры запроса:
+     * - id: ID события
+     * - field: имя поля для проверки
+     * - value: текущее значение поля
+     *
+     * Возвращает:
+     * {
+     *   "is_fresh": boolean, // true если значение актуально
+     *   "server_value": string|null, // значение на сервере, если отличается
+     *   "updated_at": string|null // дата последнего обновления
+     * }
+     */
+    public function checkFieldFreshness(Request $request, $id)
+    {
+        try {
+            $field = $request->query('field');
+            $value = $request->query('value');
 
-        if (!$field) {
+            if (!$field) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Параметр field обязателен'
+                ], 400);
+            }
+
+            $event = Event::findOrFail($id);
+
+            // Проверяем, существует ли запрошенное поле в модели
+            if (!array_key_exists($field, $event->getAttributes())) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Указанное поле не существует'
+                ], 400);
+            }
+
+            $serverValue = $event->$field;
+            $isFresh = $serverValue === $value;
+
+            return response()->json([
+                'is_fresh' => $isFresh,
+                'server_value' => $isFresh ? null : $serverValue,
+                'updated_at' => $isFresh ? null : $event->updated_at
+            ]);
+
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Параметр field обязателен'
-            ], 400);
+                'message' => 'Ошибка: ' . $e->getMessage()
+            ], 500);
         }
-
-        $event = Event::findOrFail($id);
-
-        // Проверяем, существует ли запрошенное поле в модели
-        if (!array_key_exists($field, $event->getAttributes())) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Указанное поле не существует'
-            ], 400);
-        }
-
-        $serverValue = $event->$field;
-        $isFresh = $serverValue === $value;
-
-        return response()->json([
-            'is_fresh' => $isFresh,
-            'server_value' => $isFresh ? null : $serverValue,
-            'updated_at' => $isFresh ? null : $event->updated_at
-        ]);
-
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Ошибка: ' . $e->getMessage()
-        ], 500);
     }
-}
 
 }
