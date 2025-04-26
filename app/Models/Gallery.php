@@ -36,7 +36,8 @@ class Gallery extends Model
 
     public function getGalleryImagePathAttribute()
     {
-        return config('app.url') . '/storage/' . $this->image;
+        if ($this->image)  return config('app.url') . '/storage/' . $this->image;
+        return null;
 
     }
 
