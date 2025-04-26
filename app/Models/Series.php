@@ -18,5 +18,6 @@ class Series extends Model
         'title',
         'title_short',
         'description',
+        'match_info',
     ];
 }
