@@ -556,12 +556,15 @@ class EventController extends Controller
                     if ($series && $series->match_info) {
                         $eventData['title'] = $series->match_info . ' Матч ' . $i;
                     }
+                    $eventData['is_active'] = 0;
                     $item = Event::create($eventData);
                     $createdEvents[] = $item;
                 }
             } else {
                 // Создаем один основной матч и N-1 матчей без команд
-                $mainEvent = Event::create($validated);
+                $eventData = $validated;
+                $eventData['is_active'] = 0;
+                $mainEvent = Event::create($eventData);
                 $createdEvents[] = $mainEvent;
 
                 for ($i = 2; $i <= $maxMatches; $i++) {
@@ -569,6 +572,7 @@ class EventController extends Controller
                     $eventData['club1_id'] = null;
                     $eventData['club2_id'] = null;
                     $eventData['title'] = null;
+                    $eventData['is_active'] = 0;
                     $item = Event::create($eventData);
                     $createdEvents[] = $item;
                 }
