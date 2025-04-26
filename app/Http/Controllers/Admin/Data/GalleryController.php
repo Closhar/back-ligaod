@@ -4,9 +4,11 @@ namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
 use App\Models\Gallery;
+use DB;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Validation\ValidationException;
+use Storage;
 
 class GalleryController extends Controller
 {
@@ -20,6 +22,12 @@ class GalleryController extends Controller
         $id = $request->input('id');
 
         $query = Gallery::query()
+        ->select([
+            'galleries.id',
+            'galleries.title',
+            'galleries.image',
+            DB::raw('CONCAT("' . config('app.url') . '", "/storage/", galleries.image) AS galleryimage_path')
+        ])
         ->with('main_image')
         ->with('images');
 
@@ -56,6 +64,7 @@ class GalleryController extends Controller
         try {
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
+                'image' => 'nullable|string|max:255',
                 'image_id' => 'integer|exists:images,id',
             ]);
 
@@ -93,6 +102,7 @@ class GalleryController extends Controller
 
             $validated = $request->validate([
                 'title' => 'string|max:255',
+                'image' => 'nullable|string|max:255',
                 'image_id' => 'integer|exists:images,id',
             ]);
 
@@ -130,4 +140,60 @@ class GalleryController extends Controller
             return response()->json(['message' => 'Internal Server Error'], 500);
         }
     }
+
+    public function uploadImage(Request $request, $id, $folder = 'galleries')
+    {
+        try {
+            $model = Club::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            $validator = Validator::make($request->all(), [
+                'image' => [
+                    'required',
+                    'image',
+                    'mimes:jpeg,png,jpg,gif,webp',
+                    'max:2048' // 10MB
+                ],
+                'field' => 'sometimes|string'
+            ], [
+                'image.required' => 'Файл изображения обязателен',
+                'image.image' => 'Файл должен быть изображением',
+                'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
+                'image.max' => 'Максимальный размер файла 2MB'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            // Обработка изображения
+            $path = $request->file('image')->store($folder, 'public');
+
+            // Удаляем старое изображение
+            if ($model->{$field}) {
+                Storage::disk('public')->delete($model->{$field});
+            }
+
+            $model->{$field} = $path;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'image_path' => $path,
+                'full_path' => Storage::disk('public')->url($path),
+                'message' => 'Изображение успешно загружено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка сервера: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }

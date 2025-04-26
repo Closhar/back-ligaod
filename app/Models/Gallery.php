@@ -16,7 +16,7 @@ class Gallery extends Model
     protected $guarded = [];
 
     protected $hidden = ['created_at', 'updated_at'];
-
+    protected $appends = ['gallery_image_path'];
     public function main_image(): BelongsTo
     {
         return $this->belongsTo(Image::class, 'image_id', 'id');
@@ -32,6 +32,12 @@ class Gallery extends Model
     public function articles(): MorphToMany
     {
         return $this->morphToMany(Article::class, 'articleable');
+    }
+
+    public function getGalleryImagePathAttribute()
+    {
+        return config('app.url') . '/storage/' . $this->image;
+
     }
 
 }
