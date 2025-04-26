@@ -27,7 +27,7 @@ class GalleryController extends Controller
             'galleries.id',
             'galleries.title',
             'galleries.image',
-            DB::raw('CONCAT("' . config('app.url') . '", "/storage/", galleries.image) AS galleryimage_path')
+            //DB::raw('CONCAT("' . config('app.url') . '", "/storage/", galleries.image) AS gallery_image_path')
         ])
         ->with('main_image')
         ->with('images');
