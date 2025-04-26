@@ -197,4 +197,64 @@ class GalleryController extends Controller
         }
     }
 
+    public function deleteImage(Request $request, $id)
+    {
+        try {
+            $model = Gallery::findOrFail($id);
+            $field = $request->input('field', 'image');
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Нет изображения для удаления'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Изображение успешно удалено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    public function destroyImage($id, $field = 'image')
+    {
+        try {
+            $model = Gallery::findOrFail($id);
+
+            if (!$model->{$field}) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No image to delete'
+                ], 404);
+            }
+
+            Storage::disk('public')->delete($model->{$field});
+            $model->{$field} = null;
+            $model->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Image deleted successfully'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Error deleting image',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
+    }
+
 }
