@@ -543,7 +543,7 @@ class EventController extends Controller
             $eventType = $request->input('event_type', 1);
             $series = null;
 
-            if ($validated['series_id']) {
+            if (isset($validated['series_id']) && $validated['series_id']) {
                 $series = \App\Models\Series::find($validated['series_id']);
             }
 
