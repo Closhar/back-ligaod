@@ -113,6 +113,8 @@ class ApiEventController extends Controller
                         'title',
                         'city_id',
                         'slug',
+                        'map',
+                        'address',
                         'arena_image' => function ($query) {
                             $query->select(DB::raw("CONCAT('" . config('app.url') . "', '/storage/', arenas.image) AS full_image_path"));
                         },
