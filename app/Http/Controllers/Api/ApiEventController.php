@@ -35,6 +35,7 @@ class ApiEventController extends Controller
         $show_concrete_date = false; // индикатор, что фильтруем по конкретной дате - при true игнорируется фильтр ВРЕМЕННОЙ ПРОМЕЖУТОК
         $regionId = $request->input('region_id');
         $is_active = $request->input('is_active');
+        $show_native = $request->input('show_native'); // Показывать события с командой с regionID независимо от региона события
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -66,6 +67,7 @@ class ApiEventController extends Controller
                     $query->select([
                         'clubs.id',
                         'clubs.title',
+                        'clubs.region_id',
                         'image' => function ($query) {
                             $query->select(DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS full_image_path"));
                         },
@@ -91,6 +93,7 @@ class ApiEventController extends Controller
                     $query->select([
                         'clubs.id',
                         'clubs.title',
+                        'clubs.region_id',
                         'image' => function ($query) {
                             $query->select(DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS full_image_path"));
                         },
@@ -132,7 +135,24 @@ class ApiEventController extends Controller
             ]);
 
         if ($regionId) {
-            $query->where('region_id', $regionId);
+            if ($show_native) {
+                $query->where(function($q) use ($regionId) {
+                    $q->where('region_id', $regionId)
+                        ->orWhere(function($q2) use ($regionId) {
+                            $q2->where('region_id', '!=', $regionId)
+                                ->where(function($q3) use ($regionId) {
+                                    $q3->whereHas('club1', function($clubQuery) use ($regionId) {
+                                        $clubQuery->where('region_id', $regionId);
+                                    })
+                                    ->orWhereHas('club2', function($clubQuery) use ($regionId) {
+                                        $clubQuery->where('region_id', $regionId);
+                                    });
+                                });
+                        });
+                });
+            } else {
+                $query->where('region_id', $regionId);
+            }
         }
 
         if ($is_active) {
