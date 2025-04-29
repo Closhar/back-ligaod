@@ -33,6 +33,8 @@ class ApiEventController extends Controller
         $show = $request->input('show'); // По умолчанию показываем события с date_from >= сегодня
         $searchQuery = $request->input('q'); // Параметр поиска
         $show_concrete_date = false; // индикатор, что фильтруем по конкретной дате - при true игнорируется фильтр ВРЕМЕННОЙ ПРОМЕЖУТОК
+        $id_region = $request->input('id_region');
+        $is_active = $request->input('is_active');
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -125,6 +127,14 @@ class ApiEventController extends Controller
                     ]);
                 },
             ]);
+
+        if ($id_region) {
+            $query->where('id_region', $id_region);
+        }
+
+        if ($is_active) {
+            $query->where('is_active', $is_active);
+        }
 
         // Применяем фильтр по date_from и date_to
         if ($dateFrom && $dateTo) {
