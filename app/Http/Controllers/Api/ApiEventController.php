@@ -142,10 +142,10 @@ class ApiEventController extends Controller
                             $q2->where('region_id', '!=', $regionId)
                                 ->where(function($q3) use ($regionId) {
                                     $q3->whereHas('club1', function($clubQuery) use ($regionId) {
-                                        $clubQuery->where('region_id', $regionId);
+                                        $clubQuery->where('club1.region_id', $regionId);
                                     })
                                     ->orWhereHas('club2', function($clubQuery) use ($regionId) {
-                                        $clubQuery->where('region_id', $regionId);
+                                        $clubQuery->where('club2.region_id', $regionId);
                                     });
                                 });
                         });
