@@ -49,7 +49,7 @@ class ApiEventController extends Controller
             ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name')
             ->with([
                 'region' => function ($query) {
-                    $query->select(['id', 'title', 'short_title']);
+                    $query->select(['id', 'title', 'title_short']);
                 },
                 'competition' => function ($query) {
                     $query->select([
