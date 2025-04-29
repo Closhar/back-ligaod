@@ -545,6 +545,9 @@ class EventController extends Controller
 
             if (isset($validated['series_id']) && $validated['series_id']) {
                 $series = \App\Models\Series::find($validated['series_id']);
+                if ($series) {
+                    $series->update(['is_series' => $eventType]);
+                }
             }
 
             $createdEvents = [];
