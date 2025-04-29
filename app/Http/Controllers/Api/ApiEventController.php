@@ -36,6 +36,7 @@ class ApiEventController extends Controller
         $regionId = $request->input('region_id');
         $is_active = $request->input('is_active');
         $show_native = $request->input('show_native'); // Показывать события с командой с regionID независимо от региона события
+        $seriesId = $request->input('series_id'); // Добавляем получение series_id
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -308,6 +309,53 @@ class ApiEventController extends Controller
             $event->my_region = 1;
             if ($regionId && $event->region_id != $regionId) {
                 $event->my_region = 0;
+            }
+
+            // Вычисляем series_count если есть series_id
+            $event->series_count = null;
+            if ($event->series_id) {
+                $seriesEvents = Event::where('series_id', $event->series_id)
+                    ->where('id', '!=', $event->id)
+                    ->get();
+
+                $club1Wins = 0;
+                $club2Wins = 0;
+
+                foreach ($seriesEvents as $seriesEvent) {
+                    // Обработка основного результата
+                    $result = $seriesEvent->result;
+                    if ($result) {
+                        $scores = array_map(function($score) {
+                            return (int)preg_replace('/[^0-9]/', '', $score);
+                        }, explode(':', $result));
+
+                        if (count($scores) === 2) {
+                            if ($scores[0] > $scores[1]) {
+                                $club1Wins++;
+                            } elseif ($scores[0] < $scores[1]) {
+                                $club2Wins++;
+                            } else {
+                                // Если основной счет равен, проверяем дополнительный
+                                $dopResult = $seriesEvent->result_dop;
+                                if ($dopResult) {
+                                    $dopScores = array_map(function($score) {
+                                        return (int)preg_replace('/[^0-9]/', '', $score);
+                                    }, explode(':', $dopResult));
+
+                                    if (count($dopScores) === 2) {
+                                        if ($dopScores[0] > $dopScores[1]) {
+                                            $club1Wins++;
+                                        } elseif ($dopScores[0] < $dopScores[1]) {
+                                            $club2Wins++;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                $event->series_count = $club1Wins . ':' . $club2Wins;
             }
 
             return $event;
