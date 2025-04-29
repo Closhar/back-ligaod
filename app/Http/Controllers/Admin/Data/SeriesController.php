@@ -96,9 +96,16 @@ class SeriesController extends Controller
                 'match_info' => 'nullable|string|max:255',
                 'title_short' => 'required|string|max:255|unique:series,title_short',
                 'description' => 'nullable|string|max:50000',
+                'event_type' => 'nullable|string|max:255',
             ]);
 
-            $item = Series::create($validated);
+            $data = $validated;
+            if (isset($data['event_type'])) {
+                $data['is_series'] = $data['event_type'];
+                unset($data['event_type']);
+            }
+
+            $item = Series::create($data);
 
             return response()->json($item, 201);
 
