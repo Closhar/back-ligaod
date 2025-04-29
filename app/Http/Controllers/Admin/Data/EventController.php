@@ -546,25 +546,8 @@ class EventController extends Controller
             if (isset($validated['series_id']) && $validated['series_id']) {
                 $series = \App\Models\Series::find($validated['series_id']);
                 if ($series) {
-                    \Log::info('Before update series', [
-                        'series_id' => $validated['series_id'],
-                        'event_type' => $eventType,
-                        'event_type_type' => gettype($eventType),
-                        'current_is_series' => $series->is_series,
-                        'current_is_series_type' => gettype($series->is_series),
-                        'series_attributes' => $series->getAttributes()
-                    ]);
-
                     $series->is_series = $eventType;
                     $series->save();
-
-                    $series = $series->fresh();
-                    \Log::info('After update series', [
-                        'series_id' => $validated['series_id'],
-                        'new_is_series' => $series->is_series,
-                        'new_is_series_type' => gettype($series->is_series),
-                        'series_attributes' => $series->getAttributes()
-                    ]);
                 }
             }
 
