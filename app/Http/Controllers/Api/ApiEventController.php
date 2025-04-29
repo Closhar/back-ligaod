@@ -296,12 +296,18 @@ class ApiEventController extends Controller
         }
 
         // преобразуем дату и время
-        $events->transform(function ($event) {
+        $events->transform(function ($event) use ($regionId) {
             // Преобразуем date_from в формат "DD.MM.YYYY."
             $event->date_formatted = \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.');
 
             // Извлекаем время из date_from в формате "HH:MM"
             $event->time = \Carbon\Carbon::parse($event->date_from)->format('H:i');
+
+            // Добавляем параметр my_region
+            $event->my_region = 1;
+            if ($regionId && $event->region_id != $regionId) {
+                $event->my_region = 0;
+            }
 
             return $event;
         });
