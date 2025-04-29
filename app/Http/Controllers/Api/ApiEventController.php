@@ -314,14 +314,20 @@ class ApiEventController extends Controller
             // Вычисляем series_count если есть series_id
             $event->series_count = null;
             if ($event->series_id) {
-                $seriesEvents = Event::where('series_id', $event->series_id)
-                    ->where('id', '!=', $event->id)
-                    ->get();
+                $seriesEvents = Event::where('series_id', $event->series_id)->get();
 
                 $club1Wins = 0;
                 $club2Wins = 0;
 
+                // Определяем текущие команды
+                $currentClub1Id = $event->club1_id;
+                $currentClub2Id = $event->club2_id;
+
                 foreach ($seriesEvents as $seriesEvent) {
+                    // Определяем, какая команда в текущем событии соответствует club1 и club2
+                    $isClub1Home = ($seriesEvent->club1_id == $currentClub1Id && $seriesEvent->club2_id == $currentClub2Id);
+                    $isClub1Away = ($seriesEvent->club1_id == $currentClub2Id && $seriesEvent->club2_id == $currentClub1Id);
+
                     // Обработка основного результата
                     $result = $seriesEvent->result;
                     if ($result) {
@@ -330,23 +336,49 @@ class ApiEventController extends Controller
                         }, explode(':', $result));
 
                         if (count($scores) === 2) {
-                            if ($scores[0] > $scores[1]) {
-                                $club1Wins++;
-                            } elseif ($scores[0] < $scores[1]) {
-                                $club2Wins++;
-                            } else {
-                                // Если основной счет равен, проверяем дополнительный
-                                $dopResult = $seriesEvent->result_dop;
-                                if ($dopResult) {
-                                    $dopScores = array_map(function($score) {
-                                        return (int)preg_replace('/[^0-9]/', '', $score);
-                                    }, explode(':', $dopResult));
+                            if ($isClub1Home) {
+                                // Если команды в том же порядке
+                                if ($scores[0] > $scores[1]) {
+                                    $club1Wins++;
+                                } elseif ($scores[0] < $scores[1]) {
+                                    $club2Wins++;
+                                } else {
+                                    // Если основной счет равен, проверяем дополнительный
+                                    $dopResult = $seriesEvent->result_dop;
+                                    if ($dopResult) {
+                                        $dopScores = array_map(function($score) {
+                                            return (int)preg_replace('/[^0-9]/', '', $score);
+                                        }, explode(':', $dopResult));
 
-                                    if (count($dopScores) === 2) {
-                                        if ($dopScores[0] > $dopScores[1]) {
-                                            $club1Wins++;
-                                        } elseif ($dopScores[0] < $dopScores[1]) {
-                                            $club2Wins++;
+                                        if (count($dopScores) === 2) {
+                                            if ($dopScores[0] > $dopScores[1]) {
+                                                $club1Wins++;
+                                            } elseif ($dopScores[0] < $dopScores[1]) {
+                                                $club2Wins++;
+                                            }
+                                        }
+                                    }
+                                }
+                            } elseif ($isClub1Away) {
+                                // Если команды поменялись местами
+                                if ($scores[0] < $scores[1]) {
+                                    $club1Wins++;
+                                } elseif ($scores[0] > $scores[1]) {
+                                    $club2Wins++;
+                                } else {
+                                    // Если основной счет равен, проверяем дополнительный
+                                    $dopResult = $seriesEvent->result_dop;
+                                    if ($dopResult) {
+                                        $dopScores = array_map(function($score) {
+                                            return (int)preg_replace('/[^0-9]/', '', $score);
+                                        }, explode(':', $dopResult));
+
+                                        if (count($dopScores) === 2) {
+                                            if ($dopScores[0] < $dopScores[1]) {
+                                                $club1Wins++;
+                                            } elseif ($dopScores[0] > $dopScores[1]) {
+                                                $club2Wins++;
+                                            }
                                         }
                                     }
                                 }
