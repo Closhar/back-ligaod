@@ -52,6 +52,7 @@ class ApiEventController extends Controller
                 'region' => function ($query) {
                     $query->select(['id', 'title', 'title_short']);
                 },
+                'streams',
                 'competition' => function ($query) {
                     $query->select([
                         'id',
