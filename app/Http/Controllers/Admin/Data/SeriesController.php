@@ -150,6 +150,7 @@ class SeriesController extends Controller
                 'match_info' => 'nullable|string|max:255',
                 'title_short' => 'string|max:255|unique:series,title_short,' . $id,
                 'description' => 'nullable|string|max:50000',
+                'is_series' => 'string|max:255',
             ]);
 
             // Затем поиск и обновление
