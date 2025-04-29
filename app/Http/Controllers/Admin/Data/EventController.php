@@ -535,7 +535,7 @@ class EventController extends Controller
                 'region_id' => 'integer|exists:regions,id|nullable',
                 'series_id' => 'integer|exists:series,id|nullable',
                 'competition_id' => 'required|integer|exists:competitions,id',
-                'is_active' => 'boolean',
+                'is_active' => 'boolean',                'even' => 'boolean',
             ]);
 
             $validated['date_from'] = date('Y-m-d H:i:s', strtotime($validated['date_from']));
@@ -545,6 +545,10 @@ class EventController extends Controller
 
             if (isset($validated['series_id']) && $validated['series_id']) {
                 $series = \App\Models\Series::find($validated['series_id']);
+                if ($series) {
+                    $series->is_series = $eventType;
+                    $series->save();
+                }
             }
 
             $createdEvents = [];
