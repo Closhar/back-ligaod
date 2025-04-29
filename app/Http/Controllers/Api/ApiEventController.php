@@ -64,8 +64,7 @@ class ApiEventController extends Controller
                         'bg_image',
                         'sport_id',
                         'gender_id',
-                        'about',
-                        'is_series'
+                        'about'
                     ])->with(['sport', 'gender']);
                 },
                 'club1' => function ($query) {
