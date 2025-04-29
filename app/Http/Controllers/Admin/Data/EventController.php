@@ -540,7 +540,7 @@ class EventController extends Controller
 
             $validated['date_from'] = date('Y-m-d H:i:s', strtotime($validated['date_from']));
             $maxMatches = $request->input('max_matches', 1);
-            $eventType = $request->input('event_type', '1');
+            $eventType = (string)$request->input('event_type', 1);
             $series = null;
 
             if (isset($validated['series_id']) && $validated['series_id']) {
