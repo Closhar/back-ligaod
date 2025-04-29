@@ -33,7 +33,7 @@ class ApiEventController extends Controller
         $show = $request->input('show'); // По умолчанию показываем события с date_from >= сегодня
         $searchQuery = $request->input('q'); // Параметр поиска
         $show_concrete_date = false; // индикатор, что фильтруем по конкретной дате - при true игнорируется фильтр ВРЕМЕННОЙ ПРОМЕЖУТОК
-        $id_region = $request->input('id_region');
+        $regionId = $request->input('region_id');
         $is_active = $request->input('is_active');
 
         $sportSlugItem = $request->input('sport_item');
@@ -46,8 +46,11 @@ class ApiEventController extends Controller
 
         // Основной запрос с фильтрацией
         $query = Event::query()
-            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'event_name')
+            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name')
             ->with([
+                'region' => function ($query) {
+                    $query->select(['id', 'title', 'short_title']);
+                },
                 'competition' => function ($query) {
                     $query->select([
                         'id',
@@ -128,8 +131,8 @@ class ApiEventController extends Controller
                 },
             ]);
 
-        if ($id_region) {
-            $query->where('id_region', $id_region);
+        if ($regionId) {
+            $query->where('region_id', $regionId);
         }
 
         if ($is_active) {
