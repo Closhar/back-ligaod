@@ -96,7 +96,7 @@ class SeriesController extends Controller
                 'match_info' => 'nullable|string|max:255',
                 'title_short' => 'required|string|max:255|unique:series,title_short',
                 'description' => 'nullable|string|max:50000',
-                'event_type' => 'nullable|string|max:255',
+                'event_type' => 'required|string|max:255',
             ]);
 
             $data = $validated;
