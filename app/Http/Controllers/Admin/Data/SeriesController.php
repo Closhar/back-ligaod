@@ -62,7 +62,8 @@ class SeriesController extends Controller
                     'title_short' => $series->title_short,
                     'match_info' => $series->match_info,
                     'description' => $series->description,
-                    'series_type_id' => $series->series_type_id
+                    'series_type_id' => $series->series_type_id,
+                    'series_type' => $series->seriesType
                 ];
             })->toArray();
         }
