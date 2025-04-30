@@ -19,6 +19,11 @@ class Series extends Model
         'title_short',
         'description',
         'match_info',
-        'is_series'
+        'series_type_id'
     ];
+
+    public function seriesType()
+    {
+        return $this->belongsTo(SeriesType::class);
+    }
 }

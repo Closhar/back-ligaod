@@ -30,7 +30,7 @@ class SeriesController extends Controller
                 'match_info',
                 'title_short',
                 'description',
-                'is_series'
+                'series_type_id'
             );
 
         // Применяем поиск по ID, если указан
@@ -61,7 +61,7 @@ class SeriesController extends Controller
                     'title_short' => $series->title_short,
                     'match_info' => $series->match_info,
                     'description' => $series->description,
-                    'is_series' => $series->is_series
+                    'series_type_id' => $series->series_type_id
                 ];
             })->toArray();
         }

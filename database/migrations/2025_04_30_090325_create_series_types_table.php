@@ -13,7 +13,8 @@ return new class extends Migration
     {
         Schema::create('series_types', function (Blueprint $table) {
             $table->id();
-            $table->timestamps();
+            $table->string('title');
+            $table->string('title_short');
         });
     }
 
