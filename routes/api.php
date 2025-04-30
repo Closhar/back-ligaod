@@ -165,6 +165,7 @@ Route::post('events/{event}/swap-fields', [EventController::class, 'swapFields']
 Route::post('relations/detach', [EventStreamController::class, 'detach']);
 
 Route::apiResource('streams', StreamController::class);
+Route::apiResource('stream-hints', StreamHintController::class);
 Route::apiResource('genders', GenderController::class);
 Route::apiResource('arenas', ArenaController::class);
 Route::post('arenas/{id}/upload-image', [ArenaController::class, 'uploadImage']);
