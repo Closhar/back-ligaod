@@ -31,7 +31,8 @@ class SeriesController extends Controller
                 'title_short',
                 'description',
                 'series_type_id'
-            );
+            )
+            ->with('seriesType');
 
         // Применяем поиск по ID, если указан
         if ($searchId) {
