@@ -24,6 +24,6 @@ class Series extends Model
 
     public function seriesType()
     {
-        return $this->belongsTo(SeriesType::class);
+        return $this->belongsTo(SeriesType::class, 'series_type_id', 'id');
     }
 }
