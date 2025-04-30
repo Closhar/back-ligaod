@@ -539,21 +539,35 @@ class EventController extends Controller
             ]);
 
             $validated['date_from'] = date('Y-m-d H:i:s', strtotime($validated['date_from']));
-            $maxMatches = $request->input('max_matches', 1);
-            $eventType = (string)$request->input('event_type', 1);
+
+            // Получаем параметры для создания серии событий
+            $maxMatches = $request->input('max_matches');
+            $seriesTypeId = $request->input('series_type_id');
+
+            // Если указан max_matches, series_type_id становится обязательным
+            if ($maxMatches !== null) {
+                $request->validate([
+                    'series_type_id' => 'required|integer'
+                ]);
+                $seriesTypeId = (int)$seriesTypeId;
+            } else {
+                $maxMatches = 1;
+                $seriesTypeId = 1;
+            }
+
             $series = null;
 
             if (isset($validated['series_id']) && $validated['series_id']) {
                 $series = \App\Models\Series::find($validated['series_id']);
                 if ($series) {
-                    $series->is_series = $eventType;
+                    $series->series_type_id = $seriesTypeId;
                     $series->save();
                 }
             }
 
             $createdEvents = [];
 
-            if ($eventType == 1) {
+            if ($seriesTypeId == 1) {
                 // Создаем max_matches одинаковых событий с нумерацией
                 for ($i = 1; $i <= $maxMatches; $i++) {
                     $eventData = $validated;
