@@ -157,6 +157,7 @@ Route::apiResource('cities', CityController::class);
 Route::apiResource('sport_properties', SportPropertyController::class);
 Route::apiResource('regions', \App\Http\Controllers\Admin\Data\RegionController::class);
 Route::apiResource('series', \App\Http\Controllers\Admin\Data\SeriesController::class);
+Route::apiResource('series-types', \App\Http\Controllers\Admin\Data\SeriesTypeController::class);
 
 Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
 Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
