@@ -101,6 +101,7 @@ class SeriesController extends Controller
                 'title_short' => 'required|string|max:255|unique:series,title_short',
                 'description' => 'nullable|string|max:50000',
                 'event_type' => 'string|max:255',
+                'series_type_id' => 'exists:series_types,id',
             ]);
 
             $data = $validated;
@@ -153,6 +154,7 @@ class SeriesController extends Controller
                 'title_short' => 'string|max:255|unique:series,title_short,' . $id,
                 'description' => 'nullable|string|max:50000',
                 'is_series' => 'string|max:255',
+                'series_type_id' => 'exists:series_types,id',
             ]);
 
             // Затем поиск и обновление
