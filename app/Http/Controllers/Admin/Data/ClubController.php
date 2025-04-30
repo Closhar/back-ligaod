@@ -291,7 +291,8 @@ class ClubController extends Controller
                 'age_id' => 'nullable|exists:ages,id',
                 'is_alien' => 'boolean',
                 'image' => 'nullable|string|max:255',
-                'image_bg' => 'nullable|string|max:255'
+                'image_bg' => 'nullable|string|max:255',
+                'region_id' => 'nullable|exists:regions,id'
             ]);
 
             $item = Club::findOrFail($id);
