@@ -54,7 +54,8 @@ class StreamController extends Controller
                 'date' => 'required|date_format:Y-m-d H:i:s',
                 'title' => 'required|string|max:255',
                 'link' => 'required|url',
-                'event_id' => 'integer|exists:events,id'
+                'event_id' => 'integer|exists:events,id',
+                'in_player' => 'boolean'
             ]);
 
             $stream = Stream::create($validated);
@@ -92,7 +93,8 @@ class StreamController extends Controller
             'date' => 'sometimes|required|date',
             'title' => 'sometimes|required|string|max:255',
             'link' => 'nullable|url|max:500',
-            'event_id' => 'nullable|integer|exists:events,id'
+            'event_id' => 'nullable|integer|exists:events,id',
+            'in_player' => 'boolean'
         ]);
 
         if ($validator->fails()) {
