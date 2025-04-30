@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\Data\ImageController;
 use App\Http\Controllers\Admin\Data\SportController;
 use App\Http\Controllers\Admin\Data\StreamController;
 use App\Http\Controllers\Admin\Data\SportPropertyController;
+use App\Http\Controllers\Admin\Data\StreamHintController;
 use App\Http\Controllers\Admin\Data\VideoController;
 use App\Http\Controllers\Api\ApiAgeController;
 use App\Http\Controllers\Api\ApiArenaController;
