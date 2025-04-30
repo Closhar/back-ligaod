@@ -18,6 +18,11 @@ class StreamHintController extends Controller
             $query->where('id', $request->input('id'));
         }
 
+        // Поиск по подсказке
+        if ($request->has('q')) {
+            $query->where('hint', 'like', '%' . $request->input('q') . '%');
+        }
+
         return $query->paginate($request->input('per_page', 10));
     }
 
