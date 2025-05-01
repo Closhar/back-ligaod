@@ -544,56 +544,63 @@ class EventController extends Controller
             $maxMatches = $request->input('max_matches');
             $seriesTypeId = $request->input('series_type_id');
 
-            // Если указан max_matches, series_type_id становится обязательным
-            if ($maxMatches !== null) {
-                $request->validate([
-                    'series_type_id' => 'required|integer'
-                ]);
-                $seriesTypeId = (int)$seriesTypeId;
-            } else {
-                $maxMatches = 1;
-                $seriesTypeId = 1;
-            }
-
-            $series = null;
-
-            if (isset($validated['series_id']) && $validated['series_id']) {
-                $series = \App\Models\Series::find($validated['series_id']);
-                if ($series) {
-                    $series->series_type_id = $seriesTypeId;
-                    $series->save();
+            // Если указан series_type_id, выполняем логику создания серии
+            if ($seriesTypeId !== null) {
+                // Если указан max_matches, series_type_id становится обязательным
+                if ($maxMatches === null) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Параметр max_matches обязателен при указании series_type_id'
+                    ], 422);
                 }
-            }
 
-            $createdEvents = [];
+                $series = null;
 
-            if ($seriesTypeId == 1) {
-                // Создаем max_matches одинаковых событий с нумерацией
-                for ($i = 1; $i <= $maxMatches; $i++) {
-                    $eventData = $validated;
-                    if ($series && $series->match_info) {
-                        $eventData['title'] = $series->match_info . ' Матч ' . $i;
+                if (isset($validated['series_id']) && $validated['series_id']) {
+                    $series = \App\Models\Series::find($validated['series_id']);
+                    if ($series) {
+                        $series->series_type_id = $seriesTypeId;
+                        $series->save();
                     }
-                    $item = Event::create($eventData);
-                    $createdEvents[] = $item;
                 }
-            } else {
-                // Создаем один основной матч и N-1 матчей без команд
-                $eventData = $validated;
-                $mainEvent = Event::create($eventData);
-                $createdEvents[] = $mainEvent;
 
-                for ($i = 2; $i <= $maxMatches; $i++) {
+                $createdEvents = [];
+
+                if ($seriesTypeId == 1) {
+                    // Создаем max_matches одинаковых событий с нумерацией
+                    for ($i = 1; $i <= $maxMatches; $i++) {
+                        $eventData = $validated;
+                        if ($series && $series->match_info) {
+                            $eventData['title'] = $series->match_info . ' Матч ' . $i;
+                        }
+                        $eventData['is_active'] = 0;
+                        $item = Event::create($eventData);
+                        $createdEvents[] = $item;
+                    }
+                } else {
+                    // Создаем один основной матч и N-1 матчей без команд
                     $eventData = $validated;
-                    $eventData['club1_id'] = null;
-                    $eventData['club2_id'] = null;
-                    $eventData['title'] = null;
-                    $item = Event::create($eventData);
-                    $createdEvents[] = $item;
+                    $eventData['is_active'] = 0;
+                    $mainEvent = Event::create($eventData);
+                    $createdEvents[] = $mainEvent;
+
+                    for ($i = 2; $i <= $maxMatches; $i++) {
+                        $eventData = $validated;
+                        $eventData['club1_id'] = null;
+                        $eventData['club2_id'] = null;
+                        $eventData['title'] = null;
+                        $eventData['is_active'] = 0;
+                        $item = Event::create($eventData);
+                        $createdEvents[] = $item;
+                    }
                 }
+
+                return response()->json($createdEvents, 201);
             }
 
-            return response()->json($createdEvents, 201);
+            // Если series_type_id не указан, просто создаем одно событие
+            $event = Event::create($validated);
+            return response()->json($event, 201);
 
         } catch (ValidationException $e) {
             return response()->json([
