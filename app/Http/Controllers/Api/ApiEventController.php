@@ -393,7 +393,7 @@ class ApiEventController extends Controller
                         }
                     }
 
-                    $event->series_count = $club1Wins . ':' . $club2Wins;
+                    $event->series_count = $club1Wins . '-' . $club2Wins;
                 } elseif ($series->series_type_id == 2) {
                     // Тип 2: подсчет голов
                     $club1Goals = 0;
