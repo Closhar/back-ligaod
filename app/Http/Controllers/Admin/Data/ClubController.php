@@ -279,6 +279,7 @@ class ClubController extends Controller
                 'emails' => 'nullable|string',
                 'sites' => 'nullable|string',
                 'vks' => 'nullable|string',
+                'telegrams' => 'nullable|string',
                 'instagrams' => 'nullable|string',
                 'youtubes' => 'nullable|string',
                 'facebooks' => 'nullable|string',
