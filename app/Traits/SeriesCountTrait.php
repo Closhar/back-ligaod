@@ -16,6 +16,8 @@ trait SeriesCountTrait
         $series = Series::with('seriesType')->find($event->series_id);
         $seriesEvents = Event::where('series_id', $event->series_id)->get();
 
+        $seriesCount = null;
+
         if ($series->series_type_id == 1) {
             // Тип 1: подсчет побед
             $club1Wins = 0;
