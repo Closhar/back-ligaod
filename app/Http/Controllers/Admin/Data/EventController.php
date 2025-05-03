@@ -921,4 +921,121 @@ class EventController extends Controller
         }
     }
 
+    public function getRelValue(Request $request, $id)
+    {
+        try {
+            // Получаем параметры из запроса
+            $field = $request->query('field');
+            $relField = $request->query('rel_field');
+
+            // Находим событие
+            $event = Event::findOrFail($id);
+
+            // Проверяем существование поля отношений
+            if (!str_contains($relField, '.')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Неверный формат поля отношений'
+                ], 400);
+            }
+
+            // Разбиваем путь к полю на части (например, 'series.description')
+            $parts = explode('.', $relField);
+            $relation = $parts[0];
+            $fieldName = $parts[1];
+
+            // Проверяем существование отношения
+            if (!method_exists($event, $relation)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Отношение не найдено'
+                ], 400);
+            }
+
+            // Загружаем связанную модель
+            $event->load($relation);
+
+            // Получаем значение поля
+            $value = $event->$relation->$fieldName ?? '';
+
+            return response()->json([
+                'success' => true,
+                'value' => $value
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Обновление значения поля отношений
+     *
+     * @param Request $request
+     * @param int $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function updateRelValue(Request $request, $id)
+    {
+        try {
+            // Валидация входных данных
+            $request->validate([
+                'field' => 'required|string',
+                'rel_field' => 'required|string',
+                'value' => 'required'
+            ]);
+
+            // Получаем параметры из запроса
+            $field = $request->input('field');
+            $relField = $request->input('rel_field');
+            $value = $request->input('value');
+
+            // Находим событие
+            $event = Event::findOrFail($id);
+
+            // Проверяем существование поля отношений
+            if (!str_contains($relField, '.')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Неверный формат поля отношений'
+                ], 400);
+            }
+
+            // Разбиваем путь к полю на части
+            $parts = explode('.', $relField);
+            $relation = $parts[0];
+            $fieldName = $parts[1];
+
+            // Проверяем существование отношения
+            if (!method_exists($event, $relation)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Отношение не найдено'
+                ], 400);
+            }
+
+            // Загружаем связанную модель
+            $event->load($relation);
+
+            // Обновляем значение поля
+            $relatedModel = $event->$relation;
+            $relatedModel->$fieldName = $value;
+            $relatedModel->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Значение успешно обновлено'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
