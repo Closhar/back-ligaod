@@ -31,7 +31,8 @@ class EventStreamController extends Controller
             'date' => 'required|date',
             'title' => 'required|string|max:255',
             'link' => 'nullable|url|max:500',
-            'in_player' => 'boolean'
+            'in_player' => 'boolean',
+            'in_profile' => 'boolean'
         ]);
 
         if ($validator->fails()) {
