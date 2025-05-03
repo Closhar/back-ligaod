@@ -319,7 +319,11 @@ class ApiEventController extends Controller
 
             // Вычисляем series_count если он не установлен
             if ($event->series_id && $event->series_count === null) {
-                $this->calculateSeriesCount($event);
+                $eventModel = Event::find($event->id);
+                if ($eventModel) {
+                    $this->calculateSeriesCount($eventModel);
+                    $event->series_count = $eventModel->series_count;
+                }
             }
 
             return $event;
