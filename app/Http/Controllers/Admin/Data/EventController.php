@@ -1056,10 +1056,10 @@ class EventController extends Controller
         return $modelClass;
     }
 
-    public function bulkDelete(Request $request, $model)
+    public function bulkDelete(Request $request)
     {
         try {
-            $modelClass = $this->getModelClass($model);
+            $modelClass = $this->getModelClass('Event');
             $ids = $request->input('ids', []);
 
             if (empty($ids)) {
