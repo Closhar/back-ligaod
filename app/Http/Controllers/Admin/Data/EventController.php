@@ -1038,6 +1038,24 @@ class EventController extends Controller
         }
     }
 
+    /**
+     * Получает полное имя класса модели по её короткому имени
+     *
+     * @param string $model Короткое имя модели
+     * @return string Полное имя класса модели
+     * @throws \Exception Если модель не найдена
+     */
+    private function getModelClass(string $model): string
+    {
+        $modelClass = 'App\\Models\\' . ucfirst($model);
+
+        if (!class_exists($modelClass)) {
+            throw new \Exception("Модель {$model} не найдена");
+        }
+
+        return $modelClass;
+    }
+
     public function bulkDelete(Request $request, $model)
     {
         try {
