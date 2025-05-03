@@ -984,13 +984,13 @@ class EventController extends Controller
             // Валидация входных данных
             $request->validate([
                 'field' => 'required|string',
-                'rel_field' => 'required|string',
+                //'rel_field' => 'required|string',
                 'value' => 'required'
             ]);
 
             // Получаем параметры из запроса
-            $field = $request->input('field');
-            $relField = $request->input('rel_field');
+            //$field = $request->input('field');
+            $relField = $request->input('field');
             $value = $request->input('value');
 
             // Находим событие
