@@ -167,6 +167,8 @@ Route::post('relations/detach', [EventStreamController::class, 'detach']);
 
 Route::get('events/{id}/rel-value', [EventController::class, 'getRelValue']);
 Route::post('events/{id}/rel-value', [EventController::class, 'updateRelValue']);
+Route::post('events/bulk-delete', [EventController::class, 'bulkDelete'])->name('events.bulk-delete');
+
 
 Route::apiResource('streams', StreamController::class);
 Route::apiResource('stream-hints', StreamHintController::class);

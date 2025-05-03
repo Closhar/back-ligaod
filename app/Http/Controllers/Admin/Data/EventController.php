@@ -1038,4 +1038,22 @@ class EventController extends Controller
         }
     }
 
+    public function bulkDelete(Request $request, $model)
+    {
+        try {
+            $modelClass = $this->getModelClass($model);
+            $ids = $request->input('ids', []);
+
+            if (empty($ids)) {
+                return response()->json(['error' => 'Не выбраны записи для удаления'], 400);
+            }
+
+            $modelClass::whereIn('id', $ids)->delete();
+
+            return response()->json(['message' => 'Записи успешно удалены']);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
 }
