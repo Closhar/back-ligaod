@@ -138,9 +138,6 @@ Route::post('events/{id}/upload-image', [EventController::class, 'uploadImage'])
 Route::delete('events/{id}/image', [EventController::class, 'destroyImage']);
 Route::post('events/{id}/delete-image', [EventController::class, 'deleteImage']);
 
-Route::get('/{id}/rel-value', [EventController::class, 'getRelValue']);
-Route::post('/{id}/rel-value', [EventController::class, 'updateRelValue']);
-
 Route::apiResource('sports', SportController::class);
 Route::post('sports/{id}/upload-image', [SportController::class, 'uploadImage']);
 Route::delete('sports/{id}/image', [SportController::class, 'destroyImage']);
@@ -167,6 +164,9 @@ Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
 Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
 Route::post('events/{event}/swap-fields', [EventController::class, 'swapFields']);
 Route::post('relations/detach', [EventStreamController::class, 'detach']);
+
+Route::get('events/{id}/rel-value', [EventController::class, 'getRelValue']);
+Route::post('events/{id}/rel-value', [EventController::class, 'updateRelValue']);
 
 Route::apiResource('streams', StreamController::class);
 Route::apiResource('stream-hints', StreamHintController::class);
