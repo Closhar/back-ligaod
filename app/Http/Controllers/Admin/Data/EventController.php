@@ -15,9 +15,12 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Http\JsonResponse;
+use App\Traits\SeriesCountTrait;
 
 class EventController extends Controller
 {
+    use SeriesCountTrait;
+
     public function index(Request $request)
     {
         // Получаем параметры фильтрации из запроса
@@ -66,7 +69,7 @@ class EventController extends Controller
         // Основной запрос с фильтрацией
         $query = Event::query()
             ->select('id', 'region_id', 'series_id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id',
-                'club1_id', 'club2_id', 'event_name', "is_active", 'about',
+                'club1_id', 'club2_id', 'event_name', "is_active", 'about', 'series_count',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path')
             )
             ->withCount('streams')
@@ -369,6 +372,15 @@ class EventController extends Controller
 
         // Преобразуем данные для ответа
         $transformedEvents = $events->map(function ($event) {
+            // Вычисляем series_count если он не установлен
+            if ($event->series_id && $event->series_count === null) {
+                $eventModel = Event::find($event->id);
+                if ($eventModel) {
+                    $this->calculateSeriesCount($eventModel);
+                    $event->series_count = $eventModel->series_count;
+                }
+            }
+
             // Формируем club_info для club1
             $club1Info = null;
             if ($event->club1) {
@@ -429,6 +441,7 @@ class EventController extends Controller
                 'competition' => $event->competition,
                 'region' => $event->region,
                 'series' => $event->series,
+                'series_count' => $event->series_count,
                 'club1' => $event->club1 ? array_merge($event->club1->toArray(), [
                     'club_info' => $club1Info,
                     'image' => $club1Image
@@ -595,11 +608,24 @@ class EventController extends Controller
                     }
                 }
 
+                // Вычисляем series_count для всех созданных событий
+                foreach ($createdEvents as $createdEvent) {
+                    if ($createdEvent->series_id) {
+                        $this->calculateSeriesCount($createdEvent);
+                    }
+                }
+
                 return response()->json($createdEvents, 201);
             }
 
             // Если series_type_id не указан, просто создаем одно событие
             $event = Event::create($validated);
+
+            // Вычисляем series_count если есть series_id
+            if ($event->series_id) {
+                $this->calculateSeriesCount($event);
+            }
+
             return response()->json($event, 201);
 
         } catch (ValidationException $e) {
@@ -676,6 +702,11 @@ class EventController extends Controller
             }
 
             $event->update($validated);
+
+            // Вычисляем series_count если есть series_id
+            if ($event->series_id) {
+                $this->calculateSeriesCount($event);
+            }
 
             return response()->json([
                 'success' => true,

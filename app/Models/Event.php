@@ -21,6 +21,24 @@ class Event extends Model
     protected $withCount = ['streams'];
     protected $dates = ['date_from'];
 
+    protected $fillable = [
+        'title',
+        'date_from',
+        'date_to',
+        'result',
+        'result_dop',
+        'image',
+        'competition_id',
+        'arena_id',
+        'club1_id',
+        'club2_id',
+        'region_id',
+        'is_active',
+        'event_name',
+        'series_id',
+        'series_count'
+    ];
+
     public function competition(): BelongsTo
     {
         return $this->belongsTo(Competition::class);

@@ -6,11 +6,14 @@ use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Gender;
 use App\Models\Series;
+use App\Traits\SeriesCountTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class ApiEventController extends Controller
 {
+    use SeriesCountTrait;
+
     /**
      * Display a listing of the resource.
      */
@@ -49,7 +52,7 @@ class ApiEventController extends Controller
 
         // Основной запрос с фильтрацией
         $query = Event::query()
-            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name', 'series_id')
+            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name', 'series_id', 'series_count')
             ->with([
                 'region' => function ($query) {
                     $query->select(['id', 'title', 'title_short']);
@@ -314,123 +317,9 @@ class ApiEventController extends Controller
                 $event->my_region = 0;
             }
 
-            // Вычисляем series_count если есть series_id
-            $event->series_count = null;
-            if ($event->series_id) {
-                $series = Series::with('seriesType')->find($event->series_id);
-                $seriesEvents = Event::where('series_id', $event->series_id)->get();
-
-                if ($series->series_type_id == 1) {
-                    // Тип 1: подсчет побед
-                    $club1Wins = 0;
-                    $club2Wins = 0;
-
-                    // Определяем текущие команды
-                    $currentClub1Id = $event->club1_id;
-                    $currentClub2Id = $event->club2_id;
-
-                    foreach ($seriesEvents as $seriesEvent) {
-                        // Определяем, какая команда в текущем событии соответствует club1 и club2
-                        $isClub1Home = ($seriesEvent->club1_id == $currentClub1Id && $seriesEvent->club2_id == $currentClub2Id);
-                        $isClub1Away = ($seriesEvent->club1_id == $currentClub2Id && $seriesEvent->club2_id == $currentClub1Id);
-
-                        // Обработка основного результата
-                        $result = $seriesEvent->result;
-                        if ($result) {
-                            $scores = array_map(function($score) {
-                                return (int)preg_replace('/[^0-9]/', '', $score);
-                            }, explode(':', $result));
-
-                            if (count($scores) === 2) {
-                                if ($isClub1Home) {
-                                    // Если команды в том же порядке
-                                    if ($scores[0] > $scores[1]) {
-                                        $club1Wins++;
-                                    } elseif ($scores[0] < $scores[1]) {
-                                        $club2Wins++;
-                                    } else {
-                                        // Если основной счет равен, проверяем дополнительный
-                                        $dopResult = $seriesEvent->result_dop;
-                                        if ($dopResult) {
-                                            $dopScores = array_map(function($score) {
-                                                return (int)preg_replace('/[^0-9]/', '', $score);
-                                            }, explode(':', $dopResult));
-
-                                            if (count($dopScores) === 2) {
-                                                if ($dopScores[0] > $dopScores[1]) {
-                                                    $club1Wins++;
-                                                } elseif ($dopScores[0] < $dopScores[1]) {
-                                                    $club2Wins++;
-                                                }
-                                            }
-                                        }
-                                    }
-                                } elseif ($isClub1Away) {
-                                    // Если команды поменялись местами
-                                    if ($scores[0] < $scores[1]) {
-                                        $club1Wins++;
-                                    } elseif ($scores[0] > $scores[1]) {
-                                        $club2Wins++;
-                                    } else {
-                                        // Если основной счет равен, проверяем дополнительный
-                                        $dopResult = $seriesEvent->result_dop;
-                                        if ($dopResult) {
-                                            $dopScores = array_map(function($score) {
-                                                return (int)preg_replace('/[^0-9]/', '', $score);
-                                            }, explode(':', $dopResult));
-
-                                            if (count($dopScores) === 2) {
-                                                if ($dopScores[0] < $dopScores[1]) {
-                                                    $club1Wins++;
-                                                } elseif ($dopScores[0] > $dopScores[1]) {
-                                                    $club2Wins++;
-                                                }
-                                            }
-                                        }
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    $event->series_count = $club1Wins . '-' . $club2Wins;
-                } elseif ($series->series_type_id == 2) {
-                    // Тип 2: подсчет голов
-                    $club1Goals = 0;
-                    $club2Goals = 0;
-
-                    // Определяем текущие команды
-                    $currentClub1Id = $event->club1_id;
-                    $currentClub2Id = $event->club2_id;
-
-                    foreach ($seriesEvents as $seriesEvent) {
-                        // Определяем, какая команда в текущем событии соответствует club1 и club2
-                        $isClub1Home = ($seriesEvent->club1_id == $currentClub1Id && $seriesEvent->club2_id == $currentClub2Id);
-                        $isClub1Away = ($seriesEvent->club1_id == $currentClub2Id && $seriesEvent->club2_id == $currentClub1Id);
-
-                        // Обработка основного результата
-                        $result = $seriesEvent->result;
-                        if ($result) {
-                            $scores = array_map(function($score) {
-                                return (int)preg_replace('/[^0-9]/', '', $score);
-                            }, explode(':', $result));
-
-                            if (count($scores) === 2) {
-                                if ($isClub1Home) {
-                                    // Если команды в том же порядке
-                                    $club1Goals += $scores[0];
-                                    $club2Goals += $scores[1];
-                                } elseif ($isClub1Away) {
-                                    // Если команды поменялись местами
-                                    $club1Goals += $scores[1];
-                                    $club2Goals += $scores[0];
-                                }
-                            }
-                        }
-                    }
-
-                    $event->series_count = $club1Goals . ':' . $club2Goals;
-                }
+            // Вычисляем series_count если он не установлен
+            if ($event->series_id && $event->series_count === null) {
+                $this->calculateSeriesCount($event);
             }
 
             return $event;
@@ -450,7 +339,13 @@ class ApiEventController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $event = Event::create($request->all());
+
+        if ($event->series_id) {
+            $this->calculateSeriesCount($event);
+        }
+
+        return response()->json($event, 201);
     }
 
     /**
@@ -585,9 +480,15 @@ class ApiEventController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Gender $gender)
+    public function update(Request $request, Event $event)
     {
-        //
+        $event->update($request->all());
+
+        if ($event->series_id) {
+            $this->calculateSeriesCount($event);
+        }
+
+        return response()->json($event);
     }
 
     /**
