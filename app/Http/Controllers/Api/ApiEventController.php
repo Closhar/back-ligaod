@@ -318,24 +318,42 @@ class ApiEventController extends Controller
             }
 
             // Вычисляем series_count если он не установлен
-            if ($event->series_id && $event->series_count === null) {
-                $eventModel = Event::find($event->id);
-                if ($eventModel) {
-                    $this->calculateSeriesCount($eventModel);
-                    $event->series_count = $eventModel->series_count;
+            if ($event->series_id) {
+                if ($event->series_count === null) {
+                    $eventModel = Event::find($event->id);
+                    if ($eventModel) {
+                        $this->calculateSeriesCount($eventModel);
+                        $event->series_count = $eventModel->series_count;
+                    }
                 }
+            } else {
+                $event->series_count = null;
             }
 
             return $event;
         });
 
         // Формируем ответ
-        return [
+        $response = [
             'total' => $total,
             'per_page' => $getEvents !== null ? null : $perPage,
             'current_page' => $getEvents !== null ? null : $page,
             'data' => $events,
         ];
+
+        // Добавляем отладочную информацию
+        if (config('app.debug')) {
+            $response['debug'] = [
+                'events_with_series' => $events->filter(function($event) {
+                    return $event->series_id !== null;
+                })->count(),
+                'events_with_series_count' => $events->filter(function($event) {
+                    return $event->series_count !== null;
+                })->count()
+            ];
+        }
+
+        return $response;
     }
 
     /**

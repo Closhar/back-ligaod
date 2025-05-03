@@ -10,11 +10,20 @@ trait SeriesCountTrait
     protected function calculateSeriesCount(Event $event): void
     {
         if (!$event->series_id) {
+            \Log::info('No series_id for event ' . $event->id);
             return;
         }
 
+        \Log::info('Calculating series_count for event ' . $event->id . ' with series_id ' . $event->series_id);
+
         $series = Series::with('seriesType')->find($event->series_id);
+        if (!$series) {
+            \Log::error('Series not found for id ' . $event->series_id);
+            return;
+        }
+
         $seriesEvents = Event::where('series_id', $event->series_id)->get();
+        \Log::info('Found ' . $seriesEvents->count() . ' events in series');
 
         $seriesCount = null;
 
@@ -26,6 +35,8 @@ trait SeriesCountTrait
             // Определяем текущие команды
             $currentClub1Id = $event->club1_id;
             $currentClub2Id = $event->club2_id;
+
+            \Log::info('Calculating wins for clubs: ' . $currentClub1Id . ' vs ' . $currentClub2Id);
 
             foreach ($seriesEvents as $seriesEvent) {
                 // Определяем, какая команда в текущем событии соответствует club1 и club2
@@ -92,6 +103,7 @@ trait SeriesCountTrait
             }
 
             $seriesCount = $club1Wins . '-' . $club2Wins;
+            \Log::info('Calculated series count (wins): ' . $seriesCount);
         } elseif ($series->series_type_id == 2) {
             // Тип 2: подсчет голов
             $club1Goals = 0;
@@ -100,6 +112,8 @@ trait SeriesCountTrait
             // Определяем текущие команды
             $currentClub1Id = $event->club1_id;
             $currentClub2Id = $event->club2_id;
+
+            \Log::info('Calculating goals for clubs: ' . $currentClub1Id . ' vs ' . $currentClub2Id);
 
             foreach ($seriesEvents as $seriesEvent) {
                 // Определяем, какая команда в текущем событии соответствует club1 и club2
@@ -128,9 +142,11 @@ trait SeriesCountTrait
             }
 
             $seriesCount = $club1Goals . ':' . $club2Goals;
+            \Log::info('Calculated series count (goals): ' . $seriesCount);
         }
 
         // Обновляем series_count для всех событий серии
         Event::where('series_id', $event->series_id)->update(['series_count' => $seriesCount]);
+        \Log::info('Updated series_count for all events in series ' . $event->series_id . ' to ' . $seriesCount);
     }
 }
