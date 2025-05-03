@@ -441,7 +441,7 @@ class EventController extends Controller
                 'competition' => $event->competition,
                 'region' => $event->region,
                 'series' => $event->series,
-                'series_count' => $event->series_count,
+                'series_count' => '0000',
                 'club1' => $event->club1 ? array_merge($event->club1->toArray(), [
                     'club_info' => $club1Info,
                     'image' => $club1Image
