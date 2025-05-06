@@ -694,10 +694,17 @@ class EventController extends Controller
                     } else {
                         $validated['date_from'] = now()->format('Y-m-d') . ' ' . $input . ':00';
                     }
+                }
+                elseif (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/', $input)) {
+                    // Поддержка формата ISO 8601 (YYYY-MM-DDTHH:mm:ss)
+                    $validated['date_from'] = str_replace('T', ' ', $input);
+                    if (!str_contains($validated['date_from'], ':')) {
+                        $validated['date_from'] .= ':00';
+                    }
                 } else {
                     return response()->json([
                         'success' => false,
-                        'message' => 'Некорректный формат. Используйте либо YYYY-MM-DD (дата), либо HH:ii (время)'
+                        'message' => 'Некорректный формат. Используйте YYYY-MM-DD (дата), HH:ii (время) или YYYY-MM-DDTHH:mm:ss (полная дата и время)'
                     ], 422);
                 }
             }
