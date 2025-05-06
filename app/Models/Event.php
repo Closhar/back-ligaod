@@ -130,7 +130,7 @@ class Event extends Model
     public function getEventNameAttribute()
     {
         // Добавляем параметр event_name_last
-        if (!$this->club1) return $this->title . ' (' . $this->date_formatted . ' - ' . $this->date_to_formatted . ')';
+        if (!$this->club1) return $this->title;
         else
             return $this->date_formatted . ' ' . ($this->club1->title ?? 'Клуб 1') . ' (' . ($this->club1->city->title ?? 'Город не указан') . ') - ' . ($this->club2->title ?? 'Клуб 2') . ' (' . ($this->club2->city->title ?? 'Город не указан') . ') ' . $this->result;
 
