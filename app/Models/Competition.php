@@ -74,13 +74,14 @@ class Competition extends Model
 
     public function getDateFromFormattedAttribute()
     {
-        return \Carbon\Carbon::parse($this->date_from)->format('d.m.Y.');
-
+        if ($this->date_from) return \Carbon\Carbon::parse($this->date_from)->format('d.m.Y.');
+        return null;
     }
 
     public function getDateToFormattedAttribute()
     {
-        return \Carbon\Carbon::parse($this->date_to)->format('d.m.Y.');
+        if ($this->date_to) return \Carbon\Carbon::parse($this->date_to)->format('d.m.Y.');
+        return null;
 
     }
 

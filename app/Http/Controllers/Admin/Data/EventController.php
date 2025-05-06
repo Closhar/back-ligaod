@@ -549,6 +549,7 @@ class EventController extends Controller
                 'series_id' => 'integer|exists:series,id|nullable',
                 'competition_id' => 'required|integer|exists:competitions,id',
                 'is_active' => 'boolean',
+                'about' => 'string|max:50000|nullable',
             ]);
 
             $validated['date_from'] = date('Y-m-d H:i:s', strtotime($validated['date_from']));
