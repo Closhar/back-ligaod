@@ -123,7 +123,7 @@ class ArenaController extends Controller
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'slug' => 'required|string|max:255|unique:arenas',
-                'region_id' => 'required|integer|exists:regions,id',
+                'region_id' => 'nullable|integer|exists:regions,id',
                 'city_id' => 'required_without:city_title|exists:cities,id',
                 'city_title' => 'required_without:city_id|string|max:255',
                 'about' => 'nullable|string',
