@@ -36,7 +36,8 @@ class Event extends Model
         'is_active',
         'event_name',
         'series_id',
-        'series_count'
+        'series_count',
+        'about'
     ];
 
     public function competition(): BelongsTo
