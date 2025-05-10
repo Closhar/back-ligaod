@@ -22,8 +22,6 @@ trait SeriesCountTrait
             ->select('id', 'club1_id', 'club2_id', 'result', 'result_dop')
             ->get();
 
-        $seriesCount = null;
-
         if ($series->series_type_id == 1) {
             // Тип 1: подсчет побед
             $club1Wins = 0;
@@ -100,7 +98,21 @@ trait SeriesCountTrait
                 }
             }
 
-            $seriesCount = $club1Wins . '-' . $club2Wins;
+            // Обновляем series_count для каждого события серии с учетом его собственных club1_id и club2_id
+            foreach ($seriesEvents as $seriesEvent) {
+                $isClub1Home = ($seriesEvent->club1_id == $currentClub1Id && $seriesEvent->club2_id == $currentClub2Id);
+                $isClub1Away = ($seriesEvent->club1_id == $currentClub2Id && $seriesEvent->club2_id == $currentClub1Id);
+
+                if ($isClub1Home) {
+                    $seriesCount = $club1Wins . '-' . $club2Wins;
+                } elseif ($isClub1Away) {
+                    $seriesCount = $club2Wins . '-' . $club1Wins;
+                } else {
+                    continue;
+                }
+
+                $seriesEvent->update(['series_count' => $seriesCount]);
+            }
         } elseif ($series->series_type_id == 2) {
             // Тип 2: подсчет голов
             $club1Goals = 0;
@@ -139,10 +151,21 @@ trait SeriesCountTrait
                 }
             }
 
-            $seriesCount = $club1Goals . ':' . $club2Goals;
-        }
+            // Обновляем series_count для каждого события серии с учетом его собственных club1_id и club2_id
+            foreach ($seriesEvents as $seriesEvent) {
+                $isClub1Home = ($seriesEvent->club1_id == $currentClub1Id && $seriesEvent->club2_id == $currentClub2Id);
+                $isClub1Away = ($seriesEvent->club1_id == $currentClub2Id && $seriesEvent->club2_id == $currentClub1Id);
 
-        // Обновляем series_count для всех событий серии
-        Event::where('series_id', $event->series_id)->update(['series_count' => $seriesCount]);
+                if ($isClub1Home) {
+                    $seriesCount = $club1Goals . ':' . $club2Goals;
+                } elseif ($isClub1Away) {
+                    $seriesCount = $club2Goals . ':' . $club1Goals;
+                } else {
+                    continue;
+                }
+
+                $seriesEvent->update(['series_count' => $seriesCount]);
+            }
+        }
     }
 }
