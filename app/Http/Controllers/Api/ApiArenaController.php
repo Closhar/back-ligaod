@@ -19,6 +19,8 @@ class ApiArenaController extends Controller
 
     public function index(Request $request): array
     {
+
+        $title = $request->query('title');
         $query = Arena::query()
             ->select(
                 'id',
@@ -55,6 +57,11 @@ class ApiArenaController extends Controller
                 $sportQuery->where('slug', $request->input('sport'));
             });
         }
+
+        if ($title) {
+            $query->where('title', '=', "{$title}");
+        }
+
 
         // Фильтрация по команде (club.slug)
         if ($request->has('club') && $request->input('club')) {
