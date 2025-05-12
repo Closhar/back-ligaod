@@ -20,6 +20,7 @@ class ApiSportController extends Controller
         $searchQuery = $request->query('q'); // Параметр поиска
         $perPage = $request->input('per_page', 10);
         $limit = $request->input('limit', $perPage);
+        $title = $request->query('title');
         $query = Sport::query()
             ->select(
                 'id',
@@ -39,6 +40,10 @@ class ApiSportController extends Controller
                         'sport_properties.icon'
                     ]);
                 }]);
+
+        if ($title) {
+            $query->where('title', '=', "{$title}");
+        }
 
         // Применяем поиск по параметру q
         if ($searchQuery) $query->where('title', 'LIKE', "%{$searchQuery}%");
