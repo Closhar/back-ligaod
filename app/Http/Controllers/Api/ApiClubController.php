@@ -27,6 +27,8 @@ class ApiClubController extends Controller
         $page = $request->query('page', 1); // Номер страницы (по умолчанию 1)
         $searchQuery = $request->query('q'); // Параметр поиска
         $limit = $request->query('limit', $perPage); // Параметр поиска
+        $title = $request->query('title');
+        $city = $request->query('city');
 
         // параметры для асинхронного поиска
         $type = $request->query('type'); // если =='async', возвращаем простую структуру для async поиска
@@ -96,6 +98,16 @@ class ApiClubController extends Controller
 
         if (($isAlien == 1) or ($isAlien == 0)) {
             $query->where('is_alien', $isAlien);
+        }
+
+        if ($city) {
+            $query->whereHas('city', function ($q) use ($city) {
+                $q->where('title', $city);
+            });
+        }
+
+        if ($title) {
+            $query->where('title', '=', "{$title}");
         }
 
         // Применяем поиск по параметру q
