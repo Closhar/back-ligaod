@@ -18,11 +18,16 @@ class ApiCityController extends Controller
     {
         $limit = $request->query('limit'); // Количество элементов на странице
         $searchQuery = $request->query('q'); // Параметр поиска
+        $title = $request->query('title');
 
         $c = City::query()->select('*');
 
         if ($searchQuery) {
             $c->where('title', 'LIKE', "%{$searchQuery}%");
+        }
+
+        if ($title) {
+            $c->where('title', '=', "{$title}");
         }
 
         if ($limit) $c = $c->take($limit);
