@@ -67,7 +67,7 @@ class ApiClubController extends Controller
                 )
                 ->with([
                     'city' => function ($cityQuery) {
-                        $cityQuery->select(['id', 'title']);
+                        $cityQuery->select(['id', 'title', 'title_short']);
                     },
                     'sport' => function ($sportQuery) {
                         $sportQuery->select(['id', 'title', 'title_short', 'icon']);
