@@ -105,7 +105,10 @@ class ApiClubController extends Controller
             if ($isAlien == 0) {
                 $query->where('region_id', '=', $regionId);
             } elseif ($isAlien == 1) {
-                $query->where('region_id', '!=', $regionId);
+                $query->where(function($q) use ($regionId) {
+                    $q->where('region_id', '!=', $regionId)
+                      ->orWhereNull('region_id');
+                });
             }
         }
 
