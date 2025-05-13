@@ -37,7 +37,7 @@ class ApiEventController extends Controller
         $show = $request->input('show'); // По умолчанию показываем события с date_from >= сегодня
         $searchQuery = $request->input('q'); // Параметр поиска
         $show_concrete_date = false; // индикатор, что фильтруем по конкретной дате - при true игнорируется фильтр ВРЕМЕННОЙ ПРОМЕЖУТОК
-        $regionId = $request->input('region_id');
+        $regionId = $request->input('region_id', 1);
         $is_active = $request->input('is_active');
         $show_native = $request->input('show_native'); // Показывать события с командой с regionID независимо от региона события
         $seriesId = $request->input('series_id'); // Добавляем получение series_id
