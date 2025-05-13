@@ -55,15 +55,15 @@ class ApiClubController extends Controller
             // Создаем базовый запрос
             $query = Club::query()
                 ->select(
-                    'id',
-                    'title',
-                    'slug',
-                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
-                    'city_id',
-                    'sport_id',
-                    'gender_id',
-                    'age_id',
-                    'is_alien'
+                    'clubs.id',
+                    'clubs.title',
+                    'clubs.slug',
+                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path'),
+                    'clubs.city_id',
+                    'clubs.sport_id',
+                    'clubs.gender_id',
+                    'clubs.age_id',
+                    'clubs.is_alien'
                 )
                 ->with([
                     'city' => function ($cityQuery) {
