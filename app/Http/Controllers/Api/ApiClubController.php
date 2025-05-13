@@ -22,7 +22,8 @@ class ApiClubController extends Controller
         $sportSlug = $request->query('sport');
         $sportId = $request->query('sport_id');
         $genderId = $request->query('gender_id');
-        $isAlien = $request->query('is_alien', 100);
+        $isAlien = $request->query('is_alien');
+        $regionId = $request->query('region_id', 1);
         $perPage = $request->query('per_page', 10); // Количество элементов на странице (по умолчанию 10)
         $page = $request->query('page', 1); // Номер страницы (по умолчанию 1)
         $searchQuery = $request->query('q'); // Параметр поиска
@@ -44,7 +45,7 @@ class ApiClubController extends Controller
                     'sport_id',
                     'gender_id',
                     'age_id',
-                    'is_alien',
+                    'region_id',
                     DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info')
                 )
                 ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
@@ -63,7 +64,7 @@ class ApiClubController extends Controller
                     'clubs.sport_id',
                     'clubs.gender_id',
                     'clubs.age_id',
-                    'clubs.is_alien'
+                    'clubs.region_id'
                 )
                 ->with([
                     'city' => function ($cityQuery) {
@@ -77,6 +78,9 @@ class ApiClubController extends Controller
                     },
                     'gender' => function ($genderQuery) {
                         $genderQuery->select(['id', 'title', 'title_short', 'icon']);
+                    },
+                    'region' => function ($regionQuery) {
+                        $regionQuery->select(['id', 'title', 'title_short']);
                     }
                 ]);
 
@@ -96,8 +100,13 @@ class ApiClubController extends Controller
             $query->where('gender_id', $genderId);
         }
 
-        if (($isAlien == 1) or ($isAlien == 0)) {
-            $query->where('is_alien', $isAlien);
+        // Новая логика фильтрации по region_id
+        if ($isAlien !== null) {
+            if ($isAlien == 0) {
+                $query->where('region_id', '!=', $regionId);
+            } elseif ($isAlien == 1) {
+                $query->where('region_id', '=', $regionId);
+            }
         }
 
         if ($city) {
