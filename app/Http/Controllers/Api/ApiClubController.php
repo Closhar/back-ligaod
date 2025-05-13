@@ -103,9 +103,9 @@ class ApiClubController extends Controller
         // Новая логика фильтрации по region_id
         if ($isAlien !== null) {
             if ($isAlien == 0) {
-                $query->where('region_id', '!=', $regionId);
-            } elseif ($isAlien == 1) {
                 $query->where('region_id', '=', $regionId);
+            } elseif ($isAlien == 1) {
+                $query->where('region_id', '!=', $regionId);
             }
         }
 
