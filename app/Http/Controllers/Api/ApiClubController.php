@@ -93,9 +93,7 @@ class ApiClubController extends Controller
             });
         }
         if ($sportId) {
-            $query->whereHas('sport', function ($q) use ($sportId) {
-                $q->where('slug', $sportId);
-            });
+            $query->where('sport_id', $sportId);
         }
 
         if ($genderId) {
