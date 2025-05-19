@@ -380,7 +380,9 @@ class ApiEventController extends Controller
                 })->count(),
                 'events_with_series_count' => $events->filter(function($event) {
                     return $event->series_count !== null;
-                })->count()
+                })->count(),
+                'sql_query' => $query->toSql(),
+                'sql_bindings' => $query->getBindings()
             ];
         }
 
