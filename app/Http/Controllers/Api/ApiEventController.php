@@ -366,20 +366,6 @@ class ApiEventController extends Controller
             'data' => $events,
         ];
 
-        // Добавляем отладочную информацию
-        if (config('app.debug')) {
-            $response['debug'] = [
-                'events_with_series' => $events->filter(function($event) {
-                    return $event->series_id !== null;
-                })->count(),
-                'events_with_series_count' => $events->filter(function($event) {
-                    return $event->series_count !== null;
-                })->count(),
-                'sql_query' => $query->toSql(),
-                'sql_bindings' => $query->getBindings()
-            ];
-        }
-
         return $response;
     }
 
