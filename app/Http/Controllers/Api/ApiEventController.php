@@ -149,17 +149,23 @@ class ApiEventController extends Controller
                 if ($show_home == 1) {
                     $query->where('region_id', $regionId);
                 } elseif ($show_home == 2) {
-                    $query->where(function($q) use ($regionId) {
-                        $q->where('region_id', '!=', $regionId)
-                          ->where(function($subQ) use ($regionId) {
-                              $subQ->whereHas('club1', function($clubQuery) use ($regionId) {
+                    $query->where('region_id', '!=', $regionId)
+                          ->where(function($q) use ($regionId) {
+                              $q->whereHas('club1', function($clubQuery) use ($regionId) {
                                   $clubQuery->where('region_id', $regionId);
                               })
                               ->orWhereHas('club2', function($clubQuery) use ($regionId) {
                                   $clubQuery->where('region_id', $regionId);
                               });
                           });
-                    });
+
+                    // Добавляем отладочную информацию
+                    if (config('app.debug')) {
+                        \Log::info('SQL Query for show_home=2:', [
+                            'sql' => $query->toSql(),
+                            'bindings' => $query->getBindings()
+                        ]);
+                    }
                 }
             } elseif ($show_native) {
                 $query->where(function($q) use ($regionId) {
