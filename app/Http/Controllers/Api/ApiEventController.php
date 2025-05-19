@@ -149,22 +149,17 @@ class ApiEventController extends Controller
                 if ($show_home == 1) {
                     $query->where('region_id', $regionId);
                 } elseif ($show_home == 2) {
-                    $query->where('events.region_id', '!=', $regionId)
-                          ->join('clubs as club1', 'events.club1_id', '=', 'club1.id')
-                          ->join('clubs as club2', 'events.club2_id', '=', 'club2.id')
-                          ->where(function($q) use ($regionId) {
-                              $q->where('club1.region_id', $regionId)
-                                ->orWhere('club2.region_id', $regionId);
-                          })
-                          ->select('events.*');
-
-                    // Добавляем отладочную информацию
-                    if (config('app.debug')) {
-                        \Log::info('SQL Query for show_home=2:', [
-                            'sql' => $query->toSql(),
-                            'bindings' => $query->getBindings()
-                        ]);
-                    }
+                    $query->where(function($q) use ($regionId) {
+                        $q->where('events.region_id', '!=', $regionId)
+                          ->orWhereNull('events.region_id');
+                    })
+                    ->join('clubs as club1', 'events.club1_id', '=', 'club1.id')
+                    ->join('clubs as club2', 'events.club2_id', '=', 'club2.id')
+                    ->where(function($q) use ($regionId) {
+                        $q->where('club1.region_id', $regionId)
+                          ->orWhere('club2.region_id', $regionId);
+                    })
+                    ->select('events.*');
                 }
             } elseif ($show_native) {
                 $query->where(function($q) use ($regionId) {
