@@ -38,7 +38,7 @@ class ApiEventController extends Controller
         $searchQuery = $request->input('q'); // Параметр поиска
         $show_concrete_date = false; // индикатор, что фильтруем по конкретной дате - при true игнорируется фильтр ВРЕМЕННОЙ ПРОМЕЖУТОК
         $regionId = $request->input('region_id', 1);
-        $is_active = $request->input('is_active');
+        $is_active = $request->input('is_active', 1);
         $show_native = $request->input('show_native'); // Показывать события с командой с regionID независимо от региона события
         $seriesId = $request->input('series_id'); // Добавляем получение series_id
         $sportPropertyId = $request->input('sport_property_id'); // Добавляем получение sport_property_id
