@@ -278,6 +278,11 @@ class ApiEventController extends Controller
             });
         }
 
+        // Добавляем фильтр по series_id
+        if ($seriesId) {
+            $query->where('series_id', $seriesId);
+        }
+
         // Применяем поиск по параметру q
         if ($searchQuery) {
             $query->where(function ($q) use ($searchQuery) {
