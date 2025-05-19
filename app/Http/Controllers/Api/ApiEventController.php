@@ -40,6 +40,7 @@ class ApiEventController extends Controller
         $regionId = $request->input('region_id', 1);
         $is_active = $request->input('is_active', 1);
         $show_native = $request->input('show_native'); // Показывать события с командой с regionID независимо от региона события
+        $show_home = $request->input('show_home'); // Параметр для фильтрации по региону
         $seriesId = $request->input('series_id'); // Добавляем получение series_id
         $sportPropertyId = $request->input('sport_property_id'); // Добавляем получение sport_property_id
 
@@ -144,7 +145,23 @@ class ApiEventController extends Controller
             ]);
 
         if ($regionId) {
-            if ($show_native) {
+            if ($show_home) {
+                if ($show_home == 1) {
+                    $query->where('region_id', $regionId);
+                } elseif ($show_home == 2) {
+                    $query->where(function($q) use ($regionId) {
+                        $q->where('region_id', '!=', $regionId)
+                          ->where(function($subQ) use ($regionId) {
+                              $subQ->whereHas('club1', function($clubQuery) use ($regionId) {
+                                  $clubQuery->where('region_id', $regionId);
+                              })
+                              ->orWhereHas('club2', function($clubQuery) use ($regionId) {
+                                  $clubQuery->where('region_id', $regionId);
+                              });
+                          });
+                    });
+                }
+            } elseif ($show_native) {
                 $query->where(function($q) use ($regionId) {
                     $q->where('region_id', $regionId)
                       ->orWhereHas('club1', function($clubQuery) use ($regionId) {
