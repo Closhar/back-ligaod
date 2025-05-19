@@ -52,6 +52,8 @@ class ApiEventController extends Controller
         if ($arenaSlugItem) $arenaSlug = $arenaSlugItem;
         if ($clubSlugItem) $clubSlug = $clubSlugItem;
 
+        $sort = $request->input('sort'); // Новый параметр сортировки
+
         // Основной запрос с фильтрацией
         $query = Event::query()
             ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name', 'series_id', 'series_count', 'about')
@@ -206,6 +208,7 @@ class ApiEventController extends Controller
                         $query->where(function ($q) use ($today) {
                             $q->whereDate('date_from', '<=', $today);
                         });
+                        $sort = "date_from_desc";
                     }
                     break;
                 case 3: // date_from = сегодня
@@ -298,12 +301,24 @@ class ApiEventController extends Controller
         }
 
         // Применяем сортировку
+
         $sortField = $request->input('sort_field', 'date_from'); // Поле для сортировки по умолчанию - date_from
         $sortDirection = $request->input('sort_direction', 'asc'); // Направление сортировки по умолчанию - asc
 
-        $sortDirection = strtolower($sortDirection);
-        if (!in_array($sortDirection, ['asc', 'desc'])) {
-            $sortDirection = 'asc';
+        // Обработка нового параметра sort
+        if ($sort) {
+            if ($sort === 'date_from_asc') {
+                $sortField = 'date_from';
+                $sortDirection = 'asc';
+            } elseif ($sort === 'date_from_desc') {
+                $sortField = 'date_from';
+                $sortDirection = 'desc';
+            }
+        } else {
+            $sortDirection = strtolower($sortDirection);
+            if (!in_array($sortDirection, ['asc', 'desc'])) {
+                $sortDirection = 'asc';
+            }
         }
 
         // Обработка специальных случаев сортировки, требующих join
