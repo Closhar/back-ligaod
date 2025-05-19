@@ -196,6 +196,14 @@ class ApiEventController extends Controller
             $query->whereDate('date_from', '<=', $dateTo);
         }
 
+
+        // Добавляем фильтр по series_id
+        if ($seriesId) {
+            $query->where('series_id', $seriesId);
+            $show_concrete_date = false;
+            $show = 4;
+        }
+
         if ((!$show_concrete_date) && ($show)) {
             // Применяем фильтр по show
             $today = now()->toDateString(); // Сегодняшняя дата в формате 'Y-m-d'
@@ -278,10 +286,6 @@ class ApiEventController extends Controller
             });
         }
 
-        // Добавляем фильтр по series_id
-        if ($seriesId) {
-            $query->where('series_id', $seriesId);
-        }
 
         // Применяем поиск по параметру q
         if ($searchQuery) {
