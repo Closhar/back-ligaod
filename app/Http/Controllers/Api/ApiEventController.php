@@ -41,6 +41,7 @@ class ApiEventController extends Controller
         $is_active = $request->input('is_active');
         $show_native = $request->input('show_native'); // Показывать события с командой с regionID независимо от региона события
         $seriesId = $request->input('series_id'); // Добавляем получение series_id
+        $sportPropertyId = $request->input('sport_property_id'); // Добавляем получение sport_property_id
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -247,6 +248,13 @@ class ApiEventController extends Controller
         if ($genderId) {
             $query->whereHas('competition', function ($q) use ($genderId) {
                 $q->where('gender_id', $genderId); // Фильтр по gender_id в таблице competitions
+            });
+        }
+
+        // Добавляем фильтр по sport_property_id
+        if ($sportPropertyId) {
+            $query->whereHas('competition.sport.sport_properties', function ($q) use ($sportPropertyId) {
+                $q->where('sport_properties.id', $sportPropertyId);
             });
         }
 
