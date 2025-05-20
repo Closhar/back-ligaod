@@ -70,10 +70,10 @@ class ApiArticleController extends Controller
         if (!empty($dateFrom)) {
             if (!empty($dateTo)) {
                 // Если заданы обе даты, используем диапазон
-                $query->whereBetween('date_from', [$dateFrom, $dateTo]);
+                $query->whereBetween('data', [$dateFrom, $dateTo]);
             } else {
                 // Если задана только date_from, ищем строго по этой дате
-                $query->whereDate('date_from', $dateFrom);
+                $query->whereDate('data', $dateFrom);
             }
         }
 
