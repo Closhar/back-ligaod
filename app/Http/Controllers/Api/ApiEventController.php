@@ -414,6 +414,7 @@ class ApiEventController extends Controller
     {
         return Event::where('id', $id)
             ->with([
+                'streams',
                 'competition' => function ($query) {
                     $query->select([
                         'id', // Явно указываем таблицу
