@@ -69,7 +69,7 @@ class ApiArticleController extends Controller
         // Фильтрация по дате
         if (!empty($dateFrom)) {
             if (!empty($dateTo)) {
-                // Если заданы обе даты, используем диапазон
+                // Если заданы обе даты, используем диапазон с учетом времени
                 $query->whereBetween('data', [
                     $dateFrom . ' 00:00:00',
                     $dateTo . ' 23:59:59'
