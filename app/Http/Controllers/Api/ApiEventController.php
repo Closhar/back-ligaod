@@ -423,7 +423,8 @@ class ApiEventController extends Controller
                 'series' => function ($query) {
                     $query->select(['id'])
                         ->with(['events' => function ($query) {
-                            $query->select(['id', 'event_name']);
+                            $query->select(['id', 'event_name', 'date_from'])
+                                ->orderBy('date_from', 'asc');
                         }]);
                 },
                 'competition' => function ($query) {
