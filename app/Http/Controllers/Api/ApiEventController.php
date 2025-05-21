@@ -545,7 +545,7 @@ class ApiEventController extends Controller
         // Загружаем события серии отдельно
         if ($event->series_id) {
             $seriesEvents = Event::where('series_id', $event->series_id)
-                ->select(['id', 'date_from', 'club1_id', 'club2_id', 'result'])
+                ->select(['id', 'date_from', 'club1_id', 'club2_id', 'result', 'result_dop'])
                 ->with([
                     'club1' => function ($query) {
                         $query->select(['id', 'title', 'city_id'])
