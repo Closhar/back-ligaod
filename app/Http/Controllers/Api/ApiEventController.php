@@ -420,7 +420,7 @@ class ApiEventController extends Controller
         $event = Event::with([
             'streams',
             'series' => function ($query) {
-                $query->select(['id']);
+                $query->select(['id', 'description']);
             },
             'competition' => function ($query) {
                 $query->select([
