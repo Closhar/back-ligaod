@@ -26,4 +26,9 @@ class Series extends Model
     {
         return $this->belongsTo(SeriesType::class, 'series_type_id', 'id');
     }
+
+    public function events()
+    {
+        return $this->hasMany(Event::class, 'series_id', 'id');
+    }
 }
