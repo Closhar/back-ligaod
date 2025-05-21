@@ -14,13 +14,7 @@ class Series extends Model
      *
      * @var array<int, string>
      */
-    protected $fillable = [
-        'title',
-        'title_short',
-        'description',
-        'match_info',
-        'series_type_id'
-    ];
+    protected $guarded = [];
 
     public function seriesType()
     {
