@@ -566,7 +566,7 @@ class ApiEventController extends Controller
             $event->series->events = $seriesEvents;
         }
 
-        return $event->toArray();
+        return [$event->toArray()];
     }
 
     /**
