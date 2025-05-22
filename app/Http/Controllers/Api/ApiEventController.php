@@ -63,7 +63,7 @@ class ApiEventController extends Controller
                 },
                 'streams',
                 'series' => function ($query) {
-                    $query->select(['id'])
+                    $query->select(['id','series_type_id'])
                         ->with(['events' => function ($query) {
                             $query->select(['id', 'event_name']);
                         }]);
