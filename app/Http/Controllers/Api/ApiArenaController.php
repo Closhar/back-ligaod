@@ -120,7 +120,6 @@ class ApiArenaController extends Controller
 
         return Arena::select(
             '*',
-            'region_id',
             DB::raw('CONCAT("' . config('app.url') . '", "/storage/", arenas.image) AS full_image_path')
         )
             ->where('slug', $slug)
