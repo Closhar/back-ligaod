@@ -48,6 +48,8 @@ class ApiEventController extends Controller
         $arenaSlugItem = $request->input('arena_item');
         $clubSlugItem = $request->input('club_item');
 
+        $allRegions = $request->input('all_regions');
+
         if ($sportSlugItem) $sportSlug = $sportSlugItem;
         if ($arenaSlugItem) $arenaSlug = $arenaSlugItem;
         if ($clubSlugItem) $clubSlug = $clubSlugItem;
@@ -151,7 +153,7 @@ class ApiEventController extends Controller
                 },
             ]);
 
-        if ($regionId) {
+        if ($regionId && !$allRegions) {
             if ($show_home) {
                 if ($show_home === 1) {
                     $query->where('region_id', $regionId);
@@ -167,9 +169,6 @@ class ApiEventController extends Controller
                           ->orWhere('club2.region_id', $regionId);
                     })
                     ->select('events.*');
-                }
-                else if ($show_home == 0) {
-
                 }
             } elseif ($show_native) {
                 $query->where(function($q) use ($regionId) {
