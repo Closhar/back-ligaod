@@ -98,7 +98,6 @@ class ApiSportController extends Controller
                         'clubs.gender_id',
                         'clubs.sport_id' // Для HasMany!!!!
                     ])
-                        ->where('is_alien', 0)
                         ->with([
                             'sport',
                             'city' => function ($cityQuery) {
