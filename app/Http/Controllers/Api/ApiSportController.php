@@ -63,8 +63,11 @@ class ApiSportController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Sport $gender, $id): array
+    public function show(Sport $gender, $id, Request $request): array
     {
+        $homeRegion = $request->input('home_region', 1);
+        $showNative = $request->input('show_native', 1);
+
         return Sport::query()
             ->select(
                 'id',
@@ -85,7 +88,7 @@ class ApiSportController extends Controller
                         'articles.slug'
                     ]);
                 },
-                'clubs' => function ($query) {
+                'clubs' => function ($query) use ($homeRegion, $showNative) {
                     $query->select([
                         'clubs.id', // Явно указываем таблицу
                         'clubs.title',
@@ -96,8 +99,12 @@ class ApiSportController extends Controller
                         'clubs.city_id',
                         'clubs.age_id',
                         'clubs.gender_id',
-                        'clubs.sport_id' // Для HasMany!!!!
+                        'clubs.sport_id', // Для HasMany!!!!
+                        'clubs.region_id'
                     ])
+                        ->when($showNative == 1, function ($query) use ($homeRegion) {
+                            $query->where('clubs.region_id', $homeRegion);
+                        })
                         ->with([
                             'sport',
                             'city' => function ($cityQuery) {
