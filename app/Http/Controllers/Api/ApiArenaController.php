@@ -34,9 +34,6 @@ class ApiArenaController extends Controller
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 'city_id'
             )
-            ->when($showNative == 1, function ($query) use ($homeRegion) {
-                $query->where('arenas.region_id', $homeRegion);
-            })
             ->with([
                 'city' => function ($cityQuery) {
                     $cityQuery->select(['id', 'title']);
