@@ -21,6 +21,7 @@ class ApiArenaController extends Controller
     {
         $homeRegion = $request->input('home_region', 1);
         $showNative = $request->input('show_native', 1);
+        $regionId = $request->input('region_id', 1);
 
         $title = $request->query('title');
         $query = Arena::query()
@@ -56,6 +57,10 @@ class ApiArenaController extends Controller
                     ]);
                 }
             ]);
+
+        if ($regionId) {
+            $query->where('arenas.region_id', $regionId);
+        }
 
         // Фильтрация по спорту (sport.slug)
         if ($request->has('sport') && $request->input('sport')) {
