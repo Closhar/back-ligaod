@@ -32,6 +32,7 @@ class CompetitionController extends Controller
         $arenaId = $request->input('arena_id');
         $clubSlug = $request->input('club');
         $clubId = $request->input('club_id');
+        $id = $request->input('id');
         $sort = $request->input('sort', 'date_from_asc');
         $sortField = $request->input('sort_field', 'date_from');
         $sortDirection = $request->input('sort_direction', 'asc');
@@ -170,6 +171,11 @@ class CompetitionController extends Controller
         }
         if ($genderId) {
             $query->where('gender_id', $genderId);
+        }
+
+        // Фильтр по id
+        if ($id) {
+            $query->where('id', $id);
         }
 
         // Поиск
