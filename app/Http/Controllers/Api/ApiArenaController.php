@@ -19,6 +19,8 @@ class ApiArenaController extends Controller
 
     public function index(Request $request): array
     {
+        $homeRegion = $request->input('home_region', 1);
+        $showNative = $request->input('show_native', 1);
 
         $title = $request->query('title');
         $query = Arena::query()
@@ -27,9 +29,13 @@ class ApiArenaController extends Controller
                 'title',
                 'address',
                 'slug',
+                'region_id',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 'city_id'
             )
+            ->when($showNative == 1, function ($query) use ($homeRegion) {
+                $query->where('arenas.region_id', $homeRegion);
+            })
             ->with([
                 'city' => function ($cityQuery) {
                     $cityQuery->select(['id', 'title']);
@@ -107,15 +113,22 @@ class ApiArenaController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Arena $gender, $slug): array
+    public function show(Arena $gender, $slug, Request $request): array
     {
+        $homeRegion = $request->input('home_region', 1);
+        $showNative = $request->input('show_native', 1);
+
         return Arena::select(
             '*',
+            'region_id',
             DB::raw('CONCAT("' . config('app.url') . '", "/storage/", arenas.image) AS full_image_path')
         )
             ->where('slug', $slug)
+            ->when($showNative == 1, function ($query) use ($homeRegion) {
+                $query->where('arenas.region_id', $homeRegion);
+            })
             ->with([
-                'clubs' => function ($query) {
+                'clubs' => function ($query) use ($homeRegion, $showNative) {
                     $query->select([
                         'clubs.id', // Явно указываем таблицу
                         'clubs.title',
@@ -124,8 +137,13 @@ class ApiArenaController extends Controller
                         'clubs.city_id',
                         'clubs.age_id',
                         'clubs.gender_id',
-                        'clubs.sport_id' // Для HasMany!!!!
-                    ])->with([
+                        'clubs.sport_id', // Для HasMany!!!!
+                        'clubs.region_id'
+                    ])
+                    ->when($showNative == 1, function ($query) use ($homeRegion) {
+                        $query->where('clubs.region_id', $homeRegion);
+                    })
+                    ->with([
                         'city' => function ($cityQuery) {
                             $cityQuery->select(['cities.id', 'cities.title']);
                         },
