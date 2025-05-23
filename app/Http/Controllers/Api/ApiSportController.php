@@ -33,6 +33,20 @@ class ApiSportController extends Controller
                 'slug',
                 'vin')
             ->with([
+                'clubs' => function ($query) {
+                    $query->select([
+                        'clubs.id',
+                        'clubs.title',
+                        'clubs.region_id',
+                        'image' => function ($query) {
+                            $query->select(DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS full_image_path"));
+                        },
+                        'clubs.slug',
+                        'clubs.city_id',
+                        'clubs.age_id',
+                        'clubs.gender_id',
+                        'clubs.sport_id'
+                    ]);},
                 'sport_properties' => function ($query) {
                     $query->select([
                         'sport_properties.id', // Явно указываем таблицу
