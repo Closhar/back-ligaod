@@ -59,7 +59,7 @@ class ApiArenaController extends Controller
             ]);
 
         if ($regionId) {
-            $query->where('arenas.region_id', $regionId);
+            $query->where('region_id', $regionId);
         }
 
         // Фильтрация по спорту (sport.slug)
