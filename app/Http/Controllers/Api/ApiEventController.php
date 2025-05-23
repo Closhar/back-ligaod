@@ -153,7 +153,7 @@ class ApiEventController extends Controller
                 },
             ]);
 
-        if ($regionId && !$allRegions) {
+        if ($regionId) {
             if ($show_home) {
                 if ($show_home === 1) {
                     $query->where('region_id', $regionId);
