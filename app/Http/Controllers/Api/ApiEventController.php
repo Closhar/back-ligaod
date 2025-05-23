@@ -153,9 +153,9 @@ class ApiEventController extends Controller
 
         if ($regionId) {
             if ($show_home) {
-                if ($show_home == 1) {
+                if ($show_home === 1) {
                     $query->where('region_id', $regionId);
-                } elseif ($show_home == 2) {
+                } elseif ($show_home === 2) {
                     $query->where(function($q) use ($regionId) {
                         $q->where('events.region_id', '!=', $regionId)
                           ->orWhereNull('events.region_id');
