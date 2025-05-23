@@ -168,6 +168,9 @@ class ApiEventController extends Controller
                     })
                     ->select('events.*');
                 }
+                else if ($show_home == 0) {
+
+                }
             } elseif ($show_native) {
                 $query->where(function($q) use ($regionId) {
                     $q->where('region_id', $regionId)
