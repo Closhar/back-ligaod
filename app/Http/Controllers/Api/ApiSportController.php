@@ -133,31 +133,7 @@ class ApiSportController extends Controller
                         'city' => function ($cityQuery) {
                             $cityQuery->select(['cities.id', 'cities.title']);
                         }
-                    ])->with([
-                        'sports' => function ($sportsQuery) {
-                            $sportsQuery->select(['sports.id', 'sports.title', 'sports.icon']);
-                        }
                     ]);
-                },
-                'competitions' => function ($query) {
-                    $query->select([
-                        'id', // Явно указываем таблицу
-                        'title',
-                        'title_short',
-                        'sport_id',
-                        'gender_id',
-                        DB::raw("DATE_FORMAT(competitions.date_from, '%d.%m.%Y.') as date_from_formatted"), // Форматируем дату
-                        DB::raw("DATE_FORMAT(competitions.date_to, '%d.%m.%Y.') as date_to_formatted"), // Форматируем дату
-                        'full_image_path' => function ($query) {
-                            $query->select(DB::raw("CONCAT('" . config('app.url') . "', '/storage/', competitions.image) AS full_image_path"));
-                        },
-                        'date_from',
-                        'date_to',
-                    ])->with([
-                        'sport',
-                        'gender' => function ($genderQuery) {
-                            $genderQuery->select(['id', 'title', 'icon']);
-                        }]);
                 },
             ])
             ->get()
