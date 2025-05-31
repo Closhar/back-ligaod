@@ -133,7 +133,7 @@ Route::middleware('auth:sanctum')->group(function () {
 Route::apiResource('admin-pages', AdminPageController::class);
 
     // Маршруты для работы с телеграм
-    Route::prefix('telegram')->middleware('auth:sanctum')->group(function () {
+    Route::prefix('telegram')->group(function () {
         Route::get('/channels', [TelegramController::class, 'getChannels']);
         Route::post('/channels', [TelegramController::class, 'create']);
         Route::put('/channels/{id}', [TelegramController::class, 'update']);
