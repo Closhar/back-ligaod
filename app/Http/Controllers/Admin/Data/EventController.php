@@ -455,6 +455,13 @@ class EventController extends Controller
                 'arena' => $event->arena ? array_merge($event->arena->toArray(), [
                     'image' => $arenaImage
                 ]) : null,
+                'streams' => $event->streams->map(function($stream) {
+                    return [
+                        'id' => $stream->id,
+                        'title' => $stream->title,
+                        'link' => $stream->link
+                    ];
+                }),
             ];
         });
 
