@@ -13,7 +13,7 @@ class TelegramController extends Controller
     /**
      * Получить список каналов/групп
      */
-    public function index()
+    public function getChannels()
     {
         $channels = TelegramChannel::where('is_active', true)
             ->select(['id', 'title', 'type', 'username', 'description'])
@@ -81,7 +81,7 @@ class TelegramController extends Controller
     /**
      * Создать новый канал/группу
      */
-    public function store(Request $request)
+    public function create(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',

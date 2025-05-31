@@ -256,10 +256,9 @@ Route::post('/upload-image', function(Request $request) {
 
     // Маршруты для работы с телеграм
 Route::prefix('telegram')->group(function () {
-    // Route::get('/channels', [TelegramController::class, 'getChannels']);
-    // Route::post('/channels', [TelegramController::class, 'create']);
-    // Route::put('/channels/{id}', [TelegramController::class, 'update']);
-    Route::apiResource('channels', TelegramController::class);
+    Route::get('/channels', [TelegramController::class, 'getChannels']);
+    Route::post('/channels', [TelegramController::class, 'create']);
+    Route::put('/channels/{id}', [TelegramController::class, 'update']);
     Route::post('/send-message', [TelegramController::class, 'sendMessage']);
 });
 
