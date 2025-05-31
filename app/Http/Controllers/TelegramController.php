@@ -7,9 +7,55 @@ use App\Models\TelegramChannel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 
 class TelegramController extends Controller
 {
+    /**
+     * Display a listing of the resource.
+     */
+    public function index(Request $request)
+    {
+        $searchQuery = $request->query('q');
+        $perPage = $request->query('per_page', 15);
+        $searchId = $request->query('id');
+        $fieldParam = $request->query('field');
+
+        $query = TelegramChannel::query()
+            ->select(['id', 'title', 'type', 'username', 'description', 'is_active']);
+
+        if ($searchId) {
+            $query->where('id', $searchId);
+        }
+
+        if ($searchQuery) {
+            if ($fieldParam) {
+                $query->where($fieldParam, 'LIKE', "%{$searchQuery}%");
+            } else {
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
+            }
+        }
+
+        $channels = $query->paginate($perPage);
+        $total = $channels->total();
+
+        return [
+            'current_page' => $channels->currentPage(),
+            'data' => $channels->items(),
+            'first_page_url' => $channels->url(1),
+            'from' => $channels->firstItem(),
+            'last_page' => $channels->lastPage(),
+            'last_page_url' => $channels->url($channels->lastPage()),
+            'links' => $channels->links(),
+            'next_page_url' => $channels->nextPageUrl(),
+            'path' => $channels->path(),
+            'per_page' => $channels->perPage(),
+            'prev_page_url' => $channels->previousPageUrl(),
+            'to' => $channels->lastItem(),
+            'total' => $total,
+        ];
+    }
+
     /**
      * Получить список каналов/групп
      */
@@ -79,26 +125,35 @@ class TelegramController extends Controller
     }
 
     /**
-     * Создать новый канал/группу
+     * Store a newly created resource in storage.
      */
-    public function create(Request $request)
+    public function store(Request $request)
     {
-        $request->validate([
-            'title' => 'required|string|max:255',
-            'type' => 'required|string|in:channel,group',
-            'username' => 'required|string|max:255|unique:telegram_channels',
-            'chat_id' => 'required|string|max:255|unique:telegram_channels',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean'
-        ]);
+        try {
+            $validated = $request->validate([
+                'title' => 'required|string|max:255',
+                'type' => 'required|string|in:channel,group',
+                'username' => 'required|string|max:255|unique:telegram_channels',
+                'chat_id' => 'required|string|max:255|unique:telegram_channels',
+                'description' => 'nullable|string',
+                'is_active' => 'boolean'
+            ]);
 
-        $channel = TelegramChannel::create($request->all());
+            $channel = TelegramChannel::create($validated);
 
-        return response()->json($channel, 201);
-        // return response()->json([
-        //     'success' => true,
-        //     'data' => $channel
-        // ], 201);
+            return response()->json($channel, 201);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
