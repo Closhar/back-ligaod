@@ -137,7 +137,7 @@ Route::apiResource('admin-pages', AdminPageController::class);
         Route::apiResource('channels', TelegramController::class);
         //Route::get('/channels', [TelegramController::class, 'getChannels']);
         // Route::put('/channels/{id}', [TelegramController::class, 'update']);
-        Route::post('/send-message', [TelegramController::class, 'sendMessage']);
+        Route::post('/send', [TelegramController::class, 'sendMessage']);
     });
 
 Route::apiResource('events', EventController::class);
