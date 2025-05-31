@@ -88,19 +88,21 @@ class TelegramController extends Controller
         try {
             // Получаем токен бота из конфига
             $botToken = config('services.telegram.bot_token');
+            $envToken = env('TELEGRAM_BOT_TOKEN');
 
             if (empty($botToken)) {
-                // Проверяем, есть ли токен в .env файле
-                $envToken = env('TELEGRAM_BOT_TOKEN');
-                $tokenInfo = $envToken ? 'Токен найден в .env, но не загружен в конфиг' : 'Токен отсутствует в .env';
-
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка конфигурации: токен бота не настроен',
                     'details' => [
                         'api_url' => 'https://api.telegram.org/bot[TOKEN]/sendMessage',
-                        'token_status' => $tokenInfo,
-                        'config_path' => 'config/services.php'
+                        'token_status' => [
+                            'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
+                            'env_token' => $envToken ? 'Присутствует' : 'Отсутствует',
+                            'env_value' => $envToken ? (substr($envToken, 0, 5) . '...' . substr($envToken, -5)) : 'Не задан',
+                            'config_path' => 'config/services.php',
+                            'env_path' => base_path('.env')
+                        ]
                     ]
                 ], 500);
             }
@@ -133,7 +135,11 @@ class TelegramController extends Controller
                         'response' => $errorData,
                         'chat_id' => $channel->chat_id,
                         'api_url' => $maskedUrl,
-                        'token_length' => strlen($botToken)
+                        'token_length' => strlen($botToken),
+                        'token_status' => [
+                            'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
+                            'env_token' => $envToken ? 'Присутствует' : 'Отсутствует'
+                        ]
                     ]
                 ], 500);
             }
@@ -161,7 +167,11 @@ class TelegramController extends Controller
                             'status' => $pinResponse->status(),
                             'response' => $pinErrorData,
                             'api_url' => $maskedPinUrl,
-                            'token_length' => strlen($botToken)
+                            'token_length' => strlen($botToken),
+                            'token_status' => [
+                                'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
+                                'env_token' => $envToken ? 'Присутствует' : 'Отсутствует'
+                            ]
                         ]
                     ], 500);
                 }
@@ -184,7 +194,11 @@ class TelegramController extends Controller
                     'error' => $e->getMessage(),
                     'chat_id' => $channel->chat_id ?? null,
                     'api_url' => $maskedUrl,
-                    'token_status' => isset($botToken) ? 'Токен присутствует' : 'Токен отсутствует'
+                    'token_status' => [
+                        'config_token' => isset($botToken) ? 'Присутствует' : 'Отсутствует',
+                        'env_token' => isset($envToken) ? 'Присутствует' : 'Отсутствует',
+                        'env_value' => isset($envToken) ? (substr($envToken, 0, 5) . '...' . substr($envToken, -5)) : 'Не задан'
+                    ]
                 ]
             ], 500);
         }
