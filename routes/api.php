@@ -82,7 +82,7 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
 
 // Аутентификация
 Route::post('/register', [AuthController::class, 'register']);
-Route::post('/login', [AuthController::class, 'login'])->name('login');
+Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 // Восстановление пароля
 Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail']);
@@ -131,6 +131,14 @@ Route::middleware('auth:sanctum')->group(function () {
     //});
 });
 Route::apiResource('admin-pages', AdminPageController::class);
+
+    // Маршруты для работы с телеграм
+    Route::prefix('telegram')->middleware('auth:sanctum')->group(function () {
+        Route::get('/channels', [TelegramController::class, 'getChannels']);
+        Route::post('/channels', [TelegramController::class, 'create']);
+        Route::put('/channels/{id}', [TelegramController::class, 'update']);
+        Route::post('/send-message', [TelegramController::class, 'sendMessage']);
+    });
 
 Route::apiResource('events', EventController::class);
 Route::get('events/{id}/check-field', [EventController::class, 'checkField']);
@@ -254,11 +262,5 @@ Route::post('/upload-image', function(Request $request) {
 });
     //->middleware('auth:sanctum');
 
-    // Маршруты для работы с телеграм
-Route::prefix('telegram')->middleware(['auth:sanctum', 'json.response'])->group(function () {
-    Route::get('/channels', [TelegramController::class, 'getChannels']);
-    Route::post('/channels', [TelegramController::class, 'create']);
-    Route::put('/channels/{id}', [TelegramController::class, 'update']);
-    Route::post('/send-message', [TelegramController::class, 'sendMessage']);
-});
+
 
