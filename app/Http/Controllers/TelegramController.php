@@ -62,7 +62,7 @@ class TelegramController extends Controller
     public function getChannels()
     {
         $channels = TelegramChannel::where('is_active', true)
-            ->select(['id', 'title', 'type', 'username', 'description'])
+            ->select(['id', 'title', 'type', 'username', 'description', 'chat_id'])
             ->get();
 
         return response()->json($channels);
