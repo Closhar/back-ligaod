@@ -255,7 +255,7 @@ Route::post('/upload-image', function(Request $request) {
     //->middleware('auth:sanctum');
 
     // Маршруты для работы с телеграм
-Route::prefix('telegram')->group(function () {
+Route::prefix('telegram')->middleware('auth:sanctum')->group(function () {
     Route::get('/channels', [TelegramController::class, 'getChannels']);
     Route::post('/channels', [TelegramController::class, 'create']);
     Route::put('/channels/{id}', [TelegramController::class, 'update']);
