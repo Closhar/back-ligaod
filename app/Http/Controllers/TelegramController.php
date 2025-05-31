@@ -90,7 +90,8 @@ class TelegramController extends Controller
             'content' => 'required|string',
             'settings' => 'nullable|array',
             'settings.pinMessage' => 'nullable|boolean',
-            'image' => 'nullable|file|image|max:10240' // Максимум 10MB
+            'image' => 'nullable|file|image|max:10240', // Максимум 10MB
+            'image_url' => 'nullable|url|max:2048' // URL изображения
         ]);
 
         if ($validator->fails()) {
@@ -127,29 +128,37 @@ class TelegramController extends Controller
 
             $messageId = null;
 
-            // Если есть изображение, отправляем его с текстом
-            if ($request->hasFile('image')) {
+            // Если есть изображение (файл или URL), отправляем его с текстом
+            if ($request->hasFile('image') || !empty($data['image_url'])) {
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
-
-                // Получаем файл
-                $file = $request->file('image');
 
                 // Разделяем текст на части по 1024 символа
                 $text = $data['content'];
                 $caption = mb_substr($text, 0, 1024);
                 $remainingText = mb_substr($text, 1024);
 
-                // Отправляем файл как multipart/form-data с первой частью текста
-                $response = Http::attach(
-                    'photo',
-                    file_get_contents($file->getRealPath()),
-                    $file->getClientOriginalName(),
-                    ['Content-Type' => $file->getMimeType()]
-                )->post($apiUrl, [
+                // Подготавливаем параметры запроса
+                $params = [
                     'chat_id' => $channel->chat_id,
                     'caption' => $caption,
                     'parse_mode' => 'Markdown'
-                ]);
+                ];
+
+                // Если есть файл, отправляем его
+                if ($request->hasFile('image')) {
+                    $file = $request->file('image');
+                    $response = Http::attach(
+                        'photo',
+                        file_get_contents($file->getRealPath()),
+                        $file->getClientOriginalName(),
+                        ['Content-Type' => $file->getMimeType()]
+                    )->post($apiUrl, $params);
+                }
+                // Если есть URL, отправляем по URL
+                else if (!empty($data['image_url'])) {
+                    $params['photo'] = $data['image_url'];
+                    $response = Http::post($apiUrl, $params);
+                }
 
                 if (!$response->successful()) {
                     $errorData = $response->json();
