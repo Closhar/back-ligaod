@@ -17,9 +17,11 @@ class TelegramController extends Controller
     public function index(Request $request)
     {
         $searchQuery = $request->query('q');
-        $perPage = $request->query('per_page', 15);
+        $perPage = $request->query('per_page', 30);
         $searchId = $request->query('id');
         $fieldParam = $request->query('field');
+        $sortField = $request->query('sort_field', 'id');
+        $sortDirection = $request->query('sort_direction', 'desc');
 
         $query = TelegramChannel::query()
             ->select(['id', 'title', 'type', 'username', 'description', 'is_active', 'chat_id']);
@@ -35,6 +37,8 @@ class TelegramController extends Controller
                 $query->where('title', 'LIKE', "%{$searchQuery}%");
             }
         }
+
+        $query->orderBy($sortField, $sortDirection);
 
         $channels = $query->paginate($perPage);
         $total = $channels->total();
