@@ -127,49 +127,31 @@ class TelegramController extends Controller
 
             $messageId = null;
 
-            // Если есть изображение, отправляем его с текстом как единый пост
+            // Если есть изображение, отправляем текст и фото
             if ($request->hasFile('image')) {
-                $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMediaGroup";
-
-                // Получаем файл
-                $file = $request->file('image');
-
-                // Подготавливаем медиа-группу
-                $media = [
-                    [
-                        'type' => 'photo',
-                        'media' => 'attach://photo',
-                        'caption' => $data['content'],
-                        'parse_mode' => 'Markdown'
-                    ]
-                ];
-
-                // Отправляем файл как multipart/form-data
-                $response = Http::attach(
-                    'photo',
-                    file_get_contents($file->getRealPath()),
-                    $file->getClientOriginalName(),
-                    ['Content-Type' => $file->getMimeType()]
-                )->post($apiUrl, [
+                // Сначала отправляем текст
+                $textApiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+                $textResponse = Http::post($textApiUrl, [
                     'chat_id' => $channel->chat_id,
-                    'media' => json_encode($media)
+                    'text' => $data['content'],
+                    'parse_mode' => 'Markdown'
                 ]);
 
-                if (!$response->successful()) {
-                    $errorData = $response->json();
+                if (!$textResponse->successful()) {
+                    $errorData = $textResponse->json();
                     $errorMessage = isset($errorData['description'])
                         ? $errorData['description']
-                        : 'Неизвестная ошибка при отправке в Telegram';
+                        : 'Неизвестная ошибка при отправке текста в Telegram';
 
                     // Маскируем часть токена для безопасности
                     $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
-                    $maskedUrl = str_replace($botToken, $maskedToken, $apiUrl);
+                    $maskedUrl = str_replace($botToken, $maskedToken, $textApiUrl);
 
                     return response()->json([
                         'success' => false,
                         'message' => $errorMessage,
                         'details' => [
-                            'status' => $response->status(),
+                            'status' => $textResponse->status(),
                             'response' => $errorData,
                             'chat_id' => $channel->chat_id,
                             'api_url' => $maskedUrl,
@@ -182,8 +164,48 @@ class TelegramController extends Controller
                     ], 500);
                 }
 
-                // Получаем ID первого сообщения из группы
-                $messageId = $response->json()['result'][0]['message_id'];
+                $messageId = $textResponse->json()['result']['message_id'];
+
+                // Затем отправляем фото
+                $photoApiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
+                $file = $request->file('image');
+
+                $photoResponse = Http::attach(
+                    'photo',
+                    file_get_contents($file->getRealPath()),
+                    $file->getClientOriginalName(),
+                    ['Content-Type' => $file->getMimeType()]
+                )->post($photoApiUrl, [
+                    'chat_id' => $channel->chat_id,
+                    'reply_to_message_id' => $messageId
+                ]);
+
+                if (!$photoResponse->successful()) {
+                    $errorData = $photoResponse->json();
+                    $errorMessage = isset($errorData['description'])
+                        ? $errorData['description']
+                        : 'Неизвестная ошибка при отправке фото в Telegram';
+
+                    // Маскируем часть токена для безопасности
+                    $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
+                    $maskedUrl = str_replace($botToken, $maskedToken, $photoApiUrl);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'details' => [
+                            'status' => $photoResponse->status(),
+                            'response' => $errorData,
+                            'chat_id' => $channel->chat_id,
+                            'api_url' => $maskedUrl,
+                            'token_length' => strlen($botToken),
+                            'token_status' => [
+                                'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
+                                'env_token' => $envToken ? 'Присутствует' : 'Отсутствует'
+                            ]
+                        ]
+                    ], 500);
+                }
             } else {
                 // Отправляем только текст
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
