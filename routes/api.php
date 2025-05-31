@@ -29,7 +29,7 @@ use App\Http\Controllers\Api\ApiParamsController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\GalleryAdminController;
-use App\Http\Controllers\Api\TelegramController;
+use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
