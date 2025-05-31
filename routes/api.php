@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\ApiParamsController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\GalleryAdminController;
+use App\Http\Controllers\Api\TelegramController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -252,4 +253,10 @@ Route::post('/upload-image', function(Request $request) {
     }
 });
     //->middleware('auth:sanctum');
+
+    // Маршруты для работы с телеграм
+Route::prefix('telegram')->group(function () {
+    Route::get('/channels', [TelegramController::class, 'getChannels']);
+    Route::post('/send', [TelegramController::class, 'sendMessage']);
+});
 
