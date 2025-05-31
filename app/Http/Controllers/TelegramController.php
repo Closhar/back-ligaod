@@ -90,11 +90,17 @@ class TelegramController extends Controller
             $botToken = config('services.telegram.bot_token');
 
             if (empty($botToken)) {
+                // Проверяем, есть ли токен в .env файле
+                $envToken = env('TELEGRAM_BOT_TOKEN');
+                $tokenInfo = $envToken ? 'Токен найден в .env, но не загружен в конфиг' : 'Токен отсутствует в .env';
+
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка конфигурации: токен бота не настроен',
                     'details' => [
-                        'api_url' => 'https://api.telegram.org/bot[TOKEN]/sendMessage'
+                        'api_url' => 'https://api.telegram.org/bot[TOKEN]/sendMessage',
+                        'token_status' => $tokenInfo,
+                        'config_path' => 'config/services.php'
                     ]
                 ], 500);
             }
@@ -115,6 +121,10 @@ class TelegramController extends Controller
                     ? $errorData['description']
                     : 'Неизвестная ошибка при отправке в Telegram';
 
+                // Маскируем часть токена для безопасности
+                $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
+                $maskedUrl = str_replace($botToken, $maskedToken, $apiUrl);
+
                 return response()->json([
                     'success' => false,
                     'message' => $errorMessage,
@@ -122,7 +132,8 @@ class TelegramController extends Controller
                         'status' => $response->status(),
                         'response' => $errorData,
                         'chat_id' => $channel->chat_id,
-                        'api_url' => $apiUrl
+                        'api_url' => $maskedUrl,
+                        'token_length' => strlen($botToken)
                     ]
                 ], 500);
             }
@@ -139,13 +150,18 @@ class TelegramController extends Controller
 
                 if (!$pinResponse->successful()) {
                     $pinErrorData = $pinResponse->json();
+                    // Маскируем часть токена для безопасности
+                    $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
+                    $maskedPinUrl = str_replace($botToken, $maskedToken, $pinApiUrl);
+
                     return response()->json([
                         'success' => false,
                         'message' => 'Сообщение отправлено, но не удалось закрепить',
                         'details' => [
                             'status' => $pinResponse->status(),
                             'response' => $pinErrorData,
-                            'api_url' => $pinApiUrl
+                            'api_url' => $maskedPinUrl,
+                            'token_length' => strlen($botToken)
                         ]
                     ], 500);
                 }
@@ -157,13 +173,18 @@ class TelegramController extends Controller
             ]);
 
         } catch (\Exception $e) {
+            // Маскируем часть токена для безопасности
+            $maskedToken = isset($botToken) ? (substr($botToken, 0, 5) . '...' . substr($botToken, -5)) : '[TOKEN]';
+            $maskedUrl = isset($apiUrl) ? str_replace($botToken, $maskedToken, $apiUrl) : 'https://api.telegram.org/bot[TOKEN]/sendMessage';
+
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при отправке в Telegram',
                 'details' => [
                     'error' => $e->getMessage(),
                     'chat_id' => $channel->chat_id ?? null,
-                    'api_url' => $apiUrl ?? 'https://api.telegram.org/bot[TOKEN]/sendMessage'
+                    'api_url' => $maskedUrl,
+                    'token_status' => isset($botToken) ? 'Токен присутствует' : 'Токен отсутствует'
                 ]
             ], 500);
         }
