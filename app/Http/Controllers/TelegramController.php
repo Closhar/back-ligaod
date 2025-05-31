@@ -125,6 +125,8 @@ class TelegramController extends Controller
                 ], 500);
             }
 
+            $messageId = null;
+
             // Если есть изображение, отправляем его с текстом
             if ($request->hasFile('image')) {
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
@@ -132,7 +134,12 @@ class TelegramController extends Controller
                 // Получаем файл
                 $file = $request->file('image');
 
-                // Отправляем файл как multipart/form-data
+                // Разделяем текст на части по 1024 символа
+                $text = $data['content'];
+                $caption = mb_substr($text, 0, 1024);
+                $remainingText = mb_substr($text, 1024);
+
+                // Отправляем файл как multipart/form-data с первой частью текста
                 $response = Http::attach(
                     'photo',
                     file_get_contents($file->getRealPath()),
@@ -140,9 +147,75 @@ class TelegramController extends Controller
                     ['Content-Type' => $file->getMimeType()]
                 )->post($apiUrl, [
                     'chat_id' => $channel->chat_id,
-                    'caption' => $data['content'],
+                    'caption' => $caption,
                     'parse_mode' => 'Markdown'
                 ]);
+
+                if (!$response->successful()) {
+                    $errorData = $response->json();
+                    $errorMessage = isset($errorData['description'])
+                        ? $errorData['description']
+                        : 'Неизвестная ошибка при отправке в Telegram';
+
+                    // Маскируем часть токена для безопасности
+                    $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
+                    $maskedUrl = str_replace($botToken, $maskedToken, $apiUrl);
+
+                    return response()->json([
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'details' => [
+                            'status' => $response->status(),
+                            'response' => $errorData,
+                            'chat_id' => $channel->chat_id,
+                            'api_url' => $maskedUrl,
+                            'token_length' => strlen($botToken),
+                            'token_status' => [
+                                'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
+                                'env_token' => $envToken ? 'Присутствует' : 'Отсутствует'
+                            ]
+                        ]
+                    ], 500);
+                }
+
+                $messageId = $response->json()['result']['message_id'];
+
+                // Если остался текст, отправляем его отдельным сообщением
+                if (!empty($remainingText)) {
+                    $textApiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+                    $textResponse = Http::post($textApiUrl, [
+                        'chat_id' => $channel->chat_id,
+                        'text' => $remainingText,
+                        'parse_mode' => 'Markdown'
+                    ]);
+
+                    if (!$textResponse->successful()) {
+                        $errorData = $textResponse->json();
+                        $errorMessage = isset($errorData['description'])
+                            ? $errorData['description']
+                            : 'Неизвестная ошибка при отправке текста в Telegram';
+
+                        // Маскируем часть токена для безопасности
+                        $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
+                        $maskedUrl = str_replace($botToken, $maskedToken, $textApiUrl);
+
+                        return response()->json([
+                            'success' => false,
+                            'message' => $errorMessage,
+                            'details' => [
+                                'status' => $textResponse->status(),
+                                'response' => $errorData,
+                                'chat_id' => $channel->chat_id,
+                                'api_url' => $maskedUrl,
+                                'token_length' => strlen($botToken),
+                                'token_status' => [
+                                    'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
+                                    'env_token' => $envToken ? 'Присутствует' : 'Отсутствует'
+                                ]
+                            ]
+                        ], 500);
+                    }
+                }
             } else {
                 // Отправляем только текст
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
@@ -151,38 +224,39 @@ class TelegramController extends Controller
                     'text' => $data['content'],
                     'parse_mode' => 'Markdown'
                 ]);
-            }
 
-            if (!$response->successful()) {
-                $errorData = $response->json();
-                $errorMessage = isset($errorData['description'])
-                    ? $errorData['description']
-                    : 'Неизвестная ошибка при отправке в Telegram';
+                if (!$response->successful()) {
+                    $errorData = $response->json();
+                    $errorMessage = isset($errorData['description'])
+                        ? $errorData['description']
+                        : 'Неизвестная ошибка при отправке в Telegram';
 
-                // Маскируем часть токена для безопасности
-                $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
-                $maskedUrl = str_replace($botToken, $maskedToken, $apiUrl);
+                    // Маскируем часть токена для безопасности
+                    $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
+                    $maskedUrl = str_replace($botToken, $maskedToken, $apiUrl);
 
-                return response()->json([
-                    'success' => false,
-                    'message' => $errorMessage,
-                    'details' => [
-                        'status' => $response->status(),
-                        'response' => $errorData,
-                        'chat_id' => $channel->chat_id,
-                        'api_url' => $maskedUrl,
-                        'token_length' => strlen($botToken),
-                        'token_status' => [
-                            'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
-                            'env_token' => $envToken ? 'Присутствует' : 'Отсутствует'
+                    return response()->json([
+                        'success' => false,
+                        'message' => $errorMessage,
+                        'details' => [
+                            'status' => $response->status(),
+                            'response' => $errorData,
+                            'chat_id' => $channel->chat_id,
+                            'api_url' => $maskedUrl,
+                            'token_length' => strlen($botToken),
+                            'token_status' => [
+                                'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
+                                'env_token' => $envToken ? 'Присутствует' : 'Отсутствует'
+                            ]
                         ]
-                    ]
-                ], 500);
+                    ], 500);
+                }
+
+                $messageId = $response->json()['result']['message_id'];
             }
 
             // Если нужно закрепить сообщение
-            if (!empty($data['settings']['pinMessage'])) {
-                $messageId = $response->json()['result']['message_id'];
+            if (!empty($data['settings']['pinMessage']) && $messageId) {
                 $pinApiUrl = "https://api.telegram.org/bot{$botToken}/pinChatMessage";
 
                 $pinResponse = Http::post($pinApiUrl, [
