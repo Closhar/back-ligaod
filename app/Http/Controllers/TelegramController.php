@@ -93,7 +93,7 @@ class TelegramController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка конфигурации: токен бота не настроен'
-                ], 500, ['Accept' => 'application/json']);
+                ], 500, ['Content-Type' => 'application/json']);
             }
 
             // Формируем URL для API Telegram
@@ -101,7 +101,8 @@ class TelegramController extends Controller
 
             // Отправляем сообщение
             $response = Http::withHeaders([
-                'Accept' => 'application/json'
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json'
             ])->post($apiUrl, [
                 'chat_id' => $channel->chat_id,
                 'text' => $request->content,
@@ -117,7 +118,7 @@ class TelegramController extends Controller
                 return response()->json([
                     'success' => false,
                     'message' => $errorMessage
-                ], 500, ['Accept' => 'application/json']);
+                ], 500, ['Content-Type' => 'application/json']);
             }
 
             // Если нужно закрепить сообщение
@@ -126,7 +127,8 @@ class TelegramController extends Controller
                 $pinApiUrl = "https://api.telegram.org/bot{$botToken}/pinChatMessage";
 
                 $pinResponse = Http::withHeaders([
-                    'Accept' => 'application/json'
+                    'Accept' => 'application/json',
+                    'Content-Type' => 'application/json'
                 ])->post($pinApiUrl, [
                     'chat_id' => $channel->chat_id,
                     'message_id' => $messageId
@@ -136,20 +138,20 @@ class TelegramController extends Controller
                     return response()->json([
                         'success' => false,
                         'message' => 'Сообщение отправлено, но не удалось закрепить'
-                    ], 500, ['Accept' => 'application/json']);
+                    ], 500, ['Content-Type' => 'application/json']);
                 }
             }
 
             return response()->json([
                 'success' => true,
                 'message' => 'Сообщение успешно отправлено'
-            ], 200, ['Accept' => 'application/json']);
+            ], 200, ['Content-Type' => 'application/json']);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при отправке в Telegram: ' . $e->getMessage()
-            ], 500, ['Accept' => 'application/json']);
+            ], 500, ['Content-Type' => 'application/json']);
         }
     }
 
