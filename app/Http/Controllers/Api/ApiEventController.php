@@ -58,7 +58,7 @@ class ApiEventController extends Controller
 
         // Основной запрос с фильтрацией
         $query = Event::query()
-            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name', 'series_id', 'series_count', 'about')
+            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name', 'series_id', 'series_count', 'about', 'tickets')
             ->with([
                 'region' => function ($query) {
                     $query->select(['id', 'title', 'title_short']);
@@ -372,6 +372,9 @@ class ApiEventController extends Controller
             if ($regionId && $event->region_id != $regionId) {
                 $event->my_region = 0;
             }
+
+            // Добавляем поле tickets
+            $event->tickets = $event->tickets;
 
             // Вычисляем series_count если он не установлен
             if ($event->series_id) {
