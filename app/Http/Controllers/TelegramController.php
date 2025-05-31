@@ -77,4 +77,50 @@ class TelegramController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Создать новый канал/группу
+     */
+    public function create(Request $request)
+    {
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'type' => 'required|string|in:channel,group',
+            'username' => 'required|string|max:255|unique:telegram_channels',
+            'chat_id' => 'required|string|max:255|unique:telegram_channels',
+            'description' => 'nullable|string',
+            'is_active' => 'boolean'
+        ]);
+
+        $channel = TelegramChannel::create($request->all());
+
+        return response()->json([
+            'success' => true,
+            'data' => $channel
+        ], 201);
+    }
+
+    /**
+     * Обновить канал/группу
+     */
+    public function update(Request $request, $id)
+    {
+        $channel = TelegramChannel::findOrFail($id);
+
+        $request->validate([
+            'title' => 'string|max:255',
+            'type' => 'string|in:channel,group',
+            'username' => 'string|max:255|unique:telegram_channels,username,' . $id,
+            'chat_id' => 'string|max:255|unique:telegram_channels,chat_id,' . $id,
+            'description' => 'nullable|string',
+            'is_active' => 'boolean'
+        ]);
+
+        $channel->update($request->all());
+
+        return response()->json([
+            'success' => true,
+            'data' => $channel
+        ]);
+    }
 }
