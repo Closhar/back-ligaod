@@ -13,7 +13,7 @@ class TelegramController extends Controller
     /**
      * Получить список каналов/групп
      */
-    public function getChannels()
+    public function index()
     {
         $channels = TelegramChannel::where('is_active', true)
             ->select(['id', 'title', 'type', 'username', 'description'])
