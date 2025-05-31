@@ -135,7 +135,7 @@ Route::apiResource('admin-pages', AdminPageController::class);
     // Маршруты для работы с телеграм
     Route::prefix('telegram')->group(function () {
         Route::apiResource('channels', TelegramController::class);
-        // Route::post('/channels', [TelegramController::class, 'create']);
+        Route::get('/channels', [TelegramController::class, 'getChannels']);
         // Route::put('/channels/{id}', [TelegramController::class, 'update']);
         Route::post('/send-message', [TelegramController::class, 'sendMessage']);
     });
