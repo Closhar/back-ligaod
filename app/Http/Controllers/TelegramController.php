@@ -80,7 +80,8 @@ class TelegramController extends Controller
         $request->validate([
             'channel_id' => 'required|exists:telegram_channels,id',
             'content' => 'required|string',
-            'settings' => 'array'
+            'settings' => 'array',
+            'image' => 'nullable|string|url' // URL изображения
         ]);
 
         $channel = TelegramChannel::findOrFail($request->channel_id);
@@ -107,15 +108,24 @@ class TelegramController extends Controller
                 ], 500);
             }
 
-            // Формируем URL для API Telegram
-            $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
-
-            // Отправляем сообщение
-            $response = Http::post($apiUrl, [
-                'chat_id' => $channel->chat_id,
-                'text' => $request->content,
-                'parse_mode' => 'Markdown'
-            ]);
+            // Если есть изображение, отправляем его с подписью
+            if ($request->has('image')) {
+                $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
+                $response = Http::post($apiUrl, [
+                    'chat_id' => $channel->chat_id,
+                    'photo' => $request->image,
+                    'caption' => $request->content,
+                    'parse_mode' => 'Markdown'
+                ]);
+            } else {
+                // Отправляем только текст
+                $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+                $response = Http::post($apiUrl, [
+                    'chat_id' => $channel->chat_id,
+                    'text' => $request->content,
+                    'parse_mode' => 'Markdown'
+                ]);
+            }
 
             if (!$response->successful()) {
                 $errorData = $response->json();
