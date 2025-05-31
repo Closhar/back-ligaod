@@ -147,6 +147,9 @@ class EventController extends Controller
                         'slug',
                         'image',
                         'address',
+                        'phones',
+                        'sites',
+                        'vks'
                     ])->with([
                         'city' => function ($cityQuery) {
                             $cityQuery->select(['id', 'title']);
