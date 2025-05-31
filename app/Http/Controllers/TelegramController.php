@@ -132,10 +132,29 @@ class TelegramController extends Controller
             if ($request->hasFile('image') || !empty($data['image_url'])) {
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
 
-                // Разделяем текст на части по 1024 символа
+                // Разделяем текст на части по 1024 символа, обрезая после последней точки
                 $text = $data['content'];
-                $caption = mb_substr($text, 0, 1024);
-                $remainingText = mb_substr($text, 1024);
+                $maxLength = 1024;
+
+                if (mb_strlen($text) > $maxLength) {
+                    // Берем первые 1024 символа
+                    $tempText = mb_substr($text, 0, $maxLength);
+                    // Находим последнюю точку в этой части
+                    $lastDot = mb_strrpos($tempText, '.');
+
+                    if ($lastDot !== false) {
+                        // Обрезаем по последней точке
+                        $caption = mb_substr($text, 0, $lastDot + 1);
+                        $remainingText = mb_substr($text, $lastDot + 1);
+                    } else {
+                        // Если точки нет, обрезаем по 1024 символам
+                        $caption = $tempText;
+                        $remainingText = mb_substr($text, $maxLength);
+                    }
+                } else {
+                    $caption = $text;
+                    $remainingText = '';
+                }
 
                 // Подготавливаем параметры запроса
                 $params = [
