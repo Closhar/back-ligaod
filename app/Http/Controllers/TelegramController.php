@@ -85,17 +85,12 @@ class TelegramController extends Controller
             $data['settings'] = json_decode($data['settings'], true) ?? [];
         }
 
-        // Если image не строка, преобразуем его
-        if (isset($data['image']) && !is_string($data['image'])) {
-            $data['image'] = (string)$data['image'];
-        }
-
         $validator = \Validator::make($data, [
             'channel_id' => 'required|exists:telegram_channels,id',
             'content' => 'required|string',
             'settings' => 'nullable|array',
             'settings.pinMessage' => 'nullable|boolean',
-            'image' => 'nullable|string'
+            'image' => 'nullable|file|image|max:10240' // Максимум 10MB
         ]);
 
         if ($validator->fails()) {
@@ -131,11 +126,20 @@ class TelegramController extends Controller
             }
 
             // Если есть изображение, отправляем его с подписью
-            if (!empty($data['image'])) {
+            if ($request->hasFile('image')) {
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
-                $response = Http::post($apiUrl, [
+
+                // Получаем файл
+                $file = $request->file('image');
+
+                // Отправляем файл как multipart/form-data
+                $response = Http::attach(
+                    'photo',
+                    file_get_contents($file->getRealPath()),
+                    $file->getClientOriginalName(),
+                    ['Content-Type' => $file->getMimeType()]
+                )->post($apiUrl, [
                     'chat_id' => $channel->chat_id,
-                    'photo' => $data['image'],
                     'caption' => $data['content'],
                     'parse_mode' => 'Markdown'
                 ]);
