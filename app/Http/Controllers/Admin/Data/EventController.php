@@ -459,7 +459,9 @@ class EventController extends Controller
                     return [
                         'id' => $stream->id,
                         'title' => $stream->title,
-                        'link' => $stream->link
+                        'link' => $stream->link,
+                        'in_player' => $stream->in_player,
+                        'in_profile' => $stream->in_profile
                     ];
                 }),
             ];
