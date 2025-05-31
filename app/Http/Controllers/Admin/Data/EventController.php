@@ -77,6 +77,7 @@ class EventController extends Controller
                 'region' => function ($query) {
                     $query->select('id', 'title', 'title_short', 'subdomain');
                 },
+                'streams',
                 'competition' => function ($query) {
                     $query->select([
                         'id',
