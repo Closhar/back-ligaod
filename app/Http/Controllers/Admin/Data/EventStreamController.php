@@ -27,7 +27,17 @@ class EventStreamController extends Controller
      */
     public function store(Request $request, Event $event)
     {
-        $validator = Validator::make($request->all(), [
+        $data = $request->all();
+
+        // Проверяем, является ли link iframe-кодом
+        if (isset($data['link']) && strpos($data['link'], '<iframe') !== false) {
+            // Извлекаем URL из атрибута src
+            if (preg_match('/src="([^"]+)"/', $data['link'], $matches)) {
+                $data['link'] = $matches[1];
+            }
+        }
+
+        $validator = Validator::make($data, [
             'date' => 'required|date',
             'title' => 'required|string|max:255',
             'link' => 'nullable|url|max:500',
