@@ -92,7 +92,10 @@ class TelegramController extends Controller
             if (empty($botToken)) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Ошибка конфигурации: токен бота не настроен'
+                    'message' => 'Ошибка конфигурации: токен бота не настроен',
+                    'details' => [
+                        'api_url' => 'https://api.telegram.org/bot[TOKEN]/sendMessage'
+                    ]
                 ], 500);
             }
 
@@ -118,7 +121,8 @@ class TelegramController extends Controller
                     'details' => [
                         'status' => $response->status(),
                         'response' => $errorData,
-                        'chat_id' => $channel->chat_id
+                        'chat_id' => $channel->chat_id,
+                        'api_url' => $apiUrl
                     ]
                 ], 500);
             }
@@ -126,8 +130,9 @@ class TelegramController extends Controller
             // Если нужно закрепить сообщение
             if ($request->settings['pinMessage'] ?? false) {
                 $messageId = $response->json()['result']['message_id'];
+                $pinApiUrl = "https://api.telegram.org/bot{$botToken}/pinChatMessage";
 
-                $pinResponse = Http::post("https://api.telegram.org/bot{$botToken}/pinChatMessage", [
+                $pinResponse = Http::post($pinApiUrl, [
                     'chat_id' => $channel->chat_id,
                     'message_id' => $messageId
                 ]);
@@ -139,7 +144,8 @@ class TelegramController extends Controller
                         'message' => 'Сообщение отправлено, но не удалось закрепить',
                         'details' => [
                             'status' => $pinResponse->status(),
-                            'response' => $pinErrorData
+                            'response' => $pinErrorData,
+                            'api_url' => $pinApiUrl
                         ]
                     ], 500);
                 }
@@ -156,7 +162,8 @@ class TelegramController extends Controller
                 'message' => 'Ошибка при отправке в Telegram',
                 'details' => [
                     'error' => $e->getMessage(),
-                    'chat_id' => $channel->chat_id ?? null
+                    'chat_id' => $channel->chat_id ?? null,
+                    'api_url' => $apiUrl ?? 'https://api.telegram.org/bot[TOKEN]/sendMessage'
                 ]
             ], 500);
         }
