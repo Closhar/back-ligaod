@@ -81,7 +81,7 @@ class TelegramController extends Controller
     /**
      * Создать новый канал/группу
      */
-    public function create(Request $request)
+    public function store(Request $request)
     {
         $request->validate([
             'title' => 'required|string|max:255',
