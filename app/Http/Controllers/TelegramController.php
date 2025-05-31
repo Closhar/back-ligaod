@@ -89,8 +89,19 @@ class TelegramController extends Controller
             // Получаем токен бота из конфига
             $botToken = config('services.telegram.bot_token');
 
+            if (empty($botToken)) {
+                throw new \Exception('Токен бота не настроен в конфигурации');
+            }
+
             // Формируем URL для API Telegram
             $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+
+            // Логируем параметры запроса
+            Log::info('Отправка сообщения в Telegram', [
+                'chat_id' => $channel->chat_id,
+                'content_length' => strlen($request->content),
+                'api_url' => $apiUrl
+            ]);
 
             // Отправляем сообщение
             $response = Http::post($apiUrl, [
@@ -100,6 +111,11 @@ class TelegramController extends Controller
             ]);
 
             if (!$response->successful()) {
+                Log::error('Ошибка API Telegram', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'chat_id' => $channel->chat_id
+                ]);
                 throw new \Exception('Ошибка при отправке в Telegram: ' . $response->body());
             }
 
@@ -107,10 +123,17 @@ class TelegramController extends Controller
             if ($request->settings['pinMessage'] ?? false) {
                 $messageId = $response->json()['result']['message_id'];
 
-                Http::post("https://api.telegram.org/bot{$botToken}/pinChatMessage", [
+                $pinResponse = Http::post("https://api.telegram.org/bot{$botToken}/pinChatMessage", [
                     'chat_id' => $channel->chat_id,
                     'message_id' => $messageId
                 ]);
+
+                if (!$pinResponse->successful()) {
+                    Log::warning('Не удалось закрепить сообщение', [
+                        'status' => $pinResponse->status(),
+                        'body' => $pinResponse->body()
+                    ]);
+                }
             }
 
             return response()->json([
@@ -119,11 +142,15 @@ class TelegramController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Ошибка при отправке в Telegram: ' . $e->getMessage());
+            Log::error('Ошибка при отправке в Telegram', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'chat_id' => $channel->chat_id ?? null
+            ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при отправке в Telegram'
+                'message' => 'Ошибка при отправке в Telegram: ' . $e->getMessage()
             ], 500);
         }
     }
