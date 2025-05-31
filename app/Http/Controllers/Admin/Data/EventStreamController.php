@@ -5,11 +5,14 @@ namespace App\Http\Controllers\Admin\Data;
 use App\Http\Controllers\Controller;
 use App\Models\Event;
 use App\Models\Stream;
+use App\Traits\HandlesIframeLinks;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class EventStreamController extends Controller
 {
+    use HandlesIframeLinks;
+
     /**
      * Получить список всех стримов для конкретного события
      */
@@ -27,15 +30,7 @@ class EventStreamController extends Controller
      */
     public function store(Request $request, Event $event)
     {
-        $data = $request->all();
-
-        // Проверяем, является ли link iframe-кодом
-        if (isset($data['link']) && strpos($data['link'], '<iframe') !== false) {
-            // Извлекаем URL из атрибута src
-            if (preg_match('/src="([^"]+)"/', $data['link'], $matches)) {
-                $data['link'] = $matches[1];
-            }
-        }
+        $data = $this->processIframeInData($request->all());
 
         $validator = Validator::make($data, [
             'date' => 'required|date',
