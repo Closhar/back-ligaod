@@ -127,19 +127,24 @@ class TelegramController extends Controller
 
             $messageId = null;
 
-            // Если есть изображение, отправляем его с текстом
+            // Если есть изображение, отправляем его с текстом как единый пост
             if ($request->hasFile('image')) {
-                $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
+                $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMediaGroup";
 
                 // Получаем файл
                 $file = $request->file('image');
 
-                // Разделяем текст на части по 1024 символа
-                $text = $data['content'];
-                $caption = mb_substr($text, 0, 1024);
-                $remainingText = mb_substr($text, 1024);
+                // Подготавливаем медиа-группу
+                $media = [
+                    [
+                        'type' => 'photo',
+                        'media' => 'attach://photo',
+                        'caption' => $data['content'],
+                        'parse_mode' => 'Markdown'
+                    ]
+                ];
 
-                // Отправляем файл как multipart/form-data с первой частью текста
+                // Отправляем файл как multipart/form-data
                 $response = Http::attach(
                     'photo',
                     file_get_contents($file->getRealPath()),
@@ -147,8 +152,7 @@ class TelegramController extends Controller
                     ['Content-Type' => $file->getMimeType()]
                 )->post($apiUrl, [
                     'chat_id' => $channel->chat_id,
-                    'caption' => $caption,
-                    'parse_mode' => 'Markdown'
+                    'media' => json_encode($media)
                 ]);
 
                 if (!$response->successful()) {
@@ -178,44 +182,8 @@ class TelegramController extends Controller
                     ], 500);
                 }
 
-                $messageId = $response->json()['result']['message_id'];
-
-                // Если остался текст, отправляем его отдельным сообщением
-                if (!empty($remainingText)) {
-                    $textApiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
-                    $textResponse = Http::post($textApiUrl, [
-                        'chat_id' => $channel->chat_id,
-                        'text' => $remainingText,
-                        'parse_mode' => 'Markdown'
-                    ]);
-
-                    if (!$textResponse->successful()) {
-                        $errorData = $textResponse->json();
-                        $errorMessage = isset($errorData['description'])
-                            ? $errorData['description']
-                            : 'Неизвестная ошибка при отправке текста в Telegram';
-
-                        // Маскируем часть токена для безопасности
-                        $maskedToken = substr($botToken, 0, 5) . '...' . substr($botToken, -5);
-                        $maskedUrl = str_replace($botToken, $maskedToken, $textApiUrl);
-
-                        return response()->json([
-                            'success' => false,
-                            'message' => $errorMessage,
-                            'details' => [
-                                'status' => $textResponse->status(),
-                                'response' => $errorData,
-                                'chat_id' => $channel->chat_id,
-                                'api_url' => $maskedUrl,
-                                'token_length' => strlen($botToken),
-                                'token_status' => [
-                                    'config_token' => $botToken ? 'Присутствует' : 'Отсутствует',
-                                    'env_token' => $envToken ? 'Присутствует' : 'Отсутствует'
-                                ]
-                            ]
-                        ], 500);
-                    }
-                }
+                // Получаем ID первого сообщения из группы
+                $messageId = $response->json()['result'][0]['message_id'];
             } else {
                 // Отправляем только текст
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
