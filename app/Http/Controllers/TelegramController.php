@@ -80,8 +80,9 @@ class TelegramController extends Controller
         $request->validate([
             'channel_id' => 'required|exists:telegram_channels,id',
             'content' => 'required|string',
-            'settings' => 'array',
-            'image' => 'nullable|string|url' // URL изображения
+            'settings' => 'nullable|array',
+            'settings.pinMessage' => 'nullable|boolean',
+            'image' => 'nullable|string'
         ]);
 
         $channel = TelegramChannel::findOrFail($request->channel_id);
@@ -109,7 +110,7 @@ class TelegramController extends Controller
             }
 
             // Если есть изображение, отправляем его с подписью
-            if ($request->has('image')) {
+            if ($request->filled('image')) {
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
                 $response = Http::post($apiUrl, [
                     'chat_id' => $channel->chat_id,
@@ -155,7 +156,7 @@ class TelegramController extends Controller
             }
 
             // Если нужно закрепить сообщение
-            if ($request->settings['pinMessage'] ?? false) {
+            if ($request->input('settings.pinMessage')) {
                 $messageId = $response->json()['result']['message_id'];
                 $pinApiUrl = "https://api.telegram.org/bot{$botToken}/pinChatMessage";
 
