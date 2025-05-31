@@ -147,6 +147,7 @@ class EventController extends Controller
                         'slug',
                         'image',
                         'address',
+                        'map',
                         'phones',
                         'sites',
                         'vks'
