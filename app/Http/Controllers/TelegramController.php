@@ -77,7 +77,20 @@ class TelegramController extends Controller
      */
     public function sendMessage(Request $request)
     {
-        $request->validate([
+        // Преобразуем данные перед валидацией
+        $data = $request->all();
+
+        // Если settings не массив, преобразуем его
+        if (isset($data['settings']) && !is_array($data['settings'])) {
+            $data['settings'] = json_decode($data['settings'], true) ?? [];
+        }
+
+        // Если image не строка, преобразуем его
+        if (isset($data['image']) && !is_string($data['image'])) {
+            $data['image'] = (string)$data['image'];
+        }
+
+        $validator = \Validator::make($data, [
             'channel_id' => 'required|exists:telegram_channels,id',
             'content' => 'required|string',
             'settings' => 'nullable|array',
@@ -85,7 +98,15 @@ class TelegramController extends Controller
             'image' => 'nullable|string'
         ]);
 
-        $channel = TelegramChannel::findOrFail($request->channel_id);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка валидации',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $channel = TelegramChannel::findOrFail($data['channel_id']);
 
         try {
             // Получаем токен бота из конфига
@@ -110,12 +131,12 @@ class TelegramController extends Controller
             }
 
             // Если есть изображение, отправляем его с подписью
-            if ($request->filled('image')) {
+            if (!empty($data['image'])) {
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendPhoto";
                 $response = Http::post($apiUrl, [
                     'chat_id' => $channel->chat_id,
-                    'photo' => $request->image,
-                    'caption' => $request->content,
+                    'photo' => $data['image'],
+                    'caption' => $data['content'],
                     'parse_mode' => 'Markdown'
                 ]);
             } else {
@@ -123,7 +144,7 @@ class TelegramController extends Controller
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
                 $response = Http::post($apiUrl, [
                     'chat_id' => $channel->chat_id,
-                    'text' => $request->content,
+                    'text' => $data['content'],
                     'parse_mode' => 'Markdown'
                 ]);
             }
@@ -156,7 +177,7 @@ class TelegramController extends Controller
             }
 
             // Если нужно закрепить сообщение
-            if ($request->input('settings.pinMessage')) {
+            if (!empty($data['settings']['pinMessage'])) {
                 $messageId = $response->json()['result']['message_id'];
                 $pinApiUrl = "https://api.telegram.org/bot{$botToken}/pinChatMessage";
 
