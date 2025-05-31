@@ -37,7 +37,8 @@ class Event extends Model
         'event_name',
         'series_id',
         'series_count',
-        'about'
+        'about',
+        'tickets'
     ];
 
     public function competition(): BelongsTo

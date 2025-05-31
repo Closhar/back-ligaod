@@ -564,6 +564,7 @@ class EventController extends Controller
                 'competition_id' => 'required|integer|exists:competitions,id',
                 'is_active' => 'boolean',
                 'about' => 'string|max:50000|nullable',
+                'tickets' => 'string|max:50000|nullable',
             ]);
 
             $validated['date_from'] = date('Y-m-d H:i:s', strtotime($validated['date_from']));
@@ -689,6 +690,7 @@ class EventController extends Controller
                 'competition_id' => 'integer|exists:competitions,id',
                 'is_active' => 'boolean',
                 'about' => 'string|max:50000|nullable',
+                'tickets' => 'string|max:50000|nullable',
             ]);
 
             // Обработка даты (прежняя логика)
