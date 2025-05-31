@@ -132,6 +132,9 @@ class TelegramController extends Controller
                 // Получаем файл
                 $file = $request->file('image');
 
+                // Ограничиваем длину подписи до 1024 символов (максимум для Telegram)
+                $caption = mb_substr($data['content'], 0, 1024);
+
                 // Отправляем файл как multipart/form-data
                 $response = Http::attach(
                     'photo',
@@ -140,9 +143,21 @@ class TelegramController extends Controller
                     ['Content-Type' => $file->getMimeType()]
                 )->post($apiUrl, [
                     'chat_id' => $channel->chat_id,
-                    'caption' => $data['content'],
+                    'caption' => $caption,
                     'parse_mode' => 'Markdown'
                 ]);
+
+                // Если текст был обрезан, отправляем остаток как отдельное сообщение
+                if (mb_strlen($data['content']) > 1024) {
+                    $remainingText = mb_substr($data['content'], 1024);
+                    $textApiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
+
+                    Http::post($textApiUrl, [
+                        'chat_id' => $channel->chat_id,
+                        'text' => $remainingText,
+                        'parse_mode' => 'Markdown'
+                    ]);
+                }
             } else {
                 // Отправляем только текст
                 $apiUrl = "https://api.telegram.org/bot{$botToken}/sendMessage";
