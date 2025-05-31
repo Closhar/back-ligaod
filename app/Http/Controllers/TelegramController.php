@@ -22,7 +22,7 @@ class TelegramController extends Controller
         $fieldParam = $request->query('field');
 
         $query = TelegramChannel::query()
-            ->select(['id', 'title', 'type', 'username', 'description', 'is_active']);
+            ->select(['id', 'title', 'type', 'username', 'description', 'is_active', 'chat_id']);
 
         if ($searchId) {
             $query->where('id', $searchId);
