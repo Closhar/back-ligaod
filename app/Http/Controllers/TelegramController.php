@@ -94,10 +94,11 @@ class TelegramController extends Controller
 
         $channel = TelegramChannel::create($request->all());
 
-        return response()->json([
-            'success' => true,
-            'data' => $channel
-        ], 201);
+        return response()->json($channel, 201);
+        // return response()->json([
+        //     'success' => true,
+        //     'data' => $channel
+        // ], 201);
     }
 
     /**
