@@ -35,6 +35,7 @@ class Event extends Model
         'region_id',
         'is_active',
         'event_name',
+        'event_name_top',
         'series_id',
         'series_count',
         'about',
