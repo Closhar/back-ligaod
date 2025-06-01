@@ -12,30 +12,18 @@ class AIController extends Controller
     public function generate(Request $request)
     {
         try {
-            // Логируем входящий запрос
-            Log::info('AI Generation Request', [
-                'prompt' => $request->prompt
-            ]);
-
             $request->validate([
                 'prompt' => 'required|string|min:3|max:1000'
             ]);
 
             // Проверяем наличие API ключа
             $apiKey = config('services.openai.api_key');
-            if (empty($apiKey)) {
-                Log::error('OpenAI API Key is not set');
+            if (!$apiKey) {
                 return response()->json([
                     'success' => false,
                     'message' => 'OpenAI API Key is not configured'
                 ], 500);
             }
-
-            // Логируем запрос к OpenAI
-            Log::info('Sending request to OpenAI', [
-                'model' => 'gpt-3.5-turbo',
-                'prompt_length' => strlen($request->prompt)
-            ]);
 
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . $apiKey,
@@ -56,12 +44,6 @@ class AIController extends Controller
                 'max_tokens' => 2000
             ]);
 
-            // Логируем ответ от OpenAI
-            Log::info('OpenAI Response', [
-                'status' => $response->status(),
-                'body' => $response->json()
-            ]);
-
             if (!$response->successful()) {
                 Log::error('OpenAI API Error', [
                     'status' => $response->status(),
@@ -76,9 +58,6 @@ class AIController extends Controller
             $result = $response->json();
 
             if (!isset($result['choices'][0]['message']['content'])) {
-                Log::error('Invalid OpenAI Response Structure', [
-                    'response' => $result
-                ]);
                 return response()->json([
                     'success' => false,
                     'message' => 'Неверная структура ответа от OpenAI'
@@ -87,20 +66,12 @@ class AIController extends Controller
 
             $content = $result['choices'][0]['message']['content'];
 
-            // Логируем успешный результат
-            Log::info('AI Generation Success', [
-                'content_length' => strlen($content)
-            ]);
-
             return response()->json([
                 'success' => true,
                 'data' => $content
             ]);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation Error', [
-                'errors' => $e->errors()
-            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка валидации: ' . implode(', ', array_merge(...array_values($e->errors())))
@@ -117,7 +88,4 @@ class AIController extends Controller
             ], 500);
         }
     }
-
-
-
 }
