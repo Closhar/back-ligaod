@@ -58,7 +58,7 @@ class EventController extends Controller
         $limit = $request->query('limit', $perPage);
 
         // Обработка параметра sort
-        if ($sort) {
+        if ($sort && !$request->has('sort_field') && !$request->has('sort_direction')) {
             switch ($sort) {
                 case 'date_from_asc':
                     $sortField = 'date_from';
@@ -391,6 +391,14 @@ class EventController extends Controller
         if (!in_array($sortDirection, ['asc', 'desc'])) {
             $sortDirection = 'asc';
         }
+
+        // Добавляем логирование
+        Log::info('Sorting parameters:', [
+            'sort_field' => $sortField,
+            'sort_direction' => $sortDirection,
+            'request_sort_field' => $request->input('sort_field'),
+            'request_sort_direction' => $request->input('sort_direction')
+        ]);
 
         $query->orderBy($sortField, $sortDirection);
 
