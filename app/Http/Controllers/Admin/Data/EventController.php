@@ -211,7 +211,14 @@ class EventController extends Controller
                                   ->orWhereNull('region_id');
                         });
                     });
-                });
+                })
+                ->join('clubs as club1', 'events.club1_id', '=', 'club1.id')
+                ->join('clubs as club2', 'events.club2_id', '=', 'club2.id')
+                ->where(function($q) use ($regionId) {
+                    $q->where('club1.region_id', $regionId)
+                      ->orWhere('club2.region_id', $regionId);
+                })
+                ->select('events.*');
             }
 
             if ($with_team) {
