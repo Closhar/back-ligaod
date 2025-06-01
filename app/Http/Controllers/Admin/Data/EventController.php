@@ -200,10 +200,10 @@ class EventController extends Controller
                     ->orWhere(function($subQ) use ($regionId) {
                         $subQ->where(function($clubQ) use ($regionId) {
                             $clubQ->whereHas('club1', function($clubQuery) use ($regionId) {
-                                $clubQuery->where('region_id', $regionId);
+                                $clubQuery->where('clubs.region_id', $regionId);
                             })
                             ->orWhereHas('club2', function($clubQuery) use ($regionId) {
-                                $clubQuery->where('region_id', $regionId);
+                                $clubQuery->where('clubs.region_id', $regionId);
                             });
                         })
                         ->where(function($regionQ) use ($regionId) {
