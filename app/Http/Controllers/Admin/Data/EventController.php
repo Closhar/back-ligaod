@@ -196,7 +196,9 @@ class EventController extends Controller
             // Применяем фильтр show_native
             if ($show_native && $regionId) {
                 $query->where(function($q) use ($regionId) {
+                    // Домашние матчи
                     $q->where('region_id', $regionId)
+                    // Выездные матчи
                     ->orWhere(function($subQ) use ($regionId) {
                         $subQ->where(function($clubQ) use ($regionId) {
                             $clubQ->whereHas('club1', function($clubQuery) use ($regionId) {
@@ -208,7 +210,7 @@ class EventController extends Controller
                         })
                         ->where(function($regionQ) use ($regionId) {
                             $regionQ->whereNull('region_id')
-                                  ->orWhere('region_id', '!=', $regionId);
+                                  ->orWhereRaw('region_id != ?', [$regionId]);
                         });
                     });
                 });
