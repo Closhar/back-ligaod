@@ -237,7 +237,6 @@ class EventController extends Controller
                         $query->where(function ($q) use ($today) {
                             $q->whereDate('date_from', '<=', $today);
                         });
-                        $sort = "date_from_desc";
                         break;
                     case 3:
                         $query->whereDate('date_from', '=', $today);
