@@ -59,8 +59,8 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     Route::get('/sport_properties/{id}', [ApiSportPropertyController::class, 'show'])->name('sport_properties.show');
     Route::get('/sports', [ApiSportController::class, 'index'])->name('api.sports.index');
     Route::get('/sports/{id}', [ApiSportController::class, 'show'])->name('api.sports.show');
-    Route::get('/cities', [ApiCityController::class, 'index'])->name('cities.index');
-    Route::get('/cities/{id}', [ApiCityController::class, 'show'])->name('cities.show');
+    Route::get('/cities', [ApiCityController::class, 'index'])->name('api.cities.index');
+    Route::get('/cities/{id}', [ApiCityController::class, 'show'])->name('api.cities.show');
     Route::get('/clubs', [ApiClubController::class, 'index'])->name('clubs.table');
     Route::get('/clubs/{id}', [ApiClubController::class, 'show'])->name('clubs.item');
     Route::get('/arenas', [ApiArenaController::class, 'index'])->name('arenas.index');
