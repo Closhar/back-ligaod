@@ -9,17 +9,6 @@ use Illuminate\Support\Facades\Log;
 
 class AIController extends Controller
 {
-    <?php
-
-namespace App\Http\Controllers\Api;
-
-use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Log;
-
-class AIController extends Controller
-{
     public function generate(Request $request)
     {
         try {
