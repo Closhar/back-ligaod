@@ -197,11 +197,19 @@ class EventController extends Controller
             if ($show_native && $regionId) {
                 $query->where(function($q) use ($regionId) {
                     $q->where('region_id', $regionId)
-                    ->orWhereHas('club1', function($clubQuery) use ($regionId) {
-                        $clubQuery->where('region_id', $regionId);
-                    })
-                    ->orWhereHas('club2', function($clubQuery) use ($regionId) {
-                        $clubQuery->where('region_id', $regionId);
+                    ->orWhere(function($subQ) use ($regionId) {
+                        $subQ->where(function($clubQ) use ($regionId) {
+                            $clubQ->whereHas('club1', function($clubQuery) use ($regionId) {
+                                $clubQuery->where('region_id', $regionId);
+                            })
+                            ->orWhereHas('club2', function($clubQuery) use ($regionId) {
+                                $clubQuery->where('region_id', $regionId);
+                            });
+                        })
+                        ->where(function($regionQ) use ($regionId) {
+                            $regionQ->where('region_id', '!=', $regionId)
+                                  ->orWhereNull('region_id');
+                        });
                     });
                 });
             }
