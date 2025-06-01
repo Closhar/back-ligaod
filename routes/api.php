@@ -140,6 +140,7 @@ Route::apiResource('admin-pages', AdminPageController::class);
 
     // ChatGPT
     Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
+    Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
 
 
 Route::apiResource('events', EventController::class);
