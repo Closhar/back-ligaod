@@ -218,8 +218,6 @@ class EventController extends Controller
                     $q->where('club1.region_id', $regionId)
                       ->orWhere('club2.region_id', $regionId);
                 })
-                ->where('events.region_id', $regionId)
-                ->where('events.is_active', 1)
                 ->select('events.*');
             }
 
