@@ -204,6 +204,8 @@ class EventController extends Controller
                           $clubQuery->where('region_id', $regionId);
                       });
                 });
+            } else if ($regionId) {
+                $query->where('region_id', $regionId);
             }
 
             if ($with_team) {
@@ -258,9 +260,6 @@ class EventController extends Controller
                 $query->whereHas('competition.sport', function ($q) use ($sportId) {
                     $q->where('id', $sportId);
                 });
-            }
-            if ($regionId) {
-                $query->where('region_id', $regionId);
             }
             if ($seriesId) {
                 $query->whereHas('series', function ($q) use ($seriesId) {
