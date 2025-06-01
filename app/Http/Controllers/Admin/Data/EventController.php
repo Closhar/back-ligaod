@@ -207,8 +207,8 @@ class EventController extends Controller
                             });
                         })
                         ->where(function($regionQ) use ($regionId) {
-                            $regionQ->where('region_id', '!=', $regionId)
-                                  ->orWhereNull('region_id');
+                            $regionQ->whereNull('region_id')
+                                  ->orWhere('region_id', '!=', $regionId);
                         });
                     });
                 });
