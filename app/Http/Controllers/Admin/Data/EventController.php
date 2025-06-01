@@ -47,8 +47,8 @@ class EventController extends Controller
         $isActive = $request->input('is_active');
         $searchQuery = $request->input('q');
         $show_concrete_date = false;
+        $show_native = $request->input('show_native');
         $id = $request->input('id');
-
 
         $sortField = $request->input('sort_field', 'id'); // Поле для сортировки
         $sortDirection = $request->input('sort_direction', 'asc'); // Направление сортировки
@@ -57,6 +57,22 @@ class EventController extends Controller
         $type = $request->query('type');
         $limit = $request->query('limit', $perPage);
 
+        // Обработка параметра sort
+        if ($sort) {
+            switch ($sort) {
+                case 'date_from_asc':
+                    $sortField = 'date_from';
+                    $sortDirection = 'asc';
+                    break;
+                case 'date_from_desc':
+                    $sortField = 'date_from';
+                    $sortDirection = 'desc';
+                    break;
+                default:
+                    $sortField = 'id';
+                    $sortDirection = 'asc';
+            }
+        }
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -175,6 +191,19 @@ class EventController extends Controller
                 $show_concrete_date = true;
             } elseif ($dateTo) {
                 $query->whereDate('date_from', '<=', $dateTo);
+            }
+
+            // Применяем фильтр show_native
+            if ($show_native && $regionId) {
+                $query->where(function($q) use ($regionId) {
+                    $q->where('region_id', $regionId)
+                    ->orWhereHas('club1', function($clubQuery) use ($regionId) {
+                        $clubQuery->where('region_id', $regionId);
+                    })
+                    ->orWhereHas('club2', function($clubQuery) use ($regionId) {
+                        $clubQuery->where('region_id', $regionId);
+                    });
+                });
             }
 
             if ($with_team) {
