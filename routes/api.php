@@ -138,6 +138,10 @@ Route::apiResource('admin-pages', AdminPageController::class);
         Route::post('/send', [TelegramController::class, 'sendMessage']);
     });
 
+    // ChatGPT
+    Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
+
+
 Route::apiResource('events', EventController::class);
 Route::get('events/{id}/check-field', [EventController::class, 'checkField']);
 Route::get('events/{id}/check-freshness', [EventController::class, 'checkFieldFreshness']);

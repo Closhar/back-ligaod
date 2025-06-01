@@ -44,4 +44,8 @@ return [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
     ],
 
+    'openai' => [
+    'api_key' => env('OPENAI_API_KEY'),
+    ],
+
 ];
