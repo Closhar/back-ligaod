@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\ApiParamsController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\GalleryAdminController;
+use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
@@ -142,6 +143,8 @@ Route::apiResource('admin-pages', AdminPageController::class);
     Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
     Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
 
+    // Парсинг
+    Route::post('/parse-tables/parse', [ParseTableController::class, 'parse']);
 
 Route::apiResource('events', EventController::class);
 Route::get('events/{id}/check-field', [EventController::class, 'checkField']);
