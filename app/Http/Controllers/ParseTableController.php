@@ -17,56 +17,14 @@ class ParseTableController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ParseTable::query();
+        $sort = $request->input('sort', 'id');
+        $order = $request->input('order', 'asc');
 
-        // Получаем параметры сортировки
-        $sort = $request->input('sort', 'id'); // По умолчанию сортируем по id
-        $order = $request->input('order', 'asc'); // По умолчанию по возрастанию
-
-        // Проверяем, что поле сортировки существует в таблице
-        $allowedSortFields = [
-            'id', 'title', 'description', 'created_at', 'updated_at',
-            'field1', 'field2', 'field3', 'field4', 'field5',
-            'field6', 'field7', 'field8', 'field9', 'field10',
-            'field11', 'field12', 'field13', 'field14', 'field15',
-            'field16', 'field17', 'field18', 'field19', 'field20'
-        ];
-
-        // Применяем сортировку
-        if (in_array($sort, $allowedSortFields)) {
-            $direction = strtolower($order) === 'desc' ? 'desc' : 'asc';
-            $query->orderBy($sort, $direction);
-
-            // Логируем параметры сортировки для отладки
-            \Log::info('Применена сортировка', [
-                'sort' => $sort,
-                'direction' => $direction,
-                'sql' => $query->toSql(),
-                'bindings' => $query->getBindings()
-            ]);
-        }
-
-        // Добавляем пагинацию
-        $perPage = $request->input('per_page', 100);
-        $tables = $query->paginate($perPage);
-
-        // Добавляем параметры сортировки в URL пагинации
-        $tables->appends([
-            'sort' => $sort,
-            'order' => $order
-        ]);
+        $tables = ParseTable::orderBy($sort, $order)->get();
 
         return response()->json([
             'success' => true,
-            'data' => $tables->items(),
-            'pagination' => [
-                'total' => $tables->total(),
-                'per_page' => $tables->perPage(),
-                'current_page' => $tables->currentPage(),
-                'last_page' => $tables->lastPage(),
-                'from' => $tables->firstItem(),
-                'to' => $tables->lastItem()
-            ],
+            'data' => $tables,
             'sort' => $sort,
             'order' => $order
         ]);
