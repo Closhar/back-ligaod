@@ -134,6 +134,7 @@ class ParseTableController extends Controller
             }
 
             $html = $response->body();
+            Log::info('Получен HTML', ['html_length' => strlen($html)]);
 
             // Создаем DOM объект
             $dom = new DOMDocument();
@@ -157,27 +158,41 @@ class ParseTableController extends Controller
             $headers = [];
             $headerCells = $xpath->query('.//th', $table);
             foreach ($headerCells as $cell) {
-                $headers[] = trim($cell->textContent);
+                $header = trim($cell->textContent);
+                Log::info('Найден заголовок', ['header' => $header]);
+                $headers[] = $header;
             }
 
             // Если нет th, пробуем взять первую строку
             if (empty($headers)) {
                 $firstRow = $xpath->query('.//tr[1]/td', $table);
                 foreach ($firstRow as $cell) {
-                    $headers[] = trim($cell->textContent);
+                    $header = trim($cell->textContent);
+                    Log::info('Найден заголовок из первой строки', ['header' => $header]);
+                    $headers[] = $header;
                 }
             }
 
             // Получаем данные
             $rows = [];
             $dataRows = $xpath->query('.//tr[position() > 1]', $table);
-            foreach ($dataRows as $row) {
+            foreach ($dataRows as $rowIndex => $row) {
                 $rowData = [];
                 $cells = $xpath->query('.//td', $row);
-                foreach ($cells as $cell) {
-                    $rowData[] = trim($cell->textContent);
+                foreach ($cells as $cellIndex => $cell) {
+                    $value = trim($cell->textContent);
+                    Log::info('Получено значение ячейки', [
+                        'row' => $rowIndex + 1,
+                        'cell' => $cellIndex + 1,
+                        'value' => $value
+                    ]);
+                    $rowData[] = $value;
                 }
                 if (!empty($rowData)) {
+                    Log::info('Добавлена строка', [
+                        'row_index' => $rowIndex,
+                        'data' => $rowData
+                    ]);
                     $rows[] = $rowData;
                 }
             }
@@ -185,7 +200,7 @@ class ParseTableController extends Controller
             Log::info('Найдены строки таблицы', [
                 'headers' => $headers,
                 'rows_count' => count($rows),
-                'first_row' => !empty($rows) ? $rows[0] : null
+                'all_rows' => $rows
             ]);
 
             // Создаем таблицу
@@ -204,7 +219,8 @@ class ParseTableController extends Controller
             $tableModel->save();
             Log::info('Создана таблица', [
                 'table_id' => $tableModel->id,
-                'title' => $tableModel->title
+                'title' => $tableModel->title,
+                'headers' => $headers
             ]);
 
             // Сохраняем данные
@@ -216,6 +232,11 @@ class ParseTableController extends Controller
                 // Заполняем поля данными
                 foreach ($row as $index => $value) {
                     $fieldName = 'field' . ($index + 1);
+                    Log::info('Заполняем поле', [
+                        'row_index' => $rowIndex,
+                        'field_name' => $fieldName,
+                        'value' => $value
+                    ]);
                     $content->$fieldName = $value;
                 }
 
