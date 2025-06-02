@@ -213,11 +213,10 @@ class ParseTableController extends Controller
                 $content = new ParseTableContent();
                 $content->table_id = $tableModel->id;
 
+                // Заполняем поля данными
                 foreach ($row as $index => $value) {
                     $fieldName = 'field' . ($index + 1);
-                    if (property_exists($content, $fieldName)) {
-                        $content->$fieldName = $value;
-                    }
+                    $content->$fieldName = $value;
                 }
 
                 try {
@@ -234,7 +233,8 @@ class ParseTableController extends Controller
                     Log::info('Строка успешно сохранена', [
                         'table_id' => $tableModel->id,
                         'content_id' => $content->id,
-                        'row_index' => $rowIndex
+                        'row_index' => $rowIndex,
+                        'saved_data' => $content->toArray()
                     ]);
                 } catch (\Exception $e) {
                     Log::error('Ошибка при сохранении строки таблицы', [
