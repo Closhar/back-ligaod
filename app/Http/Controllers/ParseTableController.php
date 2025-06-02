@@ -123,7 +123,8 @@ class ParseTableController extends Controller
     public function parse(Request $request)
     {
         $request->validate([
-            'url' => 'required|url'
+            'url' => 'required|url',
+            'search_text' => 'nullable|string|max:255'
         ]);
 
         try {
@@ -134,35 +135,66 @@ class ParseTableController extends Controller
             }
 
             $html = $response->body();
+            $searchText = $request->search_text ?? 'Команда';
 
             // Создаем DOM объект
             $dom = new DOMDocument();
             @$dom->loadHTML($html, LIBXML_NOERROR);
             $xpath = new DOMXPath($dom);
 
-            // Ищем таблицу
+            // Ищем все таблицы
             $tables = $xpath->query('//table');
+            $targetTable = null;
 
             if ($tables->length === 0) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Таблица не найдена на странице'
+                    'message' => 'Таблицы не найдены на странице'
                 ], 404);
             }
 
-            // Берем первую таблицу
-            $table = $tables->item(0);
+            // Ищем таблицу с нужным заголовком
+            foreach ($tables as $table) {
+                $headers = [];
+                $headerCells = $xpath->query('.//th', $table);
+                foreach ($headerCells as $cell) {
+                    $headers[] = trim($cell->textContent);
+                }
 
-            // Получаем заголовки
+                // Если нет th, пробуем взять первую строку
+                if (empty($headers)) {
+                    $firstRow = $xpath->query('.//tr[1]/td', $table);
+                    foreach ($firstRow as $cell) {
+                        $headers[] = trim($cell->textContent);
+                    }
+                }
+
+                // Проверяем наличие искомого текста в заголовках
+                foreach ($headers as $header) {
+                    if (stripos($header, $searchText) !== false) {
+                        $targetTable = $table;
+                        break 2;
+                    }
+                }
+            }
+
+            if (!$targetTable) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Таблица с заголовком, содержащим '{$searchText}', не найдена"
+                ], 404);
+            }
+
+            // Получаем заголовки из найденной таблицы
             $headers = [];
-            $headerCells = $xpath->query('.//th', $table);
+            $headerCells = $xpath->query('.//th', $targetTable);
             foreach ($headerCells as $cell) {
                 $headers[] = trim($cell->textContent);
             }
 
             // Если нет th, пробуем взять первую строку
             if (empty($headers)) {
-                $firstRow = $xpath->query('.//tr[1]/td', $table);
+                $firstRow = $xpath->query('.//tr[1]/td', $targetTable);
                 foreach ($firstRow as $cell) {
                     $headers[] = trim($cell->textContent);
                 }
@@ -184,7 +216,7 @@ class ParseTableController extends Controller
 
             // Получаем данные
             $rows = [];
-            $dataRows = $xpath->query('.//tr[position() > 1]', $table);
+            $dataRows = $xpath->query('.//tr[position() > 1]', $targetTable);
             foreach ($dataRows as $row) {
                 $rowData = [];
                 $cells = $xpath->query('.//td', $row);
@@ -207,24 +239,15 @@ class ParseTableController extends Controller
                 // Если заголовок пустой, используем значение по умолчанию
                 $value = !empty($header) ? $header : $defaultHeaders[$index];
                 $tableModel->$fieldName = $value;
-                Log::info("Сохраняем заголовок в {$fieldName}: {$value}");
             }
 
             // Заполняем оставшиеся поля пустыми значениями
             for ($i = count($headers); $i < 20; $i++) {
                 $fieldName = 'field' . ($i + 1);
                 $tableModel->$fieldName = null;
-                Log::info("Очищаем поле {$fieldName}");
             }
 
-            try {
-                $tableModel->save();
-                Log::info("Таблица сохранена с ID: " . $tableModel->id);
-                Log::info("Заголовки таблицы: " . json_encode($headers));
-            } catch (\Exception $e) {
-                Log::error("Ошибка при сохранении таблицы: " . $e->getMessage());
-                throw $e;
-            }
+            $tableModel->save();
 
             // Сохраняем данные
             $savedRows = 0;
