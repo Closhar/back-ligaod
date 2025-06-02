@@ -182,6 +182,12 @@ class ParseTableController extends Controller
                 }
             }
 
+            Log::info('Найдены строки таблицы', [
+                'headers' => $headers,
+                'rows_count' => count($rows),
+                'first_row' => !empty($rows) ? $rows[0] : null
+            ]);
+
             // Создаем таблицу
             $tableModel = new ParseTable();
             $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
@@ -196,9 +202,14 @@ class ParseTableController extends Controller
             }
 
             $tableModel->save();
+            Log::info('Создана таблица', [
+                'table_id' => $tableModel->id,
+                'title' => $tableModel->title
+            ]);
 
             // Сохраняем данные
-            foreach ($rows as $row) {
+            $savedRows = 0;
+            foreach ($rows as $rowIndex => $row) {
                 $content = new ParseTableContent();
                 $content->table_id = $tableModel->id;
 
@@ -209,15 +220,46 @@ class ParseTableController extends Controller
                     }
                 }
 
-                $content->save();
+                try {
+                    Log::info('Попытка сохранения строки', [
+                        'table_id' => $tableModel->id,
+                        'row_index' => $rowIndex,
+                        'row_data' => $row,
+                        'content_model' => $content->toArray()
+                    ]);
+
+                    $content->save();
+                    $savedRows++;
+
+                    Log::info('Строка успешно сохранена', [
+                        'table_id' => $tableModel->id,
+                        'content_id' => $content->id,
+                        'row_index' => $rowIndex
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('Ошибка при сохранении строки таблицы', [
+                        'table_id' => $tableModel->id,
+                        'row_index' => $rowIndex,
+                        'row_data' => $row,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                }
             }
+
+            Log::info('Завершен импорт таблицы', [
+                'table_id' => $tableModel->id,
+                'total_rows' => count($rows),
+                'saved_rows' => $savedRows
+            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Таблица успешно импортирована',
                 'data' => [
                     'table_id' => $tableModel->id,
-                    'rows_count' => count($rows)
+                    'rows_count' => count($rows),
+                    'saved_rows' => $savedRows
                 ]
             ]);
 
