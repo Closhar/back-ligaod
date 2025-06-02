@@ -212,24 +212,16 @@ class ParseTableController extends Controller
                     'text' => $cell->textContent
                 ]);
 
-                // 1. Берем только первый span из th
-                $firstSpan = $xpath->query('.//span[1]', $cell)->item(0);
-                if ($firstSpan) {
-                    $header = trim($firstSpan->textContent);
+                // 1. Берем только первый span из ячейки
+                $spans = $xpath->query('.//span', $cell);
+                if ($spans->length > 0) {
+                    $header = trim($spans->item(0)->textContent);
                     Log::info("Найден первый span", [
                         'text' => $header
                     ]);
                 }
 
-                // 2. Если span пустой, проверяем атрибут title
-                if (empty($header)) {
-                    $header = $cell->getAttribute('title');
-                    Log::info("Используем title атрибут", [
-                        'text' => $header
-                    ]);
-                }
-
-                // 3. Если все еще пустой, берем текст из самой ячейки
+                // 2. Если span не найден, берем текст из самой ячейки
                 if (empty($header)) {
                     $header = trim($cell->textContent);
                     Log::info("Используем текст ячейки", [
@@ -271,18 +263,13 @@ class ParseTableController extends Controller
 
                     $header = '';
 
-                    // 1. Берем только первый span из th
-                    $firstSpan = $xpath->query('.//span[1]', $cell)->item(0);
-                    if ($firstSpan) {
-                        $header = trim($firstSpan->textContent);
+                    // 1. Берем только первый span из ячейки
+                    $spans = $xpath->query('.//span', $cell);
+                    if ($spans->length > 0) {
+                        $header = trim($spans->item(0)->textContent);
                     }
 
-                    // 2. Если span пустой, проверяем атрибут title
-                    if (empty($header)) {
-                        $header = $cell->getAttribute('title');
-                    }
-
-                    // 3. Если все еще пустой, берем текст из самой ячейки
+                    // 2. Если span не найден, берем текст из самой ячейки
                     if (empty($header)) {
                         $header = trim($cell->textContent);
                     }
