@@ -20,6 +20,8 @@ class ParseTableController extends Controller
         $searchId = $request->query('id');
         $fieldParam = $request->query('field');
         $type = $request->query('type');
+        $sortField = $request->query('sort', 'id');
+        $sortOrder = $request->query('order', 'asc');
 
         $query = ParseTable::query()
             ->select(
@@ -43,6 +45,8 @@ class ParseTableController extends Controller
                 $query->where('title', 'LIKE', "%{$searchQuery}%");
             }
         }
+
+        $query->orderBy($sortField, $sortOrder);
 
         if ($type === 'async') {
             return $query->get();
