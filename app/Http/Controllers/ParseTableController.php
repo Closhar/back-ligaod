@@ -185,7 +185,7 @@ class ParseTableController extends Controller
                 ], 404);
             }
 
-            // Получаем заголовки из найденной таблицы
+            // Получаем заголовки
             $headers = [];
             $headerCells = $xpath->query('.//th', $targetTable);
             foreach ($headerCells as $cell) {
@@ -214,7 +214,7 @@ class ParseTableController extends Controller
                 }
             }
 
-            // Получаем данные
+            // Получаем данные, пропуская строку с заголовками
             $rows = [];
             $dataRows = $xpath->query('.//tr[position() > 1]', $targetTable);
             foreach ($dataRows as $row) {
@@ -223,8 +223,13 @@ class ParseTableController extends Controller
                 foreach ($cells as $cell) {
                     $rowData[] = trim($cell->textContent);
                 }
-                if (!empty($rowData)) {
-                    $rows[] = $rowData;
+                // Проверяем, что это не пустая строка и не строка с заголовками
+                if (!empty($rowData) && count($rowData) > 1) {
+                    // Проверяем, что первая ячейка не является заголовком
+                    $firstCell = reset($rowData);
+                    if (!in_array($firstCell, $headers)) {
+                        $rows[] = $rowData;
+                    }
                 }
             }
 
