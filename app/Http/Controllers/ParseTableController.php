@@ -185,80 +185,44 @@ class ParseTableController extends Controller
                 ], 404);
             }
 
-            // Получаем заголовки
+            // Получаем заголовки из thead
             $headers = [];
-            $headerCells = $xpath->query('.//th', $targetTable);
+            $headerCells = $xpath->query('.//thead//th', $targetTable);
             foreach ($headerCells as $cell) {
                 $headers[] = trim($cell->textContent);
             }
 
-            // Если нет th, пробуем взять первую строку
+            // Если нет th в thead, пробуем взять th из первой строки
             if (empty($headers)) {
-                $firstRow = $xpath->query('.//tr[1]/td', $targetTable);
-                foreach ($firstRow as $cell) {
+                $headerCells = $xpath->query('.//tr[1]/th', $targetTable);
+                foreach ($headerCells as $cell) {
                     $headers[] = trim($cell->textContent);
                 }
             }
 
-            // Определяем значения по умолчанию
-            $defaultHeaders = [
-                '№', 'Команда', 'Игры', 'Очки', 'В', 'Н', 'П', 'Мячи', 'Разница',
-                'Форма', 'Последние матчи', 'Следующий матч', 'Стадион', 'Тренер',
-                'Бюджет', 'Средний возраст', 'Легионеры', 'Молодые игроки',
-                'Достижения', 'История'
-            ];
-
-            // Проверяем, что в заголовках нет числовых значений и названий команд
-            $filteredHeaders = [];
-            foreach ($headers as $header) {
-                $header = trim($header);
-                // Пропускаем пустые значения, числа и названия команд
-                if (!empty($header) &&
-                    !is_numeric($header) &&
-                    !preg_match('/^[А-Яа-я\s]+$/', $header)) {
-                    $filteredHeaders[] = $header;
-                }
+            // Если все еще нет заголовков, используем значения по умолчанию
+            if (empty($headers)) {
+                $headers = [
+                    '№', 'Команда', 'Игры', 'Очки', 'В', 'Н', 'П', 'Мячи', 'Разница',
+                    'Форма', 'Последние матчи', 'Следующий матч', 'Стадион', 'Тренер',
+                    'Бюджет', 'Средний возраст', 'Легионеры', 'Молодые игроки',
+                    'Достижения', 'История'
+                ];
             }
-
-            // Если после фильтрации заголовки пусты, используем значения по умолчанию
-            if (empty($filteredHeaders)) {
-                $filteredHeaders = $defaultHeaders;
-            }
-
-            $headers = $filteredHeaders;
 
             Log::info('Найденные заголовки:', $headers);
 
-            // Заполняем пустые заголовки значениями по умолчанию
-            foreach ($headers as $index => $header) {
-                if (empty($header) && isset($defaultHeaders[$index])) {
-                    $headers[$index] = $defaultHeaders[$index];
-                }
-            }
-
-            Log::info('Заголовки после обработки:', $headers);
-
-            // Получаем данные, пропуская строку с заголовками
+            // Получаем данные из tbody
             $rows = [];
-            $dataRows = $xpath->query('.//tr[position() > 1]', $targetTable);
+            $dataRows = $xpath->query('.//tbody//tr', $targetTable);
             foreach ($dataRows as $row) {
                 $rowData = [];
                 $cells = $xpath->query('.//td', $row);
                 foreach ($cells as $cell) {
                     $rowData[] = trim($cell->textContent);
                 }
-                Log::info('Обрабатываемая строка:', $rowData);
-
-                // Проверяем, что это не пустая строка и не строка с заголовками
-                if (!empty($rowData) && count($rowData) > 1) {
-                    // Проверяем, что первая ячейка не является заголовком
-                    $firstCell = reset($rowData);
-                    if (!in_array($firstCell, $headers)) {
-                        $rows[] = $rowData;
-                        Log::info('Строка добавлена в данные');
-                    } else {
-                        Log::info('Строка пропущена как заголовок');
-                    }
+                if (!empty($rowData)) {
+                    $rows[] = $rowData;
                 }
             }
 
@@ -273,7 +237,7 @@ class ParseTableController extends Controller
             foreach ($headers as $index => $header) {
                 $fieldName = 'field' . ($index + 1);
                 // Если заголовок пустой, используем значение по умолчанию
-                $value = !empty($header) ? $header : $defaultHeaders[$index];
+                $value = !empty($header) ? $header : $headers[$index];
                 $tableModel->$fieldName = $value;
             }
 
