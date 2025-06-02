@@ -36,11 +36,27 @@ class ParseTableController extends Controller
             $query->orderBy($sort, $order === 'desc' ? 'desc' : 'asc');
         }
 
-        $tables = $query->get();
+        // Добавляем пагинацию
+        $perPage = $request->input('per_page', 15);
+        $tables = $query->paginate($perPage);
+
+        // Добавляем параметры сортировки в URL пагинации
+        $tables->appends([
+            'sort' => $sort,
+            'order' => $order
+        ]);
 
         return response()->json([
             'success' => true,
-            'data' => $tables,
+            'data' => $tables->items(),
+            'pagination' => [
+                'total' => $tables->total(),
+                'per_page' => $tables->perPage(),
+                'current_page' => $tables->currentPage(),
+                'last_page' => $tables->lastPage(),
+                'from' => $tables->firstItem(),
+                'to' => $tables->lastItem()
+            ],
             'sort' => $sort,
             'order' => $order
         ]);
