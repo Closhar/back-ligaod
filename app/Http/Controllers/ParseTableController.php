@@ -134,7 +134,6 @@ class ParseTableController extends Controller
             }
 
             $html = $response->body();
-            Log::info('Получен HTML', ['html_length' => strlen($html)]);
 
             // Создаем DOM объект
             $dom = new DOMDocument();
@@ -158,50 +157,30 @@ class ParseTableController extends Controller
             $headers = [];
             $headerCells = $xpath->query('.//th', $table);
             foreach ($headerCells as $cell) {
-                $header = trim($cell->textContent);
-                Log::info('Найден заголовок', ['header' => $header]);
-                $headers[] = $header;
+                $headers[] = trim($cell->textContent);
             }
 
             // Если нет th, пробуем взять первую строку
             if (empty($headers)) {
                 $firstRow = $xpath->query('.//tr[1]/td', $table);
                 foreach ($firstRow as $cell) {
-                    $header = trim($cell->textContent);
-                    Log::info('Найден заголовок из первой строки', ['header' => $header]);
-                    $headers[] = $header;
+                    $headers[] = trim($cell->textContent);
                 }
             }
 
             // Получаем данные
             $rows = [];
             $dataRows = $xpath->query('.//tr[position() > 1]', $table);
-            foreach ($dataRows as $rowIndex => $row) {
+            foreach ($dataRows as $row) {
                 $rowData = [];
                 $cells = $xpath->query('.//td', $row);
-                foreach ($cells as $cellIndex => $cell) {
-                    $value = trim($cell->textContent);
-                    Log::info('Получено значение ячейки', [
-                        'row' => $rowIndex + 1,
-                        'cell' => $cellIndex + 1,
-                        'value' => $value
-                    ]);
-                    $rowData[] = $value;
+                foreach ($cells as $cell) {
+                    $rowData[] = trim($cell->textContent);
                 }
                 if (!empty($rowData)) {
-                    Log::info('Добавлена строка', [
-                        'row_index' => $rowIndex,
-                        'data' => $rowData
-                    ]);
                     $rows[] = $rowData;
                 }
             }
-
-            Log::info('Найдены строки таблицы', [
-                'headers' => $headers,
-                'rows_count' => count($rows),
-                'all_rows' => $rows
-            ]);
 
             // Создаем таблицу
             $tableModel = new ParseTable();
@@ -217,62 +196,26 @@ class ParseTableController extends Controller
             }
 
             $tableModel->save();
-            Log::info('Создана таблица', [
-                'table_id' => $tableModel->id,
-                'title' => $tableModel->title,
-                'headers' => $headers
-            ]);
 
             // Сохраняем данные
             $savedRows = 0;
-            foreach ($rows as $rowIndex => $row) {
+            foreach ($rows as $row) {
                 $content = new ParseTableContent();
                 $content->table_id = $tableModel->id;
 
                 // Заполняем поля данными
                 foreach ($row as $index => $value) {
                     $fieldName = 'field' . ($index + 1);
-                    Log::info('Заполняем поле', [
-                        'row_index' => $rowIndex,
-                        'field_name' => $fieldName,
-                        'value' => $value
-                    ]);
                     $content->$fieldName = $value;
                 }
 
                 try {
-                    Log::info('Попытка сохранения строки', [
-                        'table_id' => $tableModel->id,
-                        'row_index' => $rowIndex,
-                        'row_data' => $row,
-                        'content_model' => $content->toArray()
-                    ]);
-
                     $content->save();
                     $savedRows++;
-
-                    Log::info('Строка успешно сохранена', [
-                        'table_id' => $tableModel->id,
-                        'content_id' => $content->id,
-                        'row_index' => $rowIndex,
-                        'saved_data' => $content->toArray()
-                    ]);
                 } catch (\Exception $e) {
-                    Log::error('Ошибка при сохранении строки таблицы', [
-                        'table_id' => $tableModel->id,
-                        'row_index' => $rowIndex,
-                        'row_data' => $row,
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
+                    Log::error('Ошибка при сохранении строки таблицы: ' . $e->getMessage());
                 }
             }
-
-            Log::info('Завершен импорт таблицы', [
-                'table_id' => $tableModel->id,
-                'total_rows' => count($rows),
-                'saved_rows' => $savedRows
-            ]);
 
             return response()->json([
                 'success' => true,
