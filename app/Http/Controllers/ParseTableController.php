@@ -200,6 +200,8 @@ class ParseTableController extends Controller
                 }
             }
 
+            Log::info('Найденные заголовки:', $headers);
+
             // Заполняем пустые заголовки значениями по умолчанию
             $defaultHeaders = [
                 '№', 'Команда', 'Игры', 'Очки', 'В', 'Н', 'П', 'Мячи', 'Разница',
@@ -214,6 +216,8 @@ class ParseTableController extends Controller
                 }
             }
 
+            Log::info('Заголовки после обработки:', $headers);
+
             // Получаем данные, пропуская строку с заголовками
             $rows = [];
             $dataRows = $xpath->query('.//tr[position() > 1]', $targetTable);
@@ -223,15 +227,22 @@ class ParseTableController extends Controller
                 foreach ($cells as $cell) {
                     $rowData[] = trim($cell->textContent);
                 }
+                Log::info('Обрабатываемая строка:', $rowData);
+
                 // Проверяем, что это не пустая строка и не строка с заголовками
                 if (!empty($rowData) && count($rowData) > 1) {
                     // Проверяем, что первая ячейка не является заголовком
                     $firstCell = reset($rowData);
                     if (!in_array($firstCell, $headers)) {
                         $rows[] = $rowData;
+                        Log::info('Строка добавлена в данные');
+                    } else {
+                        Log::info('Строка пропущена как заголовок');
                     }
                 }
             }
+
+            Log::info('Итоговые данные:', $rows);
 
             // Создаем таблицу
             $tableModel = new ParseTable();
