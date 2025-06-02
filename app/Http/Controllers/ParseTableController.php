@@ -199,13 +199,7 @@ class ParseTableController extends Controller
             // Создаем таблицу
             $tableModel = new ParseTable();
             $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
-
-            // Формируем описание с заголовками полей
-            $description = 'Импортировано из ' . $request->url . "\n\nЗаголовки полей:\n";
-            foreach ($headers as $index => $header) {
-                $description .= sprintf("%d. %s\n", $index + 1, $header);
-            }
-            $tableModel->description = $description;
+            $tableModel->description = 'Импортировано из ' . $request->url;
 
             // Заполняем заголовки полей в таблице parse_tables
             foreach ($headers as $index => $header) {
