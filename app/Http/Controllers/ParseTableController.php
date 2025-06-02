@@ -196,123 +196,48 @@ class ParseTableController extends Controller
                 }
             }
 
-            // Получаем заголовки из thead
+            // Получаем заголовки из thead или первой строки
             $headers = [];
-            $headerCells = $xpath->query('.//thead//th | .//thead//td');
-
-            // Логируем все найденные ячейки заголовков
-            Log::info('Найдены ячейки заголовков:', [
-                'count' => $headerCells->length
-            ]);
+            $headerCells = $xpath->query('.//thead//th | .//thead//td | .//tr[1]/th | .//tr[1]/td', $targetTable);
 
             foreach ($headerCells as $index => $cell) {
                 if (count($headers) >= 20) {
-                    break; // Прекращаем, если уже есть 20 заголовков
+                    break;
                 }
 
-                $header = '';
-
-                // Логируем содержимое ячейки
-                Log::info("Обработка ячейки #{$index}", [
-                    'html' => $dom->saveHTML($cell),
-                    'text' => $cell->textContent
-                ]);
-
-                // 1. Берем только первый span из ячейки
-                $spans = $xpath->query('.//span', $cell);
-                if ($spans->length > 0) {
-                    $header = trim($spans->item(0)->textContent);
-                    Log::info("Найден первый span", [
-                        'text' => $header
-                    ]);
-                }
-
-                // 2. Если span не найден, берем текст из самой ячейки
+                $header = trim($cell->textContent);
                 if (empty($header)) {
-                    $header = trim($cell->textContent);
-                    Log::info("Используем текст ячейки", [
-                        'text' => $header
-                    ]);
+                    $header = '#';
                 }
 
-                // Если заголовок пустой, ставим #
-                $header = empty($header) ? '#' : $header;
-
-                // Проверяем, нет ли уже такого заголовка
                 if (!in_array($header, $headers)) {
                     $headers[] = $header;
-                    Log::info("Добавлен новый заголовок", [
-                        'header' => $header,
-                        'total_headers' => count($headers)
-                    ]);
-                } else {
-                    Log::info("Пропущен дублирующийся заголовок", [
-                        'header' => $header
-                    ]);
-                }
-            }
-
-            // Логируем итоговый список заголовков
-            Log::info('Итоговый список заголовков:', [
-                'headers' => $headers,
-                'count' => count($headers)
-            ]);
-
-            // Если нет заголовков в thead, пробуем взять из первой строки
-            if (empty($headers)) {
-                $headerCells = $xpath->query('.//tr[1]/th | .//tr[1]/td');
-
-                foreach ($headerCells as $index => $cell) {
-                    if (count($headers) >= 20) {
-                        break; // Прекращаем, если уже есть 20 заголовков
-                    }
-
-                    $header = '';
-
-                    // 1. Берем только первый span из ячейки
-                    $spans = $xpath->query('.//span', $cell);
-                    if ($spans->length > 0) {
-                        $header = trim($spans->item(0)->textContent);
-                    }
-
-                    // 2. Если span не найден, берем текст из самой ячейки
-                    if (empty($header)) {
-                        $header = trim($cell->textContent);
-                    }
-
-                    // Если заголовок пустой, ставим #
-                    $header = empty($header) ? '#' : $header;
-
-                    // Проверяем, нет ли уже такого заголовка
-                    if (!in_array($header, $headers)) {
-                        $headers[] = $header;
-                    }
                 }
             }
 
             // Получаем данные из tbody
             $rows = [];
-            $dataRows = $xpath->query('.//tbody//tr', $targetTable);
+            $dataRows = $xpath->query('.//tbody//tr | .//tr[position() > 1]', $targetTable);
+
             foreach ($dataRows as $row) {
                 $rowData = [];
                 $cells = $xpath->query('.//td', $row);
+
                 foreach ($cells as $cell) {
                     $rowData[] = trim($cell->textContent);
                 }
+
                 if (!empty($rowData)) {
                     $rows[] = $rowData;
                 }
             }
-
-            // Логируем количество найденных строк
-            Log::info('Найдено строк в таблице: ' . count($rows));
 
             // Создаем таблицу
             $tableModel = new ParseTable();
             $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
             $tableModel->description = 'Импортировано из ' . $request->url;
 
-            // Заполняем заголовки полей в таблице parse_tables
+            // Заполняем заголовки полей
             foreach ($headers as $index => $header) {
                 $fieldName = 'field' . ($index + 1);
                 $tableModel->$fieldName = $header;
@@ -327,64 +252,33 @@ class ParseTableController extends Controller
             $tableModel->save();
 
             // Сохраняем данные
-            $savedRows = 0;
-            foreach ($rows as $index => $row) {
+            foreach ($rows as $row) {
                 $content = new ParseTableContent();
                 $content->table_id = $tableModel->id;
 
-                // Заполняем поля данными
                 foreach ($row as $colIndex => $value) {
-                    if ($colIndex < 20) { // Ограничиваем количество колонок до 20
+                    if ($colIndex < 20) {
                         $fieldName = 'field' . ($colIndex + 1);
                         $content->$fieldName = $value;
                     }
                 }
 
-                try {
-                    // Логируем данные перед сохранением
-                    Log::info("Попытка сохранения строки #{$index}", [
-                        'table_id' => $tableModel->id,
-                        'data' => $row,
-                        'model_data' => $content->toArray()
-                    ]);
-
-                    $content->save();
-                    $savedRows++;
-                    Log::info("Сохранена строка #{$index}: " . json_encode($row));
-                } catch (\Exception $e) {
-                    Log::error('Ошибка при сохранении строки таблицы', [
-                        'error' => $e->getMessage(),
-                        'line' => $e->getLine(),
-                        'file' => $e->getFile(),
-                        'row_index' => $index,
-                        'row_data' => $row,
-                        'trace' => $e->getTraceAsString()
-                    ]);
-                }
+                $content->save();
             }
-
-            // Логируем итоговую статистику
-            Log::info('Итоги импорта таблицы', [
-                'total_rows' => count($rows),
-                'saved_rows' => $savedRows,
-                'table_id' => $tableModel->id
-            ]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Таблица успешно импортирована',
                 'data' => [
-                    'table_id' => $tableModel->id,
-                    'rows_count' => count($rows),
-                    'saved_rows' => $savedRows
+                    'table' => $tableModel,
+                    'rows_count' => count($rows)
                 ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Ошибка при парсинге таблицы: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при парсинге таблицы: ' . $e->getMessage()
+                'message' => 'Ошибка при импорте таблицы: ' . $e->getMessage()
             ], 500);
         }
     }
