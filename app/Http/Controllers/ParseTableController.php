@@ -208,12 +208,15 @@ class ParseTableController extends Controller
                 'Достижения', 'История'
             ];
 
-            // Проверяем, что в заголовках нет числовых значений
+            // Проверяем, что в заголовках нет числовых значений и названий команд
             $filteredHeaders = [];
             foreach ($headers as $header) {
-                // Если заголовок не является числом и не пустой
-                if (!is_numeric(trim($header)) && !empty(trim($header))) {
-                    $filteredHeaders[] = trim($header);
+                $header = trim($header);
+                // Пропускаем пустые значения, числа и названия команд
+                if (!empty($header) &&
+                    !is_numeric($header) &&
+                    !preg_match('/^[А-Яа-я\s]+$/', $header)) {
+                    $filteredHeaders[] = $header;
                 }
             }
 
