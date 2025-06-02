@@ -194,38 +194,77 @@ class ParseTableController extends Controller
             $headers = [];
             $headerCells = $xpath->query('.//thead//th | .//thead//td');
 
-            foreach ($headerCells as $cell) {
+            // Логируем все найденные ячейки заголовков
+            Log::info('Найдены ячейки заголовков:', [
+                'count' => $headerCells->length
+            ]);
+
+            foreach ($headerCells as $index => $cell) {
                 if (count($headers) >= 20) {
                     break; // Прекращаем, если уже есть 20 заголовков
                 }
 
                 $header = '';
 
+                // Логируем содержимое ячейки
+                Log::info("Обработка ячейки #{$index}", [
+                    'html' => $dom->saveHTML($cell),
+                    'text' => $cell->textContent
+                ]);
+
                 // 1. Берем только первый span из th
                 $firstSpan = $xpath->query('.//span[1]', $cell)->item(0);
                 if ($firstSpan) {
                     $header = trim($firstSpan->textContent);
+                    Log::info("Найден первый span", [
+                        'text' => $header
+                    ]);
                 }
 
                 // 2. Если span пустой, проверяем атрибут title
                 if (empty($header)) {
                     $header = $cell->getAttribute('title');
+                    Log::info("Используем title атрибут", [
+                        'text' => $header
+                    ]);
                 }
 
                 // 3. Если все еще пустой, берем текст из самой ячейки
                 if (empty($header)) {
                     $header = trim($cell->textContent);
+                    Log::info("Используем текст ячейки", [
+                        'text' => $header
+                    ]);
                 }
 
                 // Если заголовок пустой, ставим #
-                $headers[] = empty($header) ? '#' : $header;
+                $header = empty($header) ? '#' : $header;
+
+                // Проверяем, нет ли уже такого заголовка
+                if (!in_array($header, $headers)) {
+                    $headers[] = $header;
+                    Log::info("Добавлен новый заголовок", [
+                        'header' => $header,
+                        'total_headers' => count($headers)
+                    ]);
+                } else {
+                    Log::info("Пропущен дублирующийся заголовок", [
+                        'header' => $header
+                    ]);
+                }
             }
+
+            // Логируем итоговый список заголовков
+            Log::info('Итоговый список заголовков:', [
+                'headers' => $headers,
+                'count' => count($headers)
+            ]);
 
             // Если нет заголовков в thead, пробуем взять из первой строки
             if (empty($headers)) {
                 $headerCells = $xpath->query('.//tr[1]/th | .//tr[1]/td');
 
-                foreach ($headerCells as $cell) {
+                foreach ($headerCells as $index => $cell) {
                     if (count($headers) >= 20) {
                         break; // Прекращаем, если уже есть 20 заголовков
                     }
@@ -249,7 +288,12 @@ class ParseTableController extends Controller
                     }
 
                     // Если заголовок пустой, ставим #
-                    $headers[] = empty($header) ? '#' : $header;
+                    $header = empty($header) ? '#' : $header;
+
+                    // Проверяем, нет ли уже такого заголовка
+                    if (!in_array($header, $headers)) {
+                        $headers[] = $header;
+                    }
                 }
             }
 
