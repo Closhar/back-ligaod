@@ -198,7 +198,12 @@ class ParseTableController extends Controller
 
             // Получаем заголовки из thead или первой строки
             $headers = [];
-            $headerCells = $xpath->query('.//thead//th | .//thead//td | .//tr[1]/th | .//tr[1]/td', $targetTable);
+            $headerCells = $xpath->query('.//thead//th | .//thead//td', $targetTable);
+
+            // Если заголовки не найдены в thead, пробуем взять из первой строки
+            if ($headerCells->length === 0) {
+                $headerCells = $xpath->query('.//tr[1]/th | .//tr[1]/td', $targetTable);
+            }
 
             foreach ($headerCells as $index => $cell) {
                 if (count($headers) >= 20) {
@@ -215,9 +220,14 @@ class ParseTableController extends Controller
                 }
             }
 
-            // Получаем данные из tbody
+            // Получаем данные из tbody, исключая первую строку если она была использована как заголовок
             $rows = [];
-            $dataRows = $xpath->query('.//tbody//tr | .//tr[position() > 1]', $targetTable);
+            $dataRows = $xpath->query('.//tbody//tr', $targetTable);
+
+            // Если нет строк в tbody, берем все строки кроме первой
+            if ($dataRows->length === 0) {
+                $dataRows = $xpath->query('.//tr[position() > 1]', $targetTable);
+            }
 
             foreach ($dataRows as $row) {
                 $rowData = [];
