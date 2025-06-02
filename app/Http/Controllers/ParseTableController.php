@@ -204,21 +204,27 @@ class ParseTableController extends Controller
             // Заполняем заголовки полей в таблице parse_tables
             foreach ($headers as $index => $header) {
                 $fieldName = 'field' . ($index + 1);
-                if (property_exists($tableModel, $fieldName)) {
-                    // Если заголовок пустой, используем значение по умолчанию
-                    $tableModel->$fieldName = !empty($header) ? $header : $defaultHeaders[$index];
-                }
+                // Если заголовок пустой, используем значение по умолчанию
+                $value = !empty($header) ? $header : $defaultHeaders[$index];
+                $tableModel->$fieldName = $value;
+                Log::info("Сохраняем заголовок в {$fieldName}: {$value}");
             }
 
             // Заполняем оставшиеся поля пустыми значениями
             for ($i = count($headers); $i < 20; $i++) {
                 $fieldName = 'field' . ($i + 1);
-                if (property_exists($tableModel, $fieldName)) {
-                    $tableModel->$fieldName = null;
-                }
+                $tableModel->$fieldName = null;
+                Log::info("Очищаем поле {$fieldName}");
             }
 
-            $tableModel->save();
+            try {
+                $tableModel->save();
+                Log::info("Таблица сохранена с ID: " . $tableModel->id);
+                Log::info("Заголовки таблицы: " . json_encode($headers));
+            } catch (\Exception $e) {
+                Log::error("Ошибка при сохранении таблицы: " . $e->getMessage());
+                throw $e;
+            }
 
             // Сохраняем данные
             $savedRows = 0;
