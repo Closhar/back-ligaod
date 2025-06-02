@@ -201,15 +201,15 @@ class ParseTableController extends Controller
 
                 $header = '';
 
-                // 1. Проверяем атрибут title
-                $header = $cell->getAttribute('title');
+                // 1. Сначала ищем в span
+                $spans = $xpath->query('.//span', $cell);
+                if ($spans->length > 0) {
+                    $header = trim($spans->item(0)->textContent);
+                }
 
-                // 2. Если title пустой, берем первый span
+                // 2. Если span пустой, проверяем атрибут title
                 if (empty($header)) {
-                    $spans = $xpath->query('.//span', $cell);
-                    if ($spans->length > 0) {
-                        $header = trim($spans->item(0)->textContent);
-                    }
+                    $header = $cell->getAttribute('title');
                 }
 
                 // 3. Если все еще пустой, берем текст из самой ячейки
@@ -232,15 +232,15 @@ class ParseTableController extends Controller
 
                     $header = '';
 
-                    // 1. Проверяем атрибут title
-                    $header = $cell->getAttribute('title');
+                    // 1. Сначала ищем в span
+                    $spans = $xpath->query('.//span', $cell);
+                    if ($spans->length > 0) {
+                        $header = trim($spans->item(0)->textContent);
+                    }
 
-                    // 2. Если title пустой, берем первый span
+                    // 2. Если span пустой, проверяем атрибут title
                     if (empty($header)) {
-                        $spans = $xpath->query('.//span', $cell);
-                        if ($spans->length > 0) {
-                            $header = trim($spans->item(0)->textContent);
-                        }
+                        $header = $cell->getAttribute('title');
                     }
 
                     // 3. Если все еще пустой, берем текст из самой ячейки
@@ -267,6 +267,9 @@ class ParseTableController extends Controller
                 }
             }
 
+            // Логируем количество найденных строк
+            Log::info('Найдено строк в таблице: ' . count($rows));
+
             // Создаем таблицу
             $tableModel = new ParseTable();
             $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
@@ -288,19 +291,23 @@ class ParseTableController extends Controller
 
             // Сохраняем данные
             $savedRows = 0;
-            foreach ($rows as $row) {
+            foreach ($rows as $index => $row) {
                 $content = new ParseTableContent();
                 $content->table_id = $tableModel->id;
 
                 // Заполняем поля данными
-                foreach ($row as $index => $value) {
-                    $fieldName = 'field' . ($index + 1);
-                    $content->$fieldName = $value;
+                foreach ($row as $colIndex => $value) {
+                    if ($colIndex < 20) { // Ограничиваем количество колонок до 20
+                        $fieldName = 'field' . ($colIndex + 1);
+                        $content->$fieldName = $value;
+                    }
                 }
 
                 try {
                     $content->save();
                     $savedRows++;
+                    // Логируем каждую сохраненную строку
+                    Log::info("Сохранена строка #{$index}: " . json_encode($row));
                 } catch (\Exception $e) {
                     Log::error('Ошибка при сохранении строки таблицы: ' . $e->getMessage());
                 }
