@@ -188,22 +188,37 @@ class ParseTableController extends Controller
             // Получаем заголовки из thead
             $headers = [];
             $headerCells = $xpath->query('.//thead//td', $targetTable);
+
+            Log::info('Найдено ячеек в thead:', ['count' => $headerCells->length]);
+
             foreach ($headerCells as $cell) {
                 // Ищем span с классом sort
                 $span = $xpath->query('.//span[@class="sort"]', $cell)->item(0);
+                Log::info('Обработка ячейки:', [
+                    'html' => $cell->ownerDocument->saveHTML($cell),
+                    'has_span' => $span ? 'yes' : 'no'
+                ]);
+
                 if ($span) {
                     $header = trim($span->textContent);
+                    Log::info('Найден заголовок в span:', ['header' => $header]);
                     if (!empty($header)) {
                         $headers[] = $header;
                     }
                 }
             }
 
+            Log::info('Собранные заголовки из thead:', $headers);
+
             // Если нет заголовков в thead, пробуем взять из первой строки
             if (empty($headers)) {
+                Log::info('Заголовки не найдены в thead, пробуем первую строку');
                 $headerCells = $xpath->query('.//tr[1]/td', $targetTable);
+                Log::info('Найдено ячеек в первой строке:', ['count' => $headerCells->length]);
+
                 foreach ($headerCells as $cell) {
                     $header = trim($cell->textContent);
+                    Log::info('Заголовок из первой строки:', ['header' => $header]);
                     if (!empty($header)) {
                         $headers[] = $header;
                     }
