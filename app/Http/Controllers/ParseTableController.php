@@ -32,12 +32,22 @@ class ParseTableController extends Controller
             'field16', 'field17', 'field18', 'field19', 'field20'
         ];
 
+        // Применяем сортировку
         if (in_array($sort, $allowedSortFields)) {
-            $query->orderBy($sort, $order === 'desc' ? 'desc' : 'asc');
+            $direction = strtolower($order) === 'desc' ? 'desc' : 'asc';
+            $query->orderBy($sort, $direction);
+
+            // Логируем параметры сортировки для отладки
+            \Log::info('Применена сортировка', [
+                'sort' => $sort,
+                'direction' => $direction,
+                'sql' => $query->toSql(),
+                'bindings' => $query->getBindings()
+            ]);
         }
 
         // Добавляем пагинацию
-        $perPage = $request->input('per_page', 15);
+        $perPage = $request->input('per_page', 100);
         $tables = $query->paginate($perPage);
 
         // Добавляем параметры сортировки в URL пагинации
