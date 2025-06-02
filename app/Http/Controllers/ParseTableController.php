@@ -200,9 +200,7 @@ class ParseTableController extends Controller
                 }
             }
 
-            Log::info('Найденные заголовки:', $headers);
-
-            // Заполняем пустые заголовки значениями по умолчанию
+            // Определяем значения по умолчанию
             $defaultHeaders = [
                 '№', 'Команда', 'Игры', 'Очки', 'В', 'Н', 'П', 'Мячи', 'Разница',
                 'Форма', 'Последние матчи', 'Следующий матч', 'Стадион', 'Тренер',
@@ -210,6 +208,25 @@ class ParseTableController extends Controller
                 'Достижения', 'История'
             ];
 
+            // Проверяем, что в заголовках нет числовых значений
+            $filteredHeaders = [];
+            foreach ($headers as $header) {
+                // Если заголовок не является числом и не пустой
+                if (!is_numeric(trim($header)) && !empty(trim($header))) {
+                    $filteredHeaders[] = trim($header);
+                }
+            }
+
+            // Если после фильтрации заголовки пусты, используем значения по умолчанию
+            if (empty($filteredHeaders)) {
+                $filteredHeaders = $defaultHeaders;
+            }
+
+            $headers = $filteredHeaders;
+
+            Log::info('Найденные заголовки:', $headers);
+
+            // Заполняем пустые заголовки значениями по умолчанию
             foreach ($headers as $index => $header) {
                 if (empty($header) && isset($defaultHeaders[$index])) {
                     $headers[$index] = $defaultHeaders[$index];
