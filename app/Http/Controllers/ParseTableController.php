@@ -135,7 +135,7 @@ class ParseTableController extends Controller
             }
 
             $html = $response->body();
-            $searchText = $request->search_text ?? 'Команда';
+            $searchText = $request->search_text;
 
             // Создаем DOM объект
             $dom = new DOMDocument();
@@ -153,43 +153,46 @@ class ParseTableController extends Controller
                 ], 404);
             }
 
-            // Ищем таблицу с нужным заголовком
-            foreach ($tables as $table) {
-                $headers = [];
-                $headerCells = $xpath->query('.//th', $table);
-                foreach ($headerCells as $cell) {
-                    $headers[] = trim($cell->textContent);
-                }
-
-                // Если нет th, пробуем взять первую строку
-                if (empty($headers)) {
-                    $firstRow = $xpath->query('.//tr[1]/td', $table);
-                    foreach ($firstRow as $cell) {
+            // Если search_text не указан, берем первую таблицу
+            if (empty($searchText)) {
+                $targetTable = $tables->item(0);
+            } else {
+                // Ищем таблицу с нужным заголовком
+                foreach ($tables as $table) {
+                    $headers = [];
+                    $headerCells = $xpath->query('.//th', $table);
+                    foreach ($headerCells as $cell) {
                         $headers[] = trim($cell->textContent);
                     }
-                }
 
-                // Проверяем наличие искомого текста в заголовках
-                foreach ($headers as $header) {
-                    if (stripos($header, $searchText) !== false) {
-                        $targetTable = $table;
-                        break 2;
+                    // Если нет th, пробуем взять первую строку
+                    if (empty($headers)) {
+                        $firstRow = $xpath->query('.//tr[1]/td', $table);
+                        foreach ($firstRow as $cell) {
+                            $headers[] = trim($cell->textContent);
+                        }
+                    }
+
+                    // Проверяем наличие искомого текста в заголовках
+                    foreach ($headers as $header) {
+                        if (stripos($header, $searchText) !== false) {
+                            $targetTable = $table;
+                            break 2;
+                        }
                     }
                 }
-            }
 
-            if (!$targetTable) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Таблица с заголовком, содержащим '{$searchText}', не найдена"
-                ], 404);
+                if (!$targetTable) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Таблица с заголовком, содержащим '{$searchText}', не найдена"
+                    ], 404);
+                }
             }
 
             // Получаем заголовки из thead
             $headers = [];
             $headerCells = $xpath->query('.//thead//td', $targetTable);
-
-            Log::info('Найдено ячеек в thead:', ['count' => $headerCells->length]);
 
             foreach ($headerCells as $cell) {
                 // Сначала ищем span с классом sort
@@ -205,21 +208,11 @@ class ParseTableController extends Controller
 
                 // Если заголовок пустой, ставим #
                 $headers[] = empty($header) ? '#' : $header;
-
-                Log::info('Обработка ячейки:', [
-                    'html' => $cell->ownerDocument->saveHTML($cell),
-                    'has_span' => $span ? 'yes' : 'no',
-                    'header' => $header
-                ]);
             }
-
-            Log::info('Собранные заголовки из thead:', $headers);
 
             // Если нет заголовков в thead, пробуем взять из первой строки
             if (empty($headers)) {
-                Log::info('Заголовки не найдены в thead, пробуем первую строку');
                 $headerCells = $xpath->query('.//tr[1]/td', $targetTable);
-                Log::info('Найдено ячеек в первой строке:', ['count' => $headerCells->length]);
 
                 foreach ($headerCells as $cell) {
                     // Сначала ищем span с классом sort
@@ -235,12 +228,8 @@ class ParseTableController extends Controller
 
                     // Если заголовок пустой, ставим #
                     $headers[] = empty($header) ? '#' : $header;
-
-                    Log::info('Заголовок из первой строки:', ['header' => $header]);
                 }
             }
-
-            Log::info('Итоговые заголовки:', $headers);
 
             // Получаем данные из tbody
             $rows = [];
@@ -255,8 +244,6 @@ class ParseTableController extends Controller
                     $rows[] = $rowData;
                 }
             }
-
-            Log::info('Итоговые данные:', $rows);
 
             // Создаем таблицу
             $tableModel = new ParseTable();
