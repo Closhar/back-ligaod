@@ -187,16 +187,26 @@ class ParseTableController extends Controller
 
             // Получаем заголовки из thead
             $headers = [];
-            $headerCells = $xpath->query('.//thead//th', $targetTable);
+            $headerCells = $xpath->query('.//thead//td', $targetTable);
             foreach ($headerCells as $cell) {
-                $headers[] = trim($cell->textContent);
+                // Ищем span с классом sort
+                $span = $xpath->query('.//span[@class="sort"]', $cell)->item(0);
+                if ($span) {
+                    $header = trim($span->textContent);
+                    if (!empty($header)) {
+                        $headers[] = $header;
+                    }
+                }
             }
 
-            // Если нет th в thead, пробуем взять th из первой строки
+            // Если нет заголовков в thead, пробуем взять из первой строки
             if (empty($headers)) {
-                $headerCells = $xpath->query('.//tr[1]/th', $targetTable);
+                $headerCells = $xpath->query('.//tr[1]/td', $targetTable);
                 foreach ($headerCells as $cell) {
-                    $headers[] = trim($cell->textContent);
+                    $header = trim($cell->textContent);
+                    if (!empty($header)) {
+                        $headers[] = $header;
+                    }
                 }
             }
 
