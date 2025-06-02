@@ -15,12 +15,34 @@ class ParseTableController extends Controller
     /**
      * Получить список всех таблиц
      */
-    public function index()
+    public function index(Request $request)
     {
-        $tables = ParseTable::all();
+        $query = ParseTable::query();
+
+        // Получаем параметры сортировки
+        $sort = $request->input('sort', 'id'); // По умолчанию сортируем по id
+        $order = $request->input('order', 'asc'); // По умолчанию по возрастанию
+
+        // Проверяем, что поле сортировки существует в таблице
+        $allowedSortFields = [
+            'id', 'title', 'description', 'created_at', 'updated_at',
+            'field1', 'field2', 'field3', 'field4', 'field5',
+            'field6', 'field7', 'field8', 'field9', 'field10',
+            'field11', 'field12', 'field13', 'field14', 'field15',
+            'field16', 'field17', 'field18', 'field19', 'field20'
+        ];
+
+        if (in_array($sort, $allowedSortFields)) {
+            $query->orderBy($sort, $order === 'desc' ? 'desc' : 'asc');
+        }
+
+        $tables = $query->get();
+
         return response()->json([
             'success' => true,
-            'data' => $tables
+            'data' => $tables,
+            'sort' => $sort,
+            'order' => $order
         ]);
     }
 
