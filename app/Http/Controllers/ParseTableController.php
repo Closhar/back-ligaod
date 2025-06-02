@@ -200,17 +200,22 @@ class ParseTableController extends Controller
                 }
             }
 
-            // Если все еще нет заголовков, используем значения по умолчанию
-            if (empty($headers)) {
-                $headers = [
-                    '№', 'Команда', 'Игры', 'Очки', 'В', 'Н', 'П', 'Мячи', 'Разница',
-                    'Форма', 'Последние матчи', 'Следующий матч', 'Стадион', 'Тренер',
-                    'Бюджет', 'Средний возраст', 'Легионеры', 'Молодые игроки',
-                    'Достижения', 'История'
-                ];
+            // Определяем значения по умолчанию
+            $defaultHeaders = [
+                '№', 'Команда', 'Игры', 'Очки', 'В', 'Н', 'П', 'Мячи', 'Разница',
+                'Форма', 'Последние матчи', 'Следующий матч', 'Стадион', 'Тренер',
+                'Бюджет', 'Средний возраст', 'Легионеры', 'Молодые игроки',
+                'Достижения', 'История'
+            ];
+
+            // Заполняем пустые заголовки значениями по умолчанию
+            foreach ($headers as $index => $header) {
+                if (empty($header) && isset($defaultHeaders[$index])) {
+                    $headers[$index] = $defaultHeaders[$index];
+                }
             }
 
-            Log::info('Найденные заголовки:', $headers);
+            Log::info('Итоговые заголовки:', $headers);
 
             // Получаем данные из tbody
             $rows = [];
@@ -236,12 +241,10 @@ class ParseTableController extends Controller
             // Заполняем заголовки полей в таблице parse_tables
             foreach ($headers as $index => $header) {
                 $fieldName = 'field' . ($index + 1);
-                // Если заголовок пустой, используем значение по умолчанию
-                $value = !empty($header) ? $header : $headers[$index];
-                $tableModel->$fieldName = $value;
+                $tableModel->$fieldName = $header;
             }
 
-            // Заполняем оставшиеся поля пустыми значениями
+            // Заполняем оставшиеся поля null
             for ($i = count($headers); $i < 20; $i++) {
                 $fieldName = 'field' . ($i + 1);
                 $tableModel->$fieldName = null;
