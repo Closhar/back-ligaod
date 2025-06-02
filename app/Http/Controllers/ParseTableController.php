@@ -195,36 +195,24 @@ class ParseTableController extends Controller
             $headerCells = $xpath->query('.//thead//th | .//thead//td');
 
             foreach ($headerCells as $cell) {
+                if (count($headers) >= 20) {
+                    break; // Прекращаем, если уже есть 20 заголовков
+                }
+
                 $header = '';
 
                 // 1. Проверяем атрибут title
                 $header = $cell->getAttribute('title');
 
-                // 2. Если title пустой, ищем в span с классом _hidden-td
+                // 2. Если title пустой, берем первый span
                 if (empty($header)) {
-                    $span = $xpath->query('.//span[@class="_hidden-td"]', $cell)->item(0);
-                    if ($span) {
-                        $header = trim($span->textContent);
+                    $spans = $xpath->query('.//span', $cell);
+                    if ($spans->length > 0) {
+                        $header = trim($spans->item(0)->textContent);
                     }
                 }
 
-                // 3. Если все еще пустой, ищем в span с классом _hidden-dt
-                if (empty($header)) {
-                    $span = $xpath->query('.//span[@class="_hidden-dt"]', $cell)->item(0);
-                    if ($span) {
-                        $header = trim($span->textContent);
-                    }
-                }
-
-                // 4. Если все еще пустой, ищем в span с классом sort (для предыдущей структуры)
-                if (empty($header)) {
-                    $span = $xpath->query('.//span[@class="sort"]', $cell)->item(0);
-                    if ($span) {
-                        $header = trim($span->textContent);
-                    }
-                }
-
-                // 5. Если все еще пустой, берем текст из самой ячейки
+                // 3. Если все еще пустой, берем текст из самой ячейки
                 if (empty($header)) {
                     $header = trim($cell->textContent);
                 }
@@ -238,36 +226,24 @@ class ParseTableController extends Controller
                 $headerCells = $xpath->query('.//tr[1]/th | .//tr[1]/td');
 
                 foreach ($headerCells as $cell) {
+                    if (count($headers) >= 20) {
+                        break; // Прекращаем, если уже есть 20 заголовков
+                    }
+
                     $header = '';
 
                     // 1. Проверяем атрибут title
                     $header = $cell->getAttribute('title');
 
-                    // 2. Если title пустой, ищем в span с классом _hidden-td
+                    // 2. Если title пустой, берем первый span
                     if (empty($header)) {
-                        $span = $xpath->query('.//span[@class="_hidden-td"]', $cell)->item(0);
-                        if ($span) {
-                            $header = trim($span->textContent);
+                        $spans = $xpath->query('.//span', $cell);
+                        if ($spans->length > 0) {
+                            $header = trim($spans->item(0)->textContent);
                         }
                     }
 
-                    // 3. Если все еще пустой, ищем в span с классом _hidden-dt
-                    if (empty($header)) {
-                        $span = $xpath->query('.//span[@class="_hidden-dt"]', $cell)->item(0);
-                        if ($span) {
-                            $header = trim($span->textContent);
-                        }
-                    }
-
-                    // 4. Если все еще пустой, ищем в span с классом sort
-                    if (empty($header)) {
-                        $span = $xpath->query('.//span[@class="sort"]', $cell)->item(0);
-                        if ($span) {
-                            $header = trim($span->textContent);
-                        }
-                    }
-
-                    // 5. Если все еще пустой, берем текст из самой ячейки
+                    // 3. Если все еще пустой, берем текст из самой ячейки
                     if (empty($header)) {
                         $header = trim($cell->textContent);
                     }
