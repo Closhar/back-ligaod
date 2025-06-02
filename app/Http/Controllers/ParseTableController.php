@@ -304,14 +304,34 @@ class ParseTableController extends Controller
                 }
 
                 try {
+                    // Логируем данные перед сохранением
+                    Log::info("Попытка сохранения строки #{$index}", [
+                        'table_id' => $tableModel->id,
+                        'data' => $row,
+                        'model_data' => $content->toArray()
+                    ]);
+
                     $content->save();
                     $savedRows++;
-                    // Логируем каждую сохраненную строку
                     Log::info("Сохранена строка #{$index}: " . json_encode($row));
                 } catch (\Exception $e) {
-                    Log::error('Ошибка при сохранении строки таблицы: ' . $e->getMessage());
+                    Log::error('Ошибка при сохранении строки таблицы', [
+                        'error' => $e->getMessage(),
+                        'line' => $e->getLine(),
+                        'file' => $e->getFile(),
+                        'row_index' => $index,
+                        'row_data' => $row,
+                        'trace' => $e->getTraceAsString()
+                    ]);
                 }
             }
+
+            // Логируем итоговую статистику
+            Log::info('Итоги импорта таблицы', [
+                'total_rows' => count($rows),
+                'saved_rows' => $savedRows,
+                'table_id' => $tableModel->id
+            ]);
 
             return response()->json([
                 'success' => true,
