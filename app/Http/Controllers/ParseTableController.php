@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Table;
-use App\Models\TableContent;
+use App\Models\ParseTable;
+use App\Models\ParseTableContent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -17,7 +17,7 @@ class ParseTableController extends Controller
      */
     public function index()
     {
-        $tables = Table::all();
+        $tables = ParseTable::all();
         return response()->json([
             'success' => true,
             'data' => $tables
@@ -54,7 +54,7 @@ class ParseTableController extends Controller
             'field20' => 'nullable|string|max:255',
         ]);
 
-        $table = Table::create($request->all());
+        $table = ParseTable::create($request->all());
 
         return response()->json([
             'success' => true,
@@ -65,7 +65,7 @@ class ParseTableController extends Controller
     /**
      * Обновить существующую таблицу
      */
-    public function update(Request $request, Table $table)
+    public function update(Request $request, ParseTable $table)
     {
         $request->validate([
             'title' => 'required|string|max:255',
@@ -103,10 +103,10 @@ class ParseTableController extends Controller
     /**
      * Удалить таблицу
      */
-    public function destroy(Table $table)
+    public function destroy(ParseTable $table)
     {
         // Удаляем все связанные записи содержимого
-        TableContent::where('table_id', $table->id)->delete();
+        ParseTableContent::where('table_id', $table->id)->delete();
 
         // Удаляем саму таблицу
         $table->delete();
@@ -183,7 +183,7 @@ class ParseTableController extends Controller
             }
 
             // Создаем таблицу
-            $tableModel = new Table();
+            $tableModel = new ParseTable();
             $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
             $tableModel->description = 'Импортировано из ' . $request->url;
 
@@ -199,7 +199,7 @@ class ParseTableController extends Controller
 
             // Сохраняем данные
             foreach ($rows as $row) {
-                $content = new TableContent();
+                $content = new ParseTableContent();
                 $content->table_id = $tableModel->id;
 
                 foreach ($row as $index => $value) {
