@@ -201,10 +201,10 @@ class ParseTableController extends Controller
 
                 $header = '';
 
-                // 1. Сначала ищем в span
-                $spans = $xpath->query('.//span', $cell);
-                if ($spans->length > 0) {
-                    $header = trim($spans->item(0)->textContent);
+                // 1. Берем только первый span из th
+                $firstSpan = $xpath->query('.//span[1]', $cell)->item(0);
+                if ($firstSpan) {
+                    $header = trim($firstSpan->textContent);
                 }
 
                 // 2. Если span пустой, проверяем атрибут title
@@ -232,10 +232,10 @@ class ParseTableController extends Controller
 
                     $header = '';
 
-                    // 1. Сначала ищем в span
-                    $spans = $xpath->query('.//span', $cell);
-                    if ($spans->length > 0) {
-                        $header = trim($spans->item(0)->textContent);
+                    // 1. Берем только первый span из th
+                    $firstSpan = $xpath->query('.//span[1]', $cell)->item(0);
+                    if ($firstSpan) {
+                        $header = trim($firstSpan->textContent);
                     }
 
                     // 2. Если span пустой, проверяем атрибут title
