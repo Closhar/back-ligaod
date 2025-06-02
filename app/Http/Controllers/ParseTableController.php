@@ -168,6 +168,20 @@ class ParseTableController extends Controller
                 }
             }
 
+            // Заполняем пустые заголовки значениями по умолчанию
+            $defaultHeaders = [
+                '№', 'Команда', 'Игры', 'Очки', 'В', 'Н', 'П', 'Мячи', 'Разница',
+                'Форма', 'Последние матчи', 'Следующий матч', 'Стадион', 'Тренер',
+                'Бюджет', 'Средний возраст', 'Легионеры', 'Молодые игроки',
+                'Достижения', 'История'
+            ];
+
+            foreach ($headers as $index => $header) {
+                if (empty($header) && isset($defaultHeaders[$index])) {
+                    $headers[$index] = $defaultHeaders[$index];
+                }
+            }
+
             // Получаем данные
             $rows = [];
             $dataRows = $xpath->query('.//tr[position() > 1]', $table);
@@ -185,7 +199,13 @@ class ParseTableController extends Controller
             // Создаем таблицу
             $tableModel = new ParseTable();
             $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
-            $tableModel->description = 'Импортировано из ' . $request->url;
+
+            // Формируем описание с заголовками полей
+            $description = 'Импортировано из ' . $request->url . "\n\nЗаголовки полей:\n";
+            foreach ($headers as $index => $header) {
+                $description .= sprintf("%d. %s\n", $index + 1, $header);
+            }
+            $tableModel->description = $description;
 
             // Заполняем заголовки полей
             foreach ($headers as $index => $header) {
