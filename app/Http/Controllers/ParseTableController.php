@@ -222,23 +222,27 @@ class ParseTableController extends Controller
 
             // Получаем данные из tbody, исключая первую строку если она была использована как заголовок
             $rows = [];
-            $dataRows = $xpath->query('.//tbody//tr', $targetTable);
 
-            // Если нет строк в tbody, берем все строки кроме первой
-            if ($dataRows->length === 0) {
-                $dataRows = $xpath->query('.//tr[position() > 1]', $targetTable);
-            }
+            // Сначала пробуем получить все строки таблицы
+            $allRows = $xpath->query('.//tr', $targetTable);
 
-            foreach ($dataRows as $row) {
-                $rowData = [];
-                $cells = $xpath->query('.//td', $row);
+            // Если есть строки, обрабатываем их
+            if ($allRows->length > 0) {
+                // Пропускаем первую строку, если она была использована как заголовок
+                $startIndex = ($headerCells->length === 0) ? 0 : 1;
 
-                foreach ($cells as $cell) {
-                    $rowData[] = trim($cell->textContent);
-                }
+                for ($i = $startIndex; $i < $allRows->length; $i++) {
+                    $row = $allRows->item($i);
+                    $rowData = [];
+                    $cells = $xpath->query('.//td', $row);
 
-                if (!empty($rowData)) {
-                    $rows[] = $rowData;
+                    foreach ($cells as $cell) {
+                        $rowData[] = trim($cell->textContent);
+                    }
+
+                    if (!empty($rowData)) {
+                        $rows[] = $rowData;
+                    }
                 }
             }
 
