@@ -192,20 +192,25 @@ class ParseTableController extends Controller
             Log::info('Найдено ячеек в thead:', ['count' => $headerCells->length]);
 
             foreach ($headerCells as $cell) {
-                // Ищем span с классом sort
+                // Сначала ищем span с классом sort
                 $span = $xpath->query('.//span[@class="sort"]', $cell)->item(0);
-                Log::info('Обработка ячейки:', [
-                    'html' => $cell->ownerDocument->saveHTML($cell),
-                    'has_span' => $span ? 'yes' : 'no'
-                ]);
+                $header = '';
 
                 if ($span) {
                     $header = trim($span->textContent);
-                    Log::info('Найден заголовок в span:', ['header' => $header]);
-                    if (!empty($header)) {
-                        $headers[] = $header;
-                    }
+                } else {
+                    // Если span не найден, берем текст из самой ячейки
+                    $header = trim($cell->textContent);
                 }
+
+                // Если заголовок пустой, ставим #
+                $headers[] = empty($header) ? '#' : $header;
+
+                Log::info('Обработка ячейки:', [
+                    'html' => $cell->ownerDocument->saveHTML($cell),
+                    'has_span' => $span ? 'yes' : 'no',
+                    'header' => $header
+                ]);
             }
 
             Log::info('Собранные заголовки из thead:', $headers);
@@ -217,30 +222,25 @@ class ParseTableController extends Controller
                 Log::info('Найдено ячеек в первой строке:', ['count' => $headerCells->length]);
 
                 foreach ($headerCells as $cell) {
-                    $header = trim($cell->textContent);
-                    Log::info('Заголовок из первой строки:', ['header' => $header]);
-                    if (!empty($header)) {
-                        $headers[] = $header;
+                    // Сначала ищем span с классом sort
+                    $span = $xpath->query('.//span[@class="sort"]', $cell)->item(0);
+                    $header = '';
+
+                    if ($span) {
+                        $header = trim($span->textContent);
+                    } else {
+                        // Если span не найден, берем текст из самой ячейки
+                        $header = trim($cell->textContent);
                     }
+
+                    // Если заголовок пустой, ставим #
+                    $headers[] = empty($header) ? '#' : $header;
+
+                    Log::info('Заголовок из первой строки:', ['header' => $header]);
                 }
             }
 
-            // Определяем значения по умолчанию
-            $defaultHeaders = [
-                '№', 'Команда', 'Игры', 'Очки', 'В', 'Н', 'П', 'Мячи', 'Разница',
-                'Форма', 'Последние матчи', 'Следующий матч', 'Стадион', 'Тренер',
-                'Бюджет', 'Средний возраст', 'Легионеры', 'Молодые игроки',
-                'Достижения', 'История'
-            ];
-
-            // Если заголовки найдены, используем их
-            if (!empty($headers)) {
-                Log::info('Используем найденные заголовки:', $headers);
-            } else {
-                // Если заголовки не найдены, используем значения по умолчанию
-                $headers = $defaultHeaders;
-                Log::info('Используем заголовки по умолчанию:', $headers);
-            }
+            Log::info('Итоговые заголовки:', $headers);
 
             // Получаем данные из tbody
             $rows = [];
