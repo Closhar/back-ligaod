@@ -114,12 +114,20 @@ class EventStreamController extends Controller
     {
         if (!$url) return false;
 
-        return str_contains($url, [
+        $embedPatterns = [
             'youtube.com/embed/',
             'vk.com/video_ext.php',
             'vkvideo.ru/video_ext.php',
             'rutube.ru/play/embed/'
-        ]);
+        ];
+
+        foreach ($embedPatterns as $pattern) {
+            if (str_contains($url, $pattern)) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
