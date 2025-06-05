@@ -44,9 +44,91 @@ class EventStreamController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $stream = $event->streams()->create($validator->validated());
+        $validatedData = $validator->validated();
+        $link = $validatedData['link'] ?? null;
 
-        return response()->json($stream, 201);
+        // Если это обычная ссылка, создаем одну запись
+        if ($link && !str_contains($link, '<iframe')) {
+            $stream = $event->streams()->create($validatedData);
+            return response()->json($stream, 201);
+        }
+
+        // Если это iframe, создаем три записи
+        if ($link && str_contains($link, '<iframe')) {
+            $streams = [];
+
+            // Извлекаем URL из iframe
+            preg_match('/src="([^"]+)"/', $link, $matches);
+            $iframeUrl = $matches[1] ?? null;
+
+            if ($iframeUrl) {
+                // Преобразуем URL в зависимости от сервиса
+                $convertedUrl = $this->convertIframeUrl($iframeUrl);
+
+                // Первая запись (in_player=1, in_profile=0)
+                $stream1 = $event->streams()->create([
+                    'date' => $validatedData['date'],
+                    'title' => $validatedData['title'],
+                    'link' => $convertedUrl,
+                    'in_player' => true,
+                    'in_profile' => false
+                ]);
+                $streams[] = $stream1;
+
+                // Вторая запись (in_player=0, in_profile=1)
+                $stream2 = $event->streams()->create([
+                    'date' => $validatedData['date'],
+                    'title' => $validatedData['title'],
+                    'link' => $convertedUrl,
+                    'in_player' => false,
+                    'in_profile' => true
+                ]);
+                $streams[] = $stream2;
+
+                // Третья запись (in_player=0, in_profile=0)
+                $stream3 = $event->streams()->create([
+                    'date' => $validatedData['date'],
+                    'title' => $validatedData['title'],
+                    'link' => $convertedUrl,
+                    'in_player' => false,
+                    'in_profile' => false
+                ]);
+                $streams[] = $stream3;
+            }
+
+            return response()->json($streams, 201);
+        }
+
+        return response()->json(['error' => 'Invalid link format'], 422);
+    }
+
+    /**
+     * Преобразует URL из iframe в обычную ссылку
+     */
+    private function convertIframeUrl(string $iframeUrl): string
+    {
+        // YouTube
+        if (str_contains($iframeUrl, 'youtube.com/embed/')) {
+            preg_match('/embed\/([^?]+)/', $iframeUrl, $matches);
+            return $matches[1] ? "https://youtu.be/{$matches[1]}" : $iframeUrl;
+        }
+
+        // VK
+        if (str_contains($iframeUrl, 'vk.com/video_ext.php') || str_contains($iframeUrl, 'vkvideo.ru/video_ext.php')) {
+            preg_match('/oid=([^&]+)&id=([^&]+)/', $iframeUrl, $matches);
+            if (isset($matches[1]) && isset($matches[2])) {
+                $oid = str_replace('-', '', $matches[1]);
+                return "https://vk.com/video-{$oid}_{$matches[2]}";
+            }
+        }
+
+        // Rutube
+        if (str_contains($iframeUrl, 'rutube.ru/play/embed/')) {
+            preg_match('/embed\/([^\/]+)/', $iframeUrl, $matches);
+            return $matches[1] ? "https://rutube.ru/video/{$matches[1]}/?r=wd" : $iframeUrl;
+        }
+
+        return $iframeUrl;
     }
 
     public function detach(Request $request)
