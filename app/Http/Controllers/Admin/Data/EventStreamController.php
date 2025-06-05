@@ -32,13 +32,12 @@ class EventStreamController extends Controller
     {
         $data = $this->processIframeInData($request->all());
 
-        // Добавляем отладочную информацию
         \Log::info('Received data:', $data);
 
         $validator = Validator::make($data, [
             'date' => 'required|date',
             'title' => 'required|string|max:255',
-            'link' => 'nullable|string|max:1000', // Увеличиваем максимальную длину для iframe
+            'link' => 'nullable|string|max:1000',
             'in_player' => 'boolean',
             'in_profile' => 'boolean'
         ]);
@@ -50,34 +49,27 @@ class EventStreamController extends Controller
         $validatedData = $validator->validated();
         $link = $validatedData['link'] ?? null;
 
-        // Добавляем отладочную информацию
         \Log::info('Link content:', ['link' => $link]);
-        \Log::info('Is iframe:', ['is_iframe' => str_contains($link, '<iframe')]);
+
+        // Проверяем, является ли ссылка embed-ссылкой
+        $isEmbedLink = $this->isEmbedLink($link);
+        \Log::info('Is embed link:', ['is_embed' => $isEmbedLink]);
 
         // Если это обычная ссылка, создаем одну запись
-        if ($link && !str_contains($link, '<iframe')) {
+        if ($link && !$isEmbedLink) {
             $stream = $event->streams()->create($validatedData);
             return response()->json($stream, 201);
         }
 
-        // Если это iframe, создаем три записи
-        if ($link && str_contains($link, '<iframe')) {
+        // Если это embed-ссылка, создаем три записи
+        if ($link && $isEmbedLink) {
             $streams = [];
 
-            // Извлекаем URL из iframe
-            preg_match('/src="([^"]+)"/', $link, $matches);
-            $iframeUrl = $matches[1] ?? null;
+            // Преобразуем URL в зависимости от сервиса
+            $convertedUrl = $this->convertEmbedUrl($link);
+            \Log::info('Converted URL:', ['converted_url' => $convertedUrl]);
 
-            // Добавляем отладочную информацию
-            \Log::info('Iframe URL:', ['iframe_url' => $iframeUrl]);
-
-            if ($iframeUrl) {
-                // Преобразуем URL в зависимости от сервиса
-                $convertedUrl = $this->convertIframeUrl($iframeUrl);
-
-                // Добавляем отладочную информацию
-                \Log::info('Converted URL:', ['converted_url' => $convertedUrl]);
-
+            if ($convertedUrl) {
                 // Первая запись (in_player=1, in_profile=0)
                 $stream1 = $event->streams()->create([
                     'date' => $validatedData['date'],
@@ -116,19 +108,34 @@ class EventStreamController extends Controller
     }
 
     /**
-     * Преобразует URL из iframe в обычную ссылку
+     * Проверяет, является ли ссылка embed-ссылкой
      */
-    private function convertIframeUrl(string $iframeUrl): string
+    private function isEmbedLink(?string $url): bool
+    {
+        if (!$url) return false;
+
+        return str_contains($url, [
+            'youtube.com/embed/',
+            'vk.com/video_ext.php',
+            'vkvideo.ru/video_ext.php',
+            'rutube.ru/play/embed/'
+        ]);
+    }
+
+    /**
+     * Преобразует embed-ссылку в обычную ссылку
+     */
+    private function convertEmbedUrl(string $url): string
     {
         // YouTube
-        if (str_contains($iframeUrl, 'youtube.com/embed/')) {
-            preg_match('/embed\/([^?]+)/', $iframeUrl, $matches);
-            return $matches[1] ? "https://youtu.be/{$matches[1]}" : $iframeUrl;
+        if (str_contains($url, 'youtube.com/embed/')) {
+            preg_match('/embed\/([^?]+)/', $url, $matches);
+            return $matches[1] ? "https://youtu.be/{$matches[1]}" : $url;
         }
 
         // VK
-        if (str_contains($iframeUrl, 'vk.com/video_ext.php') || str_contains($iframeUrl, 'vkvideo.ru/video_ext.php')) {
-            preg_match('/oid=([^&]+)&id=([^&]+)/', $iframeUrl, $matches);
+        if (str_contains($url, 'vk.com/video_ext.php') || str_contains($url, 'vkvideo.ru/video_ext.php')) {
+            preg_match('/oid=([^&]+)&id=([^&]+)/', $url, $matches);
             if (isset($matches[1]) && isset($matches[2])) {
                 $oid = str_replace('-', '', $matches[1]);
                 return "https://vk.com/video-{$oid}_{$matches[2]}";
@@ -136,12 +143,12 @@ class EventStreamController extends Controller
         }
 
         // Rutube
-        if (str_contains($iframeUrl, 'rutube.ru/play/embed/')) {
-            preg_match('/embed\/([^\/]+)/', $iframeUrl, $matches);
-            return $matches[1] ? "https://rutube.ru/video/{$matches[1]}/?r=wd" : $iframeUrl;
+        if (str_contains($url, 'rutube.ru/play/embed/')) {
+            preg_match('/embed\/([^\/]+)/', $url, $matches);
+            return $matches[1] ? "https://rutube.ru/video/{$matches[1]}/?r=wd" : $url;
         }
 
-        return $iframeUrl;
+        return $url;
     }
 
     public function detach(Request $request)
