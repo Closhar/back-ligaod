@@ -32,10 +32,13 @@ class EventStreamController extends Controller
     {
         $data = $this->processIframeInData($request->all());
 
+        // Добавляем отладочную информацию
+        \Log::info('Received data:', $data);
+
         $validator = Validator::make($data, [
             'date' => 'required|date',
             'title' => 'required|string|max:255',
-            'link' => 'nullable|url|max:500',
+            'link' => 'nullable|string|max:1000', // Увеличиваем максимальную длину для iframe
             'in_player' => 'boolean',
             'in_profile' => 'boolean'
         ]);
@@ -46,6 +49,10 @@ class EventStreamController extends Controller
 
         $validatedData = $validator->validated();
         $link = $validatedData['link'] ?? null;
+
+        // Добавляем отладочную информацию
+        \Log::info('Link content:', ['link' => $link]);
+        \Log::info('Is iframe:', ['is_iframe' => str_contains($link, '<iframe')]);
 
         // Если это обычная ссылка, создаем одну запись
         if ($link && !str_contains($link, '<iframe')) {
@@ -61,9 +68,15 @@ class EventStreamController extends Controller
             preg_match('/src="([^"]+)"/', $link, $matches);
             $iframeUrl = $matches[1] ?? null;
 
+            // Добавляем отладочную информацию
+            \Log::info('Iframe URL:', ['iframe_url' => $iframeUrl]);
+
             if ($iframeUrl) {
                 // Преобразуем URL в зависимости от сервиса
                 $convertedUrl = $this->convertIframeUrl($iframeUrl);
+
+                // Добавляем отладочную информацию
+                \Log::info('Converted URL:', ['converted_url' => $convertedUrl]);
 
                 // Первая запись (in_player=1, in_profile=0)
                 $stream1 = $event->streams()->create([
