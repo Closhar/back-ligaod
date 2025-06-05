@@ -32,8 +32,6 @@ class EventStreamController extends Controller
     {
         $data = $this->processIframeInData($request->all());
 
-        \Log::info('Received data:', $data);
-
         $validator = Validator::make($data, [
             'date' => 'required|date',
             'title' => 'required|string|max:255',
@@ -43,34 +41,27 @@ class EventStreamController extends Controller
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Validation failed:', ['errors' => $validator->errors()->toArray()]);
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
         $validatedData = $validator->validated();
         $link = $validatedData['link'] ?? null;
 
-        \Log::info('Link content:', ['link' => $link]);
-
         // Проверяем, является ли ссылка embed-ссылкой
         $isEmbedLink = $this->isEmbedLink($link);
-        \Log::info('Is embed link:', ['is_embed' => $isEmbedLink]);
 
         // Если это обычная ссылка, создаем одну запись
         if ($link && !$isEmbedLink) {
-            \Log::info('Creating single record for regular link');
             $stream = $event->streams()->create($validatedData);
             return response()->json($stream, 201);
         }
 
         // Если это embed-ссылка, создаем три записи
         if ($link && $isEmbedLink) {
-            \Log::info('Creating multiple records for embed link');
             $streams = [];
 
             // Преобразуем URL в зависимости от сервиса
             $convertedUrl = $this->convertEmbedUrl($link);
-            \Log::info('Converted URL:', ['converted_url' => $convertedUrl]);
 
             if ($convertedUrl) {
                 try {
@@ -78,13 +69,12 @@ class EventStreamController extends Controller
                     $stream1 = $event->streams()->create([
                         'date' => $validatedData['date'],
                         'title' => $validatedData['title'],
-                        'link' => $link, // Используем оригинальный iframe-код
+                        'link' => $link,
                         'in_player' => true,
                         'in_profile' => false,
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream1;
-                    \Log::info('Created first record with iframe code');
 
                     // Вторая запись (in_player=0, in_profile=1) - используем преобразованную ссылку
                     $stream2 = $event->streams()->create([
@@ -96,7 +86,6 @@ class EventStreamController extends Controller
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream2;
-                    \Log::info('Created second record with converted URL');
 
                     // Третья запись (in_player=0, in_profile=0) - используем преобразованную ссылку
                     $stream3 = $event->streams()->create([
@@ -108,23 +97,16 @@ class EventStreamController extends Controller
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream3;
-                    \Log::info('Created third record with converted URL');
 
                     return response()->json($streams, 201);
                 } catch (\Exception $e) {
-                    \Log::error('Error creating records:', [
-                        'error' => $e->getMessage(),
-                        'trace' => $e->getTraceAsString()
-                    ]);
                     return response()->json(['error' => 'Failed to create records'], 500);
                 }
             } else {
-                \Log::error('Failed to convert embed URL');
                 return response()->json(['error' => 'Failed to convert embed URL'], 422);
             }
         }
 
-        \Log::error('Invalid link format');
         return response()->json(['error' => 'Invalid link format'], 422);
     }
 
@@ -133,10 +115,7 @@ class EventStreamController extends Controller
      */
     private function isEmbedLink(?string $url): bool
     {
-        if (!$url) {
-            \Log::info('URL is empty');
-            return false;
-        }
+        if (!$url) return false;
 
         $embedPatterns = [
             'youtube.com/embed/',
@@ -147,12 +126,10 @@ class EventStreamController extends Controller
 
         foreach ($embedPatterns as $pattern) {
             if (str_contains($url, $pattern)) {
-                \Log::info('Found embed pattern:', ['pattern' => $pattern]);
                 return true;
             }
         }
 
-        \Log::info('No embed patterns found');
         return false;
     }
 
@@ -161,14 +138,10 @@ class EventStreamController extends Controller
      */
     private function convertEmbedUrl(string $url): string
     {
-        \Log::info('Converting embed URL:', ['url' => $url]);
-
         // YouTube
         if (str_contains($url, 'youtube.com/embed/')) {
             preg_match('/embed\/([^?]+)/', $url, $matches);
-            $result = $matches[1] ? "https://youtu.be/{$matches[1]}" : $url;
-            \Log::info('Converted YouTube URL:', ['result' => $result]);
-            return $result;
+            return $matches[1] ? "https://youtu.be/{$matches[1]}" : $url;
         }
 
         // VK
@@ -176,21 +149,16 @@ class EventStreamController extends Controller
             preg_match('/oid=([^&]+)&id=([^&]+)/', $url, $matches);
             if (isset($matches[1]) && isset($matches[2])) {
                 $oid = str_replace('-', '', $matches[1]);
-                $result = "https://vk.com/video-{$oid}_{$matches[2]}";
-                \Log::info('Converted VK URL:', ['result' => $result]);
-                return $result;
+                return "https://vk.com/video-{$oid}_{$matches[2]}";
             }
         }
 
         // Rutube
         if (str_contains($url, 'rutube.ru/play/embed/')) {
             preg_match('/embed\/([^\/]+)/', $url, $matches);
-            $result = $matches[1] ? "https://rutube.ru/video/{$matches[1]}/?r=wd" : $url;
-            \Log::info('Converted Rutube URL:', ['result' => $result]);
-            return $result;
+            return $matches[1] ? "https://rutube.ru/video/{$matches[1]}/?r=wd" : $url;
         }
 
-        \Log::info('No conversion needed, returning original URL');
         return $url;
     }
 
