@@ -74,19 +74,19 @@ class EventStreamController extends Controller
 
             if ($convertedUrl) {
                 try {
-                    // Первая запись (in_player=1, in_profile=0)
+                    // Первая запись (in_player=1, in_profile=0) - используем оригинальный iframe-код
                     $stream1 = $event->streams()->create([
                         'date' => $validatedData['date'],
                         'title' => $validatedData['title'],
-                        'link' => $convertedUrl,
+                        'link' => $link, // Используем оригинальный iframe-код
                         'in_player' => true,
                         'in_profile' => false,
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream1;
-                    \Log::info('Created first record');
+                    \Log::info('Created first record with iframe code');
 
-                    // Вторая запись (in_player=0, in_profile=1)
+                    // Вторая запись (in_player=0, in_profile=1) - используем преобразованную ссылку
                     $stream2 = $event->streams()->create([
                         'date' => $validatedData['date'],
                         'title' => $validatedData['title'],
@@ -96,9 +96,9 @@ class EventStreamController extends Controller
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream2;
-                    \Log::info('Created second record');
+                    \Log::info('Created second record with converted URL');
 
-                    // Третья запись (in_player=0, in_profile=0)
+                    // Третья запись (in_player=0, in_profile=0) - используем преобразованную ссылку
                     $stream3 = $event->streams()->create([
                         'date' => $validatedData['date'],
                         'title' => $validatedData['title'],
@@ -108,7 +108,7 @@ class EventStreamController extends Controller
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream3;
-                    \Log::info('Created third record');
+                    \Log::info('Created third record with converted URL');
 
                     return response()->json($streams, 201);
                 } catch (\Exception $e) {
