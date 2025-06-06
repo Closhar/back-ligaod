@@ -530,7 +530,6 @@ class ParseTableController extends Controller
                             $cells = $xpath->query('.//td', $row);
                             $currentIndex = 0;
                             $mergedValues = [];
-                            $lastMainIndex = -1;
 
                             foreach ($cells as $cellIndex => $cell) {
                                 $value = trim($cell->textContent);
@@ -558,15 +557,8 @@ class ParseTableController extends Controller
                                     if (!empty($value)) {
                                         $mergedValues[$currentIndex][] = $value;
                                     }
-                                    $lastMainIndex = $currentIndex;
                                     $currentIndex += $colspan;
                                 } else {
-                                    // Если предыдущая ячейка была объединенной, пропускаем текущую
-                                    if ($lastMainIndex !== -1 && $currentIndex === $lastMainIndex + 1) {
-                                        $currentIndex++;
-                                        continue;
-                                    }
-
                                     if (!empty($value)) {
                                         $mergedValues[$currentIndex] = [$value];
                                     }
@@ -578,10 +570,18 @@ class ParseTableController extends Controller
                             ksort($mergedValues); // Сортируем по индексам
                             foreach ($mergedValues as $index => $values) {
                                 if (!empty($values)) {
-                                    $rowData[] = implode(' ', $values);
+                                    // Очищаем значение от лишних пробелов и переносов строк
+                                    $cleanValue = preg_replace('/\s+/', ' ', implode(' ', $values));
+                                    $cleanValue = trim($cleanValue);
+                                    $rowData[] = $cleanValue;
                                 } else {
                                     $rowData[] = '';
                                 }
+                            }
+
+                            // Проверяем, что все необходимые колонки присутствуют
+                            while (count($rowData) < count($headers)) {
+                                $rowData[] = '';
                             }
 
                             if (!empty($rowData)) {
