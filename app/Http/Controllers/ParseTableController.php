@@ -209,35 +209,46 @@ class ParseTableController extends Controller
                         }
 
                         // Получаем все ячейки с данными в правильном порядке
-                        $cells = $xpath->query('.//div[contains(@class, "custom-table__var")]//div[contains(@class, "custom-table__content")]', $row);
                         $cellData = [];
-                        foreach ($cells as $cell) {
-                            $value = trim($cell->textContent);
-                            if (!empty($value)) {
-                                $cellData[] = $value;
-                            }
+
+                        // Получаем количество игр
+                        $gamesCell = $xpath->query('.//div[contains(@class, "custom-table__var")][1]//div[contains(@class, "custom-table__content")]', $row);
+                        if ($gamesCell->length > 0) {
+                            $cellData[] = trim($gamesCell->item(0)->textContent);
                         }
 
-                        // Проверяем и добавляем пропущенные значения
-                        if (count($cellData) >= 6) { // У нас должно быть минимум 6 значений: И, В, Н, П, МЗ-МП, О
-                            // Добавляем количество игр
-                            $rowData[] = $cellData[0];
-
-                            // Добавляем выигрыши
-                            $rowData[] = $cellData[1];
-
-                            // Добавляем ничьи
-                            $rowData[] = $cellData[2];
-
-                            // Добавляем поражения
-                            $rowData[] = $cellData[3];
-
-                            // Добавляем забитые/пропущенные
-                            $rowData[] = $cellData[4];
-
-                            // Добавляем очки
-                            $rowData[] = $cellData[5];
+                        // Получаем выигрыши
+                        $winsCell = $xpath->query('.//div[contains(@class, "custom-table__var")][2]//div[contains(@class, "custom-table__content")]', $row);
+                        if ($winsCell->length > 0) {
+                            $cellData[] = trim($winsCell->item(0)->textContent);
                         }
+
+                        // Получаем ничьи
+                        $drawsCell = $xpath->query('.//div[contains(@class, "custom-table__var")][3]//div[contains(@class, "custom-table__content")]', $row);
+                        if ($drawsCell->length > 0) {
+                            $cellData[] = trim($drawsCell->item(0)->textContent);
+                        }
+
+                        // Получаем поражения
+                        $lossesCell = $xpath->query('.//div[contains(@class, "custom-table__var")][4]//div[contains(@class, "custom-table__content")]', $row);
+                        if ($lossesCell->length > 0) {
+                            $cellData[] = trim($lossesCell->item(0)->textContent);
+                        }
+
+                        // Получаем забитые/пропущенные
+                        $goalsCell = $xpath->query('.//div[contains(@class, "custom-table__var-long")]//div[contains(@class, "custom-table__content")]', $row);
+                        if ($goalsCell->length > 0) {
+                            $cellData[] = trim($goalsCell->item(0)->textContent);
+                        }
+
+                        // Получаем очки
+                        $pointsCell = $xpath->query('.//div[contains(@class, "custom-table__score")]//div[contains(@class, "custom-table__content")]', $row);
+                        if ($pointsCell->length > 0) {
+                            $cellData[] = trim($pointsCell->item(0)->textContent);
+                        }
+
+                        // Добавляем все полученные данные
+                        $rowData = array_merge($rowData, $cellData);
 
                         // Получаем форму (последние 5 матчей)
                         $formCell = $xpath->query('.//ul[contains(@class, "progress")]//span[contains(@class, "progress__text")]', $row);
