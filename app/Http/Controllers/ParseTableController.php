@@ -491,44 +491,34 @@ class ParseTableController extends Controller
                     // Анализируем содержимое каждого столбца
                     $validColumns = [];
                     $columnIndex = 0;
+                    $colspanMap = []; // Карта для отслеживания объединенных ячеек
 
                     foreach ($headerCells as $index => $cell) {
                         if (count($headers) >= 20) break;
 
-                        // Проверяем содержимое столбца
-                        $hasText = false;
-                        $hasImages = false;
+                        // Проверяем colspan
+                        $colspan = $cell->getAttribute('colspan');
+                        $colspan = $colspan ? intval($colspan) : 1;
 
-                        // Получаем все ячейки в этом столбце
-                        $columnCells = $xpath->query('.//tr/td[' . ($index + 1) . '] | .//tr/th[' . ($index + 1) . ']', $targetTable);
+                        $header = trim($cell->textContent);
+                        if (empty($header)) {
+                            $header = '#';
+                        }
 
-                        foreach ($columnCells as $columnCell) {
-                            // Проверяем наличие текста
-                            $text = trim($columnCell->textContent);
-                            if (!empty($text)) {
-                                $hasText = true;
-                            }
+                        // Добавляем заголовок
+                        if (!in_array($header, $headers)) {
+                            $headers[] = $header;
+                            $validColumns[] = $columnIndex;
 
-                            // Проверяем наличие изображений
-                            $images = $xpath->query('.//img', $columnCell);
-                            if ($images->length > 0) {
-                                $hasImages = true;
+                            // Если есть colspan, отмечаем следующие ячейки как объединенные
+                            if ($colspan > 1) {
+                                for ($i = 1; $i < $colspan; $i++) {
+                                    $colspanMap[$columnIndex + $i] = $columnIndex;
+                                }
                             }
                         }
 
-                        // Если в столбце есть текст или это не только изображения, добавляем его
-                        if ($hasText || !$hasImages) {
-                            $header = trim($cell->textContent);
-                            if (empty($header)) {
-                                $header = '#';
-                            }
-                            if (!in_array($header, $headers)) {
-                                $headers[] = $header;
-                                $validColumns[] = $columnIndex;
-                            }
-                        }
-
-                        $columnIndex++;
+                        $columnIndex += $colspan;
                     }
 
                     $allRows = $xpath->query('.//tr', $targetTable);
@@ -538,15 +528,31 @@ class ParseTableController extends Controller
                             $row = $allRows->item($i);
                             $rowData = [];
                             $cells = $xpath->query('.//td', $row);
+                            $currentIndex = 0;
 
                             foreach ($cells as $cellIndex => $cell) {
-                                // Добавляем только данные из валидных столбцов
-                                if (in_array($cellIndex, $validColumns)) {
-                                    $value = trim($cell->textContent);
-                                    if (empty($value)) {
-                                        $value = '#';
-                                    }
+                                // Пропускаем ячейки, которые являются частью объединенной ячейки
+                                if (isset($colspanMap[$currentIndex])) {
+                                    $currentIndex++;
+                                    continue;
+                                }
+
+                                // Проверяем colspan в ячейке данных
+                                $colspan = $cell->getAttribute('colspan');
+                                $colspan = $colspan ? intval($colspan) : 1;
+
+                                $value = trim($cell->textContent);
+                                if (empty($value)) {
+                                    $value = '#';
+                                }
+
+                                // Если ячейка объединена, добавляем значение только один раз
+                                if ($colspan > 1) {
                                     $rowData[] = $value;
+                                    $currentIndex += $colspan;
+                                } else {
+                                    $rowData[] = $value;
+                                    $currentIndex++;
                                 }
                             }
 
