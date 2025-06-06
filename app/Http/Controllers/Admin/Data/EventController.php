@@ -468,6 +468,7 @@ class EventController extends Controller
                 'is_active' => $event->is_active,
                 'about' => $event->about,
                 'tickets' => $event->tickets,
+                'free_tickets' => $event->free_tickets,
                 'event_image_path' => $event->event_image_path,
                 'competition_id' => $event->competition_id,
                 'arena_id' => $event->arena_id,
