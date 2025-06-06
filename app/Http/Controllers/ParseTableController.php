@@ -213,6 +213,7 @@ class ParseTableController extends Controller
                     $tableDivs = $xpath->query('//div[contains(@class, "table")]');
 
                     foreach ($tableDivs as $tableDiv) {
+                        // Проверяем наличие всех необходимых заголовков
                         $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $tableDiv);
                         $foundHeaders = [];
 
@@ -224,7 +225,7 @@ class ParseTableController extends Controller
                         }
 
                         // Проверяем наличие всех необходимых заголовков
-                        $requiredHeaders = ['МЗ - МП', 'Форма']; // Эти заголовки есть только в полной таблице
+                        $requiredHeaders = ['МЗ - МП', 'Форма', 'В', 'Н', 'П']; // Эти заголовки есть только в полной таблице
                         $hasAllRequired = true;
                         foreach ($requiredHeaders as $required) {
                             $found = false;
@@ -259,9 +260,8 @@ class ParseTableController extends Controller
                     $headers = [];
                     $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $targetTable);
                     foreach ($headerItems as $header) {
-                        if (count($headers) >= 20) break;
                         $headerText = trim($header->textContent);
-                        if (!empty($headerText) && !in_array($headerText, $headers)) {
+                        if (!empty($headerText)) {
                             $headers[] = $headerText;
                         }
                     }
@@ -274,9 +274,20 @@ class ParseTableController extends Controller
                         $rowData = [];
                         $cells = $xpath->query('.//div[contains(@class, "td")]', $row);
 
-                        foreach ($cells as $cell) {
-                            if (count($rowData) >= 20) break;
+                        // Пропускаем пустые ячейки в начале строки
+                        $startIndex = 0;
+                        foreach ($cells as $index => $cell) {
                             $value = trim($cell->textContent);
+                            if (!empty($value)) {
+                                $startIndex = $index;
+                                break;
+                            }
+                        }
+
+                        // Собираем данные начиная с первой непустой ячейки
+                        for ($i = $startIndex; $i < $cells->length; $i++) {
+                            if (count($rowData) >= count($headers)) break;
+                            $value = trim($cells->item($i)->textContent);
                             $value = preg_replace('/\s+/', ' ', $value);
                             $rowData[] = $value;
                         }
