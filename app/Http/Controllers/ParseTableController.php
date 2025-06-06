@@ -545,7 +545,7 @@ class ParseTableController extends Controller
                                     if (!isset($mergedValues[$mainIndex])) {
                                         $mergedValues[$mainIndex] = [];
                                     }
-                                    if (!empty($value)) {
+                                    if (!empty($value) || $value === '0') {
                                         $mergedValues[$mainIndex][] = $value;
                                     }
                                     $currentIndex++;
@@ -555,13 +555,13 @@ class ParseTableController extends Controller
                                 // Если ячейка объединена
                                 if ($colspan > 1) {
                                     $mergedValues[$currentIndex] = [];
-                                    if (!empty($value)) {
+                                    if (!empty($value) || $value === '0') {
                                         $mergedValues[$currentIndex][] = $value;
                                     }
                                     $currentIndex += $colspan;
                                 } else {
                                     // Обычная ячейка
-                                    if (!empty($value)) {
+                                    if (!empty($value) || $value === '0') {
                                         $mergedValues[$currentIndex] = [$value];
                                     } else {
                                         $mergedValues[$currentIndex] = [''];
