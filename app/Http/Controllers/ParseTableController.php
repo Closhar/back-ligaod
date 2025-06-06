@@ -532,7 +532,12 @@ class ParseTableController extends Controller
                             $mergedValues = [];
 
                             foreach ($cells as $cellIndex => $cell) {
+                                // Получаем значение ячейки
                                 $value = trim($cell->textContent);
+
+                                // Проверяем colspan в ячейке данных
+                                $colspan = $cell->getAttribute('colspan');
+                                $colspan = $colspan ? intval($colspan) : 1;
 
                                 // Если это часть объединенной ячейки
                                 if (isset($colspanMap[$currentIndex])) {
@@ -547,11 +552,7 @@ class ParseTableController extends Controller
                                     continue;
                                 }
 
-                                // Проверяем colspan в ячейке данных
-                                $colspan = $cell->getAttribute('colspan');
-                                $colspan = $colspan ? intval($colspan) : 1;
-
-                                // Если ячейка объединена, собираем значения
+                                // Если ячейка объединена
                                 if ($colspan > 1) {
                                     $mergedValues[$currentIndex] = [];
                                     if (!empty($value)) {
@@ -559,8 +560,11 @@ class ParseTableController extends Controller
                                     }
                                     $currentIndex += $colspan;
                                 } else {
+                                    // Обычная ячейка
                                     if (!empty($value)) {
                                         $mergedValues[$currentIndex] = [$value];
+                                    } else {
+                                        $mergedValues[$currentIndex] = [''];
                                     }
                                     $currentIndex++;
                                 }
@@ -569,14 +573,10 @@ class ParseTableController extends Controller
                             // Объединяем значения и добавляем в результат
                             ksort($mergedValues); // Сортируем по индексам
                             foreach ($mergedValues as $index => $values) {
-                                if (!empty($values)) {
-                                    // Очищаем значение от лишних пробелов и переносов строк
-                                    $cleanValue = preg_replace('/\s+/', ' ', implode(' ', $values));
-                                    $cleanValue = trim($cleanValue);
-                                    $rowData[] = $cleanValue;
-                                } else {
-                                    $rowData[] = '';
-                                }
+                                // Очищаем значение от лишних пробелов и переносов строк
+                                $cleanValue = preg_replace('/\s+/', ' ', implode(' ', $values));
+                                $cleanValue = trim($cleanValue);
+                                $rowData[] = $cleanValue;
                             }
 
                             // Проверяем, что все необходимые колонки присутствуют
