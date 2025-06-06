@@ -278,22 +278,45 @@ class ParseTableController extends Controller
                             }
 
                             if (!$hasSimpleHeaders) {
-                                $targetTable = $tableDiv;
-                                $isListFormat = true;
-                                $tableFound = true;
-                                $debug['selected_table_index'] = $index;
-                                $debug['selected_table_headers'] = $foundHeaders;
-                                break;
+                                // Проверяем наличие данных в первой строке
+                                $firstRow = $xpath->query('.//div[contains(@class, "tbody")]//div[contains(@class, "tr")][1]//div[contains(@class, "td")]', $tableDiv);
+                                $hasData = false;
+                                foreach ($firstRow as $cell) {
+                                    $value = trim($cell->textContent);
+                                    if (!empty($value) && preg_match('/\d+ - \d+/', $value)) {
+                                        $hasData = true;
+                                        break;
+                                    }
+                                }
+
+                                if ($hasData) {
+                                    $targetTable = $tableDiv;
+                                    $isListFormat = true;
+                                    $tableFound = true;
+                                    $debug['selected_table_index'] = $index;
+                                    $debug['selected_table_headers'] = $foundHeaders;
+                                    break;
+                                }
                             }
                         }
                     }
 
                     if (!$tableFound) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => "Полная турнирная таблица не найдена на странице",
-                            'debug' => $debug
-                        ], 404);
+                        // Если не нашли таблицу по стандартным критериям, пробуем найти по структуре
+                        $fullTableDiv = $xpath->query('//div[contains(@class, "table")]//div[contains(@class, "tbody")]//div[contains(@class, "tr")][1]//div[contains(@class, "td")][contains(text(), " - ")]/ancestor::div[contains(@class, "table")]');
+
+                        if ($fullTableDiv->length > 0) {
+                            $targetTable = $fullTableDiv->item(0);
+                            $isListFormat = true;
+                            $tableFound = true;
+                            $debug['found_by_structure'] = true;
+                        } else {
+                            return response()->json([
+                                'success' => false,
+                                'message' => "Полная турнирная таблица не найдена на странице",
+                                'debug' => $debug
+                            ], 404);
+                        }
                     }
 
                     // Получаем заголовки
