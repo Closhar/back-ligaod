@@ -315,24 +315,37 @@ class ParseTableController extends Controller
                     foreach ($rowItems as $rowIndex => $row) {
                         $rowData = [];
 
-                        // Получаем номер команды
-                        $placeCell = $xpath->query('.//td[contains(@class, "stats-place")]', $row);
-                        if ($placeCell->length > 0) {
-                            $rowData[] = trim($placeCell->item(0)->textContent);
-                        }
+                        // Получаем все ячейки в строке
+                        $cells = $xpath->query('.//td', $row);
 
-                        // Получаем название команды
-                        $teamCell = $xpath->query('.//td[contains(@class, "stats-team")]//a', $row);
-                        if ($teamCell->length > 0) {
-                            $rowData[] = trim($teamCell->item(0)->textContent);
-                        }
+                        foreach ($cells as $cellIndex => $cell) {
+                            $value = '';
 
-                        // Получаем остальные данные
-                        $dataCells = $xpath->query('.//td[contains(@class, "stats-data")]', $row);
-                        foreach ($dataCells as $cell) {
-                            $value = trim($cell->textContent);
+                            // Для ячейки с названием команды берем текст из ссылки
+                            if ($cell->hasAttribute('class') && strpos($cell->getAttribute('class'), 'stats-team') !== false) {
+                                $teamLink = $xpath->query('.//a', $cell);
+                                if ($teamLink->length > 0) {
+                                    $value = trim($teamLink->item(0)->textContent);
+                                }
+                            }
+                            // Для ячейки с формой берем все ссылки
+                            else if ($cell->hasAttribute('class') && strpos($cell->getAttribute('class'), 'form-links') !== false) {
+                                $formLinks = $xpath->query('.//a', $cell);
+                                $formValues = [];
+                                foreach ($formLinks as $link) {
+                                    $formValues[] = trim($link->getAttribute('data-tooltip'));
+                                }
+                                $value = implode(', ', $formValues);
+                            }
+                            // Для остальных ячеек берем текст напрямую
+                            else {
+                                $value = trim($cell->textContent);
+                            }
+
                             // Ограничиваем длину значения до 255 символов
                             $value = substr($value, 0, 255);
+
+                            // Добавляем значение в массив, если оно не пустое
                             if (!empty($value)) {
                                 $rowData[] = $value;
                             }
