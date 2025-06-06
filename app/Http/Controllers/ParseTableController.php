@@ -160,7 +160,12 @@ class ParseTableController extends Controller
 
             // Создаем DOM объект
             $dom = new DOMDocument();
-            @$dom->loadHTML($html, LIBXML_NOERROR);
+            // Устанавливаем кодировку UTF-8
+            $dom->encoding = 'UTF-8';
+            // Добавляем мета-тег с кодировкой
+            $html = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">' . $html;
+            // Загружаем HTML с игнорированием ошибок
+            @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
             $xpath = new DOMXPath($dom);
 
             $debug['dom_created'] = true;
@@ -297,7 +302,7 @@ class ParseTableController extends Controller
                         $headerText = trim($header->textContent);
                         // Пропускаем пустые заголовки и лишние элементы
                         if (!empty($headerText) && $headerText !== 'Действия') {
-                            $headers[] = $headerText;
+                            $headers[] = mb_convert_encoding($headerText, 'UTF-8', 'auto');
                         }
                     }
 
@@ -341,6 +346,9 @@ class ParseTableController extends Controller
                             else {
                                 $value = trim($cell->textContent);
                             }
+
+                            // Конвертируем значение в UTF-8
+                            $value = mb_convert_encoding($value, 'UTF-8', 'auto');
 
                             // Ограничиваем длину значения до 255 символов
                             $value = substr($value, 0, 255);
