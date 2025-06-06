@@ -411,27 +411,29 @@ class ParseTableController extends Controller
                     if (empty($searchText)) {
                         $targetTable = $tables->item(0);
                     } else {
-                        // Ищем таблицу с нужным заголовком
+                        // Ищем таблицу с нужным текстом в любой ячейке
                         foreach ($tables as $table) {
-                            $headers = [];
-                            $headerCells = $xpath->query('.//th', $table);
-                            foreach ($headerCells as $cell) {
-                                $headers[] = trim($cell->textContent);
-                            }
+                            // Ищем текст во всех ячейках таблицы
+                            $cells = $xpath->query('.//td | .//th', $table);
+                            $found = false;
 
-                            // Если нет th, пробуем взять первую строку
-                            if (empty($headers)) {
-                                $firstRow = $xpath->query('.//tr[1]/td', $table);
-                                foreach ($firstRow as $cell) {
-                                    $headers[] = trim($cell->textContent);
+                            foreach ($cells as $cell) {
+                                $cellText = trim($cell->textContent);
+                                if (stripos($cellText, $searchText) !== false) {
+                                    $targetTable = $table;
+                                    $found = true;
+                                    \Log::info('Found table with search text: ' . $searchText . ' in cell: ' . $cellText);
+                                    break 2;
                                 }
                             }
 
-                            // Проверяем наличие искомого текста в заголовках
-                            foreach ($headers as $header) {
-                                if (stripos($header, $searchText) !== false) {
+                            // Если не нашли в ячейках, проверяем в атрибутах
+                            if (!$found) {
+                                $elements = $xpath->query('.//*[@*[contains(translate(., "ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz"), "' . strtolower($searchText) . '")]]', $table);
+                                if ($elements->length > 0) {
                                     $targetTable = $table;
-                                    break 2;
+                                    \Log::info('Found table with search text in attributes');
+                                    break;
                                 }
                             }
                         }
