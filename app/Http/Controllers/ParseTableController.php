@@ -148,100 +148,118 @@ class ParseTableController extends Controller
             @$dom->loadHTML($html, LIBXML_NOERROR);
             $xpath = new DOMXPath($dom);
 
-            // Ищем все таблицы
+            // Пробуем сначала найти обычные таблицы
             $tables = $xpath->query('//table');
             $targetTable = null;
+            $isListFormat = false;
 
+            // Если таблицы не найдены, пробуем найти список
             if ($tables->length === 0) {
+                $lists = $xpath->query('//ul[contains(@class, "table") or contains(@class, "list")]');
+                if ($lists->length > 0) {
+                    $targetTable = $lists->item(0);
+                    $isListFormat = true;
+                }
+            } else {
+                // Если search_text не указан, берем первую таблицу
+                if (empty($searchText)) {
+                    $targetTable = $tables->item(0);
+                } else {
+                    // Ищем таблицу с нужным заголовком
+                    foreach ($tables as $table) {
+                        $headers = [];
+                        $headerCells = $xpath->query('.//th', $table);
+                        foreach ($headerCells as $cell) {
+                            $headers[] = trim($cell->textContent);
+                        }
+
+                        // Если нет th, пробуем взять первую строку
+                        if (empty($headers)) {
+                            $firstRow = $xpath->query('.//tr[1]/td', $table);
+                            foreach ($firstRow as $cell) {
+                                $headers[] = trim($cell->textContent);
+                            }
+                        }
+
+                        // Проверяем наличие искомого текста в заголовках
+                        foreach ($headers as $header) {
+                            if (stripos($header, $searchText) !== false) {
+                                $targetTable = $table;
+                                break 2;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!$targetTable) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Таблицы не найдены на странице'
+                    'message' => "Таблица или список не найдены на странице"
                 ], 404);
             }
 
-            // Если search_text не указан, берем первую таблицу
-            if (empty($searchText)) {
-                $targetTable = $tables->item(0);
-            } else {
-                // Ищем таблицу с нужным заголовком
-                foreach ($tables as $table) {
-                    $headers = [];
-                    $headerCells = $xpath->query('.//th', $table);
-                    foreach ($headerCells as $cell) {
-                        $headers[] = trim($cell->textContent);
-                    }
-
-                    // Если нет th, пробуем взять первую строку
-                    if (empty($headers)) {
-                        $firstRow = $xpath->query('.//tr[1]/td', $table);
-                        foreach ($firstRow as $cell) {
-                            $headers[] = trim($cell->textContent);
-                        }
-                    }
-
-                    // Проверяем наличие искомого текста в заголовках
-                    foreach ($headers as $header) {
-                        if (stripos($header, $searchText) !== false) {
-                            $targetTable = $table;
-                            break 2;
-                        }
-                    }
-                }
-
-                if (!$targetTable) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => "Таблица с заголовком, содержащим '{$searchText}', не найдена"
-                    ], 404);
-                }
-            }
-
-            // Получаем заголовки из thead или первой строки
             $headers = [];
-            $headerCells = $xpath->query('.//thead//th | .//thead//td', $targetTable);
-
-            // Если заголовки не найдены в thead, пробуем взять из первой строки
-            if ($headerCells->length === 0) {
-                $headerCells = $xpath->query('.//tr[1]/th | .//tr[1]/td', $targetTable);
-            }
-
-            foreach ($headerCells as $index => $cell) {
-                if (count($headers) >= 20) {
-                    break;
-                }
-
-                $header = trim($cell->textContent);
-                if (empty($header)) {
-                    $header = '#';
-                }
-
-                if (!in_array($header, $headers)) {
-                    $headers[] = $header;
-                }
-            }
-
-            // Получаем данные из tbody, исключая первую строку если она была использована как заголовок
             $rows = [];
 
-            // Сначала пробуем получить все строки таблицы
-            $allRows = $xpath->query('.//tr', $targetTable);
-
-            // Если есть строки, обрабатываем их
-            if ($allRows->length > 0) {
-                // Пропускаем первую строку, если она была использована как заголовок
-                $startIndex = ($headerCells->length === 0) ? 0 : 1;
-
-                for ($i = $startIndex; $i < $allRows->length; $i++) {
-                    $row = $allRows->item($i);
-                    $rowData = [];
-                    $cells = $xpath->query('.//td', $row);
-
-                    foreach ($cells as $cell) {
-                        $rowData[] = trim($cell->textContent);
+            if ($isListFormat) {
+                // Парсинг списка
+                $headerItems = $xpath->query('.//li[contains(@class, "header") or contains(@class, "title")]', $targetTable);
+                if ($headerItems->length > 0) {
+                    $headerDivs = $xpath->query('.//div', $headerItems->item(0));
+                    foreach ($headerDivs as $div) {
+                        if (count($headers) >= 20) break;
+                        $header = trim($div->textContent);
+                        if (!empty($header) && !in_array($header, $headers)) {
+                            $headers[] = $header;
+                        }
                     }
+                }
 
+                // Получаем строки данных
+                $listItems = $xpath->query('.//li[not(contains(@class, "header")) and not(contains(@class, "title"))]', $targetTable);
+                foreach ($listItems as $item) {
+                    $rowData = [];
+                    $divs = $xpath->query('.//div', $item);
+                    foreach ($divs as $div) {
+                        if (count($rowData) >= 20) break;
+                        $rowData[] = trim($div->textContent);
+                    }
                     if (!empty($rowData)) {
                         $rows[] = $rowData;
+                    }
+                }
+            } else {
+                // Существующая логика для обычных таблиц
+                $headerCells = $xpath->query('.//thead//th | .//thead//td', $targetTable);
+                if ($headerCells->length === 0) {
+                    $headerCells = $xpath->query('.//tr[1]/th | .//tr[1]/td', $targetTable);
+                }
+
+                foreach ($headerCells as $index => $cell) {
+                    if (count($headers) >= 20) break;
+                    $header = trim($cell->textContent);
+                    if (empty($header)) {
+                        $header = '#';
+                    }
+                    if (!in_array($header, $headers)) {
+                        $headers[] = $header;
+                    }
+                }
+
+                $allRows = $xpath->query('.//tr', $targetTable);
+                if ($allRows->length > 0) {
+                    $startIndex = ($headerCells->length === 0) ? 0 : 1;
+                    for ($i = $startIndex; $i < $allRows->length; $i++) {
+                        $row = $allRows->item($i);
+                        $rowData = [];
+                        $cells = $xpath->query('.//td', $row);
+                        foreach ($cells as $cell) {
+                            $rowData[] = trim($cell->textContent);
+                        }
+                        if (!empty($rowData)) {
+                            $rows[] = $rowData;
+                        }
                     }
                 }
             }
