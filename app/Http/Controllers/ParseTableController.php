@@ -229,108 +229,60 @@ class ParseTableController extends Controller
                     // Ищем таблицу с нужными заголовками
                     $tableFound = false;
 
-                    // Получаем все div-элементы, которые могут быть таблицами
-                    $tableDivs = $xpath->query('//div[contains(@class, "table")]');
+                    // Получаем таблицу по специфическому классу
+                    $tableDiv = $xpath->query('//div[contains(@class, "custom-table")]');
 
-                    $debug['tables_found'] = $tableDivs->length;
-                    $debug['tables_info'] = [];
-
-                    \Log::info('Found ' . $tableDivs->length . ' potential tables');
-
-                    // Сначала ищем таблицу по специфическому классу
-                    $tournamentTable = $xpath->query('//div[contains(@class, "tournament-table")]');
-                    if ($tournamentTable->length > 0) {
-                        \Log::info('Found tournament-table class');
-                        $targetTable = $tournamentTable->item(0);
+                    if ($tableDiv->length > 0) {
+                        \Log::info('Found custom-table');
+                        $targetTable = $tableDiv->item(0);
                         $isListFormat = true;
                         $tableFound = true;
-                    } else {
-                        \Log::info('No tournament-table class found, searching by content');
 
-                        foreach ($tableDivs as $index => $tableDiv) {
-                            $tableInfo = [
-                                'index' => $index,
-                                'class' => $tableDiv->getAttribute('class'),
-                                'headers' => [],
-                                'first_row' => [],
-                                'row_count' => 0
-                            ];
-
-                            \Log::info('Analyzing table ' . $index . ' with class: ' . $tableInfo['class']);
-
-                            // Получаем все заголовки таблицы
-                            $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $tableDiv);
-                            foreach ($headerItems as $header) {
-                                $headerText = trim($header->textContent);
-                                if (!empty($headerText)) {
-                                    $tableInfo['headers'][] = $headerText;
-                                }
-                            }
-
-                            \Log::info('Table ' . $index . ' headers: ' . implode(', ', $tableInfo['headers']));
-
-                            // Получаем первую строку данных
-                            $firstRow = $xpath->query('.//div[contains(@class, "tbody")]//div[contains(@class, "tr")][1]//div[contains(@class, "td")]', $tableDiv);
-                            foreach ($firstRow as $cell) {
-                                $value = trim($cell->textContent);
-                                if (!empty($value)) {
-                                    $tableInfo['first_row'][] = $value;
-                                }
-                            }
-
-                            \Log::info('Table ' . $index . ' first row: ' . implode(', ', $tableInfo['first_row']));
-
-                            // Считаем количество строк
-                            $rows = $xpath->query('.//div[contains(@class, "tbody")]//div[contains(@class, "tr")]', $tableDiv);
-                            $tableInfo['row_count'] = $rows->length;
-
-                            \Log::info('Table ' . $index . ' row count: ' . $tableInfo['row_count']);
-
-                            $debug['tables_info'][] = $tableInfo;
-
-                            // Проверяем, является ли это нужной нам таблицей
-                            $isFullTable = false;
-
-                            // Проверяем наличие всех необходимых заголовков
-                            $requiredHeaders = ['МЗ - МП', 'Форма', 'В', 'Н', 'П'];
-                            $hasAllRequired = true;
-                            foreach ($requiredHeaders as $required) {
-                                $found = false;
-                                foreach ($tableInfo['headers'] as $header) {
-                                    if (stripos($header, $required) !== false) {
-                                        $found = true;
-                                        break;
-                                    }
-                                }
-                                if (!$found) {
-                                    $hasAllRequired = false;
-                                    break;
-                                }
-                            }
-
-                            \Log::info('Table ' . $index . ' has all required headers: ' . ($hasAllRequired ? 'yes' : 'no'));
-
-                            // Проверяем наличие данных в первой строке
-                            $hasData = false;
-                            foreach ($tableInfo['first_row'] as $value) {
-                                if (preg_match('/\d+ - \d+/', $value)) {
-                                    $hasData = true;
-                                    break;
-                                }
-                            }
-
-                            \Log::info('Table ' . $index . ' has data in first row: ' . ($hasData ? 'yes' : 'no'));
-
-                            if ($hasAllRequired && $hasData && count($tableInfo['headers']) >= 9) {
-                                $targetTable = $tableDiv;
-                                $isListFormat = true;
-                                $tableFound = true;
-                                $debug['selected_table_index'] = $index;
-                                $debug['selected_table_info'] = $tableInfo;
-                                \Log::info('Selected table ' . $index);
-                                break;
+                        // Получаем заголовки
+                        $headers = [];
+                        $headerItems = $xpath->query('.//div[contains(@class, "custom-table__head")]//div[contains(@class, "custom-table__content")]', $targetTable);
+                        foreach ($headerItems as $header) {
+                            $headerText = trim($header->textContent);
+                            if (!empty($headerText)) {
+                                $headers[] = $headerText;
                             }
                         }
+
+                        \Log::info('Headers found: ' . implode(', ', $headers));
+
+                        // Получаем строки данных
+                        $rows = [];
+                        $rowItems = $xpath->query('.//li[contains(@class, "custom-table__line")]', $targetTable);
+
+                        foreach ($rowItems as $row) {
+                            $rowData = [];
+                            $cells = $xpath->query('.//div[contains(@class, "custom-table__content")]', $row);
+
+                            foreach ($cells as $cell) {
+                                if (count($rowData) >= count($headers)) break;
+                                $value = trim($cell->textContent);
+                                $value = preg_replace('/\s+/', ' ', $value);
+                                if (!empty($value)) {
+                                    $rowData[] = $value;
+                                }
+                            }
+
+                            if (!empty($rowData)) {
+                                $rows[] = $rowData;
+                            }
+                        }
+
+                        $debug['rows_parsed'] = count($rows);
+                        if (!empty($rows)) {
+                            $debug['first_row'] = $rows[0];
+                        }
+                    } else {
+                        \Log::info('No custom-table found');
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Турнирная таблица не найдена на странице",
+                            'debug' => $debug
+                        ], 404);
                     }
                 } else {
                     // Стандартная обработка для других сайтов
