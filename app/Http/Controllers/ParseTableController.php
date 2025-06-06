@@ -224,30 +224,100 @@ class ParseTableController extends Controller
             if ($isListFormat) {
                 // Специальная обработка для yflrussia.ru
                 if (strpos($request->url, 'yflrussia.ru') !== false) {
-                    // Получаем заголовки
-                    $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $targetTable);
-                    $debug['header_items_found'] = $headerItems->length;
+                    // Ищем таблицу с нужными заголовками
+                    $tableFound = false;
 
+                    // Получаем все div-элементы, которые могут быть таблицами
+                    $tableDivs = $xpath->query('//div[contains(@class, "table")]');
+
+                    $debug['tables_found'] = $tableDivs->length;
+
+                    foreach ($tableDivs as $index => $tableDiv) {
+                        // Получаем все заголовки таблицы
+                        $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $tableDiv);
+                        $foundHeaders = [];
+
+                        foreach ($headerItems as $header) {
+                            $headerText = trim($header->textContent);
+                            if (!empty($headerText)) {
+                                $foundHeaders[] = $headerText;
+                            }
+                        }
+
+                        $debug['table_' . $index . '_headers'] = $foundHeaders;
+
+                        // Проверяем наличие всех необходимых заголовков
+                        $requiredHeaders = ['МЗ - МП', 'Форма', 'В', 'Н', 'П'];
+                        $hasAllRequired = true;
+                        foreach ($requiredHeaders as $required) {
+                            $found = false;
+                            foreach ($foundHeaders as $foundHeader) {
+                                if (stripos($foundHeader, $required) !== false) {
+                                    $found = true;
+                                    break;
+                                }
+                            }
+                            if (!$found) {
+                                $hasAllRequired = false;
+                                break;
+                            }
+                        }
+
+                        // Дополнительная проверка на количество столбцов и наличие всех нужных заголовков
+                        if ($hasAllRequired && count($foundHeaders) >= 9) {
+                            // Проверяем, что это не упрощенная таблица
+                            $hasSimpleHeaders = false;
+                            $simpleHeaders = ['Действия'];
+                            foreach ($simpleHeaders as $simple) {
+                                foreach ($foundHeaders as $foundHeader) {
+                                    if (stripos($foundHeader, $simple) !== false) {
+                                        $hasSimpleHeaders = true;
+                                        break 2;
+                                    }
+                                }
+                            }
+
+                            if (!$hasSimpleHeaders) {
+                                $targetTable = $tableDiv;
+                                $isListFormat = true;
+                                $tableFound = true;
+                                $debug['selected_table_index'] = $index;
+                                $debug['selected_table_headers'] = $foundHeaders;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!$tableFound) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Полная турнирная таблица не найдена на странице",
+                            'debug' => $debug
+                        ], 404);
+                    }
+
+                    // Получаем заголовки
+                    $headers = [];
+                    $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $targetTable);
                     foreach ($headerItems as $header) {
-                        if (count($headers) >= 20) break;
                         $headerText = trim($header->textContent);
-                        if (!empty($headerText) && !in_array($headerText, $headers)) {
+                        if (!empty($headerText)) {
                             $headers[] = $headerText;
                         }
                     }
 
-                    $debug['headers'] = $headers;
+                    $debug['final_headers'] = $headers;
 
                     // Получаем строки данных
+                    $rows = [];
                     $rowItems = $xpath->query('.//div[contains(@class, "tbody")]//div[contains(@class, "tr")]', $targetTable);
-                    $debug['row_items_found'] = $rowItems->length;
 
                     foreach ($rowItems as $row) {
                         $rowData = [];
                         $cells = $xpath->query('.//div[contains(@class, "td")]', $row);
 
                         foreach ($cells as $cell) {
-                            if (count($rowData) >= 20) break;
+                            if (count($rowData) >= count($headers)) break;
                             $value = trim($cell->textContent);
                             $value = preg_replace('/\s+/', ' ', $value);
                             $rowData[] = $value;
