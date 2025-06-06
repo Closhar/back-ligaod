@@ -203,34 +203,67 @@ class ParseTableController extends Controller
             $rows = [];
 
             if ($isListFormat) {
-                // Парсинг списка
-                $headerItems = $xpath->query('.//li[contains(@class, "header") or contains(@class, "title") or contains(@class, "thead")]', $targetTable);
-                if ($headerItems->length > 0) {
-                    $headerDivs = $xpath->query('.//div[not(contains(@class, "form"))]', $headerItems->item(0));
-                    foreach ($headerDivs as $div) {
-                        if (count($headers) >= 20) break;
-                        $header = trim($div->textContent);
-                        if (!empty($header) && !in_array($header, $headers)) {
-                            $headers[] = $header;
+                // Специальная обработка для yflrussia.ru
+                if (strpos($request->url, 'yflrussia.ru') !== false) {
+                    // Получаем заголовки
+                    $headerItems = $xpath->query('//div[contains(@class, "table")]//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]');
+                    if ($headerItems->length > 0) {
+                        foreach ($headerItems as $header) {
+                            if (count($headers) >= 20) break;
+                            $headerText = trim($header->textContent);
+                            if (!empty($headerText) && !in_array($headerText, $headers)) {
+                                $headers[] = $headerText;
+                            }
                         }
                     }
-                }
 
-                // Получаем строки данных
-                $listItems = $xpath->query('.//li[not(contains(@class, "header")) and not(contains(@class, "title")) and not(contains(@class, "thead"))]', $targetTable);
-                foreach ($listItems as $item) {
-                    $rowData = [];
-                    // Ищем все div элементы, исключая элементы формы
-                    $divs = $xpath->query('.//div[not(contains(@class, "form"))]', $item);
-                    foreach ($divs as $div) {
-                        if (count($rowData) >= 20) break;
-                        $value = trim($div->textContent);
-                        // Очищаем значение от лишних пробелов и переносов строк
-                        $value = preg_replace('/\s+/', ' ', $value);
-                        $rowData[] = $value;
+                    // Получаем строки данных
+                    $rows = [];
+                    $rowItems = $xpath->query('//div[contains(@class, "table")]//div[contains(@class, "tbody")]//div[contains(@class, "tr")]');
+
+                    foreach ($rowItems as $row) {
+                        $rowData = [];
+                        $cells = $xpath->query('.//div[contains(@class, "td")]', $row);
+
+                        foreach ($cells as $cell) {
+                            if (count($rowData) >= 20) break;
+                            $value = trim($cell->textContent);
+                            $value = preg_replace('/\s+/', ' ', $value);
+                            $rowData[] = $value;
+                        }
+
+                        if (!empty($rowData)) {
+                            $rows[] = $rowData;
+                        }
                     }
-                    if (!empty($rowData)) {
-                        $rows[] = $rowData;
+                } else {
+                    // Стандартная обработка для других сайтов
+                    $headerItems = $xpath->query('.//li[contains(@class, "header") or contains(@class, "title") or contains(@class, "thead")]', $targetTable);
+                    if ($headerItems->length > 0) {
+                        $headerDivs = $xpath->query('.//div[not(contains(@class, "form"))]', $headerItems->item(0));
+                        foreach ($headerDivs as $div) {
+                            if (count($headers) >= 20) break;
+                            $header = trim($div->textContent);
+                            if (!empty($header) && !in_array($header, $headers)) {
+                                $headers[] = $header;
+                            }
+                        }
+                    }
+
+                    // Получаем строки данных
+                    $listItems = $xpath->query('.//li[not(contains(@class, "header")) and not(contains(@class, "title")) and not(contains(@class, "thead"))]', $targetTable);
+                    foreach ($listItems as $item) {
+                        $rowData = [];
+                        $divs = $xpath->query('.//div[not(contains(@class, "form"))]', $item);
+                        foreach ($divs as $div) {
+                            if (count($rowData) >= 20) break;
+                            $value = trim($div->textContent);
+                            $value = preg_replace('/\s+/', ' ', $value);
+                            $rowData[] = $value;
+                        }
+                        if (!empty($rowData)) {
+                            $rows[] = $rowData;
+                        }
                     }
                 }
 
