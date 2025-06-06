@@ -226,26 +226,84 @@ class ParseTableController extends Controller
                 if (strpos($request->url, 'yflrussia.ru') !== false) {
                     \Log::info('Processing yflrussia.ru table');
 
+                    // Находим все возможные таблицы на странице
+                    $allTables = $xpath->query('//div[contains(@class, "table") or contains(@class, "custom-table")]');
+                    \Log::info('Found ' . $allTables->length . ' potential tables');
+
+                    $debug['tables_found'] = $allTables->length;
+                    $debug['tables_info'] = [];
+
+                    // Анализируем каждую найденную таблицу
+                    foreach ($allTables as $index => $table) {
+                        $tableInfo = [
+                            'index' => $index,
+                            'class' => $table->getAttribute('class'),
+                            'headers' => [],
+                            'first_row' => [],
+                            'row_count' => 0
+                        ];
+
+                        // Получаем заголовки
+                        $headerItems = $xpath->query('.//div[contains(@class, "head") or contains(@class, "header")]//div[contains(@class, "content")]', $table);
+                        foreach ($headerItems as $header) {
+                            $headerText = trim($header->textContent);
+                            if (!empty($headerText)) {
+                                $tableInfo['headers'][] = $headerText;
+                            }
+                        }
+
+                        // Получаем первую строку данных
+                        $firstRow = $xpath->query('.//li[contains(@class, "line") or contains(@class, "row")][1]//div[contains(@class, "content")]', $table);
+                        foreach ($firstRow as $cell) {
+                            $cellText = trim($cell->textContent);
+                            if (!empty($cellText)) {
+                                $tableInfo['first_row'][] = $cellText;
+                            }
+                        }
+
+                        // Считаем количество строк
+                        $rows = $xpath->query('.//li[contains(@class, "line") or contains(@class, "row")]', $table);
+                        $tableInfo['row_count'] = $rows->length;
+
+                        $debug['tables_info'][] = $tableInfo;
+                        \Log::info('Table ' . $index . ' info: ' . json_encode($tableInfo));
+                    }
+
                     // Ищем таблицу с нужными заголовками
-                    $tableFound = false;
+                    $targetTable = null;
+                    foreach ($allTables as $table) {
+                        $headers = [];
+                        $headerItems = $xpath->query('.//div[contains(@class, "head") or contains(@class, "header")]//div[contains(@class, "content")]', $table);
+                        foreach ($headerItems as $header) {
+                            $headerText = trim($header->textContent);
+                            if (!empty($headerText)) {
+                                $headers[] = $headerText;
+                            }
+                        }
 
-                    // Получаем таблицу по специфическому классу
-                    $tableDiv = $xpath->query('//div[contains(@class, "custom-table") and contains(@class, "custom-table-table")]');
+                        // Проверяем наличие необходимых заголовков
+                        $requiredHeaders = ['МЗ - МП', 'Форма', 'В', 'Н', 'П'];
+                        $hasRequiredHeaders = true;
+                        foreach ($requiredHeaders as $required) {
+                            if (!in_array($required, $headers)) {
+                                $hasRequiredHeaders = false;
+                                break;
+                            }
+                        }
 
-                    \Log::info('Found ' . $tableDiv->length . ' custom-table elements');
+                        if ($hasRequiredHeaders) {
+                            $targetTable = $table;
+                            break;
+                        }
+                    }
 
-                    if ($tableDiv->length > 0) {
-                        \Log::info('Found custom-table');
-                        $targetTable = $tableDiv->item(0);
+                    if ($targetTable) {
+                        \Log::info('Found target table with required headers');
                         $isListFormat = true;
-                        $tableFound = true;
 
                         // Получаем заголовки
                         $headers = [];
-                        $headerItems = $xpath->query('.//div[contains(@class, "custom-table__head")]//div[contains(@class, "custom-table__content")]', $targetTable);
-
-                        \Log::info('Found ' . $headerItems->length . ' header items');
-
+                        $headerItems = $xpath->query('.//div[contains(@class, "head") or contains(@class, "header")]//div[contains(@class, "content")]', $targetTable);
                         foreach ($headerItems as $header) {
                             $headerText = trim($header->textContent);
                             if (!empty($headerText)) {
@@ -257,15 +315,11 @@ class ParseTableController extends Controller
 
                         // Получаем строки данных
                         $rows = [];
-                        $rowItems = $xpath->query('.//li[contains(@class, "custom-table__line")]', $targetTable);
-
-                        \Log::info('Found ' . $rowItems->length . ' row items');
+                        $rowItems = $xpath->query('.//li[contains(@class, "line") or contains(@class, "row")]', $targetTable);
 
                         foreach ($rowItems as $rowIndex => $row) {
                             $rowData = [];
-                            $cells = $xpath->query('.//div[contains(@class, "custom-table__content")]', $row);
-
-                            \Log::info('Row ' . $rowIndex . ' has ' . $cells->length . ' cells');
+                            $cells = $xpath->query('.//div[contains(@class, "content")]', $row);
 
                             foreach ($cells as $cell) {
                                 if (count($rowData) >= count($headers)) break;
@@ -278,7 +332,6 @@ class ParseTableController extends Controller
 
                             if (!empty($rowData)) {
                                 $rows[] = $rowData;
-                                \Log::info('Row ' . $rowIndex . ' data: ' . implode(', ', $rowData));
                             }
                         }
 
@@ -286,18 +339,8 @@ class ParseTableController extends Controller
                         if (!empty($rows)) {
                             $debug['first_row'] = $rows[0];
                         }
-
-                        // Проверяем, что мы получили все необходимые данные
-                        if (count($headers) < 9 || count($rows) < 10) {
-                            \Log::info('Not enough data found. Headers: ' . count($headers) . ', Rows: ' . count($rows));
-                            return response()->json([
-                                'success' => false,
-                                'message' => "Не удалось получить полные данные таблицы",
-                                'debug' => $debug
-                            ], 404);
-                        }
                     } else {
-                        \Log::info('No custom-table found');
+                        \Log::info('No table with required headers found');
                         return response()->json([
                             'success' => false,
                             'message' => "Турнирная таблица не найдена на странице",
