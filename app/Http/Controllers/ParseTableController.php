@@ -208,13 +208,35 @@ class ParseTableController extends Controller
                             $rowData[] = trim($teamCell->item(0)->textContent);
                         }
 
-                        // Получаем остальные ячейки
+                        // Получаем все ячейки с данными в правильном порядке
                         $cells = $xpath->query('.//div[contains(@class, "custom-table__var")]//div[contains(@class, "custom-table__content")]', $row);
+                        $cellData = [];
                         foreach ($cells as $cell) {
                             $value = trim($cell->textContent);
                             if (!empty($value)) {
-                                $rowData[] = $value;
+                                $cellData[] = $value;
                             }
+                        }
+
+                        // Проверяем и добавляем пропущенные значения
+                        if (count($cellData) >= 6) { // У нас должно быть минимум 6 значений: И, В, Н, П, МЗ-МП, О
+                            // Добавляем количество игр
+                            $rowData[] = $cellData[0];
+
+                            // Добавляем выигрыши
+                            $rowData[] = $cellData[1];
+
+                            // Добавляем ничьи
+                            $rowData[] = $cellData[2];
+
+                            // Добавляем поражения
+                            $rowData[] = $cellData[3];
+
+                            // Добавляем забитые/пропущенные
+                            $rowData[] = $cellData[4];
+
+                            // Добавляем очки
+                            $rowData[] = $cellData[5];
                         }
 
                         // Получаем форму (последние 5 матчей)
