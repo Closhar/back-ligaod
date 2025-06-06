@@ -529,10 +529,20 @@ class ParseTableController extends Controller
                             $rowData = [];
                             $cells = $xpath->query('.//td', $row);
                             $currentIndex = 0;
+                            $mergedValues = [];
 
                             foreach ($cells as $cellIndex => $cell) {
-                                // Пропускаем ячейки, которые являются частью объединенной ячейки
+                                $value = trim($cell->textContent);
+
+                                // Если это часть объединенной ячейки
                                 if (isset($colspanMap[$currentIndex])) {
+                                    $mainIndex = $colspanMap[$currentIndex];
+                                    if (!isset($mergedValues[$mainIndex])) {
+                                        $mergedValues[$mainIndex] = [];
+                                    }
+                                    if (!empty($value)) {
+                                        $mergedValues[$mainIndex][] = $value;
+                                    }
                                     $currentIndex++;
                                     continue;
                                 }
@@ -541,18 +551,27 @@ class ParseTableController extends Controller
                                 $colspan = $cell->getAttribute('colspan');
                                 $colspan = $colspan ? intval($colspan) : 1;
 
-                                $value = trim($cell->textContent);
-                                if (empty($value)) {
-                                    $value = '#';
-                                }
-
-                                // Если ячейка объединена, добавляем значение только один раз
+                                // Если ячейка объединена, собираем значения
                                 if ($colspan > 1) {
-                                    $rowData[] = $value;
+                                    $mergedValues[$currentIndex] = [];
+                                    if (!empty($value)) {
+                                        $mergedValues[$currentIndex][] = $value;
+                                    }
                                     $currentIndex += $colspan;
                                 } else {
-                                    $rowData[] = $value;
+                                    if (!empty($value)) {
+                                        $mergedValues[$currentIndex] = [$value];
+                                    }
                                     $currentIndex++;
+                                }
+                            }
+
+                            // Объединяем значения и добавляем в результат
+                            foreach ($mergedValues as $index => $values) {
+                                if (!empty($values)) {
+                                    $rowData[] = implode(' ', $values);
+                                } else {
+                                    $rowData[] = '';
                                 }
                             }
 
