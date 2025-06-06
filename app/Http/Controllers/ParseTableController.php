@@ -223,19 +223,24 @@ class ParseTableController extends Controller
                             }
                         }
 
-                        // Проверяем, содержат ли заголовки все ожидаемые значения
-                        $matches = 0;
-                        foreach ($expectedHeaders as $expected) {
-                            foreach ($foundHeaders as $found) {
-                                if (stripos($found, $expected) !== false) {
-                                    $matches++;
+                        // Проверяем наличие всех необходимых заголовков
+                        $requiredHeaders = ['МЗ - МП', 'Форма']; // Эти заголовки есть только в полной таблице
+                        $hasAllRequired = true;
+                        foreach ($requiredHeaders as $required) {
+                            $found = false;
+                            foreach ($foundHeaders as $foundHeader) {
+                                if (stripos($foundHeader, $required) !== false) {
+                                    $found = true;
                                     break;
                                 }
                             }
+                            if (!$found) {
+                                $hasAllRequired = false;
+                                break;
+                            }
                         }
 
-                        // Если найдено достаточно совпадений, используем эту таблицу
-                        if ($matches >= 7) { // Минимум 7 совпадений из 9
+                        if ($hasAllRequired) {
                             $targetTable = $tableDiv;
                             $isListFormat = true;
                             $tableFound = true;
@@ -246,7 +251,7 @@ class ParseTableController extends Controller
                     if (!$tableFound) {
                         return response()->json([
                             'success' => false,
-                            'message' => "Турнирная таблица не найдена на странице"
+                            'message' => "Полная турнирная таблица не найдена на странице"
                         ], 404);
                     }
 
