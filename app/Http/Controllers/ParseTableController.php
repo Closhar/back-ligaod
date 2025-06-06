@@ -278,6 +278,65 @@ class ParseTableController extends Controller
                         'debug' => $debug
                     ], 404);
                 }
+            }
+            // Специальная обработка для r-hockey.ru
+            else if (strpos($request->url, 'r-hockey.ru') !== false) {
+                \Log::info('Processing r-hockey.ru table');
+
+                // Ищем таблицу
+                $table = $xpath->query('//table[contains(@class, "table")]');
+
+                if ($table->length > 0) {
+                    \Log::info('Found table');
+                    $targetTable = $table->item(0);
+
+                    // Получаем заголовки
+                    $headers = [];
+                    $headerCells = $xpath->query('.//th', $targetTable);
+                    foreach ($headerCells as $header) {
+                        $headerText = trim($header->textContent);
+                        if (!empty($headerText)) {
+                            $headers[] = $headerText;
+                        }
+                    }
+
+                    \Log::info('Headers found: ' . implode(', ', $headers));
+
+                    // Получаем строки данных
+                    $rows = [];
+                    $rowItems = $xpath->query('.//tr[not(contains(@class, "header"))]', $targetTable);
+
+                    foreach ($rowItems as $rowIndex => $row) {
+                        $rowData = [];
+                        $cells = $xpath->query('.//td', $row);
+
+                        foreach ($cells as $cell) {
+                            $value = trim($cell->textContent);
+                            // Ограничиваем длину значения до 255 символов
+                            $value = substr($value, 0, 255);
+                            if (!empty($value)) {
+                                $rowData[] = $value;
+                            }
+                        }
+
+                        if (!empty($rowData)) {
+                            $rows[] = $rowData;
+                            \Log::info('Row ' . $rowIndex . ': ' . implode(', ', $rowData));
+                        }
+                    }
+
+                    $debug['rows_parsed'] = count($rows);
+                    if (!empty($rows)) {
+                        $debug['first_row'] = $rows[0];
+                    }
+                } else {
+                    \Log::info('No table found');
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Турнирная таблица не найдена на странице",
+                        'debug' => $debug
+                    ], 404);
+                }
             } else {
                 // Пробуем сначала найти обычные таблицы
                 $tables = $xpath->query('//table');
