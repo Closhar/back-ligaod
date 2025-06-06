@@ -204,9 +204,9 @@ class ParseTableController extends Controller
 
             if ($isListFormat) {
                 // Парсинг списка
-                $headerItems = $xpath->query('.//li[contains(@class, "header") or contains(@class, "title")]', $targetTable);
+                $headerItems = $xpath->query('.//li[contains(@class, "header") or contains(@class, "title") or contains(@class, "thead")]', $targetTable);
                 if ($headerItems->length > 0) {
-                    $headerDivs = $xpath->query('.//div', $headerItems->item(0));
+                    $headerDivs = $xpath->query('.//div[not(contains(@class, "form"))]', $headerItems->item(0));
                     foreach ($headerDivs as $div) {
                         if (count($headers) >= 20) break;
                         $header = trim($div->textContent);
@@ -217,17 +217,29 @@ class ParseTableController extends Controller
                 }
 
                 // Получаем строки данных
-                $listItems = $xpath->query('.//li[not(contains(@class, "header")) and not(contains(@class, "title"))]', $targetTable);
+                $listItems = $xpath->query('.//li[not(contains(@class, "header")) and not(contains(@class, "title")) and not(contains(@class, "thead"))]', $targetTable);
                 foreach ($listItems as $item) {
                     $rowData = [];
-                    $divs = $xpath->query('.//div', $item);
+                    // Ищем все div элементы, исключая элементы формы
+                    $divs = $xpath->query('.//div[not(contains(@class, "form"))]', $item);
                     foreach ($divs as $div) {
                         if (count($rowData) >= 20) break;
-                        $rowData[] = trim($div->textContent);
+                        $value = trim($div->textContent);
+                        // Очищаем значение от лишних пробелов и переносов строк
+                        $value = preg_replace('/\s+/', ' ', $value);
+                        $rowData[] = $value;
                     }
                     if (!empty($rowData)) {
                         $rows[] = $rowData;
                     }
+                }
+
+                // Если заголовки не найдены, пробуем найти их в первой строке
+                if (empty($headers) && !empty($rows)) {
+                    $firstRow = $rows[0];
+                    $headers = array_map(function($index) {
+                        return 'Поле ' . ($index + 1);
+                    }, array_keys($firstRow));
                 }
             } else {
                 // Существующая логика для обычных таблиц
