@@ -488,15 +488,47 @@ class ParseTableController extends Controller
                         $headerCells = $xpath->query('.//tr[1]/th | .//tr[1]/td', $targetTable);
                     }
 
+                    // Анализируем содержимое каждого столбца
+                    $validColumns = [];
+                    $columnIndex = 0;
+
                     foreach ($headerCells as $index => $cell) {
                         if (count($headers) >= 20) break;
-                        $header = trim($cell->textContent);
-                        if (empty($header)) {
-                            $header = '#';
+
+                        // Проверяем содержимое столбца
+                        $hasText = false;
+                        $hasImages = false;
+
+                        // Получаем все ячейки в этом столбце
+                        $columnCells = $xpath->query('.//tr/td[' . ($index + 1) . '] | .//tr/th[' . ($index + 1) . ']', $targetTable);
+
+                        foreach ($columnCells as $columnCell) {
+                            // Проверяем наличие текста
+                            $text = trim($columnCell->textContent);
+                            if (!empty($text)) {
+                                $hasText = true;
+                            }
+
+                            // Проверяем наличие изображений
+                            $images = $xpath->query('.//img', $columnCell);
+                            if ($images->length > 0) {
+                                $hasImages = true;
+                            }
                         }
-                        if (!in_array($header, $headers)) {
-                            $headers[] = $header;
+
+                        // Если в столбце есть текст или это не только изображения, добавляем его
+                        if ($hasText || !$hasImages) {
+                            $header = trim($cell->textContent);
+                            if (empty($header)) {
+                                $header = '#';
+                            }
+                            if (!in_array($header, $headers)) {
+                                $headers[] = $header;
+                                $validColumns[] = $columnIndex;
+                            }
                         }
+
+                        $columnIndex++;
                     }
 
                     $allRows = $xpath->query('.//tr', $targetTable);
@@ -506,9 +538,18 @@ class ParseTableController extends Controller
                             $row = $allRows->item($i);
                             $rowData = [];
                             $cells = $xpath->query('.//td', $row);
-                            foreach ($cells as $cell) {
-                                $rowData[] = trim($cell->textContent);
+
+                            foreach ($cells as $cellIndex => $cell) {
+                                // Добавляем только данные из валидных столбцов
+                                if (in_array($cellIndex, $validColumns)) {
+                                    $value = trim($cell->textContent);
+                                    if (empty($value)) {
+                                        $value = '#';
+                                    }
+                                    $rowData[] = $value;
+                                }
                             }
+
                             if (!empty($rowData)) {
                                 $rows[] = $rowData;
                             }
