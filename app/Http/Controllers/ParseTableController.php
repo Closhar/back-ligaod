@@ -283,8 +283,8 @@ class ParseTableController extends Controller
             else if (strpos($request->url, 'r-hockey.ru') !== false) {
                 \Log::info('Processing r-hockey.ru table');
 
-                // Ищем таблицу по точному классу
-                $table = $xpath->query('//table[contains(@class, "ui") and contains(@class, "table")]');
+                // Ищем таблицу по точному классу и атрибутам
+                $table = $xpath->query('//table[contains(@class, "ui") and contains(@class, "table") and contains(@class, "tbl-stat")]');
 
                 if ($table->length > 0) {
                     \Log::info('Found table');
@@ -292,11 +292,11 @@ class ParseTableController extends Controller
 
                     // Получаем заголовки
                     $headers = [];
-                    $headerCells = $xpath->query('.//thead//th', $targetTable);
+                    $headerCells = $xpath->query('.//thead//th[contains(@class, "tablesorter-header")]', $targetTable);
                     foreach ($headerCells as $header) {
                         $headerText = trim($header->textContent);
-                        // Пропускаем пустые заголовки
-                        if (!empty($headerText)) {
+                        // Пропускаем пустые заголовки и лишние элементы
+                        if (!empty($headerText) && $headerText !== 'Действия') {
                             $headers[] = $headerText;
                         }
                     }
@@ -310,7 +310,7 @@ class ParseTableController extends Controller
 
                     // Получаем строки данных
                     $rows = [];
-                    $rowItems = $xpath->query('.//tbody//tr', $targetTable);
+                    $rowItems = $xpath->query('.//tbody//tr[contains(@class, "stats-row")]', $targetTable);
 
                     foreach ($rowItems as $rowIndex => $row) {
                         $rowData = [];
