@@ -152,7 +152,20 @@ class ParseTableController extends Controller
             }
 
             $debug['page_content_length'] = strlen($response->body());
+
+            // Определяем кодировку из заголовков ответа
+            $contentType = $response->header('Content-Type');
+            $charset = 'UTF-8';
+            if (preg_match('/charset=([^;]+)/i', $contentType, $matches)) {
+                $charset = $matches[1];
+            }
+
+            // Получаем HTML и конвертируем в UTF-8
             $html = $response->body();
+            if ($charset !== 'UTF-8') {
+                $html = mb_convert_encoding($html, 'UTF-8', $charset);
+            }
+
             $searchText = $request->search_text;
 
             // Сохраняем HTML в лог для анализа
@@ -162,13 +175,12 @@ class ParseTableController extends Controller
             $dom = new DOMDocument();
             // Устанавливаем кодировку UTF-8
             $dom->encoding = 'UTF-8';
-            // Добавляем мета-тег с кодировкой
-            $html = '<meta http-equiv="Content-Type" content="text/html; charset=utf-8">' . $html;
             // Загружаем HTML с игнорированием ошибок
             @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
             $xpath = new DOMXPath($dom);
 
             $debug['dom_created'] = true;
+            $debug['charset'] = $charset;
 
             // Специальная обработка для yflrussia.ru
             if (strpos($request->url, 'yflrussia.ru') !== false) {
@@ -302,7 +314,7 @@ class ParseTableController extends Controller
                         $headerText = trim($header->textContent);
                         // Пропускаем пустые заголовки и лишние элементы
                         if (!empty($headerText) && $headerText !== 'Действия') {
-                            $headers[] = mb_convert_encoding($headerText, 'UTF-8', 'auto');
+                            $headers[] = $headerText;
                         }
                     }
 
@@ -346,9 +358,6 @@ class ParseTableController extends Controller
                             else {
                                 $value = trim($cell->textContent);
                             }
-
-                            // Конвертируем значение в UTF-8
-                            $value = mb_convert_encoding($value, 'UTF-8', 'auto');
 
                             // Ограничиваем длину значения до 255 символов
                             $value = substr($value, 0, 255);
