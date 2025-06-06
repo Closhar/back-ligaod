@@ -85,7 +85,7 @@ class EventController extends Controller
         // Основной запрос с фильтрацией
         $query = Event::query()
             ->select('id', 'region_id', 'series_id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id',
-                'club1_id', 'club2_id', 'event_name', "is_active", 'about', 'series_count', 'tickets', 'report',
+                'club1_id', 'club2_id', 'event_name', "is_active", 'about', 'series_count', 'tickets', 'report', 'free_tickets',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path')
             )
             ->withCount('streams')
@@ -605,6 +605,7 @@ class EventController extends Controller
                 'about' => 'string|max:50000|nullable',
                 'tickets' => 'string|max:50000|nullable',
                 'report' => 'string|max:50000|nullable',
+                'free_tickets' => 'boolean|nullable',
             ]);
 
             $validated['date_from'] = date('Y-m-d H:i:s', strtotime($validated['date_from']));
@@ -732,6 +733,7 @@ class EventController extends Controller
                 'about' => 'string|max:50000|nullable',
                 'tickets' => 'string|max:50000|nullable',
                 'report' => 'string|max:50000|nullable',
+                'free_tickets' => 'boolean|nullable',
             ]);
 
             // Обработка даты (прежняя логика)

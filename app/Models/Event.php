@@ -40,6 +40,7 @@ class Event extends Model
         'series_count',
         'about',
         'tickets',
+        'free_tickets',
         'report'
     ];
 

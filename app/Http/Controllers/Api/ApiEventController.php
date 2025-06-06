@@ -58,7 +58,7 @@ class ApiEventController extends Controller
 
         // Основной запрос с фильтрацией
         $query = Event::query()
-            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name', 'series_id', 'series_count', 'about', 'tickets', 'report')
+            ->select('id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id', 'is_active', 'event_name', 'series_id', 'series_count', 'about', 'tickets', 'report', 'free_tickets')
             ->with([
                 'region' => function ($query) {
                     $query->select(['id', 'title', 'title_short']);
@@ -378,6 +378,7 @@ class ApiEventController extends Controller
 
             // Добавляем поле tickets
             $event->tickets = $event->tickets;
+            $event->free_tickets = $event->free_tickets;
 
             // Вычисляем series_count если он не установлен
             if ($event->series_id) {
@@ -553,7 +554,7 @@ class ApiEventController extends Controller
         // Загружаем события серии отдельно
         if ($event->series_id) {
             $seriesEvents = Event::where('series_id', $event->series_id)
-                ->select(['id', 'date_from', 'club1_id', 'club2_id', 'result', 'result_dop', 'is_active', 'report'])
+                ->select(['id', 'date_from', 'club1_id', 'club2_id', 'result', 'result_dop', 'is_active', 'report', 'free_tickets'])
                 ->with([
                     'club1' => function ($query) {
                         $query->select(['id', 'title', 'city_id'])
