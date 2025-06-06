@@ -195,15 +195,36 @@ class ParseTableController extends Controller
 
                     foreach ($rowItems as $rowIndex => $row) {
                         $rowData = [];
-                        $cells = $xpath->query('.//div[contains(@class, "custom-table__content")]', $row);
 
+                        // Получаем номер
+                        $numberCell = $xpath->query('.//div[contains(@class, "custom-table__number")]//div[contains(@class, "custom-table__number-wrapper")]', $row);
+                        if ($numberCell->length > 0) {
+                            $rowData[] = trim($numberCell->item(0)->textContent);
+                        }
+
+                        // Получаем название команды
+                        $teamCell = $xpath->query('.//div[contains(@class, "custom-table__team-name")]', $row);
+                        if ($teamCell->length > 0) {
+                            $rowData[] = trim($teamCell->item(0)->textContent);
+                        }
+
+                        // Получаем остальные ячейки
+                        $cells = $xpath->query('.//div[contains(@class, "custom-table__var")]//div[contains(@class, "custom-table__content")]', $row);
                         foreach ($cells as $cell) {
-                            if (count($rowData) >= count($headers)) break;
                             $value = trim($cell->textContent);
-                            $value = preg_replace('/\s+/', ' ', $value);
                             if (!empty($value)) {
                                 $rowData[] = $value;
                             }
+                        }
+
+                        // Получаем форму (последние 5 матчей)
+                        $formCell = $xpath->query('.//ul[contains(@class, "progress")]//span[contains(@class, "progress__text")]', $row);
+                        $form = [];
+                        foreach ($formCell as $formItem) {
+                            $form[] = trim($formItem->textContent);
+                        }
+                        if (!empty($form)) {
+                            $rowData[] = implode(' ', $form);
                         }
 
                         if (!empty($rowData)) {
