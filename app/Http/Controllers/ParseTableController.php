@@ -300,7 +300,7 @@ class ParseTableController extends Controller
             else if (strpos($request->url, 'r-hockey.ru') !== false) {
                 \Log::info('Processing r-hockey.ru table');
 
-                // Ищем таблицу по точному классу и атрибутам
+                // Ищем таблицу по точному классу
                 $table = $xpath->query('//table[contains(@class, "ui") and contains(@class, "table") and contains(@class, "tbl-stat")]');
 
                 if ($table->length > 0) {
@@ -309,11 +309,10 @@ class ParseTableController extends Controller
 
                     // Получаем заголовки
                     $headers = [];
-                    $headerCells = $xpath->query('.//thead//th[contains(@class, "tablesorter-header")]', $targetTable);
+                    $headerCells = $xpath->query('.//thead//th[contains(@class, "tablesorter-header")]//div[contains(@class, "tablesorter-header-inner")]', $targetTable);
                     foreach ($headerCells as $header) {
                         $headerText = trim($header->textContent);
-                        // Пропускаем пустые заголовки и лишние элементы
-                        if (!empty($headerText) && $headerText !== 'Действия') {
+                        if (!empty($headerText)) {
                             $headers[] = $headerText;
                         }
                     }
@@ -338,34 +337,39 @@ class ParseTableController extends Controller
                         foreach ($cells as $cellIndex => $cell) {
                             $value = '';
 
-                            // Для ячейки с названием команды берем текст из ссылки
+                            // Для ячейки с названием команды берем только текст, без ссылок и картинок
                             if ($cell->hasAttribute('class') && strpos($cell->getAttribute('class'), 'stats-team') !== false) {
-                                $teamLink = $xpath->query('.//a', $cell);
-                                if ($teamLink->length > 0) {
-                                    $value = trim($teamLink->item(0)->textContent);
-                                }
+                                $value = trim($cell->textContent);
                             }
-                            // Для ячейки с формой берем все ссылки
+                            // Для ячейки с формой берем только результат (В/Н/П)
                             else if ($cell->hasAttribute('class') && strpos($cell->getAttribute('class'), 'form-links') !== false) {
-                                $formLinks = $xpath->query('.//a', $cell);
+                                $formLinks = $xpath->query('.//span[contains(@class, "winner") or contains(@class, "looser")]', $cell);
                                 $formValues = [];
                                 foreach ($formLinks as $link) {
-                                    $formValues[] = trim($link->getAttribute('data-tooltip'));
+                                    if ($link->hasAttribute('class')) {
+                                        if (strpos($link->getAttribute('class'), 'winner') !== false) {
+                                            $formValues[] = 'В';
+                                        } else if (strpos($link->getAttribute('class'), 'looser') !== false) {
+                                            $formValues[] = 'П';
+                                        }
+                                    }
                                 }
-                                $value = implode(', ', $formValues);
+                                $value = implode('', $formValues);
                             }
                             // Для остальных ячеек берем текст напрямую
                             else {
                                 $value = trim($cell->textContent);
                             }
 
+                            // Если значение пустое, ставим #
+                            if (empty($value)) {
+                                $value = '#';
+                            }
+
                             // Ограничиваем длину значения до 255 символов
                             $value = substr($value, 0, 255);
 
-                            // Добавляем значение в массив, если оно не пустое
-                            if (!empty($value)) {
-                                $rowData[] = $value;
-                            }
+                            $rowData[] = $value;
                         }
 
                         if (!empty($rowData)) {
@@ -378,11 +382,6 @@ class ParseTableController extends Controller
                     if (!empty($rows)) {
                         $debug['first_row'] = $rows[0];
                     }
-
-                    // Добавляем отладочную информацию
-                    $debug['table_html'] = $dom->saveHTML($targetTable);
-                    $debug['headers_count'] = count($headers);
-                    $debug['rows_count'] = count($rows);
                 } else {
                     \Log::info('No table found');
                     return response()->json([
