@@ -231,28 +231,51 @@ class ParseTableController extends Controller
                     $tableDivs = $xpath->query('//div[contains(@class, "table")]');
 
                     $debug['tables_found'] = $tableDivs->length;
+                    $debug['tables_info'] = [];
 
                     foreach ($tableDivs as $index => $tableDiv) {
+                        $tableInfo = [
+                            'index' => $index,
+                            'class' => $tableDiv->getAttribute('class'),
+                            'headers' => [],
+                            'first_row' => [],
+                            'row_count' => 0
+                        ];
+
                         // Получаем все заголовки таблицы
                         $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $tableDiv);
-                        $foundHeaders = [];
-
                         foreach ($headerItems as $header) {
                             $headerText = trim($header->textContent);
                             if (!empty($headerText)) {
-                                $foundHeaders[] = $headerText;
+                                $tableInfo['headers'][] = $headerText;
                             }
                         }
 
-                        $debug['table_' . $index . '_headers'] = $foundHeaders;
+                        // Получаем первую строку данных
+                        $firstRow = $xpath->query('.//div[contains(@class, "tbody")]//div[contains(@class, "tr")][1]//div[contains(@class, "td")]', $tableDiv);
+                        foreach ($firstRow as $cell) {
+                            $value = trim($cell->textContent);
+                            if (!empty($value)) {
+                                $tableInfo['first_row'][] = $value;
+                            }
+                        }
+
+                        // Считаем количество строк
+                        $rows = $xpath->query('.//div[contains(@class, "tbody")]//div[contains(@class, "tr")]', $tableDiv);
+                        $tableInfo['row_count'] = $rows->length;
+
+                        $debug['tables_info'][] = $tableInfo;
+
+                        // Проверяем, является ли это нужной нам таблицей
+                        $isFullTable = false;
 
                         // Проверяем наличие всех необходимых заголовков
                         $requiredHeaders = ['МЗ - МП', 'Форма', 'В', 'Н', 'П'];
                         $hasAllRequired = true;
                         foreach ($requiredHeaders as $required) {
                             $found = false;
-                            foreach ($foundHeaders as $foundHeader) {
-                                if (stripos($foundHeader, $required) !== false) {
+                            foreach ($tableInfo['headers'] as $header) {
+                                if (stripos($header, $required) !== false) {
                                     $found = true;
                                     break;
                                 }
@@ -263,73 +286,35 @@ class ParseTableController extends Controller
                             }
                         }
 
-                        // Дополнительная проверка на количество столбцов и наличие всех нужных заголовков
-                        if ($hasAllRequired && count($foundHeaders) >= 9) {
-                            // Проверяем, что это не упрощенная таблица
-                            $hasSimpleHeaders = false;
-                            $simpleHeaders = ['Действия'];
-                            foreach ($simpleHeaders as $simple) {
-                                foreach ($foundHeaders as $foundHeader) {
-                                    if (stripos($foundHeader, $simple) !== false) {
-                                        $hasSimpleHeaders = true;
-                                        break 2;
-                                    }
-                                }
+                        // Проверяем наличие данных в первой строке
+                        $hasData = false;
+                        foreach ($tableInfo['first_row'] as $value) {
+                            if (preg_match('/\d+ - \d+/', $value)) {
+                                $hasData = true;
+                                break;
                             }
+                        }
 
-                            if (!$hasSimpleHeaders) {
-                                // Проверяем наличие данных в первой строке
-                                $firstRow = $xpath->query('.//div[contains(@class, "tbody")]//div[contains(@class, "tr")][1]//div[contains(@class, "td")]', $tableDiv);
-                                $hasData = false;
-                                foreach ($firstRow as $cell) {
-                                    $value = trim($cell->textContent);
-                                    if (!empty($value) && preg_match('/\d+ - \d+/', $value)) {
-                                        $hasData = true;
-                                        break;
-                                    }
-                                }
-
-                                if ($hasData) {
-                                    $targetTable = $tableDiv;
-                                    $isListFormat = true;
-                                    $tableFound = true;
-                                    $debug['selected_table_index'] = $index;
-                                    $debug['selected_table_headers'] = $foundHeaders;
-                                    break;
-                                }
-                            }
+                        if ($hasAllRequired && $hasData && count($tableInfo['headers']) >= 9) {
+                            $targetTable = $tableDiv;
+                            $isListFormat = true;
+                            $tableFound = true;
+                            $debug['selected_table_index'] = $index;
+                            $debug['selected_table_info'] = $tableInfo;
+                            break;
                         }
                     }
 
                     if (!$tableFound) {
-                        // Если не нашли таблицу по стандартным критериям, пробуем найти по структуре
-                        $fullTableDiv = $xpath->query('//div[contains(@class, "table")]//div[contains(@class, "tbody")]//div[contains(@class, "tr")][1]//div[contains(@class, "td")][contains(text(), " - ")]/ancestor::div[contains(@class, "table")]');
-
-                        if ($fullTableDiv->length > 0) {
-                            $targetTable = $fullTableDiv->item(0);
-                            $isListFormat = true;
-                            $tableFound = true;
-                            $debug['found_by_structure'] = true;
-                        } else {
-                            return response()->json([
-                                'success' => false,
-                                'message' => "Полная турнирная таблица не найдена на странице",
-                                'debug' => $debug
-                            ], 404);
-                        }
+                        return response()->json([
+                            'success' => false,
+                            'message' => "Полная турнирная таблица не найдена на странице",
+                            'debug' => $debug
+                        ], 404);
                     }
 
                     // Получаем заголовки
-                    $headers = [];
-                    $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $targetTable);
-                    foreach ($headerItems as $header) {
-                        $headerText = trim($header->textContent);
-                        if (!empty($headerText)) {
-                            $headers[] = $headerText;
-                        }
-                    }
-
-                    $debug['final_headers'] = $headers;
+                    $headers = $debug['selected_table_info']['headers'];
 
                     // Получаем строки данных
                     $rows = [];
