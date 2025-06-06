@@ -230,7 +230,9 @@ class ParseTableController extends Controller
                     $tableFound = false;
 
                     // Получаем таблицу по специфическому классу
-                    $tableDiv = $xpath->query('//div[contains(@class, "custom-table")]');
+                    $tableDiv = $xpath->query('//div[contains(@class, "custom-table") and contains(@class, "custom-table-table")]');
+
+                    \Log::info('Found ' . $tableDiv->length . ' custom-table elements');
 
                     if ($tableDiv->length > 0) {
                         \Log::info('Found custom-table');
@@ -241,6 +243,9 @@ class ParseTableController extends Controller
                         // Получаем заголовки
                         $headers = [];
                         $headerItems = $xpath->query('.//div[contains(@class, "custom-table__head")]//div[contains(@class, "custom-table__content")]', $targetTable);
+
+                        \Log::info('Found ' . $headerItems->length . ' header items');
+
                         foreach ($headerItems as $header) {
                             $headerText = trim($header->textContent);
                             if (!empty($headerText)) {
@@ -254,9 +259,13 @@ class ParseTableController extends Controller
                         $rows = [];
                         $rowItems = $xpath->query('.//li[contains(@class, "custom-table__line")]', $targetTable);
 
-                        foreach ($rowItems as $row) {
+                        \Log::info('Found ' . $rowItems->length . ' row items');
+
+                        foreach ($rowItems as $rowIndex => $row) {
                             $rowData = [];
                             $cells = $xpath->query('.//div[contains(@class, "custom-table__content")]', $row);
+
+                            \Log::info('Row ' . $rowIndex . ' has ' . $cells->length . ' cells');
 
                             foreach ($cells as $cell) {
                                 if (count($rowData) >= count($headers)) break;
@@ -269,12 +278,23 @@ class ParseTableController extends Controller
 
                             if (!empty($rowData)) {
                                 $rows[] = $rowData;
+                                \Log::info('Row ' . $rowIndex . ' data: ' . implode(', ', $rowData));
                             }
                         }
 
                         $debug['rows_parsed'] = count($rows);
                         if (!empty($rows)) {
                             $debug['first_row'] = $rows[0];
+                        }
+
+                        // Проверяем, что мы получили все необходимые данные
+                        if (count($headers) < 9 || count($rows) < 10) {
+                            \Log::info('Not enough data found. Headers: ' . count($headers) . ', Rows: ' . count($rows));
+                            return response()->json([
+                                'success' => false,
+                                'message' => "Не удалось получить полные данные таблицы",
+                                'debug' => $debug
+                            ], 404);
                         }
                     } else {
                         \Log::info('No custom-table found');
