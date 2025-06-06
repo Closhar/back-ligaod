@@ -128,6 +128,12 @@ class ParseTableController extends Controller
      */
     public function parse(Request $request)
     {
+        $debug = [
+            'message' => 'ParseTableController::parse called',
+            'request_url' => $request->url,
+            'request_data' => $request->all()
+        ];
+
         $request->validate([
             'url' => 'required|url',
             'search_text' => 'nullable|string|max:255'
@@ -137,9 +143,15 @@ class ParseTableController extends Controller
             // Получаем HTML страницы
             $response = Http::get($request->url);
             if (!$response->successful()) {
-                throw new \Exception('Не удалось получить доступ к странице');
+                $debug['error'] = 'Failed to get page: ' . $request->url;
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Не удалось получить доступ к странице',
+                    'debug' => $debug
+                ], 500);
             }
 
+            $debug['page_content_length'] = strlen($response->body());
             $html = $response->body();
             $searchText = $request->search_text;
 
@@ -148,14 +160,19 @@ class ParseTableController extends Controller
             @$dom->loadHTML($html, LIBXML_NOERROR);
             $xpath = new DOMXPath($dom);
 
+            $debug['dom_created'] = true;
+
             // Пробуем сначала найти обычные таблицы
             $tables = $xpath->query('//table');
             $targetTable = null;
             $isListFormat = false;
 
+            $debug['tables_found'] = $tables->length;
+
             // Если таблицы не найдены, пробуем найти список
             if ($tables->length === 0) {
                 $lists = $xpath->query('//ul[contains(@class, "table") or contains(@class, "list")]');
+                $debug['lists_found'] = $lists->length;
                 if ($lists->length > 0) {
                     $targetTable = $lists->item(0);
                     $isListFormat = true;
@@ -193,9 +210,11 @@ class ParseTableController extends Controller
             }
 
             if (!$targetTable) {
+                $debug['error'] = 'Table not found';
                 return response()->json([
                     'success' => false,
-                    'message' => "Таблица или список не найдены на странице"
+                    'message' => "Таблица или список не найдены на странице",
+                    'debug' => $debug
                 ], 404);
             }
 
@@ -205,89 +224,31 @@ class ParseTableController extends Controller
             if ($isListFormat) {
                 // Специальная обработка для yflrussia.ru
                 if (strpos($request->url, 'yflrussia.ru') !== false) {
-                    // Ищем таблицу с нужными заголовками
-                    $expectedHeaders = ['#', 'Команда', 'И', 'В', 'Н', 'П', 'МЗ - МП', 'О', 'Форма'];
-                    $tableFound = false;
-
-                    // Получаем все div-элементы, которые могут быть таблицами
-                    $tableDivs = $xpath->query('//div[contains(@class, "table")]');
-
-                    foreach ($tableDivs as $tableDiv) {
-                        // Проверяем наличие всех необходимых заголовков
-                        $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $tableDiv);
-                        $foundHeaders = [];
-
-                        foreach ($headerItems as $header) {
-                            $headerText = trim($header->textContent);
-                            if (!empty($headerText)) {
-                                $foundHeaders[] = $headerText;
-                            }
-                        }
-
-                        // Проверяем наличие всех необходимых заголовков
-                        $requiredHeaders = ['МЗ - МП', 'Форма', 'В', 'Н', 'П']; // Эти заголовки есть только в полной таблице
-                        $hasAllRequired = true;
-                        foreach ($requiredHeaders as $required) {
-                            $found = false;
-                            foreach ($foundHeaders as $foundHeader) {
-                                if (stripos($foundHeader, $required) !== false) {
-                                    $found = true;
-                                    break;
-                                }
-                            }
-                            if (!$found) {
-                                $hasAllRequired = false;
-                                break;
-                            }
-                        }
-
-                        if ($hasAllRequired) {
-                            $targetTable = $tableDiv;
-                            $isListFormat = true;
-                            $tableFound = true;
-                            break;
-                        }
-                    }
-
-                    if (!$tableFound) {
-                        return response()->json([
-                            'success' => false,
-                            'message' => "Полная турнирная таблица не найдена на странице"
-                        ], 404);
-                    }
-
                     // Получаем заголовки
-                    $headers = [];
                     $headerItems = $xpath->query('.//div[contains(@class, "thead")]//div[contains(@class, "tr")]//div[contains(@class, "th")]', $targetTable);
+                    $debug['header_items_found'] = $headerItems->length;
+
                     foreach ($headerItems as $header) {
+                        if (count($headers) >= 20) break;
                         $headerText = trim($header->textContent);
-                        if (!empty($headerText)) {
+                        if (!empty($headerText) && !in_array($headerText, $headers)) {
                             $headers[] = $headerText;
                         }
                     }
 
+                    $debug['headers'] = $headers;
+
                     // Получаем строки данных
-                    $rows = [];
                     $rowItems = $xpath->query('.//div[contains(@class, "tbody")]//div[contains(@class, "tr")]', $targetTable);
+                    $debug['row_items_found'] = $rowItems->length;
 
                     foreach ($rowItems as $row) {
                         $rowData = [];
                         $cells = $xpath->query('.//div[contains(@class, "td")]', $row);
 
-                        // Пропускаем пустые ячейки в начале строки
-                        $startIndex = 0;
-                        foreach ($cells as $index => $cell) {
+                        foreach ($cells as $cell) {
+                            if (count($rowData) >= 20) break;
                             $value = trim($cell->textContent);
-                            if (!empty($value)) {
-                                $startIndex = $index;
-                                break;
-                            }
-                        }
-
-                        // Собираем данные начиная с первой непустой ячейки
-                        for ($i = $startIndex; $i < $cells->length; $i++) {
-                            if (count($rowData) >= count($headers)) break;
-                            $value = trim($cells->item($i)->textContent);
                             $value = preg_replace('/\s+/', ' ', $value);
                             $rowData[] = $value;
                         }
@@ -295,6 +256,11 @@ class ParseTableController extends Controller
                         if (!empty($rowData)) {
                             $rows[] = $rowData;
                         }
+                    }
+
+                    $debug['rows_parsed'] = count($rows);
+                    if (!empty($rows)) {
+                        $debug['first_row'] = $rows[0];
                     }
                 } else {
                     // Стандартная обработка для других сайтов
@@ -409,13 +375,18 @@ class ParseTableController extends Controller
                 'data' => [
                     'table' => $tableModel,
                     'rows_count' => count($rows)
-                ]
+                ],
+                'debug' => $debug
             ]);
 
         } catch (\Exception $e) {
+            $debug['error'] = $e->getMessage();
+            $debug['error_trace'] = $e->getTraceAsString();
+
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при импорте таблицы: ' . $e->getMessage()
+                'message' => 'Ошибка при импорте таблицы: ' . $e->getMessage(),
+                'debug' => $debug
             ], 500);
         }
     }
