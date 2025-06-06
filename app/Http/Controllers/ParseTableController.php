@@ -283,93 +283,64 @@ class ParseTableController extends Controller
             else if (strpos($request->url, 'r-hockey.ru') !== false) {
                 \Log::info('Processing r-hockey.ru table');
 
-                // Сохраняем HTML страницы для отладки
-                $debug['page_html'] = $html;
+                // Ищем таблицу по точному классу
+                $table = $xpath->query('//table[contains(@class, "ui") and contains(@class, "table")]');
 
-                // Пробуем разные селекторы для поиска таблицы
-                $tableSelectors = [
-                    '//div[contains(@class, "table-responsive")]//table',
-                    '//table[contains(@class, "table")]',
-                    '//div[contains(@class, "table")]',
-                    '//div[contains(@class, "stat-table")]',
-                    '//div[contains(@class, "tournament-table")]'
-                ];
-
-                $targetTable = null;
-                $usedSelector = '';
-
-                foreach ($tableSelectors as $selector) {
-                    $table = $xpath->query($selector);
-                    \Log::info('Trying selector: ' . $selector . ', found: ' . $table->length . ' elements');
-                    $debug['selector_' . md5($selector)] = [
-                        'selector' => $selector,
-                        'found_elements' => $table->length
-                    ];
-
-                    if ($table->length > 0) {
-                        $targetTable = $table->item(0);
-                        $usedSelector = $selector;
-                        break;
-                    }
-                }
-
-                if ($targetTable) {
-                    \Log::info('Found table using selector: ' . $usedSelector);
+                if ($table->length > 0) {
+                    \Log::info('Found table');
+                    $targetTable = $table->item(0);
 
                     // Получаем заголовки
                     $headers = [];
-                    $headerSelectors = [
-                        './/thead//th',
-                        './/th',
-                        './/div[contains(@class, "header")]//div'
-                    ];
-
-                    foreach ($headerSelectors as $selector) {
-                        $headerCells = $xpath->query($selector, $targetTable);
-                        if ($headerCells->length > 0) {
-                            foreach ($headerCells as $header) {
-                                $headerText = trim($header->textContent);
-                                if (!empty($headerText)) {
-                                    $headers[] = $headerText;
-                                }
-                            }
-                            break;
+                    $headerCells = $xpath->query('.//thead//th', $targetTable);
+                    foreach ($headerCells as $header) {
+                        $headerText = trim($header->textContent);
+                        // Пропускаем пустые заголовки
+                        if (!empty($headerText)) {
+                            $headers[] = $headerText;
                         }
                     }
 
+                    // Если заголовки не найдены, используем стандартные
+                    if (empty($headers)) {
+                        $headers = ['#', 'Команда', 'И', 'В', 'ВО+ВБ', 'Н', 'ПО+ПБ', 'П', 'Ш', 'О', 'О%', 'Форма'];
+                    }
+
                     \Log::info('Headers found: ' . implode(', ', $headers));
-                    $debug['headers'] = $headers;
 
                     // Получаем строки данных
                     $rows = [];
-                    $rowSelectors = [
-                        './/tbody//tr',
-                        './/tr[not(contains(@class, "header"))]',
-                        './/div[contains(@class, "row")]'
-                    ];
+                    $rowItems = $xpath->query('.//tbody//tr', $targetTable);
 
-                    foreach ($rowSelectors as $selector) {
-                        $rowItems = $xpath->query($selector, $targetTable);
-                        if ($rowItems->length > 0) {
-                            foreach ($rowItems as $rowIndex => $row) {
-                                $rowData = [];
-                                $cells = $xpath->query('.//td | .//div[contains(@class, "cell")]', $row);
+                    foreach ($rowItems as $rowIndex => $row) {
+                        $rowData = [];
 
-                                foreach ($cells as $cell) {
-                                    $value = trim($cell->textContent);
-                                    // Ограничиваем длину значения до 255 символов
-                                    $value = substr($value, 0, 255);
-                                    if (!empty($value)) {
-                                        $rowData[] = $value;
-                                    }
-                                }
+                        // Получаем номер команды
+                        $placeCell = $xpath->query('.//td[contains(@class, "stats-place")]', $row);
+                        if ($placeCell->length > 0) {
+                            $rowData[] = trim($placeCell->item(0)->textContent);
+                        }
 
-                                if (!empty($rowData)) {
-                                    $rows[] = $rowData;
-                                    \Log::info('Row ' . $rowIndex . ': ' . implode(', ', $rowData));
-                                }
+                        // Получаем название команды
+                        $teamCell = $xpath->query('.//td[contains(@class, "stats-team")]//a', $row);
+                        if ($teamCell->length > 0) {
+                            $rowData[] = trim($teamCell->item(0)->textContent);
+                        }
+
+                        // Получаем остальные данные
+                        $dataCells = $xpath->query('.//td[contains(@class, "stats-data")]', $row);
+                        foreach ($dataCells as $cell) {
+                            $value = trim($cell->textContent);
+                            // Ограничиваем длину значения до 255 символов
+                            $value = substr($value, 0, 255);
+                            if (!empty($value)) {
+                                $rowData[] = $value;
                             }
-                            break;
+                        }
+
+                        if (!empty($rowData)) {
+                            $rows[] = $rowData;
+                            \Log::info('Row ' . $rowIndex . ': ' . implode(', ', $rowData));
                         }
                     }
 
@@ -382,9 +353,8 @@ class ParseTableController extends Controller
                     $debug['table_html'] = $dom->saveHTML($targetTable);
                     $debug['headers_count'] = count($headers);
                     $debug['rows_count'] = count($rows);
-                    $debug['used_selector'] = $usedSelector;
                 } else {
-                    \Log::info('No table found with any selector');
+                    \Log::info('No table found');
                     return response()->json([
                         'success' => false,
                         'message' => "Турнирная таблица не найдена на странице",
