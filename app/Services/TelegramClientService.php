@@ -111,16 +111,22 @@ class TelegramClientService
             // Убираем @ если он есть в начале
             $channelId = ltrim($channelId, '@');
 
-            // Получаем информацию о канале через getInfo
-            $channelInfo = $this->madelineProto->getInfo($channelId);
+            // Получаем информацию о канале через getFullInfo
+            $channelInfo = $this->madelineProto->getFullInfo($channelId);
+
+            if (!$channelInfo || !isset($channelInfo['Chat'])) {
+                throw new \Exception('Не удалось получить информацию о канале');
+            }
+
+            $chat = $channelInfo['Chat'];
 
             return [
-                'id' => $channelInfo['id'],
-                'title' => $channelInfo['title'],
-                'username' => $channelInfo['username'] ?? null,
-                'participants_count' => $channelInfo['participants_count'] ?? null,
-                'description' => $channelInfo['about'] ?? null,
-                'photo' => $channelInfo['photo'] ?? null,
+                'id' => $chat['id'],
+                'title' => $chat['title'],
+                'username' => $chat['username'] ?? null,
+                'participants_count' => $chat['participants_count'] ?? null,
+                'description' => $chat['about'] ?? null,
+                'photo' => $chat['photo'] ?? null,
             ];
         } catch (\Exception $e) {
             Log::error('Ошибка при получении информации о канале: ' . $e->getMessage());
