@@ -136,21 +136,21 @@ class TelegramClientService
                 $channelIdentifier = $channel->username ? '@' . $channel->username : $channel->channel_id;
                 \Log::info('Используем идентификатор канала:', ['channelIdentifier' => $channelIdentifier]);
 
-                // Получаем информацию о канале через getFullInfo
-                $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
-                \Log::info('Получена информация через getFullInfo:', ['fullInfo' => $fullInfo]);
+                // Получаем информацию о канале через getInfo
+                $info = $this->madelineProto->getInfo($channelIdentifier);
+                \Log::info('Получена информация через getInfo:', ['info' => $info]);
 
                 // Проверяем наличие необходимых данных
-                if (!isset($fullInfo['Chat']) || !isset($fullInfo['Chat']['id']) || !isset($fullInfo['Chat']['access_hash'])) {
-                    throw new \Exception('Не удалось получить необходимые данные канала из getFullInfo');
+                if (!isset($info['Chat']) || !isset($info['Chat']['id']) || !isset($info['Chat']['access_hash'])) {
+                    throw new \Exception('Не удалось получить необходимые данные канала из getInfo');
                 }
 
                 // Формируем InputPeer из полученных данных
                 $channelInfo = [
                     'InputPeer' => [
                         '_' => 'inputPeerChannel',
-                        'channel_id' => $fullInfo['Chat']['id'],
-                        'access_hash' => $fullInfo['Chat']['access_hash']
+                        'channel_id' => abs($info['Chat']['id']), // Используем абсолютное значение ID
+                        'access_hash' => $info['Chat']['access_hash']
                     ]
                 ];
 
