@@ -24,7 +24,7 @@ class TelegramClientService
     {
         $this->cachePrefix = 'telegram_parse_';
         $this->sessionPath = storage_path('app/madeline');
-        $this->logPath = public_path('MadelineProto/madeline.log');
+        $this->logPath = storage_path('logs/madeline.log');
 
         // Создаем директорию для сессии, если она не существует
         if (!file_exists($this->sessionPath)) {
