@@ -41,7 +41,7 @@ class TelegramClientService
 
             // Отключаем логирование в MadelineProto
             $logger = new \danog\MadelineProto\Settings\Logger;
-            $logger->setType(\danog\MadelineProto\Logger::LOGGER_NONE);
+            $logger->setType(\danog\MadelineProto\Logger::NOTICE);
             $settings->setLogger($logger);
 
             // Настройки сериализации
