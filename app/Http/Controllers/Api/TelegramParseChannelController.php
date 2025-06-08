@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
 use App\Services\TelegramClientService;
+use Illuminate\Support\Facades\Log;
 
 class TelegramParseChannelController extends Controller
 {
@@ -186,11 +187,19 @@ class TelegramParseChannelController extends Controller
     {
         try {
             $telegramService = app(TelegramClientService::class);
+
+            // Пробуем получить информацию о текущем пользователе
+            $self = $telegramService->getSelf();
+
             return response()->json([
                 'success' => true,
-                'message' => 'Авторизация успешна'
+                'message' => 'Авторизация успешна',
+                'data' => [
+                    'user' => $self
+                ]
             ]);
         } catch (\Exception $e) {
+            Log::error('Ошибка авторизации: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка авторизации',
