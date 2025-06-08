@@ -72,32 +72,46 @@ class TelegramClientService
     public function getSelf()
     {
         try {
-            // Сначала получаем базовую информацию
+            Log::info('Начинаем получение информации о пользователе');
+
+            // Проверяем, что MadelineProto инициализирован
+            if (!$this->madelineProto) {
+                throw new \Exception('MadelineProto не инициализирован');
+            }
+
+            // Пробуем получить информацию о пользователе
             $self = $this->madelineProto->getSelf();
+            Log::info('Получена информация о пользователе:', ['self' => $self]);
 
             if (!$self) {
-                throw new \Exception('Не удалось получить информацию о пользователе');
+                // Если getSelf вернул false, пробуем получить информацию через getFullInfo
+                Log::info('getSelf вернул false, пробуем getFullInfo');
+                $fullInfo = $this->madelineProto->getFullInfo('me');
+                Log::info('Получена полная информация:', ['fullInfo' => $fullInfo]);
+
+                if (!$fullInfo || !isset($fullInfo['User'])) {
+                    throw new \Exception('Не удалось получить информацию о пользователе через getFullInfo');
+                }
+
+                $self = $fullInfo['User'];
             }
 
-            // Пробуем получить дополнительную информацию
-            try {
-                $fullInfo = $this->madelineProto->getFullInfo($self['id']);
-            } catch (\Exception $e) {
-                Log::warning('Не удалось получить полную информацию о пользователе: ' . $e->getMessage());
-                $fullInfo = null;
-            }
-
-            return [
-                'id' => $self['id'],
-                'first_name' => $self['first_name'],
+            // Формируем ответ
+            $result = [
+                'id' => $self['id'] ?? null,
+                'first_name' => $self['first_name'] ?? null,
                 'last_name' => $self['last_name'] ?? null,
                 'username' => $self['username'] ?? null,
                 'phone' => $self['phone'] ?? null,
                 'status' => $self['status'] ?? null,
-                'full_info' => $fullInfo
             ];
+
+            Log::info('Сформирован результат:', ['result' => $result]);
+            return $result;
+
         } catch (\Exception $e) {
             Log::error('Ошибка при получении информации о пользователе: ' . $e->getMessage());
+            Log::error('Трейс ошибки: ' . $e->getTraceAsString());
             throw $e;
         }
     }
