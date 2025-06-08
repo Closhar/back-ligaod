@@ -30,8 +30,16 @@ class TelegramClientService
     {
         try {
             // Создаем директорию для сессии если её нет
-            if (!file_exists(dirname($this->sessionPath))) {
-                mkdir(dirname($this->sessionPath), 0777, true);
+            $sessionDir = dirname($this->sessionPath);
+            if (!file_exists($sessionDir)) {
+                if (!mkdir($sessionDir, 0777, true)) {
+                    throw new \Exception("Не удалось создать директорию для сессии: {$sessionDir}");
+                }
+            }
+
+            // Проверяем права на запись в директорию
+            if (!is_writable($sessionDir)) {
+                chmod($sessionDir, 0777);
             }
 
             // Настройки MadelineProto
@@ -39,8 +47,9 @@ class TelegramClientService
 
             // Настройки логгера
             $logger = new Logger;
-            $logger->setLevel(3); // 3 = NOTICE level
-            $logger->setExtra(storage_path('madeline/madeline.log'));
+            $logger->setLevel(3); // 3 = WARNING level
+            $logPath = storage_path('logs/madeline.log');
+            $logger->setExtra($logPath);
             $settings->setLogger($logger);
 
             // Настройки приложения
