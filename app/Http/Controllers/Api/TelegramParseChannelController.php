@@ -270,14 +270,64 @@ class TelegramParseChannelController extends Controller
                 ], 422);
             }
 
+            \Log::info('Начало тестирования получения сообщений', [
+                'channel_id' => $request->channel_id
+            ]);
+
             $telegramService = app(TelegramClientService::class);
-            $results = $telegramService->testChannelMessages($request->channel_id);
+
+            // Сначала проверим авторизацию
+            try {
+                $self = $telegramService->madelineProto->getSelf();
+                \Log::info('Информация о текущем пользователе:', ['self' => $self]);
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при получении информации о пользователе: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка авторизации в Telegram',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            // Получаем информацию о канале
+            try {
+                $channelInfo = $telegramService->madelineProto->getInfo($request->channel_id);
+                \Log::info('Информация о канале:', ['info' => $channelInfo]);
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при получении информации о канале: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка при получении информации о канале',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            // Пробуем получить сообщения
+            try {
+                $messages = $telegramService->madelineProto->channels->getMessages([
+                    'channel' => $request->channel_id,
+                    'id' => [0]
+                ]);
+                \Log::info('Получены сообщения:', ['messages' => $messages]);
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка при получении сообщений',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
 
             return response()->json([
                 'success' => true,
-                'data' => $results
+                'data' => [
+                    'channel_info' => $channelInfo,
+                    'messages' => $messages
+                ]
             ]);
+
         } catch (\Exception $e) {
+            \Log::error('Общая ошибка: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при тестировании',

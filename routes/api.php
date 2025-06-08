@@ -298,5 +298,7 @@ Route::prefix('telegram-parse-channels')->group(function () {
     Route::get('/test-auth', [TelegramParseChannelController::class, 'testAuth']);
 });
 
+Route::get('test-telegram', [TelegramParseChannelController::class, 'testMessages']);
+
 
 
