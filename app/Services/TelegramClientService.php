@@ -45,11 +45,9 @@ class TelegramClientService
             // Настройки MadelineProto
             $settings = new Settings;
 
-            // Настройки логгера
+            // Настройки логгера - отключаем файловое логирование
             $logger = new Logger;
             $logger->setLevel(3); // 3 = WARNING level
-            $logPath = storage_path('logs/madeline.log');
-            $logger->setExtra($logPath);
             $settings->setLogger($logger);
 
             // Настройки приложения
