@@ -164,99 +164,79 @@ Route::prefix('telegram')->group(function () {
 });
 
 // ChatGPT
-    // Маршруты для работы с телеграм
-    Route::prefix('telegram')->middleware('api')->group(function () {
-        Route::apiResource('channels', TelegramController::class);
-        Route::post('/send', [TelegramController::class, 'sendMessage']);
-        Route::get('/test-auth', [TelegramParseChannelController::class, 'testAuth']);
-        Route::get('/parse-channels/{id}/check', [TelegramParseChannelController::class, 'checkChannel']);
-        Route::get('/parse-channels/{id}', [TelegramParseChannelController::class, 'show']);
+Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
+Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
 
-        // Маршруты для получения сообщений
-        Route::get('messages/fetch', [TelegramMessageController::class, 'fetchMessages']);
-        Route::post('messages/fetch', [TelegramMessageController::class, 'fetchMessages']);
+// Парсинг
+Route::post('/parse-tables/parse', [ParseTableController::class, 'parse']);
 
-        // Маршруты для управления каналами парсинга
-        Route::get('parse-channels', [TelegramParseChannelController::class, 'index']);
-        Route::post('parse-channels', [TelegramParseChannelController::class, 'store']);
-        Route::put('parse-channels/{id}', [TelegramParseChannelController::class, 'update']);
-        Route::delete('parse-channels/{id}', [TelegramParseChannelController::class, 'destroy']);
-    });
+// Админка
+Route::apiResource('parse-tables', \App\Http\Controllers\Admin\Data\ParseTableController::class);
+Route::apiResource('parse-table-contents', \App\Http\Controllers\Admin\Data\ParseTableContentController::class);
 
-    // ChatGPT
-    Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
-    Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
+Route::apiResource('events', EventController::class);
+Route::get('events/{id}/check-field', [EventController::class, 'checkField']);
+Route::get('events/{id}/check-freshness', [EventController::class, 'checkFieldFreshness']);
+Route::post('events/{id}/upload-image', [EventController::class, 'uploadImage']);
+Route::delete('events/{id}/image', [EventController::class, 'destroyImage']);
+Route::post('events/{id}/delete-image', [EventController::class, 'deleteImage']);
 
-    // Парсинг
-    Route::post('/parse-tables/parse', [ParseTableController::class, 'parse']);
+Route::apiResource('sports', SportController::class);
+Route::post('sports/{id}/upload-image', [SportController::class, 'uploadImage']);
+Route::delete('sports/{id}/image', [SportController::class, 'destroyImage']);
+Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage']);
 
-    // Админка
-    Route::apiResource('parse-tables', \App\Http\Controllers\Admin\Data\ParseTableController::class);
-    Route::apiResource('parse-table-contents', \App\Http\Controllers\Admin\Data\ParseTableContentController::class);
+Route::apiResource('competitions', CompetitionController::class);
+Route::post('competitions/{id}/upload-image', [CompetitionController::class, 'uploadImage']);
+Route::delete('competitions/{id}/image', [CompetitionController::class, 'destroyImage']);
+Route::post('competitions/{id}/delete-image', [CompetitionController::class, 'deleteImage']);
 
-    Route::apiResource('events', EventController::class);
-    Route::get('events/{id}/check-field', [EventController::class, 'checkField']);
-    Route::get('events/{id}/check-freshness', [EventController::class, 'checkFieldFreshness']);
-    Route::post('events/{id}/upload-image', [EventController::class, 'uploadImage']);
-    Route::delete('events/{id}/image', [EventController::class, 'destroyImage']);
-    Route::post('events/{id}/delete-image', [EventController::class, 'deleteImage']);
-
-    Route::apiResource('sports', SportController::class);
-    Route::post('sports/{id}/upload-image', [SportController::class, 'uploadImage']);
-    Route::delete('sports/{id}/image', [SportController::class, 'destroyImage']);
-    Route::post('sports/{id}/delete-image', [SportController::class, 'deleteImage']);
-
-    Route::apiResource('competitions', CompetitionController::class);
-    Route::post('competitions/{id}/upload-image', [CompetitionController::class, 'uploadImage']);
-    Route::delete('competitions/{id}/image', [CompetitionController::class, 'destroyImage']);
-    Route::post('competitions/{id}/delete-image', [CompetitionController::class, 'deleteImage']);
-
-    Route::apiResource('images', ImageController::class);
-    Route::post('images/{id}/upload-image', [ImageController::class, 'uploadImage']);
-    Route::delete('images/{id}/image', [ImageController::class, 'destroyImage']);
-    Route::post('images/{id}/delete-image', [ImageController::class, 'deleteImage']);
+Route::apiResource('images', ImageController::class);
+Route::post('images/{id}/upload-image', [ImageController::class, 'uploadImage']);
+Route::delete('images/{id}/image', [ImageController::class, 'destroyImage']);
+Route::post('images/{id}/delete-image', [ImageController::class, 'deleteImage']);
 
 
-    Route::apiResource('cities', CityController::class);
-    Route::apiResource('sport_properties', SportPropertyController::class);
-    Route::apiResource('regions', \App\Http\Controllers\Admin\Data\RegionController::class);
-    Route::apiResource('series', \App\Http\Controllers\Admin\Data\SeriesController::class);
-    Route::apiResource('series-types', \App\Http\Controllers\Admin\Data\SeriesTypeController::class);
+Route::apiResource('cities', CityController::class);
+Route::apiResource('sport_properties', SportPropertyController::class);
+Route::apiResource('regions', \App\Http\Controllers\Admin\Data\RegionController::class);
+Route::apiResource('series', \App\Http\Controllers\Admin\Data\SeriesController::class);
+Route::apiResource('series-types', \App\Http\Controllers\Admin\Data\SeriesTypeController::class);
 
-    Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
-    Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
-    Route::post('events/{event}/swap-fields', [EventController::class, 'swapFields']);
-    Route::post('relations/detach', [EventStreamController::class, 'detach']);
+Route::get('events/{event}/streams', [EventStreamController::class, 'index']);
+Route::post('events/{event}/streams', [EventStreamController::class, 'store']);
+Route::post('events/{event}/swap-fields', [EventController::class, 'swapFields']);
+Route::post('relations/detach', [EventStreamController::class, 'detach']);
 
-    Route::get('events/{id}/rel-value', [EventController::class, 'getRelValue']);
-    Route::post('events/{id}/rel-value', [EventController::class, 'updateRelValue']);
-    Route::post('events/bulk-delete', [EventController::class, 'bulkDelete'])->name('events.bulk-delete');
+Route::get('events/{id}/rel-value', [EventController::class, 'getRelValue']);
+Route::post('events/{id}/rel-value', [EventController::class, 'updateRelValue']);
+Route::post('events/bulk-delete', [EventController::class, 'bulkDelete'])->name('events.bulk-delete');
 
 
-    Route::apiResource('streams', StreamController::class);
-    Route::apiResource('stream-hints', StreamHintController::class);
-    Route::apiResource('genders', GenderController::class);
-    Route::apiResource('arenas', ArenaController::class);
-    Route::post('arenas/{id}/upload-image', [ArenaController::class, 'uploadImage']);
-    Route::delete('arenas/{id}/image', [ArenaController::class, 'destroyImage']);
-    Route::post('arenas/{id}/delete-image', [ArenaController::class, 'deleteImage']);
+Route::apiResource('streams', StreamController::class);
+Route::apiResource('stream-hints', StreamHintController::class);
+Route::apiResource('genders', GenderController::class);
+Route::apiResource('arenas', ArenaController::class);
+Route::post('arenas/{id}/upload-image', [ArenaController::class, 'uploadImage']);
+Route::delete('arenas/{id}/image', [ArenaController::class, 'destroyImage']);
+Route::post('arenas/{id}/delete-image', [ArenaController::class, 'deleteImage']);
 
-    Route::apiResource('articles', ArticleController::class);
-    Route::post('articles/{id}/upload-image', [ArticleController::class, 'uploadImage']);
-    Route::delete('articles/{id}/image', [ArticleController::class, 'destroyImage']);
-    Route::post('articles/{id}/delete-image', [ArticleController::class, 'deleteImage']);
+Route::apiResource('articles', ArticleController::class);
+Route::post('articles/{id}/upload-image', [ArticleController::class, 'uploadImage']);
+Route::delete('articles/{id}/image', [ArticleController::class, 'destroyImage']);
+Route::post('articles/{id}/delete-image', [ArticleController::class, 'deleteImage']);
 
-    Route::apiResource('galleries', GalleryController::class);
-    Route::post('galleries/{id}/upload-image', [GalleryController::class, 'uploadImage']);
-    Route::delete('galleries/{id}/image', [GalleryController::class, 'destroyImage']);
-    Route::post('galleries/{id}/delete-image', [GalleryController::class, 'deleteImage']);
+Route::apiResource('galleries', GalleryController::class);
+Route::post('galleries/{id}/upload-image', [GalleryController::class, 'uploadImage']);
+Route::delete('galleries/{id}/image', [GalleryController::class, 'destroyImage']);
+Route::post('galleries/{id}/delete-image', [GalleryController::class, 'deleteImage']);
 
-    Route::apiResource('videos', VideoController::class);
+Route::apiResource('videos', VideoController::class);
 
-    Route::apiResource('clubs', ClubController::class);
-    Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
-    Route::delete('clubs/{id}/image', [ClubController::class, 'destroyImage']);
-    Route::post('clubs/{id}/delete-image', [ClubController::class, 'deleteImage']);
+Route::apiResource('clubs', ClubController::class);
+Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
+Route::delete('clubs/{id}/image', [ClubController::class, 'destroyImage']);
+Route::post('clubs/{id}/delete-image', [ClubController::class, 'deleteImage']);
 
 Route::get('/sanctum/csrf-cookie', function (Request $request) {
     return response()->noContent();
