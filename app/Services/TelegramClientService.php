@@ -127,38 +127,28 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Формируем InputChannel для канала
-            $inputChannel = [
-                '_' => 'inputChannel',
+            // Формируем InputPeer для канала
+            $inputPeer = [
+                '_' => 'inputPeerChannel',
                 'channel_id' => intval(str_replace('-100', '', $channel->channel_id)),
                 'access_hash' => 0
             ];
 
-            \Log::info('Используем inputChannel:', ['inputChannel' => $inputChannel]);
+            \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
 
-            // Получаем информацию о канале
+            // Получаем полную информацию о канале
             try {
-                $channels = $this->madelineProto->channels->getChannels([
-                    'id' => [$inputChannel]
-                ]);
-                \Log::info('Получена информация о канале:', ['channels' => $channels]);
+                $fullInfo = $this->madelineProto->getFullInfo($inputPeer);
+                \Log::info('Получена полная информация о канале:', ['fullInfo' => $fullInfo]);
 
-                if (empty($channels['chats'])) {
-                    throw new \Exception('Канал не найден');
-                }
-
-                $chat = $channels['chats'][0];
-                \Log::info('Найден чат:', ['chat' => $chat]);
-
-                // Обновляем access_hash
-                if (isset($chat['access_hash'])) {
-                    $inputChannel['access_hash'] = $chat['access_hash'];
-                    \Log::info('Обновлен access_hash:', ['access_hash' => $inputChannel['access_hash']]);
+                if (isset($fullInfo['full']['access_hash'])) {
+                    $inputPeer['access_hash'] = $fullInfo['full']['access_hash'];
+                    \Log::info('Обновлен access_hash:', ['access_hash' => $inputPeer['access_hash']]);
                 }
 
                 // Получаем сообщения
                 $messages = $this->madelineProto->messages->getHistory([
-                    'peer' => $inputChannel,
+                    'peer' => $inputPeer,
                     'offset_id' => 0,
                     'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
                     'add_offset' => 0,
