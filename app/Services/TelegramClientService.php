@@ -9,6 +9,7 @@ use danog\MadelineProto\Settings;
 use danog\MadelineProto\Settings\Connection;
 use danog\MadelineProto\Settings\Logger;
 use danog\MadelineProto\Settings\AppInfo;
+use danog\MadelineProto\Logger as MadelineLogger;
 
 class TelegramClientService
 {
@@ -45,9 +46,29 @@ class TelegramClientService
             // Настройки MadelineProto
             $settings = new Settings;
 
-            // Настройки логгера - отключаем файловое логирование
+            // Настройки логгера - используем кастомный логгер
             $logger = new Logger;
             $logger->setLevel(3); // 3 = WARNING level
+            $logger->setType(MadelineLogger::LOGGER_CALLABLE);
+            $logger->setExtra(function($message, $level) {
+                switch ($level) {
+                    case MadelineLogger::VERBOSE:
+                        Log::debug($message);
+                        break;
+                    case MadelineLogger::NOTICE:
+                        Log::info($message);
+                        break;
+                    case MadelineLogger::WARNING:
+                        Log::warning($message);
+                        break;
+                    case MadelineLogger::ERROR:
+                        Log::error($message);
+                        break;
+                    case MadelineLogger::FATAL_ERROR:
+                        Log::critical($message);
+                        break;
+                }
+            });
             $settings->setLogger($logger);
 
             // Настройки приложения
