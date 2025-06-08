@@ -138,6 +138,9 @@ Route::apiResource('admin-pages', AdminPageController::class);
     Route::prefix('telegram')->middleware('api')->group(function () {
         Route::apiResource('channels', TelegramController::class);
         Route::post('/send', [TelegramController::class, 'sendMessage']);
+
+        // Маршруты для получения сообщений
+        Route::get('messages/fetch', [TelegramMessageController::class, 'fetchMessages']);
         Route::post('messages/fetch', [TelegramMessageController::class, 'fetchMessages']);
 
         // Маршруты для управления каналами парсинга

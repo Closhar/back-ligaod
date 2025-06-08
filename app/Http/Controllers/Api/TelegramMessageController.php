@@ -27,15 +27,29 @@ class TelegramMessageController extends Controller
             'channel_id' => 'required|exists:telegram_channels,id',
             'date_from' => 'required|date',
             'limit' => 'nullable|integer|min:1|max:100'
+        ], [
+            'channel_id.required' => 'ID канала обязателен для заполнения',
+            'channel_id.exists' => 'Канал с указанным ID не найден',
+            'date_from.required' => 'Дата начала обязательна для заполнения',
+            'date_from.date' => 'Неверный формат даты',
+            'limit.integer' => 'Лимит должен быть целым числом',
+            'limit.min' => 'Лимит должен быть не менее 1',
+            'limit.max' => 'Лимит не может быть более 100'
         ]);
 
         if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка валидации',
+                'errors' => collect($validator->errors())->map(function ($errors) {
+                    return $errors[0];
+                })->toArray()
+            ], 422);
         }
 
-        $channel = TelegramChannel::findOrFail($request->channel_id);
-
         try {
+            $channel = TelegramChannel::findOrFail($request->channel_id);
+
             // Получаем сообщения через Telegram Client API
             $messages = $this->telegramClientService->getChannelMessages(
                 $channel->username ?? $channel->chat_id,
@@ -52,10 +66,10 @@ class TelegramMessageController extends Controller
                         'message_id' => $message['message_id']
                     ],
                     [
-                        'content' => $message['text'],
-                        'media' => $message['media'],
+                        'content' => $message['text'] ?? null,
+                        'media' => $message['media'] ?? null,
                         'message_date' => $message['date'],
-                        'raw_data' => $message['raw_data']
+                        'raw_data' => $message['raw_data'] ?? $message
                     ]
                 );
                 $savedMessages[] = $savedMessage;
@@ -68,13 +82,20 @@ class TelegramMessageController extends Controller
                 'success' => true,
                 'data' => [
                     'messages' => $savedMessages,
-                    'total' => count($savedMessages)
+                    'total' => count($savedMessages),
+                    'channel' => [
+                        'id' => $channel->id,
+                        'title' => $channel->title,
+                        'username' => $channel->username
+                    ]
                 ]
             ]);
         } catch (\Exception $e) {
+            \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при получении сообщений: ' . $e->getMessage()
+                'message' => 'Ошибка при получении сообщений',
+                'error' => $e->getMessage()
             ], 500);
         }
     }
