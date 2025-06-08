@@ -140,6 +140,7 @@ Route::apiResource('admin-pages', AdminPageController::class);
         Route::post('/send', [TelegramController::class, 'sendMessage']);
         Route::get('/test-auth', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'testAuth']);
         Route::get('/parse-channels/{id}/check', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'checkChannel']);
+        Route::get('/parse-channels/{id}', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'show']);
 
         // Маршруты для получения сообщений
         Route::get('messages/fetch', [App\Http\Controllers\Api\TelegramMessageController::class, 'fetchMessages']);

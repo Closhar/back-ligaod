@@ -223,4 +223,24 @@ class TelegramParseChannelController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Получить информацию о канале
+     */
+    public function show($id)
+    {
+        try {
+            $channel = TelegramParseChannel::findOrFail($id);
+            return response()->json([
+                'success' => true,
+                'data' => $channel
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Не удалось получить информацию о канале',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }
