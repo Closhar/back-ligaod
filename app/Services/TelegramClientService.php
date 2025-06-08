@@ -140,6 +140,21 @@ class TelegramClientService
                     throw new \Exception('Указанный username не является каналом');
                 }
 
+                // Проверяем наличие access_hash
+                if (!isset($fullInfo['access_hash'])) {
+                    \Log::warning('Access hash не найден в fullInfo, пробуем получить через getInfo');
+
+                    // Пробуем получить через getInfo
+                    $info = $this->madelineProto->getInfo($channel->username);
+                    \Log::info('Получена информация через getInfo:', ['info' => $info]);
+
+                    if (!isset($info['access_hash'])) {
+                        throw new \Exception('Не удалось получить access_hash для канала');
+                    }
+
+                    $fullInfo['access_hash'] = $info['access_hash'];
+                }
+
                 // Формируем InputPeer для канала
                 $inputPeer = [
                     '_' => 'inputPeerChannel',
