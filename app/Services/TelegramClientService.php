@@ -127,24 +127,28 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Форматируем идентификатор канала
-            $channelIdentifier = $channel->username ? '@' . ltrim($channel->username, '@') : $channel->channel_id;
-            \Log::info('Используем идентификатор канала:', ['identifier' => $channelIdentifier]);
+            if (empty($channel->username)) {
+                throw new \Exception('Username канала не указан');
+            }
 
-            // Получаем информацию о канале через getFullInfo
+            // Формируем полный URL канала
+            $channelUrl = "https://t.me/" . ltrim($channel->username, '@');
+            \Log::info('Используем URL канала:', ['url' => $channelUrl]);
+
+            // Получаем информацию о канале через getPwrChat
             try {
-                $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
-                \Log::info('Получена информация о канале:', ['fullInfo' => $fullInfo]);
+                $chat = $this->madelineProto->getPwrChat($channelUrl);
+                \Log::info('Получена информация о канале:', ['chat' => $chat]);
 
-                if (!isset($fullInfo['Chat']) || $fullInfo['Chat']['_'] !== 'channel') {
-                    throw new \Exception('Указанный идентификатор не является каналом');
+                if (!isset($chat['type']) || $chat['type'] !== 'channel') {
+                    throw new \Exception('Указанный URL не является каналом');
                 }
 
                 // Формируем InputPeer для канала
                 $inputPeer = [
                     '_' => 'inputPeerChannel',
-                    'channel_id' => $fullInfo['Chat']['id'],
-                    'access_hash' => $fullInfo['Chat']['access_hash']
+                    'channel_id' => $chat['id'],
+                    'access_hash' => $chat['access_hash']
                 ];
 
                 \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
