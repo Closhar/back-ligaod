@@ -127,31 +127,22 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Форматируем ID канала
-            $channelId = ltrim($channel->channel_id, '-100');
-            \Log::info('Используем ID канала:', ['channelId' => $channelId]);
-
             try {
-                // Получаем информацию о канале через getPwrChat
-                $channelInfo = $this->madelineProto->getPwrChat($channel->channel_id);
+                // Формируем идентификатор канала
+                $channelIdentifier = $channel->username ? '@' . $channel->username : $channel->channel_id;
+                \Log::info('Используем идентификатор канала:', ['channelIdentifier' => $channelIdentifier]);
+
+                // Получаем информацию о канале через getInfo
+                $channelInfo = $this->madelineProto->getInfo($channelIdentifier);
                 \Log::info('Получена информация о канале:', ['channelInfo' => $channelInfo]);
 
-                if (!isset($channelInfo['id']) || !isset($channelInfo['access_hash'])) {
-                    throw new \Exception('Отсутствуют необходимые данные канала (id или access_hash)');
+                if (!isset($channelInfo['InputPeer'])) {
+                    throw new \Exception('Не удалось получить информацию о канале');
                 }
-
-                // Формируем InputPeer для канала
-                $inputPeer = [
-                    '_' => 'inputPeerChannel',
-                    'channel_id' => $channelInfo['id'],
-                    'access_hash' => $channelInfo['access_hash']
-                ];
-
-                \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
 
                 // Получаем сообщения
                 $messages = $this->madelineProto->messages->getHistory([
-                    'peer' => $inputPeer,
+                    'peer' => $channelInfo['InputPeer'],
                     'offset_id' => 0,
                     'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
                     'add_offset' => 0,
