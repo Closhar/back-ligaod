@@ -23,48 +23,57 @@ class TelegramClientService
 
     public function __construct()
     {
-        $this->cachePrefix = 'telegram_parse_';
-        $this->sessionPath = storage_path('app/madeline');
-        $this->logPath = public_path('MadelineProto.log');
-
-        // Создаем директорию для сессии, если она не существует
-        if (!file_exists($this->sessionPath)) {
-            mkdir($this->sessionPath, 0777, true);
-        }
-
-        // Создаем файл логов, если он не существует
-        if (!file_exists($this->logPath)) {
-            touch($this->logPath);
-            chmod($this->logPath, 0666);
-        }
-
         try {
-            $settings = new \danog\MadelineProto\Settings;
+            // Определяем пути
+            $this->sessionPath = storage_path('madeline');
+            $this->logPath = storage_path('madeline/madeline.log');
 
-            // Настройки приложения
-            $appInfo = new \danog\MadelineProto\Settings\AppInfo;
-            $appInfo->setApiId((int)config('services.telegram.api_id'));
-            $appInfo->setApiHash(config('services.telegram.api_hash'));
-            $settings->setAppInfo($appInfo);
+            // Проверяем и создаем директорию если нужно
+            if (!is_dir($this->sessionPath)) {
+                if (!mkdir($this->sessionPath, 0777, true)) {
+                    throw new \Exception("Не удалось создать директорию: {$this->sessionPath}");
+                }
+            }
 
-            // Настройки логгера
-            $logger = new \danog\MadelineProto\Settings\Logger;
-            $logger->setType(\danog\MadelineProto\Logger::FILE_LOGGER);
-            $logger->setLevel(\danog\MadelineProto\Logger::NOTICE);
-            $logger->setExtra($this->logPath);
-            $settings->setLogger($logger);
+            // Проверяем права на запись
+            if (!is_writable($this->sessionPath)) {
+                throw new \Exception("Нет прав на запись в директорию: {$this->sessionPath}");
+            }
 
-            // Настройки сериализации
-            $serialization = new \danog\MadelineProto\Settings\Serialization;
-            $serialization->setInterval(30);
-            $settings->setSerialization($serialization);
+            // Настройки MadelineProto
+            $settings = [
+                'app_info' => [
+                    'api_id' => config('services.telegram.api_id'),
+                    'api_hash' => config('services.telegram.api_hash'),
+                ],
+                'logger' => [
+                    'logger' => \danog\MadelineProto\Logger::FILE_LOGGER,
+                    'logger_level' => \danog\MadelineProto\Logger::VERBOSE,
+                    'logger' => $this->logPath,
+                ],
+                'serialization' => [
+                    'serialization_interval' => 30,
+                    'cleanup_before_serialization' => true,
+                ],
+            ];
 
-            $this->madelineProto = new \danog\MadelineProto\API($this->sessionPath . '/session.madeline', $settings);
+            // Путь к файлу сессии
+            $sessionFile = $this->sessionPath . '/madeline.madeline';
 
-            // Выполняем авторизацию
-            $this->login();
+            // Инициализация MadelineProto
+            $this->madelineProto = new \danog\MadelineProto\API($sessionFile, $settings);
+
+            \Log::info('MadelineProto успешно инициализирован', [
+                'session_path' => $this->sessionPath,
+                'log_path' => $this->logPath,
+                'session_file' => $sessionFile
+            ]);
+
         } catch (\Exception $e) {
-            Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage());
+            \Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage(), [
+                'session_path' => $this->sessionPath ?? 'не определен',
+                'log_path' => $this->logPath ?? 'не определен'
+            ]);
             throw $e;
         }
     }

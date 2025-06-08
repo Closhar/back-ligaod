@@ -34,6 +34,7 @@ use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TelegramMessageController;
+use App\Http\Controllers\Api\TelegramParseChannelController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -138,19 +139,19 @@ Route::apiResource('admin-pages', AdminPageController::class);
     Route::prefix('telegram')->middleware('api')->group(function () {
         Route::apiResource('channels', TelegramController::class);
         Route::post('/send', [TelegramController::class, 'sendMessage']);
-        Route::get('/test-auth', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'testAuth']);
-        Route::get('/parse-channels/{id}/check', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'checkChannel']);
-        Route::get('/parse-channels/{id}', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'show']);
+        Route::get('/test-auth', [TelegramParseChannelController::class, 'testAuth']);
+        Route::get('/parse-channels/{id}/check', [TelegramParseChannelController::class, 'checkChannel']);
+        Route::get('/parse-channels/{id}', [TelegramParseChannelController::class, 'show']);
 
         // Маршруты для получения сообщений
-        Route::get('messages/fetch', [App\Http\Controllers\Api\TelegramMessageController::class, 'fetchMessages']);
-        Route::post('messages/fetch', [App\Http\Controllers\Api\TelegramMessageController::class, 'fetchMessages']);
+        Route::get('messages/fetch', [TelegramMessageController::class, 'fetchMessages']);
+        Route::post('messages/fetch', [TelegramMessageController::class, 'fetchMessages']);
 
         // Маршруты для управления каналами парсинга
-        Route::get('parse-channels', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'index']);
-        Route::post('parse-channels', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'store']);
-        Route::put('parse-channels/{id}', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'update']);
-        Route::delete('parse-channels/{id}', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'destroy']);
+        Route::get('parse-channels', [TelegramParseChannelController::class, 'index']);
+        Route::post('parse-channels', [TelegramParseChannelController::class, 'store']);
+        Route::put('parse-channels/{id}', [TelegramParseChannelController::class, 'update']);
+        Route::delete('parse-channels/{id}', [TelegramParseChannelController::class, 'destroy']);
     });
 
     // ChatGPT

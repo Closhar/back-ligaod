@@ -278,7 +278,7 @@ class TelegramParseChannelController extends Controller
 
             // Сначала проверим авторизацию
             try {
-                $self = $telegramService->madelineProto->getSelf();
+                $self = $telegramService->getSelf();
                 \Log::info('Информация о текущем пользователе:', ['self' => $self]);
             } catch (\Exception $e) {
                 \Log::error('Ошибка при получении информации о пользователе: ' . $e->getMessage());
@@ -291,7 +291,7 @@ class TelegramParseChannelController extends Controller
 
             // Получаем информацию о канале
             try {
-                $channelInfo = $telegramService->madelineProto->getInfo($request->channel_id);
+                $channelInfo = $telegramService->getChannelInfo($request->channel_id);
                 \Log::info('Информация о канале:', ['info' => $channelInfo]);
             } catch (\Exception $e) {
                 \Log::error('Ошибка при получении информации о канале: ' . $e->getMessage());
@@ -304,10 +304,7 @@ class TelegramParseChannelController extends Controller
 
             // Пробуем получить сообщения
             try {
-                $messages = $telegramService->madelineProto->channels->getMessages([
-                    'channel' => $request->channel_id,
-                    'id' => [0]
-                ]);
+                $messages = $telegramService->getChannelMessages($request->channel_id, null, 1);
                 \Log::info('Получены сообщения:', ['messages' => $messages]);
             } catch (\Exception $e) {
                 \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
