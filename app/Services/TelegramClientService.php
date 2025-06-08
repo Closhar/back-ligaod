@@ -133,24 +133,7 @@ class TelegramClientService
                 $self = $this->madelineProto->getSelf();
                 \Log::info('Информация о текущем пользователе:', ['self' => $self]);
 
-                // Получаем информацию о канале через getPwrChat
-                $pwrChat = $this->madelineProto->getPwrChat($channel->channel_id);
-                \Log::info('Получена информация через getPwrChat:', ['pwrChat' => $pwrChat]);
-
-                // Проверяем структуру данных
-                if (!isset($pwrChat['id']) || !isset($pwrChat['type']) || $pwrChat['type'] !== 'channel') {
-                    \Log::error('Неверная структура данных канала или тип не channel');
-                    throw new \Exception('Неверная структура данных канала');
-                }
-
-                \Log::info('Информация о канале:', [
-                    'id' => $pwrChat['id'],
-                    'type' => $pwrChat['type'],
-                    'title' => $pwrChat['title'] ?? 'unknown',
-                    'username' => $pwrChat['username'] ?? 'unknown'
-                ]);
-
-                // Получаем дополнительную информацию через getInfo для получения access_hash
+                // Получаем информацию о канале через getInfo
                 $info = $this->madelineProto->getInfo($channel->channel_id);
                 \Log::info('Получена информация через getInfo:', ['info' => $info]);
 
@@ -162,7 +145,7 @@ class TelegramClientService
                 // Формируем InputPeerChannel
                 $inputPeer = [
                     '_' => 'inputPeerChannel',
-                    'channel_id' => abs($pwrChat['id']),
+                    'channel_id' => abs($info['Chat']['id']),
                     'access_hash' => $info['Chat']['access_hash']
                 ];
 
