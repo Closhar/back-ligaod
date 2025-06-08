@@ -188,4 +188,37 @@ class TelegramParseChannelController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Проверка информации о канале
+     */
+    public function checkChannel($id)
+    {
+        try {
+            $channel = TelegramParseChannel::findOrFail($id);
+            $telegramService = app(TelegramClientService::class);
+
+            // Получаем информацию о канале
+            $channelInfo = $telegramService->getChannelInfo($channel->channel_id);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'channel' => [
+                        'id' => $channel->id,
+                        'title' => $channel->title,
+                        'username' => $channel->username,
+                        'channel_id' => $channel->channel_id
+                    ],
+                    'telegram_info' => $channelInfo
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при проверке канала',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

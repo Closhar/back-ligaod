@@ -247,4 +247,65 @@ class TelegramClientService
 
         return null;
     }
+
+    /**
+     * Получение информации о канале
+     */
+    public function getChannelInfo($channel)
+    {
+        try {
+            // Форматируем идентификатор канала
+            $channelId = $channel;
+            if (!str_starts_with($channel, '-100') && !str_starts_with($channel, '@')) {
+                $channelId = '@' . $channel;
+            }
+
+            Log::info('Попытка получения информации о канале: ' . $channelId);
+
+            // Пробуем получить информацию через getPwrChat
+            try {
+                $peer = $this->madelineProto->getPwrChat($channelId);
+                Log::info('Получена информация через getPwrChat: ' . json_encode($peer));
+                return [
+                    'type' => 'getPwrChat',
+                    'data' => $peer
+                ];
+            } catch (\Exception $e) {
+                Log::info('Ошибка getPwrChat: ' . $e->getMessage());
+            }
+
+            // Пробуем получить информацию через channels.getFullChannel
+            try {
+                $fullChannel = $this->madelineProto->channels->getFullChannel([
+                    'channel' => $channelId
+                ]);
+                Log::info('Получена информация через getFullChannel: ' . json_encode($fullChannel));
+                return [
+                    'type' => 'getFullChannel',
+                    'data' => $fullChannel
+                ];
+            } catch (\Exception $e) {
+                Log::info('Ошибка getFullChannel: ' . $e->getMessage());
+            }
+
+            // Пробуем получить информацию через channels.getChannels
+            try {
+                $channels = $this->madelineProto->channels->getChannels([
+                    'id' => [$channelId]
+                ]);
+                Log::info('Получена информация через getChannels: ' . json_encode($channels));
+                return [
+                    'type' => 'getChannels',
+                    'data' => $channels
+                ];
+            } catch (\Exception $e) {
+                Log::info('Ошибка getChannels: ' . $e->getMessage());
+            }
+
+            throw new \Exception('Не удалось получить информацию о канале ни одним из методов');
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения информации о канале: ' . $e->getMessage());
+            throw $e;
+        }
+    }
 }
