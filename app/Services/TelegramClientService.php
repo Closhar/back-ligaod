@@ -136,20 +136,29 @@ class TelegramClientService
                 $channelIdentifier = $channel->username ? '@' . $channel->username : $channel->channel_id;
                 \Log::info('Используем идентификатор канала:', ['channelIdentifier' => $channelIdentifier]);
 
-                // Получаем информацию о канале через getPwrChat
-                $pwrChat = $this->madelineProto->getPwrChat($channelIdentifier);
-                \Log::info('Получена информация через getPwrChat:', ['pwrChat' => $pwrChat]);
+                // Получаем информацию о канале через getFullInfo
+                $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
+                \Log::info('Получена информация через getFullInfo:', ['fullInfo' => $fullInfo]);
 
                 // Проверяем наличие необходимых данных
-                if (!isset($pwrChat['InputPeer'])) {
-                    throw new \Exception('Не удалось получить InputPeer из getPwrChat');
+                if (!isset($fullInfo['Chat']) || !isset($fullInfo['Chat']['id']) || !isset($fullInfo['Chat']['access_hash'])) {
+                    throw new \Exception('Не удалось получить необходимые данные канала из getFullInfo');
                 }
 
-                \Log::info('Используем InputPeer для получения сообщений:', ['InputPeer' => $pwrChat['InputPeer']]);
+                // Формируем InputPeer из полученных данных
+                $channelInfo = [
+                    'InputPeer' => [
+                        '_' => 'inputPeerChannel',
+                        'channel_id' => $fullInfo['Chat']['id'],
+                        'access_hash' => $fullInfo['Chat']['access_hash']
+                    ]
+                ];
+
+                \Log::info('Используем InputPeer для получения сообщений:', ['InputPeer' => $channelInfo['InputPeer']]);
 
                 // Получаем сообщения
                 $messages = $this->madelineProto->messages->getHistory([
-                    'peer' => $pwrChat['InputPeer'],
+                    'peer' => $channelInfo['InputPeer'],
                     'offset_id' => 0,
                     'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
                     'add_offset' => 0,
