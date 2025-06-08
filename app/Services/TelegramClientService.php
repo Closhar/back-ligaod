@@ -39,7 +39,7 @@ class TelegramClientService
 
             // Настройки логгера
             $logger = new Logger;
-            $logger->setLevel(Logger::LOGGER_NOTICE);
+            $logger->setLevel(3); // 3 = NOTICE level
             $logger->setExtra(storage_path('madeline/madeline.log'));
             $settings->setLogger($logger);
 
