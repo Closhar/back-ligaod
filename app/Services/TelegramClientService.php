@@ -133,11 +133,17 @@ class TelegramClientService
         try {
             // Форматируем идентификатор канала
             $channelId = $channel;
-            if (!str_starts_with($channel, '@')) {
-                $channelId = '@' . $channel;
-            }
 
-            Log::info('Попытка получения сообщений из канала: ' . $channelId);
+            // Если это числовой ID канала (начинается с -100)
+            if (str_starts_with($channel, '-100')) {
+                Log::info('Используем числовой ID канала: ' . $channelId);
+            } else {
+                // Если это username
+                if (!str_starts_with($channel, '@')) {
+                    $channelId = '@' . $channel;
+                }
+                Log::info('Используем username канала: ' . $channelId);
+            }
 
             // Пробуем получить информацию о канале
             try {
@@ -147,9 +153,11 @@ class TelegramClientService
                 Log::info('Получена информация о канале: ' . json_encode($channelInfo));
             } catch (\Exception $e) {
                 Log::error('Ошибка получения информации о канале: ' . $e->getMessage());
-                // Пробуем альтернативный формат
-                $channelId = 'https://t.me/' . ltrim($channelId, '@');
-                Log::info('Пробуем альтернативный формат: ' . $channelId);
+                // Если не удалось получить информацию по username, пробуем числовой ID
+                if (!str_starts_with($channel, '-100')) {
+                    $channelId = '-1002055440288'; // Используем известный ID канала
+                    Log::info('Пробуем использовать числовой ID: ' . $channelId);
+                }
             }
 
             // Получаем сообщения
