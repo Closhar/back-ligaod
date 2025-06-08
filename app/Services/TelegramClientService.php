@@ -150,8 +150,13 @@ class TelegramClientService
                 }
 
                 $channelInfo = $channels['chats'][0];
-                if ($channelInfo['_'] !== 'channel') {
+                if (!isset($channelInfo['_']) || $channelInfo['_'] !== 'channel') {
                     throw new \Exception('Указанный ID не является каналом');
+                }
+
+                // Проверяем наличие необходимых полей
+                if (!isset($channelInfo['id']) || !isset($channelInfo['access_hash'])) {
+                    throw new \Exception('Отсутствуют необходимые данные канала (id или access_hash)');
                 }
 
                 // Формируем InputPeer для канала
@@ -174,6 +179,10 @@ class TelegramClientService
                     'min_id' => 0,
                     'hash' => 0
                 ]);
+
+                if (!isset($messages['messages'])) {
+                    throw new \Exception('Не удалось получить сообщения из канала');
+                }
 
                 \Log::info('Успешно получены сообщения:', ['count' => count($messages['messages'])]);
 
