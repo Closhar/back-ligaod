@@ -127,6 +127,25 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
+            // Сначала пробуем получить информацию о канале
+            try {
+                $channelInfo = $this->madelineProto->channels->getFullChannel([
+                    'channel' => '@' . ltrim($channel->username, '@')
+                ]);
+                \Log::info('Информация о канале получена:', $channelInfo);
+            } catch (\Exception $e) {
+                \Log::warning('Не удалось получить информацию о канале по username: ' . $e->getMessage());
+
+                try {
+                    $channelInfo = $this->madelineProto->channels->getFullChannel([
+                        'channel' => $channel->channel_id
+                    ]);
+                    \Log::info('Информация о канале получена по channel_id:', $channelInfo);
+                } catch (\Exception $e2) {
+                    \Log::warning('Не удалось получить информацию о канале по channel_id: ' . $e2->getMessage());
+                }
+            }
+
             // Пробуем разные варианты идентификатора канала
             $peers = [];
 
@@ -138,11 +157,6 @@ class TelegramClientService
             // Вариант 2: channel_id
             if ($channel->channel_id) {
                 $peers[] = $channel->channel_id;
-            }
-
-            // Вариант 3: полный URL
-            if ($channel->username) {
-                $peers[] = 'https://t.me/' . ltrim($channel->username, '@');
             }
 
             \Log::info('Будем пробовать следующие peer:', $peers);
