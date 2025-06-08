@@ -80,10 +80,12 @@ class TelegramParseChannelController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
+            'username' => 'sometimes|nullable|string|max:255',
             'is_active' => 'sometimes|required|boolean'
         ], [
             'title.required' => 'Название канала обязательно для заполнения',
             'title.max' => 'Название канала не должно превышать 255 символов',
+            'username.max' => 'Имя пользователя не должно превышать 255 символов',
             'is_active.required' => 'Статус активности обязателен для заполнения',
             'is_active.boolean' => 'Статус активности должен быть true или false'
         ]);

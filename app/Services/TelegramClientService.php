@@ -133,20 +133,15 @@ class TelegramClientService
         try {
             // Форматируем идентификатор канала
             $channelId = $channel;
-            // Если это числовой ID канала (начинается с -100), используем как есть
-            if (!str_starts_with($channel, '-100') && !str_starts_with($channel, '@')) {
+            if (!str_starts_with($channel, '@')) {
                 $channelId = '@' . $channel;
             }
 
-            Log::info('Попытка получения информации о канале: ' . $channelId);
-
-            // Получаем информацию о канале
-            $peer = $this->madelineProto->getPwrChat($channelId);
-            Log::info('Получена информация о канале: ' . json_encode($peer));
+            Log::info('Попытка получения сообщений из канала: ' . $channelId);
 
             // Получаем сообщения
             $messages = $this->madelineProto->messages->getHistory([
-                'peer' => $peer,
+                'peer' => $channelId,
                 'offset_id' => 0,
                 'offset_date' => 0,
                 'add_offset' => 0,
