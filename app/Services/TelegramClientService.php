@@ -46,29 +46,9 @@ class TelegramClientService
             // Настройки MadelineProto
             $settings = new Settings;
 
-            // Настройки логгера - используем кастомный логгер
+            // Отключаем логирование полностью
             $logger = new Logger;
-            $logger->setLevel(3); // 3 = WARNING level
-            $logger->setType(MadelineLogger::LOGGER_CALLABLE);
-            $logger->setExtra(function($message, $level) {
-                switch ($level) {
-                    case MadelineLogger::VERBOSE:
-                        Log::debug($message);
-                        break;
-                    case MadelineLogger::NOTICE:
-                        Log::info($message);
-                        break;
-                    case MadelineLogger::WARNING:
-                        Log::warning($message);
-                        break;
-                    case MadelineLogger::ERROR:
-                        Log::error($message);
-                        break;
-                    case MadelineLogger::FATAL_ERROR:
-                        Log::critical($message);
-                        break;
-                }
-            });
+            $logger->setLevel(5); // FATAL_ERROR - максимальный уровень, фактически отключает логирование
             $settings->setLogger($logger);
 
             // Настройки приложения
