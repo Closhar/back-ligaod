@@ -128,6 +128,10 @@ class TelegramClientService
             ]);
 
             try {
+                // Проверяем авторизацию
+                $self = $this->madelineProto->getSelf();
+                \Log::info('Информация о текущем пользователе:', ['self' => $self]);
+
                 // Формируем идентификатор канала
                 $channelIdentifier = $channel->username ? '@' . $channel->username : $channel->channel_id;
                 \Log::info('Используем идентификатор канала:', ['channelIdentifier' => $channelIdentifier]);
@@ -136,16 +140,39 @@ class TelegramClientService
                 $channelInfo = null;
                 $error = null;
 
-                // Способ 1: через getInfo
+                // Способ 1: через resolvePeer
                 try {
-                    $channelInfo = $this->madelineProto->getInfo($channelIdentifier);
-                    \Log::info('Получена информация через getInfo:', ['channelInfo' => $channelInfo]);
+                    $resolvedPeer = $this->madelineProto->resolvePeer($channelIdentifier);
+                    \Log::info('Получена информация через resolvePeer:', ['resolvedPeer' => $resolvedPeer]);
+
+                    if (isset($resolvedPeer['InputPeer'])) {
+                        $channelInfo = [
+                            'InputPeer' => $resolvedPeer['InputPeer']
+                        ];
+                    }
                 } catch (\Exception $e) {
                     $error = $e->getMessage();
-                    \Log::warning('Ошибка при получении информации через getInfo: ' . $error);
+                    \Log::warning('Ошибка при получении информации через resolvePeer: ' . $error);
                 }
 
-                // Способ 2: через getFullInfo
+                // Способ 2: через getInfo
+                if (!$channelInfo || !isset($channelInfo['InputPeer'])) {
+                    try {
+                        $info = $this->madelineProto->getInfo($channelIdentifier);
+                        \Log::info('Получена информация через getInfo:', ['info' => $info]);
+
+                        if (isset($info['InputPeer'])) {
+                            $channelInfo = [
+                                'InputPeer' => $info['InputPeer']
+                            ];
+                        }
+                    } catch (\Exception $e) {
+                        $error = $e->getMessage();
+                        \Log::warning('Ошибка при получении информации через getInfo: ' . $error);
+                    }
+                }
+
+                // Способ 3: через getFullInfo
                 if (!$channelInfo || !isset($channelInfo['InputPeer'])) {
                     try {
                         $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
@@ -162,7 +189,7 @@ class TelegramClientService
                     }
                 }
 
-                // Способ 3: через getPwrChat
+                // Способ 4: через getPwrChat
                 if (!$channelInfo || !isset($channelInfo['InputPeer'])) {
                     try {
                         $pwrChat = $this->madelineProto->getPwrChat($channelIdentifier);
