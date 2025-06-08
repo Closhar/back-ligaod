@@ -127,34 +127,15 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Форматируем ID канала (убираем префикс -100 если есть)
+            // Форматируем ID канала
             $channelId = ltrim($channel->channel_id, '-100');
             \Log::info('Используем ID канала:', ['channelId' => $channelId]);
 
-            // Получаем информацию о канале через channels->getChannels
             try {
-                $channels = $this->madelineProto->channels->getChannels([
-                    'id' => [
-                        [
-                            '_' => 'inputChannel',
-                            'channel_id' => (int)$channelId,
-                            'access_hash' => 0 // Временный access_hash
-                        ]
-                    ]
-                ]);
+                // Получаем информацию о канале через getPwrChat
+                $channelInfo = $this->madelineProto->getPwrChat($channel->channel_id);
+                \Log::info('Получена информация о канале:', ['channelInfo' => $channelInfo]);
 
-                \Log::info('Получена информация о канале:', ['channels' => $channels]);
-
-                if (empty($channels['chats'])) {
-                    throw new \Exception('Канал не найден');
-                }
-
-                $channelInfo = $channels['chats'][0];
-                if (!isset($channelInfo['_']) || $channelInfo['_'] !== 'channel') {
-                    throw new \Exception('Указанный ID не является каналом');
-                }
-
-                // Проверяем наличие необходимых полей
                 if (!isset($channelInfo['id']) || !isset($channelInfo['access_hash'])) {
                     throw new \Exception('Отсутствуют необходимые данные канала (id или access_hash)');
                 }
