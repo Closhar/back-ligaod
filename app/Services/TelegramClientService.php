@@ -72,20 +72,29 @@ class TelegramClientService
     public function getSelf()
     {
         try {
-            // Получаем полную информацию о пользователе
-            $self = $this->madelineProto->getFullInfo('me');
+            // Сначала получаем базовую информацию
+            $self = $this->madelineProto->getSelf();
 
             if (!$self) {
                 throw new \Exception('Не удалось получить информацию о пользователе');
             }
 
+            // Пробуем получить дополнительную информацию
+            try {
+                $fullInfo = $this->madelineProto->getFullInfo($self['id']);
+            } catch (\Exception $e) {
+                Log::warning('Не удалось получить полную информацию о пользователе: ' . $e->getMessage());
+                $fullInfo = null;
+            }
+
             return [
-                'id' => $self['User']['id'],
-                'first_name' => $self['User']['first_name'],
-                'last_name' => $self['User']['last_name'] ?? null,
-                'username' => $self['User']['username'] ?? null,
-                'phone' => $self['User']['phone'] ?? null,
-                'status' => $self['User']['status'] ?? null,
+                'id' => $self['id'],
+                'first_name' => $self['first_name'],
+                'last_name' => $self['last_name'] ?? null,
+                'username' => $self['username'] ?? null,
+                'phone' => $self['phone'] ?? null,
+                'status' => $self['status'] ?? null,
+                'full_info' => $fullInfo
             ];
         } catch (\Exception $e) {
             Log::error('Ошибка при получении информации о пользователе: ' . $e->getMessage());
@@ -135,9 +144,9 @@ class TelegramClientService
             // Конвертируем дату в timestamp если она передана
             $dateFromTimestamp = $dateFrom ? strtotime($dateFrom) : null;
 
-            // Получаем сообщения из канала
-            $messages = $this->madelineProto->channels->getHistory([
-                'channel' => $channelId,
+            // Получаем сообщения из канала через messages.getHistory
+            $messages = $this->madelineProto->messages->getHistory([
+                'peer' => $channelId,
                 'limit' => $limit,
                 'offset_id' => $offset,
                 'offset_date' => $dateFromTimestamp,
@@ -148,25 +157,27 @@ class TelegramClientService
             ]);
 
             $result = [];
-            foreach ($messages['messages'] as $message) {
-                if ($dateFromTimestamp && $message['date'] < $dateFromTimestamp) {
-                    continue;
-                }
+            if (isset($messages['messages'])) {
+                foreach ($messages['messages'] as $message) {
+                    if ($dateFromTimestamp && $message['date'] < $dateFromTimestamp) {
+                        continue;
+                    }
 
-                $result[] = [
-                    'message_id' => $message['id'],
-                    'date' => date('Y-m-d H:i:s', $message['date']),
-                    'text' => $message['message'] ?? null,
-                    'caption' => $message['caption'] ?? null,
-                    'photo' => $message['media']['photo'] ?? null,
-                    'video' => $message['media']['document'] ?? null,
-                    'document' => $message['media']['document'] ?? null,
-                    'entities' => $message['entities'] ?? [],
-                    'link_preview' => $message['media']['webpage'] ?? null,
-                ];
+                    $result[] = [
+                        'message_id' => $message['id'],
+                        'date' => date('Y-m-d H:i:s', $message['date']),
+                        'text' => $message['message'] ?? null,
+                        'caption' => $message['caption'] ?? null,
+                        'photo' => $message['media']['photo'] ?? null,
+                        'video' => $message['media']['document'] ?? null,
+                        'document' => $message['media']['document'] ?? null,
+                        'entities' => $message['entities'] ?? [],
+                        'link_preview' => $message['media']['webpage'] ?? null,
+                    ];
 
-                if (count($result) >= $limit) {
-                    break;
+                    if (count($result) >= $limit) {
+                        break;
+                    }
                 }
             }
 
