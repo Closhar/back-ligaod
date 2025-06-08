@@ -34,6 +34,7 @@ class TelegramParseChannelController extends Controller
             'channel_id' => 'required|string|unique:telegram_parse_channels',
             'username' => 'nullable|string|max:255',
             'title' => 'required|string|max:255',
+            'is_active' => 'boolean'
         ]);
 
         if ($validator->fails()) {
@@ -69,6 +70,7 @@ class TelegramParseChannelController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
+            'is_active' => 'sometimes|required|boolean'
         ]);
 
         if ($validator->fails()) {

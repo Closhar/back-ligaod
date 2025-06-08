@@ -145,7 +145,6 @@ Route::apiResource('admin-pages', AdminPageController::class);
         Route::post('parse-channels', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'store']);
         Route::put('parse-channels/{id}', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'update']);
         Route::delete('parse-channels/{id}', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'destroy']);
-        Route::get('parse-channels/{id}/stats', [App\Http\Controllers\Api\TelegramParseChannelController::class, 'stats']);
     });
 
     // ChatGPT

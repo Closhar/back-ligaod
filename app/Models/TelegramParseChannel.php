@@ -13,20 +13,11 @@ class TelegramParseChannel extends Model
         'channel_id',
         'username',
         'title',
-        'parse_frequency',
-        'start_date',
-        'last_parse_at',
-        'is_active',
-        'messages_count',
-        'parse_status',
-        'error_message'
+        'is_active'
     ];
 
     protected $casts = [
-        'start_date' => 'datetime',
-        'last_parse_at' => 'datetime',
-        'is_active' => 'boolean',
-        'messages_count' => 'integer'
+        'is_active' => 'boolean'
     ];
 
     /**
