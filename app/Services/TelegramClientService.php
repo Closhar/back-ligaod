@@ -24,10 +24,14 @@ class TelegramClientService
     {
         $this->cachePrefix = 'telegram_parse_';
         $this->sessionPath = storage_path('app/madeline');
+        $this->logPath = storage_path('logs/madeline');
 
-        // Создаем директорию для сессии, если она не существует
+        // Создаем директории, если они не существуют
         if (!file_exists($this->sessionPath)) {
             mkdir($this->sessionPath, 0777, true);
+        }
+        if (!file_exists($this->logPath)) {
+            mkdir($this->logPath, 0777, true);
         }
 
         try {
@@ -39,10 +43,11 @@ class TelegramClientService
             $appInfo->setApiHash(config('services.telegram.api_hash'));
             $settings->setAppInfo($appInfo);
 
-            // Настройки логгера - используем только логгер Laravel
+            // Настройки логгера
             $logger = new \danog\MadelineProto\Settings\Logger;
-            $logger->setType(\danog\MadelineProto\Logger::LOGGER_DEFAULT);
+            $logger->setType(\danog\MadelineProto\Logger::FILE_LOGGER);
             $logger->setLevel(\danog\MadelineProto\Logger::VERBOSE);
+            $logger->setExtra($this->logPath . '/madeline.log');
             $settings->setLogger($logger);
 
             // Настройки сериализации
