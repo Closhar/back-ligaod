@@ -44,9 +44,10 @@ class TelegramClientService
             // Настройки MadelineProto
             $settings = new Settings;
 
-            // Настройки логгера
+            // Полностью отключаем логирование
             $logger = new Logger;
             $logger->setLevel(5); // FATAL_ERROR - максимальный уровень, фактически отключает логирование
+            $logger->setExtra(storage_path('logs/madeline.log')); // Указываем путь к лог-файлу в storage
             $settings->setLogger($logger);
 
             // Настройки приложения
@@ -55,8 +56,11 @@ class TelegramClientService
             $appInfo->setApiHash($this->apiHash);
             $settings->setAppInfo($appInfo);
 
-            // Инициализация MadelineProto
+            // Инициализация MadelineProto с отключенным логированием
             $this->madelineProto = new API($this->sessionPath, $settings);
+
+            // Отключаем логирование после инициализации
+            $this->madelineProto->logger->setLevel(5);
 
             Log::info('MadelineProto успешно инициализирован');
         } catch (\Exception $e) {
@@ -87,8 +91,8 @@ class TelegramClientService
             // Убираем @ если он есть в начале
             $channelId = ltrim($channelId, '@');
 
-            // Получаем информацию о канале
-            $channelInfo = $this->madelineProto->channels->getChannels(['id' => [$channelId]])['chats'][0];
+            // Получаем информацию о канале через getPwrChat
+            $channelInfo = $this->madelineProto->getPwrChat($channelId);
 
             return [
                 'id' => $channelInfo['id'],
