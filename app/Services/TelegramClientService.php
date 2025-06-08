@@ -4,67 +4,17 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use danog\MadelineProto\API;
-use danog\MadelineProto\Settings;
-use danog\MadelineProto\Settings\Connection;
-use danog\MadelineProto\Settings\Logger;
-use danog\MadelineProto\Settings\AppInfo;
-use danog\MadelineProto\Logger as MadelineLogger;
 
 class TelegramClientService
 {
     protected $apiId;
     protected $apiHash;
-    protected $sessionPath;
-    protected $madelineProto;
+    protected $baseUrl = 'https://api.telegram.org';
 
     public function __construct()
     {
         $this->apiId = config('services.telegram.api_id');
         $this->apiHash = config('services.telegram.api_hash');
-        $this->sessionPath = storage_path('madeline/madeline.madeline');
-
-        $this->initializeMadelineProto();
-    }
-
-    protected function initializeMadelineProto()
-    {
-        try {
-            // Создаем директорию для сессии если её нет
-            $sessionDir = dirname($this->sessionPath);
-            if (!file_exists($sessionDir)) {
-                if (!mkdir($sessionDir, 0777, true)) {
-                    throw new \Exception("Не удалось создать директорию для сессии: {$sessionDir}");
-                }
-            }
-
-            // Проверяем права на запись в директорию
-            if (!is_writable($sessionDir)) {
-                chmod($sessionDir, 0777);
-            }
-
-            // Настройки MadelineProto
-            $settings = new Settings;
-
-            // Отключаем логирование полностью
-            $logger = new Logger;
-            $logger->setLevel(5); // FATAL_ERROR - максимальный уровень, фактически отключает логирование
-            $settings->setLogger($logger);
-
-            // Настройки приложения
-            $appInfo = new AppInfo;
-            $appInfo->setApiId($this->apiId);
-            $appInfo->setApiHash($this->apiHash);
-            $settings->setAppInfo($appInfo);
-
-            // Инициализация MadelineProto
-            $this->madelineProto = new API($this->sessionPath, $settings);
-
-            Log::info('MadelineProto успешно инициализирован');
-        } catch (\Exception $e) {
-            Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage());
-            throw $e;
-        }
     }
 
     /**
@@ -73,9 +23,25 @@ class TelegramClientService
     public function getSelf()
     {
         try {
-            return $this->madelineProto->getSelf();
+            $response = Http::get("{$this->baseUrl}/bot{$this->apiHash}/getMe");
+
+            if ($response->successful()) {
+                $result = $response->json();
+                if (isset($result['ok']) && $result['ok']) {
+                    return [
+                        'id' => $result['result']['id'],
+                        'username' => $result['result']['username'],
+                        'first_name' => $result['result']['first_name'],
+                        'can_join_groups' => $result['result']['can_join_groups'] ?? false,
+                        'can_read_all_group_messages' => $result['result']['can_read_all_group_messages'] ?? false,
+                        'supports_inline_queries' => $result['result']['supports_inline_queries'] ?? false,
+                    ];
+                }
+            }
+
+            throw new \Exception("Не удалось получить информацию о боте: " . $response->body());
         } catch (\Exception $e) {
-            Log::error('Ошибка при получении информации о пользователе: ' . $e->getMessage());
+            Log::error('Ошибка при проверке авторизации: ' . $e->getMessage());
             throw $e;
         }
     }
@@ -89,17 +55,28 @@ class TelegramClientService
             // Убираем @ если он есть в начале
             $channelId = ltrim($channelId, '@');
 
-            // Получаем информацию о канале
-            $channelInfo = $this->madelineProto->channels->getChannels(['id' => [$channelId]])['chats'][0];
+            // Пробуем получить информацию через getChat
+            $response = Http::get("{$this->baseUrl}/bot{$this->apiHash}/getChat", [
+                'chat_id' => "@{$channelId}"
+            ]);
 
-            return [
-                'id' => $channelInfo['id'],
-                'title' => $channelInfo['title'],
-                'username' => $channelInfo['username'] ?? null,
-                'participants_count' => $channelInfo['participants_count'] ?? null,
-                'description' => $channelInfo['about'] ?? null,
-                'photo' => $channelInfo['photo'] ?? null,
-            ];
+            if ($response->successful()) {
+                $result = $response->json()['result'];
+
+                // Форматируем результат
+                return [
+                    'id' => $result['id'],
+                    'title' => $result['title'],
+                    'username' => $result['username'],
+                    'type' => $result['type'],
+                    'description' => $result['description'] ?? null,
+                    'members_count' => $result['members_count'] ?? null,
+                    'photo' => $result['photo'] ?? null,
+                    'pinned_message' => $result['pinned_message'] ?? null,
+                ];
+            }
+
+            throw new \Exception("Не удалось получить информацию о канале: " . $response->body());
         } catch (\Exception $e) {
             Log::error('Ошибка при получении информации о канале: ' . $e->getMessage());
             throw $e;
@@ -122,47 +99,55 @@ class TelegramClientService
             // Конвертируем дату в timestamp если она передана
             $dateFromTimestamp = $dateFrom ? strtotime($dateFrom) : null;
 
-            // Получаем сообщения из канала
-            $messages = $this->madelineProto->channels->getHistory([
-                'channel' => $channelId,
-                'limit' => $limit,
-                'offset_id' => $offset,
-                'offset_date' => $dateFromTimestamp,
-                'add_offset' => 0,
-                'max_id' => 0,
-                'min_id' => 0,
-                'hash' => 0
+            // Получаем сообщения через getUpdates
+            $response = Http::get("{$this->baseUrl}/bot{$this->apiHash}/getUpdates", [
+                'limit' => 100,
+                'offset' => $offset,
+                'timeout' => 30
             ]);
 
-            $result = [];
-            foreach ($messages['messages'] as $message) {
-                if ($dateFromTimestamp && $message['date'] < $dateFromTimestamp) {
-                    continue;
-                }
+            if ($response->successful()) {
+                $result = $response->json();
+                if (isset($result['ok']) && $result['ok']) {
+                    $messages = [];
+                    foreach ($result['result'] as $update) {
+                        if (isset($update['channel_post']) &&
+                            isset($update['channel_post']['chat']) &&
+                            $update['channel_post']['chat']['id'] == $channelNumericId) {
 
-                $result[] = [
-                    'message_id' => $message['id'],
-                    'date' => date('Y-m-d H:i:s', $message['date']),
-                    'text' => $message['message'] ?? null,
-                    'caption' => $message['caption'] ?? null,
-                    'photo' => $message['media']['photo'] ?? null,
-                    'video' => $message['media']['document'] ?? null,
-                    'document' => $message['media']['document'] ?? null,
-                    'entities' => $message['entities'] ?? [],
-                    'link_preview' => $message['media']['webpage'] ?? null,
-                ];
+                            $post = $update['channel_post'];
 
-                if (count($result) >= $limit) {
-                    break;
+                            if ($dateFromTimestamp && $post['date'] < $dateFromTimestamp) {
+                                continue;
+                            }
+
+                            $messages[] = [
+                                'message_id' => $post['message_id'],
+                                'date' => date('Y-m-d H:i:s', $post['date']),
+                                'text' => $post['text'] ?? null,
+                                'caption' => $post['caption'] ?? null,
+                                'photo' => $post['photo'] ?? null,
+                                'video' => $post['video'] ?? null,
+                                'document' => $post['document'] ?? null,
+                                'entities' => $post['entities'] ?? [],
+                                'link_preview' => $post['link_preview_options'] ?? null,
+                            ];
+
+                            if (count($messages) >= $limit) {
+                                break;
+                            }
+                        }
+                    }
+
+                    usort($messages, function($a, $b) {
+                        return strtotime($b['date']) - strtotime($a['date']);
+                    });
+
+                    return $messages;
                 }
             }
 
-            // Сортируем сообщения по дате (новые сверху)
-            usort($result, function($a, $b) {
-                return strtotime($b['date']) - strtotime($a['date']);
-            });
-
-            return $result;
+            throw new \Exception("Не удалось получить сообщения: " . $response->body());
         } catch (\Exception $e) {
             Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
             throw $e;
@@ -212,7 +197,7 @@ class TelegramClientService
             return [
                 'channel_info' => $info,
                 'last_message' => $messages[0] ?? null,
-                'members_count' => $info['participants_count'] ?? null,
+                'members_count' => $info['members_count'] ?? null,
                 'description' => $info['description'] ?? null,
             ];
         } catch (\Exception $e) {
