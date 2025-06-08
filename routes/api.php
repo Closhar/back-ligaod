@@ -33,8 +33,8 @@ use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\TelegramMessageController;
 use App\Http\Controllers\Api\TelegramParseChannelController;
+use App\Http\Controllers\Api\TelegramMessageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -135,6 +135,35 @@ Route::middleware('auth:sanctum')->group(function () {
 });
 Route::apiResource('admin-pages', AdminPageController::class);
 
+// Маршруты для работы с телеграм
+Route::prefix('telegram')->group(function () {
+    // Базовые маршруты
+    Route::apiResource('channels', TelegramController::class);
+    Route::post('/send', [TelegramController::class, 'sendMessage']);
+
+    // Маршруты для тестирования
+    Route::get('/test-auth', [TelegramParseChannelController::class, 'testAuth']);
+    Route::get('/test-messages', [TelegramParseChannelController::class, 'testMessages']);
+
+    // Маршруты для управления каналами парсинга
+    Route::prefix('parse-channels')->group(function () {
+        Route::get('/', [TelegramParseChannelController::class, 'index']);
+        Route::post('/', [TelegramParseChannelController::class, 'store']);
+        Route::get('/{id}', [TelegramParseChannelController::class, 'show']);
+        Route::put('/{id}', [TelegramParseChannelController::class, 'update']);
+        Route::delete('/{id}', [TelegramParseChannelController::class, 'destroy']);
+        Route::get('/{id}/check', [TelegramParseChannelController::class, 'checkChannel']);
+        Route::get('/{id}/stats', [TelegramParseChannelController::class, 'stats']);
+    });
+
+    // Маршруты для получения сообщений
+    Route::prefix('messages')->group(function () {
+        Route::get('/fetch', [TelegramMessageController::class, 'fetchMessages']);
+        Route::post('/fetch', [TelegramMessageController::class, 'fetchMessages']);
+    });
+});
+
+// ChatGPT
     // Маршруты для работы с телеграм
     Route::prefix('telegram')->middleware('api')->group(function () {
         Route::apiResource('channels', TelegramController::class);
