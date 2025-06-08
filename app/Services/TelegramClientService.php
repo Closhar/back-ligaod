@@ -140,32 +140,19 @@ class TelegramClientService
                 $channelInfo = null;
                 $error = null;
 
-                // Способ 1: через channels->getFullChannel
+                // Способ 1: через getPwrChat
                 try {
-                    $channelInput = [
-                        '_' => 'inputChannel',
-                        'channel_id' => (int)$channel->channel_id,
-                        'access_hash' => 0 // Временное значение, будет обновлено
-                    ];
+                    $pwrChat = $this->madelineProto->getPwrChat($channelIdentifier);
+                    \Log::info('Получена информация через getPwrChat:', ['pwrChat' => $pwrChat]);
 
-                    $fullChannel = $this->madelineProto->channels->getFullChannel([
-                        'channel' => $channelInput
-                    ]);
-                    \Log::info('Получена информация через channels->getFullChannel:', ['fullChannel' => $fullChannel]);
-
-                    if (isset($fullChannel['chats'][0])) {
-                        $chat = $fullChannel['chats'][0];
+                    if (isset($pwrChat['InputPeer'])) {
                         $channelInfo = [
-                            'InputPeer' => [
-                                '_' => 'inputPeerChannel',
-                                'channel_id' => $chat['id'],
-                                'access_hash' => $chat['access_hash']
-                            ]
+                            'InputPeer' => $pwrChat['InputPeer']
                         ];
                     }
                 } catch (\Exception $e) {
                     $error = $e->getMessage();
-                    \Log::warning('Ошибка при получении информации через channels->getFullChannel: ' . $error);
+                    \Log::warning('Ошибка при получении информации через getPwrChat: ' . $error);
                 }
 
                 // Способ 2: через getInfo
@@ -199,23 +186,6 @@ class TelegramClientService
                     } catch (\Exception $e) {
                         $error = $e->getMessage();
                         \Log::warning('Ошибка при получении информации через getFullInfo: ' . $error);
-                    }
-                }
-
-                // Способ 4: через getPwrChat
-                if (!$channelInfo || !isset($channelInfo['InputPeer'])) {
-                    try {
-                        $pwrChat = $this->madelineProto->getPwrChat($channelIdentifier);
-                        \Log::info('Получена информация через getPwrChat:', ['pwrChat' => $pwrChat]);
-
-                        if (isset($pwrChat['InputPeer'])) {
-                            $channelInfo = [
-                                'InputPeer' => $pwrChat['InputPeer']
-                            ];
-                        }
-                    } catch (\Exception $e) {
-                        $error = $e->getMessage();
-                        \Log::warning('Ошибка при получении информации через getPwrChat: ' . $error);
                     }
                 }
 
