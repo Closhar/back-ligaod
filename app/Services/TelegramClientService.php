@@ -67,7 +67,6 @@ class TelegramClientService
             // Настройки сериализации
             $serialization = new Serialization;
             $serialization->setInterval(30);
-            $serialization->setTimeout(30);
             $settings->setSerialization($serialization);
 
             $this->madelineProto = new API($this->sessionFile, $settings);
