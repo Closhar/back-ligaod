@@ -136,7 +136,8 @@ class ParseTableController extends Controller
 
         $request->validate([
             'url' => 'required|url',
-            'search_text' => 'nullable|string|max:255'
+            'search_text' => 'nullable|string|max:255',
+            'table_no' => 'nullable|integer|min:1'
         ]);
 
         try {
@@ -407,8 +408,23 @@ class ParseTableController extends Controller
                         $isListFormat = true;
                     }
                 } else {
-                    // Если search_text не указан, берем первую таблицу
-                    if (empty($searchText)) {
+                    // Если указан номер таблицы, берем таблицу по этому номеру
+                    if ($request->has('table_no') && $request->table_no > 0) {
+                        $tableNo = $request->table_no - 1; // Преобразуем в индекс (0-based)
+                        if ($tableNo < $tables->length) {
+                            $targetTable = $tables->item($tableNo);
+                            \Log::info('Selected table by number: ' . $request->table_no);
+                        } else {
+                            \Log::info('Table number ' . $request->table_no . ' is out of range. Total tables: ' . $tables->length);
+                            return response()->json([
+                                'success' => false,
+                                'message' => "Таблица с номером {$request->table_no} не найдена на странице",
+                                'debug' => $debug
+                            ], 404);
+                        }
+                    }
+                    // Если search_text не указан и table_no не указан, берем первую таблицу
+                    else if (empty($searchText)) {
                         $targetTable = $tables->item(0);
                     } else {
                         // Ищем таблицу с нужным текстом в любой ячейке
