@@ -88,8 +88,8 @@ class TelegramClientService
             // Убираем @ если он есть в начале
             $channelId = ltrim($channelId, '@');
 
-            // Получаем информацию о канале через getPwrChat
-            $channelInfo = $this->madelineProto->getPwrChat($channelId);
+            // Получаем информацию о канале через getInfo
+            $channelInfo = $this->madelineProto->getInfo($channelId);
 
             return [
                 'id' => $channelInfo['id'],
