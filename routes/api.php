@@ -286,7 +286,17 @@ Route::post('/upload-image', function(Request $request) {
 });
     //->middleware('auth:sanctum');
 
-Route::post('telegram-parse-channels/test-messages', [TelegramParseChannelController::class, 'testMessages']);
+Route::prefix('telegram-parse-channels')->group(function () {
+    Route::get('/', [TelegramParseChannelController::class, 'index']);
+    Route::post('/', [TelegramParseChannelController::class, 'store']);
+    Route::get('/{id}', [TelegramParseChannelController::class, 'show']);
+    Route::put('/{id}', [TelegramParseChannelController::class, 'update']);
+    Route::delete('/{id}', [TelegramParseChannelController::class, 'destroy']);
+    Route::get('/{id}/stats', [TelegramParseChannelController::class, 'stats']);
+    Route::get('/{id}/check', [TelegramParseChannelController::class, 'checkChannel']);
+    Route::post('/test-messages', [TelegramParseChannelController::class, 'testMessages']);
+    Route::get('/test-auth', [TelegramParseChannelController::class, 'testAuth']);
+});
 
 
 
