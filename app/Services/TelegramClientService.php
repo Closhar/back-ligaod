@@ -127,41 +127,38 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Формируем InputPeer для канала
-            $inputPeer = null;
-            if ($channel->username) {
-                $inputPeer = [
-                    '_' => 'inputPeerChannel',
-                    'channel_id' => intval(str_replace('-100', '', $channel->channel_id)),
-                    'access_hash' => 0 // Это значение должно быть получено из getFullInfo
-                ];
-            } elseif ($channel->channel_id) {
-                $inputPeer = [
-                    '_' => 'inputPeerChannel',
-                    'channel_id' => intval(str_replace('-100', '', $channel->channel_id)),
-                    'access_hash' => 0 // Это значение должно быть получено из getFullInfo
-                ];
-            }
+            // Формируем InputChannel для канала
+            $inputChannel = [
+                '_' => 'inputChannel',
+                'channel_id' => intval(str_replace('-100', '', $channel->channel_id)),
+                'access_hash' => 0
+            ];
 
-            if (!$inputPeer) {
-                throw new \Exception('Не удалось определить inputPeer для канала');
-            }
+            \Log::info('Используем inputChannel:', ['inputChannel' => $inputChannel]);
 
-            \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
-
-            // Получаем полную информацию о канале
+            // Получаем информацию о канале
             try {
-                $fullInfo = $this->madelineProto->getFullInfo($inputPeer);
-                \Log::info('Получена полная информация о канале:', ['fullInfo' => $fullInfo]);
+                $channels = $this->madelineProto->channels->getChannels([
+                    'id' => [$inputChannel]
+                ]);
+                \Log::info('Получена информация о канале:', ['channels' => $channels]);
 
-                if (isset($fullInfo['full']['access_hash'])) {
-                    $inputPeer['access_hash'] = $fullInfo['full']['access_hash'];
-                    \Log::info('Обновлен access_hash:', ['access_hash' => $inputPeer['access_hash']]);
+                if (empty($channels['chats'])) {
+                    throw new \Exception('Канал не найден');
+                }
+
+                $chat = $channels['chats'][0];
+                \Log::info('Найден чат:', ['chat' => $chat]);
+
+                // Обновляем access_hash
+                if (isset($chat['access_hash'])) {
+                    $inputChannel['access_hash'] = $chat['access_hash'];
+                    \Log::info('Обновлен access_hash:', ['access_hash' => $inputChannel['access_hash']]);
                 }
 
                 // Получаем сообщения
                 $messages = $this->madelineProto->messages->getHistory([
-                    'peer' => $inputPeer,
+                    'peer' => $inputChannel,
                     'offset_id' => 0,
                     'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
                     'add_offset' => 0,
