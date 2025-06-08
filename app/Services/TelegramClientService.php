@@ -50,7 +50,6 @@ class TelegramClientService
             // Настройки сериализации
             $serialization = new \danog\MadelineProto\Settings\Serialization;
             $serialization->setInterval(30);
-            $serialization->setPath($this->sessionPath . '/session.madeline');
             $settings->setSerialization($serialization);
 
             $this->madelineProto = new \danog\MadelineProto\API($this->sessionPath . '/session.madeline', $settings);
