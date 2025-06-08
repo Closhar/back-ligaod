@@ -286,7 +286,7 @@ Route::post('/upload-image', function(Request $request) {
 });
     //->middleware('auth:sanctum');
 
-Route::post('/telegram-parse-channels/test-messages', [TelegramParseChannelController::class, 'testMessages']);
+Route::post('telegram-parse-channels/test-messages', [TelegramParseChannelController::class, 'testMessages']);
 
 
 
