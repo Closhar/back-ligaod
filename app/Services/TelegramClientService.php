@@ -127,80 +127,51 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Пробуем получить информацию о канале разными способами
-            $channelInfo = null;
-            $methods = [
-                'getFullInfo' => function() use ($channel) {
-                    return $this->madelineProto->getFullInfo($channel->username);
-                },
-                'getInfo' => function() use ($channel) {
-                    return $this->madelineProto->getInfo($channel->username);
-                },
-                'getPwrChat' => function() use ($channel) {
-                    return $this->madelineProto->getPwrChat($channel->username);
-                },
-                'getChannels' => function() use ($channel) {
-                    $inputChannel = [
-                        '_' => 'inputChannel',
-                        'channel_id' => intval(str_replace('-100', '', $channel->channel_id)),
-                        'access_hash' => 0
-                    ];
-                    $result = $this->madelineProto->channels->getChannels(['id' => [$inputChannel]]);
-                    if (!empty($result['chats'])) {
-                        return $result['chats'][0];
-                    }
-                    throw new \Exception('Канал не найден в результатах getChannels');
+            // Формируем полный URL канала
+            $channelUrl = "https://t.me/" . ltrim($channel->username, '@');
+            \Log::info('Используем URL канала:', ['url' => $channelUrl]);
+
+            // Получаем информацию о канале через URL
+            try {
+                $fullInfo = $this->madelineProto->getFullInfo($channelUrl);
+                \Log::info('Получена информация о канале:', ['fullInfo' => $fullInfo]);
+
+                if (!isset($fullInfo['type']) || $fullInfo['type'] !== 'channel') {
+                    throw new \Exception('Указанный URL не является каналом');
                 }
-            ];
 
-            foreach ($methods as $methodName => $method) {
-                try {
-                    \Log::info("Пробуем получить информацию через {$methodName}");
-                    $result = $method();
-                    \Log::info("Результат {$methodName}:", ['result' => $result]);
+                // Формируем InputPeer для канала
+                $inputPeer = [
+                    '_' => 'inputPeerChannel',
+                    'channel_id' => $fullInfo['id'],
+                    'access_hash' => $fullInfo['access_hash']
+                ];
 
-                    if (isset($result['access_hash'])) {
-                        $channelInfo = $result;
-                        \Log::info("Успешно получена информация через {$methodName}");
-                        break;
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning("Ошибка при использовании {$methodName}: " . $e->getMessage());
-                }
+                \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
+
+                // Получаем сообщения
+                $messages = $this->madelineProto->messages->getHistory([
+                    'peer' => $inputPeer,
+                    'offset_id' => 0,
+                    'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
+                    'add_offset' => 0,
+                    'limit' => $limit,
+                    'max_id' => 0,
+                    'min_id' => 0,
+                    'hash' => 0
+                ]);
+
+                \Log::info('Успешно получены сообщения:', ['count' => count($messages['messages'])]);
+
+                // Кэшируем результат на 1 час
+                $cacheKey = "telegram_messages_{$channelId}_{$dateFrom}_{$limit}";
+                Cache::put($cacheKey, $messages, 3600);
+
+                return $messages;
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+                throw new \Exception('Ошибка при получении сообщений: ' . $e->getMessage());
             }
-
-            if (!$channelInfo || !isset($channelInfo['access_hash'])) {
-                throw new \Exception('Не удалось получить access_hash для канала ни одним из способов');
-            }
-
-            // Формируем InputPeer для канала
-            $inputPeer = [
-                '_' => 'inputPeerChannel',
-                'channel_id' => $channelInfo['id'],
-                'access_hash' => $channelInfo['access_hash']
-            ];
-
-            \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
-
-            // Получаем сообщения
-            $messages = $this->madelineProto->messages->getHistory([
-                'peer' => $inputPeer,
-                'offset_id' => 0,
-                'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
-                'add_offset' => 0,
-                'limit' => $limit,
-                'max_id' => 0,
-                'min_id' => 0,
-                'hash' => 0
-            ]);
-
-            \Log::info('Успешно получены сообщения:', ['count' => count($messages['messages'])]);
-
-            // Кэшируем результат на 1 час
-            $cacheKey = "telegram_messages_{$channelId}_{$dateFrom}_{$limit}";
-            Cache::put($cacheKey, $messages, 3600);
-
-            return $messages;
         } catch (\Exception $e) {
             \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
             throw new \Exception('Ошибка при получении сообщений: ' . $e->getMessage());
