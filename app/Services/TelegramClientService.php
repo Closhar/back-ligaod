@@ -72,7 +72,21 @@ class TelegramClientService
     public function getSelf()
     {
         try {
-            return $this->madelineProto->getSelf();
+            // Получаем полную информацию о пользователе
+            $self = $this->madelineProto->getFullInfo('me');
+
+            if (!$self) {
+                throw new \Exception('Не удалось получить информацию о пользователе');
+            }
+
+            return [
+                'id' => $self['User']['id'],
+                'first_name' => $self['User']['first_name'],
+                'last_name' => $self['User']['last_name'] ?? null,
+                'username' => $self['User']['username'] ?? null,
+                'phone' => $self['User']['phone'] ?? null,
+                'status' => $self['User']['status'] ?? null,
+            ];
         } catch (\Exception $e) {
             Log::error('Ошибка при получении информации о пользователе: ' . $e->getMessage());
             throw $e;
