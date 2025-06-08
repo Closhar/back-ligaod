@@ -218,10 +218,16 @@ class TelegramClientService
             // Конвертируем дату в timestamp если она передана
             $dateFromTimestamp = $dateFrom ? strtotime($dateFrom) : null;
 
-            // Получаем сообщения из канала через channels.getMessages
-            $messages = $this->madelineProto->channels->getMessages([
-                'channel' => $channelId,
-                'id' => [] // Пустой массив для получения последних сообщений
+            // Получаем сообщения из канала через messages.getHistory
+            $messages = $this->madelineProto->messages->getHistory([
+                'peer' => $channelId,
+                'offset_id' => 0,
+                'offset_date' => 0,
+                'add_offset' => 0,
+                'limit' => $limit,
+                'max_id' => 0,
+                'min_id' => 0,
+                'hash' => 0
             ]);
 
             Log::info('Получены сообщения из канала:', ['messages' => $messages]);
@@ -229,6 +235,11 @@ class TelegramClientService
             $result = [];
             if (isset($messages['messages'])) {
                 foreach ($messages['messages'] as $message) {
+                    // Пропускаем служебные сообщения
+                    if (!isset($message['message']) && !isset($message['media'])) {
+                        continue;
+                    }
+
                     if ($dateFromTimestamp && $message['date'] < $dateFromTimestamp) {
                         continue;
                     }
