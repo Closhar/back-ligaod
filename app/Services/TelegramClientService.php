@@ -136,36 +136,28 @@ class TelegramClientService
                 $channelIdentifier = $channel->username ? '@' . $channel->username : $channel->channel_id;
                 \Log::info('Используем идентификатор канала:', ['channelIdentifier' => $channelIdentifier]);
 
-                // Получаем информацию о канале через getInfo
-                $info = $this->madelineProto->getInfo($channelIdentifier);
-                \Log::info('Получена информация через getInfo:', ['info' => $info]);
+                // Получаем информацию о канале через getFullInfo
+                $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
+                \Log::info('Получена информация через getFullInfo:', ['fullInfo' => $fullInfo]);
 
                 // Проверяем наличие необходимых данных
-                if (!isset($info['Chat']) || !isset($info['Chat']['id']) || !isset($info['Chat']['access_hash'])) {
-                    throw new \Exception('Не удалось получить необходимые данные канала из getInfo');
+                if (!isset($fullInfo['Chat']) || !isset($fullInfo['Chat']['id']) || !isset($fullInfo['Chat']['access_hash'])) {
+                    throw new \Exception('Не удалось получить необходимые данные канала из getFullInfo');
                 }
 
-                // Формируем InputPeer из полученных данных
-                $channelInfo = [
-                    'InputPeer' => [
-                        '_' => 'inputPeerChannel',
-                        'channel_id' => abs($info['Chat']['id']), // Используем абсолютное значение ID
-                        'access_hash' => $info['Chat']['access_hash']
-                    ]
+                // Формируем InputChannel из полученных данных
+                $inputChannel = [
+                    '_' => 'inputChannel',
+                    'channel_id' => abs($fullInfo['Chat']['id']),
+                    'access_hash' => $fullInfo['Chat']['access_hash']
                 ];
 
-                \Log::info('Используем InputPeer для получения сообщений:', ['InputPeer' => $channelInfo['InputPeer']]);
+                \Log::info('Используем InputChannel для получения сообщений:', ['inputChannel' => $inputChannel]);
 
-                // Получаем сообщения
-                $messages = $this->madelineProto->messages->getHistory([
-                    'peer' => $channelInfo['InputPeer'],
-                    'offset_id' => 0,
-                    'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
-                    'add_offset' => 0,
-                    'limit' => $limit,
-                    'max_id' => 0,
-                    'min_id' => 0,
-                    'hash' => 0
+                // Получаем сообщения через channels->getMessages
+                $messages = $this->madelineProto->channels->getMessages([
+                    'channel' => $inputChannel,
+                    'id' => [] // Пустой массив для получения последних сообщений
                 ]);
 
                 if (!isset($messages['messages'])) {
