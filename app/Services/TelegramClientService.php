@@ -140,19 +140,38 @@ class TelegramClientService
                 $channelInfo = null;
                 $error = null;
 
-                // Способ 1: через resolvePeer
+                // Способ 1: через getDialogs
                 try {
-                    $resolvedPeer = $this->madelineProto->resolvePeer($channelIdentifier);
-                    \Log::info('Получена информация через resolvePeer:', ['resolvedPeer' => $resolvedPeer]);
+                    $dialogs = $this->madelineProto->getDialogs([
+                        'limit' => 100,
+                        'offset_peer' => ['_' => 'inputPeerEmpty'],
+                        'offset_date' => 0,
+                        'offset_id' => 0
+                    ]);
+                    \Log::info('Получены диалоги:', ['dialogs' => $dialogs]);
 
-                    if (isset($resolvedPeer['InputPeer'])) {
-                        $channelInfo = [
-                            'InputPeer' => $resolvedPeer['InputPeer']
-                        ];
+                    // Ищем нужный канал в диалогах
+                    foreach ($dialogs['dialogs'] as $dialog) {
+                        if (isset($dialog['peer']) &&
+                            $dialog['peer']['_'] === 'peerChannel' &&
+                            (
+                                ($channel->username && isset($dialog['peer']['username']) && $dialog['peer']['username'] === $channel->username) ||
+                                ($channel->channel_id && isset($dialog['peer']['channel_id']) && $dialog['peer']['channel_id'] === (int)$channel->channel_id)
+                            )
+                        ) {
+                            $channelInfo = [
+                                'InputPeer' => [
+                                    '_' => 'inputPeerChannel',
+                                    'channel_id' => $dialog['peer']['channel_id'],
+                                    'access_hash' => $dialog['peer']['access_hash']
+                                ]
+                            ];
+                            break;
+                        }
                     }
                 } catch (\Exception $e) {
                     $error = $e->getMessage();
-                    \Log::warning('Ошибка при получении информации через resolvePeer: ' . $error);
+                    \Log::warning('Ошибка при получении информации через getDialogs: ' . $error);
                 }
 
                 // Способ 2: через getInfo
