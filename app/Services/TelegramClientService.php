@@ -140,16 +140,17 @@ class TelegramClientService
                 $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
                 \Log::info('Получена информация через getFullInfo:', ['fullInfo' => $fullInfo]);
 
-                if (!isset($fullInfo['Chat']) || !isset($fullInfo['Chat']['id']) || !isset($fullInfo['Chat']['access_hash'])) {
-                    throw new \Exception('Не удалось получить необходимые данные канала из getFullInfo');
+                // Проверяем наличие необходимых данных
+                if (!isset($fullInfo['id'])) {
+                    throw new \Exception('Не удалось получить ID канала из getFullInfo');
                 }
 
                 // Формируем InputPeer напрямую из полученных данных
                 $channelInfo = [
                     'InputPeer' => [
                         '_' => 'inputPeerChannel',
-                        'channel_id' => $fullInfo['Chat']['id'],
-                        'access_hash' => $fullInfo['Chat']['access_hash']
+                        'channel_id' => $fullInfo['id'],
+                        'access_hash' => $fullInfo['access_hash'] ?? 0
                     ]
                 ];
 
