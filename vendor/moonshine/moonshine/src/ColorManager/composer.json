@@ -20,8 +20,6 @@
     ],
     "require": {
         "php": "^8.2",
-        "ext-curl": "*",
-        "ext-json": "*",
         "illuminate/support": "^10|^11|^12",
         "moonshine/contracts": "^3.0"
     },

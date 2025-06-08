@@ -56,10 +56,18 @@ final class MoonShineJsonResponse extends JsonResponse
 
     public function html(string|array $value, HtmlMode $mode = HtmlMode::INNER_HTML): self
     {
-        return $this->mergeJsonData(['html' => $value, 'htmlMode' => $mode->value]);
+        if (\is_string($value)) {
+            return $this->htmlData($value, mode: $mode);
+        }
+
+        foreach ($value as $selector => $html) {
+            $this->htmlData($html, $selector, $mode);
+        }
+
+        return $this;
     }
 
-    public function htmlData(string|array $value, string $selector, HtmlMode $mode = HtmlMode::INNER_HTML): self
+    public function htmlData(string|array $value, ?string $selector = null, HtmlMode $mode = HtmlMode::INNER_HTML): self
     {
         if (! isset($this->jsonData['htmlData'])) {
             $this->jsonData['htmlData'] = [];
@@ -67,7 +75,7 @@ final class MoonShineJsonResponse extends JsonResponse
 
         $this->jsonData['htmlData'][] = [
             'html' => $value,
-            'selector' => $selector,
+            'selector' => $selector ?? '',
             'htmlMode' => $mode->value,
         ];
 

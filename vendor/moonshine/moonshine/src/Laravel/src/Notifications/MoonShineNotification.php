@@ -48,11 +48,11 @@ final class MoonShineNotification implements MoonShineNotificationContract
         $color = $color instanceof Color ? $color->value : $color;
 
         Notification::sendNow(
-            MoonShineAuth::getModel()?->query()
+            MoonShineAuth::getModel()->query()
                 ->when(
                     $ids,
                     static fn ($query): Builder => $query->whereIn(
-                        MoonShineAuth::getModel()?->getKeyName() ?? 'id',
+                        MoonShineAuth::getModel()->getKeyName() ?? 'id',
                         $ids
                     )
                 )

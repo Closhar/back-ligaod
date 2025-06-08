@@ -35,6 +35,7 @@ final class DeleteButton
             url: $action
         )
             ->name('resource-delete-button')
+            ->withoutLoading()
             ->withConfirm(
                 method: HttpMethod::DELETE,
                 formBuilder: static fn (FormBuilderContract $formBuilder): FormBuilderContract => $formBuilder->when(

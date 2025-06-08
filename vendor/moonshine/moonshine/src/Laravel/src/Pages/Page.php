@@ -17,13 +17,15 @@ use MoonShine\Laravel\Http\Responses\MoonShineJsonResponse;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * @template TResource of CrudResourceContract|null
+ * @template TResource of CrudResourceContract|null = null
  * @extends CorePage<MoonShine, TResource>
  */
 abstract class Page extends CorePage implements WithResponseModifierContract
 {
     protected function prepareBeforeRender(): void
     {
+        parent::prepareBeforeRender();
+
         $withoutQuery = trim(parse_url($this->getUrl(), PHP_URL_PATH), '/');
         $currentPath = trim(moonshine()->getRequest()->getPath(), '/');
 

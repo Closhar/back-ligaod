@@ -20,13 +20,12 @@
     ],
     "require": {
         "php": "^8.2",
-        "ext-curl": "*",
-        "ext-json": "*",
         "illuminate/support": "^10|^11|^12",
         "moonshine/contracts": "^3.0",
         "moonshine/core": "^3.0",
         "moonshine/support": "^3.0",
-        "moonshine/ui": "^3.0"
+        "moonshine/ui": "^3.0",
+        "lee-to/fast-attributes": "^0.3"
     },
     "autoload": {
         "psr-4": {

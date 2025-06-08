@@ -148,7 +148,7 @@ trait ResourceModelQuery
         $this
             ->withCache()
             ->withTags()
-            ->withSearch()
+            ->withSearch($this->getSearchQueryKey())
             ->withFilters()
             ->withParentResource()
             ->withOrder()

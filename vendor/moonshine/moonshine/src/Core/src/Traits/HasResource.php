@@ -24,6 +24,7 @@ trait HasResource
     protected ?ResourceContract $parentResource = null;
 
     /**
+     * @deprecated Will be removed in 4.0 (unused)
      * @return PT
      */
     public function getParentResource(): ?ResourceContract
@@ -32,6 +33,7 @@ trait HasResource
     }
 
     /**
+     * @deprecated Will be removed in 4.0 (unused)
      * @param PT $resource
      */
     public function setParentResource(?ResourceContract $resource): static

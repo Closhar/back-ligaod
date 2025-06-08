@@ -7,9 +7,13 @@ namespace {namespace};
 use MoonShine\Laravel\Pages\Crud\{extendShort};
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Contracts\UI\FieldContract;
+use MoonShine\Laravel\Resources\ModelResource;
 use Throwable;
 {uses}
 
+/**
+ * @extends {extendShort}<ModelResource>
+ */
 class DummyClass extends {extendShort}
 {
     /**

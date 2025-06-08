@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace MoonShine\Core\Storage;
 
 use MoonShine\Contracts\Core\DependencyInjection\StorageContract;
-use Symfony\Component\Finder\Finder;
 use Throwable;
 
 final class FileStorage implements StorageContract
@@ -58,21 +57,60 @@ final class FileStorage implements StorageContract
 
     public function getFiles(?string $directory = null, bool $recursive = false): array
     {
-        return iterator_to_array(
-            Finder::create()->files()->in($directory)->depth(0)->sortByName(),
-            false
-        );
+        if (! is_dir($directory)) {
+            return [];
+        }
+
+        $files = [];
+
+        $items = scandir($directory);
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $fullPath = $directory . DIRECTORY_SEPARATOR . $item;
+
+            if (is_file($fullPath)) {
+                $files[] = $fullPath;
+            } elseif ($recursive && is_dir($fullPath)) {
+                foreach ($this->getFiles($fullPath, true) as $subFile) {
+                    $files[] = $subFile;
+                }
+            }
+        }
+
+        return $files;
     }
 
     public function getDirectories(?string $directory = null, bool $recursive = false): array
     {
-        $directories = [];
-
-        foreach (Finder::create()->in($directory)->directories()->depth(0)->sortByName() as $dir) {
-            $directories[] = $dir->getPathname();
+        if (! is_dir($directory)) {
+            return [];
         }
 
-        return $directories;
+        $dirs = [];
+
+        $items = scandir($directory);
+        foreach ($items as $item) {
+            if ($item === '.' || $item === '..') {
+                continue;
+            }
+
+            $fullPath = $directory . DIRECTORY_SEPARATOR . $item;
+
+            if (is_dir($fullPath)) {
+                $dirs[] = $fullPath;
+
+                if ($recursive) {
+                    foreach ($this->getDirectories($fullPath, true) as $subDir) {
+                        $dirs[] = $subDir;
+                    }
+                }
+            }
+        }
+
+        return $dirs;
     }
 
     public function makeDirectory(string $path): bool

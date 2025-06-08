@@ -5,15 +5,16 @@ declare(strict_types=1);
 namespace MoonShine\Laravel\Pages\Crud;
 
 use MoonShine\Contracts\Core\CrudPageContract;
+use MoonShine\Contracts\Core\CrudResourceContract;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Laravel\Pages\Page;
-use MoonShine\Laravel\Resources\CrudResource;
 use MoonShine\UI\Components\Layout\Div;
 use MoonShine\UI\Components\Modal;
 
 /**
- * @extends Page<CrudResource>
+ * @template  TResource of CrudResourceContract = \MoonShine\Laravel\Resources\CrudResource
+ * @extends Page<TResource>
  */
 abstract class CrudPage extends Page implements CrudPageContract
 {

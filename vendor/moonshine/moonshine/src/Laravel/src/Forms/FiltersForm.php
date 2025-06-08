@@ -39,7 +39,7 @@ final readonly class FiltersForm implements FormContract
         $resource = $this->resource;
 
         $resource->setQueryParams(
-            request()->only($resource->getQueryParamsKeys())
+            request()->only($resource->getQueryParamsKeys()),
         );
 
         $values = $resource->getFilterParams();
@@ -64,28 +64,29 @@ final readonly class FiltersForm implements FormContract
                 $filters
                     ->when(
                         $sort,
-                        static fn ($fields): Fields => $fields
+                        static fn ($fields): Fields
+                            => $fields
                             ->prepend(
                                 Hidden::make(column: 'sort')->setValue(
-                                    $sort
-                                )
-                            )
+                                    $sort,
+                                ),
+                            ),
                     )
                     ->when(
                         $queryTag,
-                        static fn ($fields): Fields => $fields
+                        static fn ($fields): Fields
+                            => $fields
                             ->prepend(
                                 Hidden::make(column: 'query-tag')->setValue(
-                                    $queryTag
-                                )
-                            )
+                                    $queryTag,
+                                ),
+                            ),
                     )
-                    ->toArray()
+                    ->toArray(),
             )
             ->when($resource->isAsync(), function (FormBuilderContract $form) use ($resource): void {
                 $events = [
                     $resource->getListEventName(),
-                    'show-reset:filters',
                     AlpineJs::event(JsEvent::OFF_CANVAS_TOGGLED, 'filters-off-canvas'),
                 ];
 
@@ -97,39 +98,59 @@ final readonly class FiltersForm implements FormContract
                 ]);
 
                 $form->buttons([
-                    ActionButton::make(
-                        __('moonshine::ui.reset'),
-                        $this->getFormAction(query: ['reset' => true])
-                    )
-                        ->secondary()
-                        ->showInLine()
-                        ->class('js-async-reset-button')
-                        ->customAttributes([
-                            AlpineJs::eventBlade('show-reset', 'filters') => "showResetButton",
-                            'style' => 'display: none',
-                        ])
-                    ,
+                    $this->getResetButton($resource->isAsync(), true),
                 ]);
             })
             ->submit(__('moonshine::ui.search'), ['class' => 'btn-primary'])
             ->when(
                 $resource->getFilterParams() !== [],
                 fn (FormBuilderContract $form): FormBuilderContract => $form->buttons([
-                    ActionButton::make(
-                        __('moonshine::ui.reset'),
-                        $this->getFormAction(query: ['reset' => true])
-                    )->secondary()->showInLine(),
-                ])
+                    $this->getResetButton(),
+                ]),
             );
+    }
+
+    private function getResetButton(bool $async = false, bool $hide = false): ActionButton
+    {
+        $button = ActionButton::make(
+            __('moonshine::ui.reset'),
+            $this->getFormAction(query: ['reset' => true]),
+        )
+            ->secondary()
+            ->showInLine()
+            ->class('js-async-reset-button');
+
+        if ($hide) {
+            $button = $button->customAttributes([
+                'style' => 'display: none',
+            ]);
+        }
+
+        if (! $async) {
+            return $button;
+        }
+
+        return $button
+            ->dispatchEvent([
+                AlpineJs::event(
+                    JsEvent::FORM_RESET,
+                    'filters',
+                ),
+                AlpineJs::event(
+                    JsEvent::FORM_SUBMIT,
+                    'filters',
+                ),
+            ], withoutPayload: true);
     }
 
     private function getFormAction(array $query = []): string
     {
         return str(request()->url())->when(
             $query,
-            static fn (Stringable $str): Stringable => $str
+            static fn (Stringable $str): Stringable
+                => $str
                 ->append('?')
-                ->append(Arr::query($query))
+                ->append(Arr::query($query)),
         )->value();
     }
 }

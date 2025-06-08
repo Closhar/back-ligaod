@@ -13,19 +13,19 @@ use Illuminate\Support\Facades\Auth;
 
 final class MoonShineAuth
 {
-    public static function getModel(): ?Model
+    public static function getModel(): Model
     {
+        /** @var EloquentUserProvider $provider */
         $provider = self::getProvider();
-
-        if (! $provider instanceof EloquentUserProvider) {
-            return null;
-        }
 
         $model = $provider->getModel();
 
         return new $model();
     }
 
+    /**
+     * @return UserProvider
+     */
     public static function getProvider(): UserProvider
     {
         return self::getGuard()->getProvider();

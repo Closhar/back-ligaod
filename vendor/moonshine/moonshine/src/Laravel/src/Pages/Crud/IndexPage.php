@@ -11,6 +11,7 @@ use MoonShine\Laravel\Collections\Fields;
 use MoonShine\Laravel\Components\Fragment;
 use MoonShine\Laravel\Contracts\Resource\HasQueryTagsContract;
 use MoonShine\Laravel\Enums\Ability;
+use MoonShine\Laravel\Resources\CrudResource;
 use MoonShine\Support\Enums\JsEvent;
 use MoonShine\Support\Enums\PageType;
 use MoonShine\UI\Components\ActionGroup;
@@ -20,6 +21,10 @@ use MoonShine\UI\Components\Layout\LineBreak;
 use MoonShine\UI\Components\Table\TableBuilder;
 use Throwable;
 
+/**
+ * @template TResource of CrudResource = \MoonShine\Laravel\Resources\ModelResource
+ * @extends CrudPage<TResource>
+ */
 class IndexPage extends CrudPage
 {
     protected ?PageType $pageType = PageType::INDEX;
@@ -246,15 +251,24 @@ class IndexPage extends CrudPage
             request()->only($this->getResource()->getQueryParamsKeys())
         );
 
+        return [
+            $this->getListComponent(),
+        ];
+    }
+
+    public function getListComponent(bool $withoutFragment = false): ComponentContract
+    {
         $items = $this->getResource()->isLazy() ? [] : $this->getResource()->getItems();
         $fields = $this->getResource()->getIndexFields();
 
-        return [
-            Fragment::make([
-                $this->getResource()->modifyListComponent(
-                    $this->getItemsComponent($items, $fields)
-                ),
-            ])->name('crud-list'),
-        ];
+        $component = $this->getResource()->modifyListComponent(
+            $this->getItemsComponent($items, $fields)
+        );
+
+        if ($withoutFragment) {
+            return $component;
+        }
+
+        return Fragment::make([$component])->name('crud-list');
     }
 }

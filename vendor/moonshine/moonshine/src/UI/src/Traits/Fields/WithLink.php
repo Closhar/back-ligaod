@@ -27,7 +27,7 @@ trait WithLink
 
     public function getLinkValue(mixed $value = null): string
     {
-        return value($this->linkValue, $value ?? $this->toValue(withDefault: false), $this);
+        return (string) value($this->linkValue, $value ?? $this->toValue(withDefault: false), $this);
     }
 
     public function getLinkName(mixed $value = null): string

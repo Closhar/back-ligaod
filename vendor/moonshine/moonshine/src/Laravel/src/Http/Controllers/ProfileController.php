@@ -18,7 +18,7 @@ class ProfileController extends MoonShineController
      */
     public function store(ProfileFormRequest $request): Response
     {
-        $page = moonshineConfig()->getPage('profile', ProfilePage::class)->loaded();
+        $page = moonshineConfig()->getPage('profile', ProfilePage::class);
         $form = $page->getForm();
 
         $success = $form->apply(

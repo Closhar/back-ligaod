@@ -8,9 +8,6 @@ use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\MenuManager\Attributes\SkipMenu;
 
 #[SkipMenu]
-/**
- * @extends Page<null>
- */
 class Dashboard extends Page
 {
     /**
@@ -25,7 +22,7 @@ class Dashboard extends Page
 
     public function getTitle(): string
     {
-        return $this->title ?: 'Dashboard';
+        return $this->title ?: __('moonshine::ui.dashboard');
     }
 
     /**

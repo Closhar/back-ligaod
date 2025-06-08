@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MoonShine\Laravel\Pages;
 
-use LogicException;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Contracts\UI\FieldContract;
 use MoonShine\Contracts\UI\FormBuilderContract;
@@ -25,9 +24,6 @@ use MoonShine\UI\Fields\PasswordRepeat;
 use MoonShine\UI\Fields\Text;
 
 #[SkipMenu]
-/**
- * @extends Page<null>
- */
 class ProfilePage extends Page
 {
     use WithComponentsPusher;
@@ -113,10 +109,6 @@ class ProfilePage extends Page
     public function getForm(): FormBuilderContract
     {
         $user = MoonShineAuth::getGuard()->user() ?? MoonShineAuth::getModel();
-
-        if (\is_null($user)) {
-            throw new LogicException('Model is required');
-        }
 
         return FormBuilder::make(action([ProfileController::class, 'store']))
             ->async()

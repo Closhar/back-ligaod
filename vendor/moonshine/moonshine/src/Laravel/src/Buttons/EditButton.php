@@ -50,6 +50,7 @@ final class EditButton
             url: $action
         )
             ->name('resource-edit-button')
+            ->withoutLoading()
             ->when(
                 $resource->isEditInModal() && ! $resource->isDetailPage(),
                 static fn (ActionButtonContract $button): ActionButtonContract => $button->async(

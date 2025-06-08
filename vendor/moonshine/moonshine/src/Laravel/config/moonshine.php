@@ -29,6 +29,7 @@ return [
     'use_migrations' => false,
     'use_notifications' => false,
     'use_database_notifications' => false,
+    'use_routes' => true,
     'use_profile' => true,
 
     // Routing

@@ -22,8 +22,6 @@ class HomeController extends MoonShineController
             return $page->getModifiedResponse();
         }
 
-        return $page
-            ->loaded()
-            ->render();
+        return $page->render();
     }
 }

@@ -11,9 +11,9 @@ use MoonShine\Support\Enums\ToastType;
 
 trait InteractsWithUI
 {
-    protected function toast(string $message, ToastType $type = ToastType::INFO): void
+    protected function toast(string $message, ToastType $type = ToastType::INFO, null|int|false $duration = null): void
     {
-        MoonShineUI::toast($message, $type);
+        MoonShineUI::toast($message, $type, $duration);
     }
 
     /**

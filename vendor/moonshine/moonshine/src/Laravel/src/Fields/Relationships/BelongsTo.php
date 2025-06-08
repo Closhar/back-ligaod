@@ -18,6 +18,7 @@ use MoonShine\UI\Contracts\HasDefaultValueContract;
 use MoonShine\UI\Traits\Fields\HasPlaceholder;
 use MoonShine\UI\Traits\Fields\Searchable;
 use MoonShine\UI\Traits\Fields\WithDefaultValue;
+use MoonShine\UI\Traits\Fields\WithEscapedValue;
 use Throwable;
 
 /**
@@ -37,6 +38,7 @@ class BelongsTo extends ModelRelationField implements
     use WithDefaultValue;
     use HasPlaceholder;
     use BelongsToOrManyCreatable;
+    use WithEscapedValue;
 
     protected string $view = 'moonshine::fields.relationships.belongs-to';
 
@@ -50,7 +52,9 @@ class BelongsTo extends ModelRelationField implements
     protected function resolvePreview(): string
     {
         if (! $this->getResource()->hasAnyAction(Action::VIEW, Action::UPDATE)) {
-            return parent::resolvePreview();
+            return $this->isUnescape()
+                ? parent::resolvePreview()
+                : $this->escapeValue((string)parent::resolvePreview());
         }
 
         if (! $this->hasLink() && $this->toValue()) {
@@ -64,11 +68,13 @@ class BelongsTo extends ModelRelationField implements
 
             $this->link(
                 $this->getResource()->getPageUrl($page, ['resourceItem' => $this->getValue()]),
-                withoutIcon: true
+                withoutIcon: true,
             );
         }
 
-        return parent::resolvePreview();
+        return $this->isUnescape()
+            ? parent::resolvePreview()
+            : $this->escapeValue((string)parent::resolvePreview());
     }
 
     protected function resolveValue(): mixed
@@ -86,7 +92,7 @@ class BelongsTo extends ModelRelationField implements
             return false;
         }
 
-        return (string) $this->toValue()->getKey() === $value;
+        return (string)$this->toValue()->getKey() === $value;
     }
 
     public function native(): static
@@ -112,13 +118,29 @@ class BelongsTo extends ModelRelationField implements
 
             if ($value === false && $this->isNullable()) {
                 return $item
-                    ->{$this->getRelationName()}()
+                    ->{$this
+                        ->getRelationName()}()
                     ->dissociate();
             }
 
-            return $item->{$this->getRelationName()}()
+            return $item->{$this
+                ->getRelationName()}()
                 ->associate($value);
         };
+    }
+
+    public function getReactiveValue(): mixed
+    {
+        $value = $this->getValue();
+
+        if ($value === null && ! $this->isNullable()) {
+            $options = $this->getValues();
+            $values = $options->getValues();
+
+            $value = $values->count() ? $values->first()->getValue() : null;
+        }
+
+        return $value;
     }
 
     public function prepareReactivityValue(mixed $value, mixed &$casted, array &$except): mixed
@@ -126,8 +148,12 @@ class BelongsTo extends ModelRelationField implements
         $value = data_get($value, 'value', $value);
 
         $casted = $this->getRelatedModel();
-        $casted?->setRelation($this->getRelationName(), $this->makeRelatedModel($value));
+        $model = $this->makeRelatedModel($value, related: $this->getRelation()?->getRelated());
+        $casted?->setRelation($this->getRelationName(), $model);
 
+        /**
+         * TODO(4.0) return $model
+         */
         return $value;
     }
 

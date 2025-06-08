@@ -10,15 +10,14 @@ use MoonShine\Contracts\Core\CrudResourceContract;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
 use MoonShine\Contracts\Core\PageContract;
 use MoonShine\Contracts\Core\TypeCasts\DataCasterContract;
+use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\Contracts\UI\Collection\ActionButtonsContract;
-use MoonShine\Contracts\UI\ComponentAttributesBagContract;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Contracts\UI\FieldContract;
 use MoonShine\Contracts\UI\FormBuilderContract;
 use MoonShine\Contracts\UI\HasCasterContract;
 use MoonShine\Contracts\UI\HasFieldsContract;
 use MoonShine\Support\AlpineJs;
-use MoonShine\Support\Components\MoonShineComponentAttributeBag;
 use MoonShine\Support\DTOs\AsyncCallback;
 use MoonShine\Support\Enums\FormMethod;
 use MoonShine\Support\Enums\JsEvent;
@@ -66,13 +65,13 @@ final class FormBuilder extends MoonShineComponent implements
 
     protected bool $isPrecognitive = false;
 
-    protected ?string $submitLabel = null;
-
     protected bool $hideSubmit = false;
+
+    protected bool $raw = false;
 
     protected bool $errorsAbove = true;
 
-    protected ComponentAttributesBagContract $submitAttributes;
+    protected ?ActionButtonContract $submit = null;
 
     protected ?Closure $onBeforeFieldsRender = null;
 
@@ -82,16 +81,12 @@ final class FormBuilder extends MoonShineComponent implements
         protected string $action = '',
         protected FormMethod $method = FormMethod::POST,
         FieldsContract|iterable $fields = [],
-        mixed $values = []
+        mixed $values = [],
     ) {
         parent::__construct();
 
         $this->fields($fields);
         $this->fill($values);
-
-        $this->submitAttributes = new MoonShineComponentAttributeBag([
-            'type' => 'submit',
-        ]);
 
         $this->customAttributes(array_filter([
             'action' => $this->action,
@@ -133,7 +128,7 @@ final class FormBuilder extends MoonShineComponent implements
 
         $fields->fill(
             $casted->toArray(),
-            $casted
+            $casted,
         );
 
         $fields->prepareAttributes();
@@ -202,13 +197,13 @@ final class FormBuilder extends MoonShineComponent implements
             $message,
             params: ['resourceItem' => $resource?->getItemID()],
             page: $page,
-            resource: $resource
+            resource: $resource,
         );
 
         return $this->action($asyncUrl)->async(
             $asyncUrl,
             events: $events,
-            callback: $callback
+            callback: $callback,
         );
     }
 
@@ -294,24 +289,50 @@ final class FormBuilder extends MoonShineComponent implements
         return $this->hideSubmit;
     }
 
-    public function submit(string $label, array $attributes = []): self
+    public function rawMode(): self
     {
-        $this->submitLabel = $label;
-        $this->submitAttributes->setAttributes(
-            $attributes + $this->submitAttributes->getAttributes()
-        );
+        $this->raw = true;
 
         return $this;
     }
 
-    public function getSubmitAttributes(): ComponentAttributesBagContract
+    public function isRaw(): bool
     {
-        return $this->submitAttributes;
+        return $this->raw;
     }
 
-    public function getSubmitLabel(): string
+    public function submit(?string $label = null, array $attributes = [], ?ActionButtonContract $button = null): self
     {
-        return $this->submitLabel ?? $this->getCore()->getTranslator()->get('moonshine::ui.save');
+        $this->submit = $button ?: $this->getSubmit();
+
+        if (! \is_null($label) && \is_null($button)) {
+            $this->submit = $this->getSubmit()->setLabel($label);
+        }
+
+        if ($attributes !== [] && \is_null($button)) {
+            $this->submit = $this->getSubmit()->customAttributes($attributes);
+        }
+
+        return $this;
+    }
+
+    public function getSubmit(): ActionButtonContract
+    {
+        $submit = $this->submit ?: ActionButton::make(
+            $this->getCore()->getTranslator()->get('moonshine::ui.save'),
+        );
+
+        if ($this->isHideSubmit()) {
+            $submit->style('display: none');
+        }
+
+        return $submit->customAttributes([
+            'type' => 'submit',
+        ])->content(
+            fn (): Spinner => Spinner::make()
+            ->class('js-form-submit-button-loader')
+            ->style('display: none')
+        );
     }
 
     public function errorsAbove(bool $enable = true): self
@@ -368,7 +389,7 @@ final class FormBuilder extends MoonShineComponent implements
         bool $throw = false,
     ): bool {
         $values = $this->castData(
-            $this->getValues()
+            $this->getValues(),
         )->getOriginal();
 
         if (\is_null($default)) {
@@ -390,7 +411,7 @@ final class FormBuilder extends MoonShineComponent implements
                 ->getPreparedFields()
                 ->onlyFields(withApplyWrappers: true)
                 ->exceptElements(
-                    fn (ComponentContract $element): bool => $element instanceof FieldContract && \in_array($element->getColumn(), $this->getExcludedFields(), true)
+                    fn (ComponentContract $element): bool => $element instanceof FieldContract && \in_array($element->getColumn(), $this->getExcludedFields(), true),
                 );
 
             $values = \is_null($before) ? $values : $before($values);
@@ -455,11 +476,14 @@ final class FormBuilder extends MoonShineComponent implements
 
         $onlyFields = $fields->onlyFields();
         $onlyFields->each(
-            fn (FieldContract $field): FieldContract => $field->formName($this->getName())
+            fn (FieldContract $field): FieldContract => $field->formName($this->getName()),
         );
-        $fields->prepend(
-            Hidden::make('_component_name')->formName($this->getName())->setValue($this->getName())
-        );
+
+        if (! $this->isRaw()) {
+            $fields->prepend(
+                Hidden::make('_component_name')->formName($this->getName())->setValue($this->getName()),
+            );
+        }
 
         $reactiveFields = $onlyFields->reactiveFields()
             ->mapWithKeys(static fn (FieldContract $field): array => [$field->getColumn() => $field->getReactiveValue()]);
@@ -494,7 +518,7 @@ final class FormBuilder extends MoonShineComponent implements
 
         if ($this->isAsync()) {
             $this->action(
-                $this->getAction() ?: $this->getAsyncUrl()
+                $this->getAction() ?: $this->getAsyncUrl(),
             );
             $this->customAttributes([
                 'x-on:submit.prevent' => 'async(`' . $this->getAsyncEvents(
@@ -513,10 +537,10 @@ final class FormBuilder extends MoonShineComponent implements
             'asyncUrl' => $this->getAsyncUrl(),
             'buttons' => $this->getButtons(),
             'hideSubmit' => $this->isHideSubmit(),
-            'submitLabel' => $this->getSubmitLabel(),
-            'submitAttributes' => $this->getSubmitAttributes(),
+            'submit' => $this->getSubmit(),
             'errors' => $this->getCore()->getRequest()->getFormErrors($this->getName()),
             'errorsAbove' => $this->hasErrorsAbove(),
+            'raw' => $this->isRaw(),
         ];
     }
 }

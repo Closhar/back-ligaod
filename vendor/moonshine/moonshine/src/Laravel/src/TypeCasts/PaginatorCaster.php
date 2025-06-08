@@ -19,7 +19,7 @@ final readonly class PaginatorCaster implements PaginatorCasterContract
     public function cast(): PaginatorContract
     {
         $data = collect($this->data)
-            ->except('next_cursor', 'prev_cursor')
+            ->except('next_cursor', 'prev_cursor', 'current_page_url')
             ->mapWithKeys(
                 static fn (mixed $value, string $key): array => [(string) str($key)->camel() => $value]
             )

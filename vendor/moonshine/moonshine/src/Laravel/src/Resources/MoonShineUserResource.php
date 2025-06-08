@@ -102,7 +102,6 @@ class MoonShineUserResource extends ModelResource
                             formatted: static fn (MoonshineUserRole $model) => $model->name,
                             resource: MoonShineUserRoleResource::class,
                         )
-                            ->reactive()
                             ->creatable()
                             ->valuesQuery(static fn (Builder $q) => $q->select(['id', 'name'])),
 
@@ -155,6 +154,7 @@ class MoonShineUserResource extends ModelResource
                 'email',
                 Rule::unique('moonshine_users')->ignoreModel($item),
             ],
+            'avatar' => ['sometimes', 'nullable', 'image', 'mimes:jpeg,jpg,png,gif'],
             'password' => $item->exists
                 ? 'sometimes|nullable|min:6|required_with:password_repeat|same:password_repeat'
                 : 'required|min:6|required_with:password_repeat|same:password_repeat',

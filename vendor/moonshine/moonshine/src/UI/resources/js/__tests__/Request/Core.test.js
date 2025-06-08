@@ -123,7 +123,9 @@ describe('request function', () => {
       'content-disposition': `attachment; filename=${filename}`,
     })
 
-    await request(t, '/test-url')
+    const componentRequestData = new ComponentRequestData()
+
+    await request(t, '/test-url', 'get', {}, {}, componentRequestData.withResponseType('blob'))
 
     const anchorElement = createElementSpy.mock.results[0].value
     expect(createObjectURLSpy).toHaveBeenCalledWith(new Blob([data]))
@@ -133,6 +135,29 @@ describe('request function', () => {
     expect(anchorElement.href).toBe('mock-url')
     expect(anchorElement.download).toBe(filename)
     expect(createElementSpy).toHaveBeenCalledWith('a')
+  })
+
+  it('should handle errors in axios response with blob non 200', async () => {
+    const componentRequestData = new ComponentRequestData()
+    mockAxios.onGet('/test-url').reply(500, {message: 'Error'})
+
+    await request(t, '/test-url', 'get', {}, {}, componentRequestData.withResponseType('blob'))
+
+    expect(t.loading).toBe(false)
+    expect(MoonShine.ui.toast).toHaveBeenCalledWith('Error', 'error')
+  })
+
+  it('should handle errors in axios response with blob', async () => {
+    const errorData = JSON.stringify({message: 'Error'})
+    const blob = new Blob([errorData], {type: 'application/json'})
+
+    const componentRequestData = new ComponentRequestData()
+    mockAxios.onGet('/test-url').reply(200, {message: 'Error', messageType: 'error'})
+
+    await request(t, '/test-url', 'get', blob, {}, componentRequestData.withResponseType('blob'))
+
+    expect(t.loading).toBe(false)
+    expect(MoonShine.ui.toast).toHaveBeenCalledWith('Error', 'error', null)
   })
 
   it('should handle errors in axios response', async () => {
@@ -222,6 +247,33 @@ describe('request function', () => {
 
     expect(document.querySelectorAll).toHaveBeenCalledWith(selector)
     expect(document.querySelectorAll(selector)[0].innerHTML).toBe(content)
+  })
+
+  it('should update elements based on response with selector in data', async () => {
+    const content = '<div>New Content</div>'
+
+    const selector = '.test'
+    mockAxios.onGet('/test-url').reply(200, {htmlData: [{html: content, selector: selector}]})
+
+    document.querySelectorAll = jest.fn().mockReturnValue([{innerHTML: ''}])
+    await request(t, '/test-url', 'get')
+
+    expect(document.querySelectorAll).toHaveBeenCalledWith(selector)
+    expect(document.querySelectorAll(selector)[0].innerHTML).toBe(content)
+  })
+
+  it('should update elements based on response with empty selector', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    const content = '<div>New Content</div>'
+
+    const selector = ''
+    mockAxios.onGet('/test-url').reply(200, {htmlData: [{html: content, selector: selector}]})
+
+    document.querySelectorAll = jest.fn().mockReturnValue([{innerHTML: ''}])
+    await request(t, '/test-url', 'get')
+
+    expect(console.error).not.toHaveBeenCalled()
   })
 
   it('should handle messages in response', async () => {

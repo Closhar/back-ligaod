@@ -25,7 +25,7 @@ use MoonShine\Support\Enums\PageType;
 
 /**
  * @template TCore of Core
- * @template TResource of ResourceContract|null
+ * @template TResource of ResourceContract|null = null
  */
 abstract class Page implements PageContract
 {
@@ -338,6 +338,15 @@ abstract class Page implements PageContract
         return [
             'layout' => $this->getLayout()->build(),
         ];
+    }
+
+    protected function prepareBeforeRender(): void
+    {
+        if ($this->hasResource()) {
+            $this->getResource()?->loaded();
+        }
+
+        $this->loaded();
     }
 
     public function getView(): string

@@ -19,7 +19,7 @@ interface FormBuilderContract extends
 {
     public function action(string $action): self;
 
-    public function submit(string $label, array $attributes = []): self;
+    public function submit(?string $label = null, array $attributes = [], ?ActionButtonContract $button = null): self;
 
     /**
      * @param  Closure(mixed $values, FieldsContract $fields): bool  $apply

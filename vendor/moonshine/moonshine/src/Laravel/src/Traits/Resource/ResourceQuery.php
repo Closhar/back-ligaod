@@ -25,6 +25,8 @@ trait ResourceQuery
 
     protected string $sortColumn = '';
 
+    protected string $searchQueryKey = 'search';
+
     protected SortDirection $sortDirection = SortDirection::DESC;
 
     protected int $itemsPerPage = 25;
@@ -171,9 +173,11 @@ trait ResourceQuery
         );
     }
 
-    protected function withSearch($queryKey = 'search'): static
+    protected function withSearch(string $queryKey): static
     {
-        if ($this->hasSearch() && filled($this->getQueryParams()->get($queryKey))) {
+        $term = data_get($this->getQueryParams(), $queryKey);
+
+        if ($this->hasSearch() && filled($term)) {
             $fullTextColumns = $this->getCore()->getAttributes()->get(
                 default: fn (): mixed => Attributes::for($this)
                     ->attribute(SearchUsingFullText::class)
@@ -185,7 +189,7 @@ trait ResourceQuery
                 column: [0 => 'columns']
             );
 
-            $terms = str($this->getQueryParams()->get($queryKey))
+            $terms = str($term)
                 ->squish()
                 ->value();
 
@@ -308,7 +312,15 @@ trait ResourceQuery
      */
     public function getQueryParamsKeys(): array
     {
-        return ['sort', 'filter', 'page', 'query-tag', 'search'];
+        return ['sort', 'filter', 'page', 'query-tag', $this->getSearchQueryKey()];
+    }
+
+    /**
+     * @return non-empty-string
+     */
+    protected function getSearchQueryKey(): string
+    {
+        return $this->searchQueryKey;
     }
 
     /**

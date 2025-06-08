@@ -19,111 +19,113 @@ use MoonShine\Laravel\Http\Controllers\UpdateFieldController;
 use MoonShine\Laravel\Traits\Fields\WithAsyncSearch;
 use MoonShine\UI\Traits\Fields\UpdateOnPreview;
 
-Route::moonshine(static function (Router $router): void {
-    $pagePrefix = moonshineConfig()->getPagePrefix();
-    $resourcePrefix = moonshineConfig()->getResourcePrefix();
-    $authEnabled = moonshineConfig()->isAuthEnabled();
-    $profileEnabled = moonshineConfig()->isUseProfile();
-    $authMiddleware = moonshineConfig()->getAuthMiddleware();
+if (moonshineConfig()->isUseRoutes()) {
+    Route::moonshine(static function (Router $router): void {
+        $pagePrefix = moonshineConfig()->getPagePrefix();
+        $resourcePrefix = moonshineConfig()->getResourcePrefix();
+        $authEnabled = moonshineConfig()->isAuthEnabled();
+        $profileEnabled = moonshineConfig()->isUseProfile();
+        $authMiddleware = moonshineConfig()->getAuthMiddleware();
 
-    if ($authEnabled) {
-        Route::controller(AuthenticateController::class)->group(static function (): void {
-            Route::get('/login', 'login')->name('login');
-            Route::post('/authenticate', 'authenticate')->name('authenticate');
-            Route::get('/logout', 'logout')->name('logout');
-        });
-    }
+        if ($authEnabled) {
+            Route::controller(AuthenticateController::class)->group(static function (): void {
+                Route::get('/login', 'login')->name('login');
+                Route::post('/authenticate', 'authenticate')->name('authenticate');
+                Route::get('/logout', 'logout')->name('logout');
+            });
+        }
 
-    if ($profileEnabled) {
-        Route::post('/profile', [ProfileController::class, 'store'])
-            ->middleware($authMiddleware)
-            ->name('profile.store');
-    }
+        if ($profileEnabled) {
+            Route::post('/profile', [ProfileController::class, 'store'])
+                ->middleware($authMiddleware)
+                ->name('profile.store');
+        }
 
-    $router->middleware($authMiddleware)->group(function () use ($pagePrefix, $resourcePrefix): void {
-        /**
-         * @see EndpointsContract::home()
-         */
-        Route::get('/', HomeController::class)->name('index');
+        $router->middleware($authMiddleware)->group(function () use ($pagePrefix, $resourcePrefix): void {
+            /**
+             * @see EndpointsContract::home()
+             */
+            Route::get('/', HomeController::class)->name('index');
 
-        /**
-         * Update only the field value via a column or relation
-         * @see UpdateOnPreview
-         * @see EndpointsContract::updateField()
-         */
-        Route::prefix('update-field')->as('update-field.')->controller(UpdateFieldController::class)->group(function (): void {
-            Route::put('column/{resourceUri}/{resourceItem}', 'throughColumn')
-                ->name('through-column');
-            Route::put('relation/{resourceUri}/{pageUri}/{resourceItem}', 'throughRelation')
-                ->name('through-relation');
-        });
-
-        /**
-         * @see WithAsyncSearch
-         */
-        Route::get('async-search/{pageUri}/{resourceUri?}/{resourceItem?}/', AsyncSearchController::class)
-            ->name('async-search');
-
-        Route::controller(NotificationController::class)
-            ->prefix('notifications')
-            ->as('notifications.')
-            ->group(static function (): void {
-                Route::get('/', 'readAll')->name('readAll');
-                Route::get('/{notification}', 'read')->name('read');
+            /**
+             * Update only the field value via a column or relation
+             * @see UpdateOnPreview
+             * @see EndpointsContract::updateField()
+             */
+            Route::prefix('update-field')->as('update-field.')->controller(UpdateFieldController::class)->group(function (): void {
+                Route::put('column/{resourceUri}/{resourceItem}', 'throughColumn')
+                    ->name('through-column');
+                Route::put('relation/{resourceUri}/{pageUri}/{resourceItem}', 'throughRelation')
+                    ->name('through-relation');
             });
 
-        /**
-         * @see EndpointsContract::component()
-         */
-        Route::get('component/{pageUri}/{resourceUri?}', ComponentController::class)->name('component');
-        /**
-         * @see EndpointsContract::method()
-         */
-        Route::any('method/{pageUri}/{resourceUri?}', MethodController::class)->name('method');
-        /**
-         * @see EndpointsContract::reactive()
-         */
-        Route::post('reactive/{pageUri}/{resourceUri?}/{resourceItem?}', ReactiveController::class)->name('reactive');
+            /**
+             * @see WithAsyncSearch
+             */
+            Route::get('async-search/{pageUri}/{resourceUri?}/{resourceItem?}/', AsyncSearchController::class)
+                ->name('async-search');
 
-        /**
-         * Asynchronously getting form component and listing for field
-         * @see HasMany
-         */
-        Route::prefix('has-many')->as('has-many.')->controller(HasManyController::class)->group(
-            function (): void {
-                Route::get('form/{pageUri}/{resourceUri?}/{resourceItem?}', 'formComponent')
-                    ->name('form');
-                Route::get('list/{pageUri}/{resourceUri?}/{resourceItem?}', 'listComponent')
-                    ->name('list');
-            }
-        );
+            Route::controller(NotificationController::class)
+                ->prefix('notifications')
+                ->as('notifications.')
+                ->group(static function (): void {
+                    Route::get('/', 'readAll')->name('readAll');
+                    Route::get('/{notification}', 'read')->name('read');
+                });
 
-        /**
-         * @see EndpointsContract::toPage()
-         */
-        Route::get(
-            ltrim("/$pagePrefix/{pageUri}", '/'),
-            PageController::class
-        )->name('page');
+            /**
+             * @see EndpointsContract::component()
+             */
+            Route::get('component/{pageUri}/{resourceUri?}', ComponentController::class)->name('component');
+            /**
+             * @see EndpointsContract::method()
+             */
+            Route::any('method/{pageUri}/{resourceUri?}', MethodController::class)->name('method');
+            /**
+             * @see EndpointsContract::reactive()
+             */
+            Route::post('reactive/{pageUri}/{resourceUri?}/{resourceItem?}', ReactiveController::class)->name('reactive');
 
-        /**
-         * CRUD endpoints
-         */
-        Route::prefix(ltrim("/$resourcePrefix/{resourceUri}", '/'))->group(function (): void {
-            Route::delete('crud', [CrudController::class, 'massDelete'])->name('crud.massDelete');
-
-            Route::resource('crud', CrudController::class)->parameter('crud', 'resourceItem');
-
-            Route::any('handler/{handlerUri}', HandlerController::class)->name('handler');
+            /**
+             * Asynchronously getting form component and listing for field
+             * @see HasMany
+             */
+            Route::prefix('has-many')->as('has-many.')->controller(HasManyController::class)->group(
+                function (): void {
+                    Route::get('form/{pageUri}/{resourceUri?}/{resourceItem?}', 'formComponent')
+                        ->name('form');
+                    Route::get('list/{pageUri}/{resourceUri?}/{resourceItem?}', 'listComponent')
+                        ->name('list');
+                }
+            );
 
             /**
              * @see EndpointsContract::toPage()
              */
-            Route::get('{pageUri}/{resourceItem?}', PageController::class)->name('resource.page');
+            Route::get(
+                ltrim("/$pagePrefix/{pageUri}", '/'),
+                PageController::class
+            )->name('page');
+
+            /**
+             * CRUD endpoints
+             */
+            Route::prefix(ltrim("/$resourcePrefix/{resourceUri}", '/'))->group(function (): void {
+                Route::delete('crud', [CrudController::class, 'massDelete'])->name('crud.massDelete');
+
+                Route::resource('crud', CrudController::class)->parameter('crud', 'resourceItem');
+
+                Route::any('handler/{handlerUri}', HandlerController::class)->name('handler');
+
+                /**
+                 * @see EndpointsContract::toPage()
+                 */
+                Route::get('{pageUri}/{resourceItem?}', PageController::class)->name('resource.page');
+            });
+        });
+
+        Route::fallback(static function (): never {
+            oops404();
         });
     });
-
-    Route::fallback(static function (): never {
-        oops404();
-    });
-});
+}

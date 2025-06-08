@@ -28,6 +28,7 @@ interface HasModalContract
         Closure|string|null $content = null,
         Closure|string|null $name = null,
         ?Closure $builder = null,
+        iterable $components = [],
     ): static;
 
     public function withConfirm(

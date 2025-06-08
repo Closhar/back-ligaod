@@ -518,7 +518,7 @@ abstract class Factory
     /**
      * Add a new state transformation to the model definition.
      *
-     * @param  (callable(array<string, mixed>, TModel|null): array<string, mixed>)|array<string, mixed>  $state
+     * @param  (callable(array<string, mixed>, Model|null): array<string, mixed>)|array<string, mixed>  $state
      * @return static
      */
     public function state($state)
@@ -527,6 +527,21 @@ abstract class Factory
             'states' => $this->states->concat([
                 is_callable($state) ? $state : fn () => $state,
             ]),
+        ]);
+    }
+
+    /**
+     * Prepend a new state transformation to the model definition.
+     *
+     * @param  (callable(array<string, mixed>, Model|null): array<string, mixed>)|array<string, mixed>  $state
+     * @return static
+     */
+    public function prependState($state)
+    {
+        return $this->newInstance([
+            'states' => $this->states->prepend(
+                is_callable($state) ? $state : fn () => $state,
+            ),
         ]);
     }
 

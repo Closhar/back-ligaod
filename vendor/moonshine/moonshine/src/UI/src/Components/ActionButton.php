@@ -19,6 +19,7 @@ use MoonShine\UI\Traits\ActionButton\InDropdownOrLine;
 use MoonShine\UI\Traits\ActionButton\WithModal;
 use MoonShine\UI\Traits\ActionButton\WithOffCanvas;
 use MoonShine\UI\Traits\Components\WithComponents;
+use MoonShine\UI\Traits\Components\WithSlotContent;
 use MoonShine\UI\Traits\WithBadge;
 use MoonShine\UI\Traits\WithIcon;
 use MoonShine\UI\Traits\WithLabel;
@@ -40,6 +41,7 @@ class ActionButton extends MoonShineComponent implements
     use WithModal;
     use InDropdownOrLine;
     use WithComponents;
+    use WithSlotContent;
 
     protected string $view = 'moonshine::components.action-button';
 
@@ -48,6 +50,8 @@ class ActionButton extends MoonShineComponent implements
     protected ?string $bulkForComponent = null;
 
     protected bool $isAsync = false;
+
+    protected bool $raw = false;
 
     protected ?HttpMethod $asyncHttpMethod = null;
 
@@ -203,6 +207,36 @@ class ActionButton extends MoonShineComponent implements
         );
     }
 
+    /**
+     * @param non-empty-array<string> $keys
+     */
+    public function hotKeys(array $keys, bool $withBadge = false): static
+    {
+        $hotKeys = implode(',', $keys);
+        $badge = $withBadge ? str($hotKeys)
+            ->explode(',')
+            ->map(function (string $key): string {
+                $key = trim($key);
+                $map = [
+                    'meta' => '⌘',
+                    'shift' => '⇧',
+                    'control' => '^',
+                    'alt' => '⌥',
+                    'backspace' => '⌫',
+                    'enter' => '⏎',
+                    'escape' => 'esc',
+                ];
+
+                return ucfirst($map[$key] ?? $key);
+            })
+            ->implode('+') : null;
+
+        return $this->customAttributes([
+            'x-data' => 'actionButton',
+            'data-hot-keys' => $hotKeys,
+        ])->badge($badge);
+    }
+
     public function download(): static
     {
         return $this->customAttributes([
@@ -210,6 +244,18 @@ class ActionButton extends MoonShineComponent implements
             'data-async-response-type' => 'blob',
         ]);
     }
+
+    public function withoutLoading(Closure|bool|null $condition = null): static
+    {
+        if (! (value($condition, $this) ?? true)) {
+            return $this->removeAttribute('data-without-loading');
+        }
+
+        return $this->customAttributes([
+            'data-without-loading' => true,
+        ]);
+    }
+
     /**
      * @param array|(Closure(mixed $original): array) $params = []
      * @throws Throwable
@@ -386,6 +432,18 @@ class ActionButton extends MoonShineComponent implements
         return value($this->url, $data ?? $this->getData()?->getOriginal(), $this->getData(), $this);
     }
 
+    public function rawMode(): self
+    {
+        $this->raw = true;
+
+        return $this;
+    }
+
+    public function isRaw(): bool
+    {
+        return $this->raw;
+    }
+
     public function primary(Closure|bool|null $condition = null): static
     {
         if (! (value($condition, $this) ?? true)) {
@@ -466,6 +524,8 @@ class ActionButton extends MoonShineComponent implements
             'url' => $this->getUrl(),
             'icon' => $this->getIcon(4),
             'badge' => $this->hasBadge() ? $this->getBadge() : false,
+            'raw' => $this->isRaw(),
+            'slot' => $this->getSlot(),
         ];
     }
 }

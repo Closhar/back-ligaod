@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace MoonShine\Contracts\Core;
 
-use Illuminate\Support\Collection;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
 use MoonShine\Contracts\Core\TypeCasts\DataCasterContract;
 use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
@@ -18,9 +17,24 @@ use Traversable;
  * @template TFields of FieldsContract
  * @template-covariant TItems of Traversable
  *
+ * @extends CrudResourceWithPagesContract<TData, TIndexPage, TFormPage, TDetailPage>
+ * @extends CrudResourceWithFieldsContract<TFields>
+ * @extends CrudResourceWithResponseModifiersContract<TData>
  */
-interface CrudResourceContract extends ResourceContract
+interface CrudResourceContract extends
+    ResourceContract,
+    CrudResourceWithPagesContract,
+    CrudResourceWithFieldsContract,
+    CrudResourceWithModalsContract,
+    CrudResourceWithResponseModifiersContract,
+    CrudResourceWithQueryParamsContract,
+    CrudResourceWithSearchContract
 {
+    public function getColumn(): string;
+
+    /**
+     * @param  DataWrapperContract<TData>|int|string|null  $key
+     */
     public function getRoute(
         ?string $name = null,
         DataWrapperContract|int|string|null $key = null,
@@ -42,43 +56,6 @@ interface CrudResourceContract extends ResourceContract
      */
     public function getDataInstance(): mixed;
 
-    public function setActivePage(?PageContract $page): void;
-
-    /**
-     * @return ?PageContract<TIndexPage>
-     */
-    public function getIndexPage(): ?PageContract;
-
-    /**
-     * @return ?PageContract<TFormPage>
-     */
-    public function getFormPage(): ?PageContract;
-
-    /**
-     * @return ?PageContract<TDetailPage>
-     */
-    public function getDetailPage(): ?PageContract;
-
-    /**
-     * @return ?PageContract<TIndexPage|TDetailPage|TFormPage>
-     */
-    public function getActivePage(): ?PageContract;
-
-    /**
-     * @return TFields
-     */
-    public function getIndexFields(): FieldsContract;
-
-    /**
-     * @return TFields
-     */
-    public function getFormFields(bool $withOutside = false): FieldsContract;
-
-    /**
-     * @return TFields
-     */
-    public function getDetailFields(bool $withOutside = false, bool $onlyOutside = false): FieldsContract;
-
     /**
      * @return ?TData
      */
@@ -92,6 +69,8 @@ interface CrudResourceContract extends ResourceContract
      * @return TData
      */
     public function getItemOrInstance(): mixed;
+
+    public function isItemExists(): bool;
 
     /**
      * @return TItems
@@ -122,53 +101,4 @@ interface CrudResourceContract extends ResourceContract
      * @return TData
      */
     public function save(mixed $item, ?FieldsContract $fields = null): mixed;
-
-
-    public function getIndexPageUrl(array $params = [], null|string|array $fragment = null): string;
-
-    /**
-     * @param DataWrapperContract<TData>|int|string|null $key
-     */
-    public function getFormPageUrl(
-        DataWrapperContract|int|string|null $key = null,
-        array $params = [],
-        null|string|array $fragment = null
-    ): string;
-
-    /**
-     * @param DataWrapperContract<TData>|int|string $key
-     */
-    public function getDetailPageUrl(
-        DataWrapperContract|int|string $key,
-        array $params = [],
-        null|string|array $fragment = null
-    ): string;
-
-    public function isIndexPage(): bool;
-
-    public function isFormPage(): bool;
-
-    public function isDetailPage(): bool;
-
-    public function isCreateFormPage(): bool;
-
-    public function isUpdateFormPage(): bool;
-
-    public function setQueryParams(iterable $params): static;
-
-    public function getQueryParams(): Collection;
-
-    public function getQueryParamsKeys(): array;
-
-    public function hasSearch(): bool;
-
-    /**
-     * @param TData $item
-     */
-    public function modifyResponse(mixed $item): mixed;
-
-    /**
-     * @param  iterable<TData>  $items
-     */
-    public function modifyCollectionResponse(mixed $items): mixed;
 }

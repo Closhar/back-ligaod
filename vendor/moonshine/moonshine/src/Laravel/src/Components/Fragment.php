@@ -38,10 +38,16 @@ class Fragment extends AbstractWithComponents implements HasAsyncContract
                 ]);
             }
 
+            $params = $fragment->getNowOnQueryParams();
+            $itemID = $params['resourceItem'] ?? moonshineRequest()->getItemID();
+
             return toPage(
                 page: $fragment->getNowOnPage() ?? moonshineRequest()->getPage(),
                 resource: $fragment->getNowOnResource() ?? moonshineRequest()->getResource(),
-                params: $fragment->getNowOnQueryParams(),
+                params: array_filter([
+                    ...$fragment->getNowOnQueryParams(),
+                    'resourceItem' => $itemID,
+                ]),
                 fragment: $fragment->getName()
             );
         });

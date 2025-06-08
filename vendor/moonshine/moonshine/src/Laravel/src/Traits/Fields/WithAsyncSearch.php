@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use MoonShine\Contracts\UI\FieldContract;
-use MoonShine\Laravel\MoonShineRequest;
+use MoonShine\Laravel\Http\Requests\Relations\RelationModelFieldRequest;
 use MoonShine\Support\DTOs\Select\Option;
 use MoonShine\Support\DTOs\Select\OptionProperty;
 
@@ -161,7 +161,7 @@ trait WithAsyncSearch
 
     /**
      * @param  string|null  $column
-     * @param  ?Closure(Builder $query, MoonShineRequest $request, string $term, FieldContract $field): static  $searchQuery
+     * @param  ?Closure(Builder $query, RelationModelFieldRequest $request, string $term, FieldContract $field): static  $searchQuery
      * @param  ?Closure(mixed $data, FieldContract $field): static  $formatted
      */
     public function asyncSearch(
@@ -199,7 +199,7 @@ trait WithAsyncSearch
     }
 
     /**
-     * @param  ?Closure(Builder $query, MoonShineRequest $request, string $term, FieldContract $field): static  $searchQuery
+     * @param  ?Closure(Builder $query, RelationModelFieldRequest $request, string $term, FieldContract $field): static  $searchQuery
      */
     public function associatedWith(string $column, ?Closure $searchQuery = null): static
     {

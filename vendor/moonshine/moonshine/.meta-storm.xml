@@ -72,6 +72,14 @@
             <methods xpath="$containingClass" private="false" protected="false" static="false" />
         </classMethod>
 
+        <classMethod
+            class="\MoonShine\Contracts\UI\FieldContract"
+            method="onChangeMethod"
+            argument="0"
+        >
+            <methods xpath="$containingClass" private="false" protected="false" static="false" />
+        </classMethod>
+
         <classConstructor
             class="\MoonShine\Support\Attributes\Icon"
             argument="0"

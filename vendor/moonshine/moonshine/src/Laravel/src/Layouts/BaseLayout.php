@@ -276,4 +276,9 @@ abstract class BaseLayout extends AbstractLayout
     {
         return $this->isAuthEnabled() && $this->getCore()->getConfig()->isUseNotifications();
     }
+
+    protected function isAlwaysDark(): bool
+    {
+        return false;
+    }
 }

@@ -143,11 +143,15 @@ class MorphTo extends BelongsTo
         $column = $this->getSearchColumn($value::class);
         $type = $item->{$this->getMorphType()};
 
-        return str($this->types[$type] ?? $type)
+        $preview = str($this->types[$type] ?? $type)
             ->append('(')
             ->append(data_get($value, $column))
             ->append(')')
             ->value();
+
+        return $this->isUnescape()
+            ? $preview
+            : $this->escapeValue($preview);
     }
 
     public function getTypeValue(): string

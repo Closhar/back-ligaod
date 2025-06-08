@@ -2,7 +2,7 @@
 
 <p align="center">
 <a href="https://moonshine-laravel.com" target="_blank">
-<img src="https://github.com/lee-to/moonshine-tree-resource/blob/master/art/screenshot.png">
+<img src="https://github.com/lee-to/moonshine-tree-resource/blob/2.x/art/screenshot.png">
 </a>
 </p>
 
@@ -12,7 +12,7 @@
 
 ### Support MoonShine versions
 
-| MoonShine   | Trix |
+| MoonShine   | TreeResource |
 |-------------|------|
 | 2.0+        | 1.0+ |
 | 3.0+        | 2.0+ |
@@ -40,13 +40,9 @@ class CategoryResource extends TreeResource
     protected function pages(): array
     {
         return [
-            CategoryTreePage::make($this->title()),
-            FormPage::make(
-                $this->getItemID()
-                    ? __('moonshine::ui.edit')
-                    : __('moonshine::ui.add')
-            ),
-            DetailPage::make(__('moonshine::ui.show')),
+            CategoryTreePage::class,
+            FormPage::class,
+            DetailPage::class,
         ];
     }
 
@@ -62,6 +58,11 @@ class CategoryResource extends TreeResource
         return 'sorting';
     }
 
+    public function showBadge(): bool
+    {
+        return true;
+    }
+
     // ...
 }
 ```
@@ -72,14 +73,14 @@ And add component
 namespace App\MoonShine\Pages;
 
 use Leeto\MoonShineTree\View\Components\TreeComponent;
-use MoonShine\Pages\Crud\IndexPage;
+use MoonShine\Laravel\Pages\Crud\IndexPage;
 
 class CategoryTreePage extends IndexPage
 {
     protected function mainLayer(): array
     {
         return [
-            ...$this->actionButtons(),
+            ...$this->getPageButtons(),
             TreeComponent::make($this->getResource()),
         ];
     }
@@ -144,5 +145,12 @@ public function wrapable(): bool
 public function sortable(): bool
 {
     return false;
+}
+```
+### Turn off badge
+```php
+public function showBadge(): bool
+{
+    return true;
 }
 ```

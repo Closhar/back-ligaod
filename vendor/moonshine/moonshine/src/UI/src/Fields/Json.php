@@ -74,6 +74,8 @@ class Json extends Field implements
 
     protected ?Closure $modifyRemoveButton = null;
 
+    protected ?Closure $modifyCreateButton = null;
+
     protected bool $resolveValueOnce = true;
 
     protected null|TableBuilderContract|FieldsGroup $resolvedComponent = null;
@@ -180,7 +182,19 @@ class Json extends Field implements
 
     public function getCreateButton(): ?ActionButtonContract
     {
-        return $this->creatableButton;
+        $button = $this->creatableButton;
+
+        if (! $button instanceof ActionButtonContract) {
+            $button = ActionButton::make($this->getCore()->getTranslator()->get('moonshine::ui.add'))
+                ->icon('plus-circle')
+                ->customAttributes(['@click.prevent' => 'add()', 'class' => 'w-full']);
+        }
+
+        if (! \is_null($this->modifyCreateButton)) {
+            $button = \call_user_func($this->modifyCreateButton, $button, $this);
+        }
+
+        return $button;
     }
 
     public function isCreatable(): bool
@@ -238,6 +252,16 @@ class Json extends Field implements
         return $this;
     }
 
+    /**
+     * @param  Closure(ActionButton $button, self $field): ActionButton  $callback
+     */
+    public function modifyCreateButton(Closure $callback): self
+    {
+        $this->modifyCreateButton = $callback;
+
+        return $this;
+    }
+
     public function buttons(array $buttons): static
     {
         $this->buttons = $buttons;
@@ -272,7 +296,11 @@ class Json extends Field implements
 
     protected function prepareFields(): FieldsContract
     {
-        $fields = $this->getFields()->prepareAttributes();
+        $fields = $this->getFields();
+
+        if (! $this->isPreviewMode()) {
+            $fields->prepareAttributes();
+        }
 
         if ($this->isObjectMode()) {
             $fields = $fields

@@ -1,7 +1,7 @@
 import axios from 'axios'
 import {ComponentRequestData} from '../DTOs/ComponentRequestData.js'
 import {dispatchEvents} from '../Support/DispatchEvents.js'
-import {HtmlMode} from '../Support/HtmlMode.js'
+import DOMUpdater from '../Support/DOMUpdater.js'
 
 export default async function request(
   t,
@@ -38,11 +38,13 @@ export default async function request(
       data: body,
       headers: headers,
       responseType: componentRequestData.responseType,
-    }).then(function (response) {
+    }).then(async function (response) {
       t.loading = false
 
-      const data = response.data ?? {}
-      const contentDisposition = response.headers['content-disposition']
+      const {isAttachment, data, fileName} = await getResponseData(
+        response,
+        componentRequestData.responseType,
+      )
 
       if (componentRequestData.hasBeforeHandleResponse()) {
         componentRequestData.beforeHandleResponse(data, t)
@@ -60,69 +62,32 @@ export default async function request(
         return
       }
 
-      if (data.htmlData) {
-        data.htmlData.forEach(function (htmlDataItem) {
-          let selectors = htmlDataItem.selector.split(',')
-          selectors.forEach(function (selector) {
-            let elements = document.querySelectorAll(selector)
-            elements.forEach(element => {
-              htmlReplace(
-                htmlDataItem.html && typeof htmlDataItem.html === 'object'
-                  ? (htmlDataItem.html[selector] ?? htmlDataItem.html)
-                  : htmlDataItem.html,
-                htmlDataItem.htmlMode,
-                selector,
-                element,
-              )
-            })
-          })
-        })
+      let htmlData = data.htmlData ?? []
+
+      /**
+       * TODO(4.0) remove legacy
+       */
+      if (data.html !== undefined) {
+        htmlData = [{html: data.html}]
       }
 
-      if (componentRequestData.selector) {
-        let selectors = componentRequestData.selector.split(',')
-        selectors.forEach(function (selector) {
-          let elements = document.querySelectorAll(selector)
-          elements.forEach(element => {
-            htmlReplace(
-              data.html && typeof data.html === 'object'
-                ? (data.html[selector] ?? data.html)
-                : (data.html ?? data),
-              data.htmlMode,
-              selector,
-              element,
-            )
-          })
-        })
+      if (componentRequestData.selector && typeof data === 'string') {
+        htmlData = [{html: data}]
       }
 
-      if (!componentRequestData.selector && typeof data.html === 'object' && data.html !== null) {
-        Object.entries(data.html).forEach(function ([selector, html]) {
-          let elements = document.querySelectorAll(selector)
-
-          elements.forEach(element => {
-            element.innerHTML = html
-          })
-        })
-      }
-
-      if (data.fields_values !== undefined) {
-        for (let [selector, value] of Object.entries(data.fields_values)) {
-          let el = document.querySelector(selector)
-          if (el !== null) {
-            el.value = value
-            el.dispatchEvent(new Event('change'))
-          }
-        }
-      }
+      DOMUpdater({
+        htmlData: htmlData,
+        selectors: componentRequestData.selector
+          ? componentRequestData.selector.split(',')
+          : undefined,
+        fields_values: data.fields_values,
+      })
 
       if (data.redirect) {
         window.location.assign(data.redirect)
       }
 
-      if (contentDisposition?.startsWith('attachment')) {
-        let fileName = contentDisposition.split('filename=')[1]
-
+      if (isAttachment) {
         downloadFile(fileName, data)
       }
 
@@ -157,20 +122,54 @@ export default async function request(
       return
     }
 
-    if (!errorResponse?.response?.data) {
+    let data = errorResponse?.response?.data
+
+    if (componentRequestData.responseType === 'blob' && data instanceof Blob) {
+      try {
+        const text = await data.text()
+        data = JSON.parse(text)
+      } catch (e) {
+        console.error(e.message)
+
+        MoonShine.ui.toast('Unknown Error', 'error')
+        return
+      }
+    }
+
+    if (!data) {
       console.error(errorResponse.message)
 
       MoonShine.ui.toast('Unknown Error', 'error')
       return
     }
 
-    const data = errorResponse.response.data
-
     if (componentRequestData.hasErrorCallback()) {
       componentRequestData.errorCallback(data, t)
     }
 
     MoonShine.ui.toast(data.message ?? data, 'error')
+  }
+
+  async function getResponseData(response, expectedType) {
+    if (expectedType === 'blob') {
+      const contentDisposition = response.headers?.['content-disposition']
+      const isBlob = response.data instanceof Blob
+
+      if (contentDisposition?.startsWith('attachment')) {
+        return {
+          isAttachment: true,
+          fileName: contentDisposition.split('filename=')[1],
+          data: response.data,
+        }
+      }
+
+      if (isBlob && typeof response.data.text === 'function') {
+        const text = await response.data.text()
+        return {isAttachment: false, data: JSON.parse(text)}
+      }
+    }
+
+    return {isAttachment: false, data: response.data}
   }
 }
 
@@ -262,18 +261,4 @@ function downloadFile(fileName, data) {
   document.body.appendChild(a)
   a.click()
   window.URL.revokeObjectURL(url)
-}
-
-function htmlReplace(html, mode, selector, element) {
-  let htmlMode = HtmlMode.INNER_HTML
-  if (mode !== undefined) {
-    htmlMode = mode
-  }
-  if (htmlMode === HtmlMode.INNER_HTML) {
-    element.innerHTML = html
-  } else if (htmlMode === HtmlMode.OUTER_HTML) {
-    element.outerHTML = html
-  } else {
-    element.insertAdjacentHTML(htmlMode, html)
-  }
 }

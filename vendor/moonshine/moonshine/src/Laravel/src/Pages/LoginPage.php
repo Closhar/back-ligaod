@@ -12,9 +12,6 @@ use MoonShine\MenuManager\Attributes\SkipMenu;
 
 #[SkipMenu]
 #[Layout(LoginLayout::class)]
-/**
- * @extends Page<null>
- */
 class LoginPage extends Page
 {
     /**

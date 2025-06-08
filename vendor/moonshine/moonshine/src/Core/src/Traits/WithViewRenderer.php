@@ -10,9 +10,6 @@ use MoonShine\Contracts\Core\HasCanSeeContract;
 use MoonShine\Contracts\Core\HasComponentsContract;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Contracts\UI\HasFieldsContract;
-use Psr\Container\ContainerExceptionInterface;
-use Psr\Container\NotFoundExceptionInterface;
-use Throwable;
 
 /**
  * @mixin WithAssets
@@ -107,11 +104,6 @@ trait WithViewRenderer
         return $this;
     }
 
-    /**
-     * @throws ContainerExceptionInterface
-     * @throws NotFoundExceptionInterface
-     * @throws Throwable
-     */
     public function render(): Renderable|Closure|string
     {
         if (! $this->shouldRender()) {

@@ -18,12 +18,20 @@ final readonly class Option implements Arrayable
 
     public function getLabel(): string
     {
-        return $this->label;
+        return htmlspecialchars(
+            $this->label,
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8',
+        );
     }
 
     public function getValue(): string
     {
-        return $this->value;
+        return htmlspecialchars(
+            $this->value,
+            ENT_QUOTES | ENT_SUBSTITUTE,
+            'UTF-8',
+        );
     }
 
     public function isSelected(): bool

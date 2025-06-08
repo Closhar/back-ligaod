@@ -2,6 +2,39 @@
 
 All notable changes to `image` will be documented in this file
 
+## 3.8.3 - 2025-04-25
+
+### What's Changed
+
+* refactor: simplify loadFile by replacing fopen/fread with file_get_contents by @Ayoub-Mabrouk in https://github.com/spatie/image/pull/296
+* refactor(image): simplify and merge exif and fileinfo extension checks by @Ayoub-Mabrouk in https://github.com/spatie/image/pull/295
+
+**Full Changelog**: https://github.com/spatie/image/compare/3.8.2...3.8.3
+
+## 3.8.2 - 2025-04-24
+
+### What's Changed
+
+* refactor: simplify resizeWidth method by @Ayoub-Mabrouk in https://github.com/spatie/image/pull/292
+* refactor: simplify and optimize resizeHeight method by @Ayoub-Mabrouk in https://github.com/spatie/image/pull/293
+* refactor: simplify resize method by @Ayoub-Mabrouk in https://github.com/spatie/image/pull/294
+
+### New Contributors
+
+* @Ayoub-Mabrouk made their first contribution in https://github.com/spatie/image/pull/292
+
+**Full Changelog**: https://github.com/spatie/image/compare/3.8.1...3.8.2
+
+## 3.8.1 - 2025-03-27
+
+### What's Changed
+
+* Bump dependabot/fetch-metadata from 2.2.0 to 2.3.0 by @dependabot in https://github.com/spatie/image/pull/287
+* Bump aglipanci/laravel-pint-action from 2.4 to 2.5 by @dependabot in https://github.com/spatie/image/pull/288
+* Allow custom image drivers by @Peeterush in https://github.com/spatie/image/pull/290
+
+**Full Changelog**: https://github.com/spatie/image/compare/3.8.0...3.8.1
+
 ## 3.8.0 - 2025-01-17
 
 ### What's Changed

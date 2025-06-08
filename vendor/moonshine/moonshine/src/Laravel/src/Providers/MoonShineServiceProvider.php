@@ -263,14 +263,14 @@ final class MoonShineServiceProvider extends ServiceProvider
 
     public function register(): void
     {
-        $this
-            ->registerBindings()
-            ->registerMacros();
-
         $this->mergeConfigFrom(
             MoonShine::path('/config/moonshine.php'),
             'moonshine'
         );
+
+        $this
+            ->registerBindings()
+            ->registerMacros();
     }
 
     public function boot(): void

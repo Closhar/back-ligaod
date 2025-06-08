@@ -14,7 +14,6 @@ use MoonShine\UI\Components\FlexibleRender;
 #[Layout(BlankLayout::class)]
 /**
  * @method static static make(int $code, string $message)
- * @extends Page<null>
  */
 class ErrorPage extends Page
 {

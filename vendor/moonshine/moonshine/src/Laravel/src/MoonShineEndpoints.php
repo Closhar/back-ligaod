@@ -66,10 +66,11 @@ final readonly class MoonShineEndpoints implements EndpointsContract
             '_component_name' => $name,
             '_parentId' => moonshineRequest()->getParentResourceId(),
             ...$additionally,
-            ...[
+            ...array_filter([
                 'pageUri' => $this->router->extractPageUri(),
                 'resourceUri' => $this->router->extractResourceUri(),
-            ],
+                'resourceItem' => $this->router->extractResourceItem($additionally['resourceItem'] ?? null),
+            ]),
         ]);
     }
 

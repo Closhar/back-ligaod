@@ -3,7 +3,7 @@ import {
   addInvalidListener,
   containsAttribute,
   isTextInput,
-  prepareFormData,
+  prepareFormExtraData,
   prepareFormQueryString,
 } from '../Support/Forms.js'
 import request, {initCallback} from '../Request/Core.js'
@@ -181,7 +181,13 @@ export default (name = '', initData = {}, reactive = {}) => ({
   submit() {
     const hasSubmitAttribute = this.$el
       .getAttributeNames()
-      .some(attr => attr.startsWith('x-on:submit'))
+      .some(attr => attr.startsWith('x-on:submit') || attr.startsWith('@submit'))
+
+    if (!this.$el.checkValidity()) {
+      this.$el.reportValidity()
+
+      return
+    }
 
     if (hasSubmitAttribute) {
       this.$el.dispatchEvent(new Event('submit'))
@@ -244,38 +250,39 @@ export default (name = '', initData = {}, reactive = {}) => ({
 
     return false
   },
-  showResetButton() {
-    const form = this.$el
-
-    form
-      ?.closest('.offcanvas-template')
-      ?.querySelector('.js-async-reset-button')
-      ?.removeAttribute('style')
-  },
 
   dispatchEvents(componentEvent, exclude = null, extra = {}) {
     const form = this.$el.tagName === 'FORM' ? this.$el : this.$el.closest('form')
 
-    extra['_data'] = exclude === '*' ? {} : formToJSON(prepareFormData(new FormData(form), exclude))
+    extra['_data'] =
+      exclude === '*' ? {} : formToJSON(prepareFormExtraData(new FormData(form), exclude))
 
     de(componentEvent, '', this, extra)
   },
 
   asyncFilters(componentEvent, exclude = null) {
     const form = this.$el
-    const formData = new FormData(form)
+    let formData = new FormData(form)
 
     const urlSearchParams = new URLSearchParams(window.location.search)
+
+    if (form.dataset.reset) {
+      formData = new FormData()
+      exclude = '*'
+    }
+
     formData.set('query-tag', urlSearchParams.get('query-tag') || '')
     formData.set('sort', urlSearchParams.get('sort') || '')
+
+    this._filtersCount()
 
     this.dispatchEvents(componentEvent, exclude, {
       filterQuery: prepareFormQueryString(formData, exclude),
     })
 
-    this.filtersCount()
+    form.removeAttribute('data-reset')
   },
-  filtersCount() {
+  _filtersCount() {
     const form = this.$el
     const formData = new FormData(form)
     const filledFields = new Set()
@@ -290,6 +297,17 @@ export default (name = '', initData = {}, reactive = {}) => ({
     document.querySelectorAll('.js-filter-button .badge').forEach(function (element) {
       element.innerHTML = filledFields.size
     })
+
+    const resetBtn = form?.closest('.offcanvas-template')?.querySelector('.js-async-reset-button')
+    const resetShow = !form.dataset.reset && filledFields.size
+
+    if (resetShow && resetBtn) {
+      resetBtn.removeAttribute('style')
+    } else if (resetBtn) {
+      resetBtn.style.display = 'none'
+    }
+
+    return filledFields.size
   },
   onChangeField(event) {
     this.showWhenChange(
@@ -304,6 +322,8 @@ export default (name = '', initData = {}, reactive = {}) => ({
     Array.from(this.$el.elements).forEach(element => {
       element.dispatchEvent(new Event('reset'))
     })
+
+    this.$el.setAttribute('data-reset', '1')
   },
 
   showWhenChange,
@@ -316,8 +336,8 @@ export default (name = '', initData = {}, reactive = {}) => ({
 function submitState(form, loading = true, reset = false) {
   clearErrors(form)
 
-  const button = form.querySelector('.js-form-submit-button')
-  const loader = form.querySelector('.js-form-submit-button-loader')
+  const button = form.querySelector('[type="submit"]')
+  const loader = button.querySelector('.js-form-submit-button-loader')
 
   if (!button) {
     return

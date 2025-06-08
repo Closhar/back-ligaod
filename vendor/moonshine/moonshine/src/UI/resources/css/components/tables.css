@@ -1,6 +1,7 @@
 /* Tables */
 table {
-  @apply w-full border-collapse text-left;
+  width: calc(100% - 1px);
+  @apply border-collapse text-left;
 
   .dropzone-items {
     @apply max-h-[8rem] max-w-xs gap-1.5 overflow-y-auto;
@@ -133,6 +134,10 @@ table {
         }
       }
     }
+  }
+
+  td.table-grid {
+    @apply min-w-96 overflow-auto;
   }
 }
 

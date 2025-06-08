@@ -22,7 +22,7 @@ final class BlankLayout extends BaseLayout
                     'lang' => $this->getHeadLang(),
                 ])
                 ->withAlpineJs()
-                ->withThemes(),
+                ->withThemes($this->isAlwaysDark()),
         ]);
     }
 }

@@ -31,7 +31,8 @@ use MoonShine\UI\Fields\Hidden;
 use Throwable;
 
 /**
- * @method CrudResource getResource()
+ * @template TResource of CrudResource = \MoonShine\Laravel\Resources\ModelResource
+ * @extends CrudPage<TResource>
  */
 class FormPage extends CrudPage
 {

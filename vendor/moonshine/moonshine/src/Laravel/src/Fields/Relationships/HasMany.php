@@ -408,7 +408,7 @@ class HasMany extends ModelRelationField implements
             /** @var Builder $query */
             $query = \is_null($this->modifyBuilder)
                 ? $relation
-                : value($this->modifyBuilder, $relation);
+                : value($this->modifyBuilder, $relation, $this);
 
             $resource->customQueryBuilder($query->limit($this->getLimit()));
 
@@ -632,7 +632,7 @@ class HasMany extends ModelRelationField implements
         $resource->customQueryBuilder(
             \is_null($this->modifyBuilder)
                 ? $relation
-                : value($this->modifyBuilder, $relation)
+                : value($this->modifyBuilder, $relation, $this)
         );
 
         return $resource->getItems();

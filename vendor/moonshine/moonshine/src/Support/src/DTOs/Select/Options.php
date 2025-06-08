@@ -25,6 +25,9 @@ final readonly class Options implements Arrayable
     ) {
     }
 
+    /**
+     * @return Collection<OptionGroup|Option>
+     */
     public function getValues(): Collection
     {
         return collect($this->values)

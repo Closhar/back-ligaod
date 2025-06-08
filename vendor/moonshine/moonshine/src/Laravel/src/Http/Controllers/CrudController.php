@@ -209,11 +209,13 @@ final class CrudController extends MoonShineController
 
         if ($request->ajax() || $request->wantsJson()) {
             $data = [];
+            $castedData = $resource->getCastedData();
+
             $resource
                 ->getFormFields()
                 ->onlyFields()
                 ->refreshFields()
-                ->fillCloned($item->toArray(), $resource->getCastedData())
+                ->fillCloned($castedData?->toArray() ?? [], $castedData)
                 ->each(function (FieldContract $field) use (&$data): void {
                     $data['htmlData'][] = [
                         'html' => (string) $field

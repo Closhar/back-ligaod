@@ -27,8 +27,8 @@ use MoonShine\UI\Exceptions\MoonShineComponentException;
 use Throwable;
 
 /**
- * @method CrudResource getResource()
-
+ * @template TResource of CrudResource = \MoonShine\Laravel\Resources\ModelResource
+ * @extends CrudPage<TResource>
  */
 class DetailPage extends CrudPage
 {

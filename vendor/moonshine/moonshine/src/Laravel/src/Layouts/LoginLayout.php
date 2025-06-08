@@ -79,7 +79,7 @@ final class LoginLayout extends BaseLayout
                     'lang' => $this->getHeadLang(),
                 ])
                 ->withAlpineJs()
-                ->withThemes(),
+                ->withThemes($this->isAlwaysDark()),
         ]);
     }
 }

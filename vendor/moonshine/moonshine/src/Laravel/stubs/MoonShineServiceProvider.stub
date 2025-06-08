@@ -21,8 +21,6 @@ class MoonShineServiceProvider extends ServiceProvider
      */
     public function boot(CoreContract $core, ConfiguratorContract $config): void
     {
-        // $config->authEnable();
-
         $core
             ->resources([
                 MoonShineUserResource::class,

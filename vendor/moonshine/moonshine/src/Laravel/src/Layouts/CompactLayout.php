@@ -118,7 +118,7 @@ class CompactLayout extends AppLayout
                     'lang' => $this->getHeadLang(),
                 ])
                 ->withAlpineJs()
-                ->withThemes(),
+                ->withThemes($this->isAlwaysDark()),
         ]);
     }
 }

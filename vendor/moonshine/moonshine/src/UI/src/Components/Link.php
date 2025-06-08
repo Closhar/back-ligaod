@@ -67,7 +67,7 @@ final class Link extends MoonShineComponent implements HasIconContract, HasLabel
     public function getView(): string
     {
         return 'moonshine::components.link-'
-            . ($this->isButton ? 'button' : 'native');
+               . ($this->isButton ? 'button' : 'native');
     }
 
     protected function prepareBeforeRender(): void
@@ -84,10 +84,10 @@ final class Link extends MoonShineComponent implements HasIconContract, HasLabel
     {
         return [
             'slot' => new ComponentSlot(
-                $this->getLabel()
+                $this->getLabel(),
             ),
             'icon' => new ComponentSlot(
-                $this->getIcon(4)
+                $this->getIcon(4),
             ),
             'filled' => $this->isFilled,
             'badge' => $this->hasBadge() ? $this->getBadge() : false,

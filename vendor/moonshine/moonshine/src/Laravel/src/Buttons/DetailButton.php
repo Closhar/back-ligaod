@@ -39,6 +39,7 @@ final class DetailButton
             $action
         )
             ->name('resource-detail-button')
+            ->withoutLoading()
             ->when(
                 $resource->isDetailInModal() && $isSeparateModal,
                 static fn (ActionButtonContract $button): ActionButtonContract => $button->async(

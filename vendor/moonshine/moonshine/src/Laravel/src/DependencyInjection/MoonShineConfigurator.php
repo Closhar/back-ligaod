@@ -64,6 +64,9 @@ final class MoonShineConfigurator implements ConfiguratorContract
     }
 
     /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     *
      * @param  list<class-string>|Closure  $middleware
      */
     public function middleware(array|Closure $middleware): self
@@ -72,6 +75,9 @@ final class MoonShineConfigurator implements ConfiguratorContract
     }
 
     /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     *
      * @param  list<class-string>|class-string  $middleware
      */
     public function addMiddleware(array|string $middleware): self
@@ -86,6 +92,10 @@ final class MoonShineConfigurator implements ConfiguratorContract
         ]);
     }
 
+    /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     */
     public function exceptMiddleware(array|string $except = []): self
     {
         $except = \is_string($except) ? [$except] : $except;
@@ -215,9 +225,36 @@ final class MoonShineConfigurator implements ConfiguratorContract
         return $this->get('use_profile', true);
     }
 
+    /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     */
     public function useProfile(): self
     {
         return $this->set('use_profile', true);
+    }
+
+    public function isUseRoutes(): bool
+    {
+        return $this->get('use_routes', true);
+    }
+
+    /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     */
+    public function useRoutes(): self
+    {
+        return $this->set('use_routes', true);
+    }
+
+    /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     */
+    public function disableRoutes(): self
+    {
+        return $this->set('use_routes', false);
     }
 
     public function isUseNotifications(): bool
@@ -286,11 +323,19 @@ final class MoonShineConfigurator implements ConfiguratorContract
         return $this->get('auth.enabled', true);
     }
 
+    /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     */
     public function authEnable(): self
     {
         return $this->set('auth.enabled', true);
     }
 
+    /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     */
     public function authDisable(): self
     {
         return $this->set('auth.enabled', false);
@@ -320,7 +365,11 @@ final class MoonShineConfigurator implements ConfiguratorContract
         return $this->get('auth.middleware', '');
     }
 
+
     /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     *
      * @param  class-string|Closure  $middleware
      */
     public function authMiddleware(string|Closure $middleware): self
@@ -338,6 +387,10 @@ final class MoonShineConfigurator implements ConfiguratorContract
         return $this->get('resource_prefix', 'resource');
     }
 
+    /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     */
     public function prefixes(string|Closure $route, string|Closure $page, string|Closure $resource): self
     {
         return $this
@@ -347,6 +400,10 @@ final class MoonShineConfigurator implements ConfiguratorContract
         ;
     }
 
+    /**
+     * @deprecated Will be removed in 4.0 (useless)
+     * @see for routes use config
+     */
     public function domain(string|Closure $domain): self
     {
         return $this->set('domain', $domain);
