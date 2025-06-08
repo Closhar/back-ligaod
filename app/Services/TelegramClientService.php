@@ -200,7 +200,7 @@ class TelegramClientService
     /**
      * Получить сообщения из канала
      */
-    public function getChannelMessages($channelId, $limit = 10, $offset = 0, $dateFrom = null)
+    public function getChannelMessages($channelId, $limit = 50, $offset = 0, $dateFrom = null)
     {
         try {
             // Убираем @ если он есть в начале
@@ -221,10 +221,10 @@ class TelegramClientService
             // Получаем сообщения из канала через messages.getHistory
             $messages = $this->madelineProto->messages->getHistory([
                 'peer' => $channelId,
-                'offset_id' => 0,
+                'offset_id' => $offset,
                 'offset_date' => 0,
                 'add_offset' => 0,
-                'limit' => $limit,
+                'limit' => $limit * 2, // Запрашиваем больше сообщений, так как некоторые могут быть отфильтрованы
                 'max_id' => 0,
                 'min_id' => 0,
                 'hash' => 0
@@ -233,6 +233,7 @@ class TelegramClientService
             Log::info('Получены сообщения из канала:', ['messages' => $messages]);
 
             $result = [];
+            $count = 0;
             if (isset($messages['messages'])) {
                 foreach ($messages['messages'] as $message) {
                     // Пропускаем служебные сообщения
@@ -256,7 +257,8 @@ class TelegramClientService
                         'link_preview' => $message['media']['webpage'] ?? null,
                     ];
 
-                    if (count($result) >= $limit) {
+                    $count++;
+                    if ($count >= $limit) {
                         break;
                     }
                 }
@@ -267,7 +269,11 @@ class TelegramClientService
                 return strtotime($b['date']) - strtotime($a['date']);
             });
 
-            return $result;
+            return [
+                'messages' => $result,
+                'has_more' => count($messages['messages']) > $count,
+                'next_offset' => $offset + $count
+            ];
         } catch (\Exception $e) {
             Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
             throw $e;

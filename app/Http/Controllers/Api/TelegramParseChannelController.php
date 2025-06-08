@@ -268,7 +268,10 @@ class TelegramParseChannelController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'channel_id' => 'required|string'
+                'channel_id' => 'required|string',
+                'limit' => 'nullable|integer|min:1|max:100',
+                'offset' => 'nullable|integer|min:0',
+                'date_from' => 'nullable|date'
             ]);
 
             if ($validator->fails()) {
@@ -280,7 +283,10 @@ class TelegramParseChannelController extends Controller
             }
 
             \Log::info('Начало тестирования получения сообщений', [
-                'channel_id' => $request->channel_id
+                'channel_id' => $request->channel_id,
+                'limit' => $request->limit,
+                'offset' => $request->offset,
+                'date_from' => $request->date_from
             ]);
 
             $telegramService = app(TelegramClientService::class);
@@ -313,7 +319,12 @@ class TelegramParseChannelController extends Controller
 
             // Пробуем получить сообщения
             try {
-                $messages = $telegramService->getChannelMessages($request->channel_id, null, 1);
+                $messages = $telegramService->getChannelMessages(
+                    $request->channel_id,
+                    $request->limit ?? 50,
+                    $request->offset ?? 0,
+                    $request->date_from
+                );
                 \Log::info('Получены сообщения:', ['messages' => $messages]);
             } catch (\Exception $e) {
                 \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
@@ -328,7 +339,11 @@ class TelegramParseChannelController extends Controller
                 'success' => true,
                 'data' => [
                     'channel_info' => $channelInfo,
-                    'messages' => $messages
+                    'messages' => $messages['messages'],
+                    'pagination' => [
+                        'has_more' => $messages['has_more'],
+                        'next_offset' => $messages['next_offset']
+                    ]
                 ]
             ]);
 
