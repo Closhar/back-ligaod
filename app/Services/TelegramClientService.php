@@ -119,8 +119,10 @@ class TelegramClientService
     public function getChannelMessages($channelId, $dateFrom = null, $limit = 100)
     {
         try {
+            // Получаем канал из базы данных по ID
             $channel = TelegramParseChannel::findOrFail($channelId);
             \Log::info('Получение сообщений для канала:', [
+                'id' => $channel->id,
                 'channel_id' => $channel->channel_id,
                 'username' => $channel->username
             ]);
