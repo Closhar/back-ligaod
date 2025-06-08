@@ -141,24 +141,21 @@ class TelegramClientService
 
             \Log::info('Используем peer:', ['peer' => $peer]);
 
-            // Получаем информацию о канале
+            // Получаем информацию о канале через channels->getChannels
             try {
-                $channelInfo = $this->madelineProto->getFullInfo($peer);
-                \Log::info('Получена информация о канале:', ['info' => $channelInfo]);
-            } catch (\Exception $e) {
-                \Log::warning('Не удалось получить информацию о канале: ' . $e->getMessage());
-                // Продолжаем выполнение, так как это не критическая ошибка
-            }
+                $channels = $this->madelineProto->channels->getChannels([
+                    'id' => [$peer]
+                ]);
+                \Log::info('Получена информация о канале через getChannels:', ['channels' => $channels]);
 
-            // Пробуем получить сообщения разными способами
-            $messages = null;
-            $lastError = null;
+                if (empty($channels['chats'])) {
+                    throw new \Exception('Канал не найден');
+                }
 
-            // Способ 1: через getPwrChat
-            try {
-                $chat = $this->madelineProto->getPwrChat($peer);
-                \Log::info('Получена информация о чате через getPwrChat:', ['chat' => $chat]);
+                $chat = $channels['chats'][0];
+                \Log::info('Найден чат:', ['chat' => $chat]);
 
+                // Получаем сообщения
                 $messages = $this->madelineProto->messages->getHistory([
                     'peer' => $chat,
                     'offset_id' => 0,
@@ -169,46 +166,18 @@ class TelegramClientService
                     'min_id' => 0,
                     'hash' => 0
                 ]);
-                \Log::info('Получены сообщения через getPwrChat');
+
+                \Log::info('Успешно получены сообщения:', ['count' => count($messages['messages'])]);
+
+                // Кэшируем результат на 1 час
+                $cacheKey = "telegram_messages_{$channelId}_{$dateFrom}_{$limit}";
+                Cache::put($cacheKey, $messages, 3600);
+
+                return $messages;
             } catch (\Exception $e) {
-                $lastError = $e;
-                \Log::warning('Не удалось получить сообщения через getPwrChat: ' . $e->getMessage());
+                \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+                throw new \Exception('Ошибка при получении сообщений: ' . $e->getMessage());
             }
-
-            // Способ 2: через getInfo
-            if (!$messages) {
-                try {
-                    $chat = $this->madelineProto->getInfo($peer);
-                    \Log::info('Получена информация о чате через getInfo:', ['chat' => $chat]);
-
-                    $messages = $this->madelineProto->messages->getHistory([
-                        'peer' => $chat,
-                        'offset_id' => 0,
-                        'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
-                        'add_offset' => 0,
-                        'limit' => $limit,
-                        'max_id' => 0,
-                        'min_id' => 0,
-                        'hash' => 0
-                    ]);
-                    \Log::info('Получены сообщения через getInfo');
-                } catch (\Exception $e) {
-                    $lastError = $e;
-                    \Log::warning('Не удалось получить сообщения через getInfo: ' . $e->getMessage());
-                }
-            }
-
-            if (!$messages) {
-                throw new \Exception('Не удалось получить сообщения. Последняя ошибка: ' . $lastError->getMessage());
-            }
-
-            \Log::info('Успешно получены сообщения:', ['count' => count($messages['messages'])]);
-
-            // Кэшируем результат на 1 час
-            $cacheKey = "telegram_messages_{$channelId}_{$dateFrom}_{$limit}";
-            Cache::put($cacheKey, $messages, 3600);
-
-            return $messages;
         } catch (\Exception $e) {
             \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
             throw new \Exception('Ошибка при получении сообщений: ' . $e->getMessage());
