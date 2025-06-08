@@ -24,9 +24,9 @@ class TelegramClientService
     public function __construct()
     {
         try {
-            // Определяем пути
+            // Определяем путь к сессии
             $this->sessionPath = storage_path('madeline');
-            $this->logPath = storage_path('madeline/madeline.log');
+            $sessionFile = $this->sessionPath . '/madeline.madeline';
 
             // Проверяем и создаем директорию если нужно
             if (!is_dir($this->sessionPath)) {
@@ -49,19 +49,15 @@ class TelegramClientService
             $appInfo->setApiHash(config('services.telegram.api_hash'));
             $settings->setAppInfo($appInfo);
 
-            // Настройки логгера - используем только встроенный логгер Laravel
+            // Отключаем логирование
             $logger = new \danog\MadelineProto\Settings\Logger;
-            $logger->setType(\danog\MadelineProto\Logger::LOGGER_DEFAULT);
-            $logger->setLevel(\danog\MadelineProto\Logger::VERBOSE);
+            $logger->setType(\danog\MadelineProto\Logger::LOGGER_NONE);
             $settings->setLogger($logger);
 
             // Настройки сериализации
             $serialization = new \danog\MadelineProto\Settings\Serialization;
             $serialization->setInterval(30);
             $settings->setSerialization($serialization);
-
-            // Путь к файлу сессии
-            $sessionFile = $this->sessionPath . '/madeline.madeline';
 
             // Проверяем права на файл сессии
             if (file_exists($sessionFile) && !is_writable($sessionFile)) {
