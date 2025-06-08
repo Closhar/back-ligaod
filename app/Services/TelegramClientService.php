@@ -133,26 +133,23 @@ class TelegramClientService
                 $self = $this->madelineProto->getSelf();
                 \Log::info('Информация о текущем пользователе:', ['self' => $self]);
 
-                // Используем числовой ID канала
-                $channelId = str_replace('-100', '', $channel->channel_id);
-                \Log::info('Используем числовой ID канала:', ['channelId' => $channelId]);
-
-                // Получаем информацию о канале через getFullInfo
-                $fullInfo = $this->madelineProto->getFullInfo($channelId);
-                \Log::info('Получена информация через getFullInfo:', ['fullInfo' => $fullInfo]);
+                // Получаем информацию о канале через getInfo
+                $info = $this->madelineProto->getInfo($channel->channel_id);
+                \Log::info('Получена информация через getInfo:', ['info' => $info]);
 
                 // Проверяем структуру данных
-                if (!isset($fullInfo['Chat'])) {
-                    \Log::error('Отсутствует ключ Chat в ответе getFullInfo');
+                if (!isset($info['Chat'])) {
+                    \Log::error('Отсутствует ключ Chat в ответе getInfo');
                     throw new \Exception('Неверная структура данных канала');
                 }
 
-                $chat = $fullInfo['Chat'];
+                $chat = $info['Chat'];
                 \Log::info('Информация о чате:', [
                     'type' => $chat['_'] ?? 'unknown',
                     'id' => $chat['id'] ?? 'unknown',
                     'title' => $chat['title'] ?? 'unknown',
-                    'username' => $chat['username'] ?? 'unknown'
+                    'username' => $chat['username'] ?? 'unknown',
+                    'access_hash' => $chat['access_hash'] ?? 'unknown'
                 ]);
 
                 // Проверяем, что это действительно канал
