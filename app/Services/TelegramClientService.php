@@ -24,10 +24,17 @@ class TelegramClientService
     {
         $this->cachePrefix = 'telegram_parse_';
         $this->sessionPath = storage_path('app/madeline');
+        $this->logPath = public_path('MadelineProto.log');
 
         // Создаем директорию для сессии, если она не существует
         if (!file_exists($this->sessionPath)) {
             mkdir($this->sessionPath, 0777, true);
+        }
+
+        // Создаем файл логов, если он не существует
+        if (!file_exists($this->logPath)) {
+            touch($this->logPath);
+            chmod($this->logPath, 0666);
         }
 
         try {
@@ -39,9 +46,11 @@ class TelegramClientService
             $appInfo->setApiHash(config('services.telegram.api_hash'));
             $settings->setAppInfo($appInfo);
 
-            // Отключаем логирование в MadelineProto
+            // Настройки логгера
             $logger = new \danog\MadelineProto\Settings\Logger;
-            $logger->setType(\danog\MadelineProto\Logger::NOTICE);
+            $logger->setType(\danog\MadelineProto\Logger::FILE_LOGGER);
+            $logger->setLevel(\danog\MadelineProto\Logger::NOTICE);
+            $logger->setExtra($this->logPath);
             $settings->setLogger($logger);
 
             // Настройки сериализации
