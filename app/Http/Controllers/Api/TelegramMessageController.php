@@ -23,6 +23,8 @@ class TelegramMessageController extends Controller
      */
     public function fetchMessages(Request $request)
     {
+        \Log::info('Получен запрос на получение сообщений:', $request->all());
+
         $validator = Validator::make($request->all(), [
             'channel_id' => 'required|exists:telegram_parse_channels,id',
             'date_from' => 'required|date',
@@ -38,6 +40,7 @@ class TelegramMessageController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Ошибка валидации:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка валидации',
@@ -49,6 +52,7 @@ class TelegramMessageController extends Controller
 
         try {
             $channel = TelegramParseChannel::findOrFail($request->channel_id);
+            \Log::info('Найден канал:', $channel->toArray());
 
             // Получаем сообщения через Telegram Client API
             $messages = $this->telegramClientService->getChannelMessages(
@@ -57,19 +61,21 @@ class TelegramMessageController extends Controller
                 $request->input('limit', 100)
             );
 
+            \Log::info('Получены сообщения:', ['count' => count($messages['messages'])]);
+
             // Сохраняем сообщения в базу данных
             $savedMessages = [];
-            foreach ($messages as $message) {
+            foreach ($messages['messages'] as $message) {
                 $savedMessage = TelegramMessage::updateOrCreate(
                     [
                         'channel_id' => $channel->id,
-                        'message_id' => $message['message_id']
+                        'message_id' => $message['id']
                     ],
                     [
-                        'content' => $message['text'] ?? null,
+                        'content' => $message['message'] ?? null,
                         'media' => $message['media'] ?? null,
-                        'message_date' => $message['date'],
-                        'raw_data' => $message['raw_data'] ?? $message
+                        'message_date' => date('Y-m-d H:i:s', $message['date']),
+                        'raw_data' => $message
                     ]
                 );
                 $savedMessages[] = $savedMessage;
