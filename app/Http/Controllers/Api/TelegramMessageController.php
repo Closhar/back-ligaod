@@ -52,7 +52,7 @@ class TelegramMessageController extends Controller
 
             // Получаем сообщения через Telegram Client API
             $messages = $this->telegramClientService->getChannelMessages(
-                $channel->channel_id,
+                $channel->id,
                 $request->date_from,
                 $request->input('limit', 100)
             );
