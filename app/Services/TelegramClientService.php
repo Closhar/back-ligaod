@@ -59,9 +59,6 @@ class TelegramClientService
             // Инициализация MadelineProto с отключенным логированием
             $this->madelineProto = new API($this->sessionPath, $settings);
 
-            // Отключаем логирование после инициализации
-            $this->madelineProto->logger->setLevel(5);
-
             Log::info('MadelineProto успешно инициализирован');
         } catch (\Exception $e) {
             Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage());
