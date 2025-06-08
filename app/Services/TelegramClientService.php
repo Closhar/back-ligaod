@@ -168,20 +168,13 @@ class TelegramClientService
 
                 \Log::info('Сформирован InputPeerChannel:', ['inputPeer' => $inputPeer]);
 
-                // Получаем сообщения через messages->getHistory
-                $messages = $this->madelineProto->messages->getHistory([
-                    'peer' => $inputPeer,
-                    'offset_id' => 0,
-                    'offset_date' => 0,
-                    'add_offset' => 0,
-                    'limit' => $limit,
-                    'max_id' => 0,
-                    'min_id' => 0,
-                    'hash' => 0,
-                    'from_id' => null
+                // Получаем сообщения через channels->getMessages
+                $messages = $this->madelineProto->channels->getMessages([
+                    'channel' => $inputPeer,
+                    'id' => range(1, $limit) // Получаем сообщения с ID от 1 до limit
                 ]);
 
-                \Log::info('Получены сообщения через messages->getHistory');
+                \Log::info('Получены сообщения через channels->getMessages');
 
                 if (!isset($messages['messages'])) {
                     throw new \Exception('Не удалось получить сообщения из канала');
