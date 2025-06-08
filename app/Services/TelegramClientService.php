@@ -127,24 +127,27 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Формируем InputPeer для канала
-            $inputPeer = [
-                '_' => 'inputPeerChannel',
-                'channel_id' => intval(str_replace('-100', '', $channel->channel_id)),
-                'access_hash' => 0
-            ];
+            if (!$channel->username) {
+                throw new \Exception('Username канала не указан');
+            }
 
-            \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
-
-            // Получаем полную информацию о канале
+            // Получаем информацию о канале через username
             try {
-                $fullInfo = $this->madelineProto->getFullInfo($inputPeer);
-                \Log::info('Получена полная информация о канале:', ['fullInfo' => $fullInfo]);
+                $info = $this->madelineProto->getInfo($channel->username);
+                \Log::info('Получена информация о канале:', ['info' => $info]);
 
-                if (isset($fullInfo['full']['access_hash'])) {
-                    $inputPeer['access_hash'] = $fullInfo['full']['access_hash'];
-                    \Log::info('Обновлен access_hash:', ['access_hash' => $inputPeer['access_hash']]);
+                if (!isset($info['type']) || $info['type'] !== 'channel') {
+                    throw new \Exception('Указанный username не является каналом');
                 }
+
+                // Формируем InputPeer для канала
+                $inputPeer = [
+                    '_' => 'inputPeerChannel',
+                    'channel_id' => $info['id'],
+                    'access_hash' => $info['access_hash']
+                ];
+
+                \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
 
                 // Получаем сообщения
                 $messages = $this->madelineProto->messages->getHistory([
