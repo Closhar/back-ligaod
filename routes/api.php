@@ -142,7 +142,7 @@ Route::prefix('telegram')->group(function () {
     Route::post('/send', [TelegramController::class, 'sendMessage']);
 
     // Маршруты для тестирования
-    Route::get('/test-auth', [TelegramParseChannelController::class, 'testAuth']);
+    Route::match(['get', 'post'], '/test-auth', [TelegramParseChannelController::class, 'testAuth']);
     Route::get('/test-messages', [TelegramParseChannelController::class, 'testMessages']);
 
     // Маршруты для управления каналами парсинга
