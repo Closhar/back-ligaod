@@ -127,26 +127,64 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Сначала пробуем получить информацию о канале
+            // Получаем список диалогов
             try {
-                $channelInfo = $this->madelineProto->channels->getFullChannel([
-                    'channel' => '@' . ltrim($channel->username, '@')
-                ]);
-                \Log::info('Информация о канале получена:', $channelInfo);
-            } catch (\Exception $e) {
-                \Log::warning('Не удалось получить информацию о канале по username: ' . $e->getMessage());
+                $dialogs = $this->madelineProto->getDialogs();
+                \Log::info('Получены диалоги:', ['count' => count($dialogs)]);
 
-                try {
-                    $channelInfo = $this->madelineProto->channels->getFullChannel([
-                        'channel' => $channel->channel_id
-                    ]);
-                    \Log::info('Информация о канале получена по channel_id:', $channelInfo);
-                } catch (\Exception $e2) {
-                    \Log::warning('Не удалось получить информацию о канале по channel_id: ' . $e2->getMessage());
+                // Ищем наш канал в диалогах
+                $foundPeer = null;
+                foreach ($dialogs as $dialog) {
+                    if (isset($dialog['peer'])) {
+                        $peer = $dialog['peer'];
+                        \Log::info('Проверяем peer:', $peer);
+
+                        // Проверяем по username
+                        if ($channel->username && isset($peer['username']) && $peer['username'] === ltrim($channel->username, '@')) {
+                            $foundPeer = $peer;
+                            \Log::info('Найден peer по username:', $peer);
+                            break;
+                        }
+
+                        // Проверяем по channel_id
+                        if ($channel->channel_id && isset($peer['id']) && $peer['id'] === $channel->channel_id) {
+                            $foundPeer = $peer;
+                            \Log::info('Найден peer по channel_id:', $peer);
+                            break;
+                        }
+                    }
                 }
+
+                if ($foundPeer) {
+                    \Log::info('Используем найденный peer:', $foundPeer);
+
+                    // Получаем сообщения
+                    $messages = $this->madelineProto->messages->getHistory([
+                        'peer' => $foundPeer,
+                        'offset_id' => 0,
+                        'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
+                        'add_offset' => 0,
+                        'limit' => $limit,
+                        'max_id' => 0,
+                        'min_id' => 0,
+                        'hash' => 0
+                    ]);
+
+                    \Log::info('Успешно получены сообщения:', ['count' => count($messages['messages'])]);
+
+                    // Кэшируем результат на 1 час
+                    $cacheKey = "telegram_messages_{$channelId}_{$dateFrom}_{$limit}";
+                    Cache::put($cacheKey, $messages, 3600);
+
+                    return $messages;
+                } else {
+                    \Log::warning('Канал не найден в диалогах');
+                }
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при получении диалогов: ' . $e->getMessage());
             }
 
-            // Пробуем разные варианты идентификатора канала
+            // Если не удалось найти канал в диалогах, пробуем стандартные методы
             $peers = [];
 
             // Вариант 1: username
