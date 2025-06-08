@@ -133,45 +133,37 @@ class TelegramClientService
                 $self = $this->madelineProto->getSelf();
                 \Log::info('Информация о текущем пользователе:', ['self' => $self]);
 
-                // Получаем информацию о канале через getFullInfo
-                $fullInfo = $this->madelineProto->getFullInfo($channel->channel_id);
-                \Log::info('Получена информация через getFullInfo:', ['fullInfo' => $fullInfo]);
+                // Получаем информацию о канале через getPwrChat
+                $pwrChat = $this->madelineProto->getPwrChat($channel->channel_id);
+                \Log::info('Получена информация через getPwrChat:', ['pwrChat' => $pwrChat]);
 
                 // Проверяем структуру данных
-                if (!isset($fullInfo['Chat'])) {
-                    \Log::error('Отсутствует ключ Chat в ответе getFullInfo');
+                if (!isset($pwrChat['id']) || !isset($pwrChat['type']) || $pwrChat['type'] !== 'channel') {
+                    \Log::error('Неверная структура данных канала или тип не channel');
                     throw new \Exception('Неверная структура данных канала');
                 }
 
-                $chat = $fullInfo['Chat'];
-                \Log::info('Информация о чате:', [
-                    'type' => $chat['_'] ?? 'unknown',
-                    'id' => $chat['id'] ?? 'unknown',
-                    'title' => $chat['title'] ?? 'unknown',
-                    'username' => $chat['username'] ?? 'unknown',
-                    'access_hash' => $chat['access_hash'] ?? 'unknown'
+                \Log::info('Информация о канале:', [
+                    'id' => $pwrChat['id'],
+                    'type' => $pwrChat['type'],
+                    'title' => $pwrChat['title'] ?? 'unknown',
+                    'username' => $pwrChat['username'] ?? 'unknown'
                 ]);
 
-                // Проверяем, что это действительно канал
-                if (!isset($chat['_']) || $chat['_'] !== 'channel') {
-                    \Log::error('Полученный чат не является каналом');
-                    throw new \Exception('Указанный идентификатор не является каналом');
-                }
+                // Получаем дополнительную информацию через getInfo для получения access_hash
+                $info = $this->madelineProto->getInfo($channel->channel_id);
+                \Log::info('Получена информация через getInfo:', ['info' => $info]);
 
-                // Проверяем наличие необходимых данных
-                if (!isset($chat['id']) || !isset($chat['access_hash'])) {
-                    \Log::error('Отсутствуют необходимые данные канала', [
-                        'has_id' => isset($chat['id']),
-                        'has_access_hash' => isset($chat['access_hash'])
-                    ]);
-                    throw new \Exception('Отсутствуют необходимые данные канала');
+                if (!isset($info['Chat']) || !isset($info['Chat']['access_hash'])) {
+                    \Log::error('Отсутствует access_hash в ответе getInfo');
+                    throw new \Exception('Не удалось получить access_hash канала');
                 }
 
                 // Формируем InputPeerChannel
                 $inputPeer = [
                     '_' => 'inputPeerChannel',
-                    'channel_id' => abs($chat['id']),
-                    'access_hash' => $chat['access_hash']
+                    'channel_id' => abs($pwrChat['id']),
+                    'access_hash' => $info['Chat']['access_hash']
                 ];
 
                 \Log::info('Сформирован InputPeerChannel:', ['inputPeer' => $inputPeer]);
