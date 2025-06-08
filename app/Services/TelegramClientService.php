@@ -14,63 +14,44 @@ use Illuminate\Support\Facades\Cache;
 class TelegramClientService
 {
     private $madelineProto;
-    private $sessionFile;
-    private $cachePrefix = 'telegram_client_';
+    private $sessionPath;
+    private $logPath;
+    private $cachePrefix = 'telegram_parse_';
     private $rateLimit = 30;
     private $rateLimitWindow = 60;
 
     public function __construct()
     {
-        $this->sessionFile = storage_path('app/telegram/session.madeline');
-        $this->initializeMadelineProto();
-    }
+        $this->cachePrefix = 'telegram_parse_';
+        $this->sessionPath = storage_path('app/madeline');
+        $this->logPath = public_path('MadelineProto/madeline.log');
 
-    /**
-     * Инициализация MadelineProto
-     */
-    private function initializeMadelineProto()
-    {
+        // Создаем директорию для сессии, если она не существует
+        if (!file_exists($this->sessionPath)) {
+            mkdir($this->sessionPath, 0777, true);
+        }
+
         try {
-            $apiId = config('services.telegram.api_id');
-            $apiHash = config('services.telegram.api_hash');
+            $settings = [
+                'app_info' => [
+                    'api_id' => config('services.telegram.api_id'),
+                    'api_hash' => config('services.telegram.api_hash')
+                ],
+                'logger' => [
+                    'logger' => \danog\MadelineProto\Logger::FILE_LOGGER,
+                    'logger_level' => \danog\MadelineProto\Logger::VERBOSE,
+                    'logger' => $this->logPath
+                ],
+                'serialization' => [
+                    'serialization_interval' => 30,
+                    'serialization' => [
+                        'type' => 'file',
+                        'path' => $this->sessionPath . '/session.madeline'
+                    ]
+                ]
+            ];
 
-            // Отладочная информация
-            Log::info('Telegram API ID: ' . $apiId);
-            Log::info('Telegram API Hash: ' . $apiHash);
-            Log::info('Raw API ID from env: ' . env('TELEGRAM_API_ID'));
-            Log::info('Raw API Hash from env: ' . env('TELEGRAM_API_HASH'));
-
-            if (empty($apiId) || empty($apiHash)) {
-                throw new \Exception('TELEGRAM_API_ID и TELEGRAM_API_HASH должны быть установлены в .env файле. Текущие значения: API_ID=' . $apiId . ', API_HASH=' . $apiHash);
-            }
-
-            $settings = new Settings;
-
-            // Настройки приложения
-            $appInfo = new AppInfo;
-            $appInfo->setApiId((int)$apiId);
-            $appInfo->setApiHash($apiHash);
-            $settings->setAppInfo($appInfo);
-
-            // Настройки прокси
-            if (config('services.telegram.proxy.enabled', false)) {
-                $proxy = new Proxy;
-                $proxy->setExtra([
-                    'address' => config('services.telegram.proxy.address'),
-                    'port' => (int)config('services.telegram.proxy.port'),
-                    'username' => config('services.telegram.proxy.username'),
-                    'password' => config('services.telegram.proxy.password')
-                ]);
-                $settings->setProxy($proxy);
-            }
-
-            // Настройки сериализации
-            $serialization = new Serialization;
-            $serialization->setInterval(30);
-            $settings->setSerialization($serialization);
-
-            $this->madelineProto = new API($this->sessionFile, $settings);
-            $this->madelineProto->start();
+            $this->madelineProto = new \danog\MadelineProto\API($this->sessionPath . '/session.madeline', $settings);
         } catch (\Exception $e) {
             Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage());
             throw $e;
