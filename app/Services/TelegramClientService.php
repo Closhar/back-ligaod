@@ -127,10 +127,6 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            if (!$channel->username) {
-                throw new \Exception('Username канала не указан');
-            }
-
             // Пробуем получить информацию о канале разными способами
             $channelInfo = null;
             $methods = [
@@ -142,6 +138,18 @@ class TelegramClientService
                 },
                 'getPwrChat' => function() use ($channel) {
                     return $this->madelineProto->getPwrChat($channel->username);
+                },
+                'getChannels' => function() use ($channel) {
+                    $inputChannel = [
+                        '_' => 'inputChannel',
+                        'channel_id' => intval(str_replace('-100', '', $channel->channel_id)),
+                        'access_hash' => 0
+                    ];
+                    $result = $this->madelineProto->channels->getChannels(['id' => [$inputChannel]]);
+                    if (!empty($result['chats'])) {
+                        return $result['chats'][0];
+                    }
+                    throw new \Exception('Канал не найден в результатах getChannels');
                 }
             ];
 
