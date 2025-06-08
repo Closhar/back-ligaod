@@ -139,6 +139,19 @@ class TelegramClientService
 
             Log::info('Попытка получения сообщений из канала: ' . $channelId);
 
+            // Пробуем получить информацию о канале
+            try {
+                $channelInfo = $this->madelineProto->channels->getFullChannel([
+                    'channel' => $channelId
+                ]);
+                Log::info('Получена информация о канале: ' . json_encode($channelInfo));
+            } catch (\Exception $e) {
+                Log::error('Ошибка получения информации о канале: ' . $e->getMessage());
+                // Пробуем альтернативный формат
+                $channelId = 'https://t.me/' . ltrim($channelId, '@');
+                Log::info('Пробуем альтернативный формат: ' . $channelId);
+            }
+
             // Получаем сообщения
             $messages = $this->madelineProto->messages->getHistory([
                 'peer' => $channelId,
