@@ -7,6 +7,7 @@ use App\Models\TelegramParseChannel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Cache;
+use App\Services\TelegramClientService;
 
 class TelegramParseChannelController extends Controller
 {
@@ -163,6 +164,26 @@ class TelegramParseChannelController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Не удалось получить статистику канала',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Тестирование авторизации в Telegram
+     */
+    public function testAuth()
+    {
+        try {
+            $telegramService = app(TelegramClientService::class);
+            return response()->json([
+                'success' => true,
+                'message' => 'Авторизация успешна'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка авторизации',
                 'error' => $e->getMessage()
             ], 500);
         }

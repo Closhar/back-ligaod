@@ -59,8 +59,55 @@ class TelegramClientService
             $settings->setSerialization($serialization);
 
             $this->madelineProto = new \danog\MadelineProto\API($this->sessionPath . '/session.madeline', $settings);
+
+            // Выполняем авторизацию
+            $this->login();
         } catch (\Exception $e) {
             Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Авторизация в Telegram
+     */
+    private function login()
+    {
+        try {
+            if (!$this->madelineProto->getSelf()) {
+                Log::info('Начинаем процесс авторизации в Telegram');
+
+                // Получаем номер телефона из конфигурации
+                $phone = config('services.telegram.phone');
+                if (empty($phone)) {
+                    throw new \Exception('Номер телефона не указан в конфигурации');
+                }
+
+                // Отправляем код подтверждения
+                $sentCode = $this->madelineProto->phoneLogin($phone);
+
+                // Получаем код из конфигурации
+                $code = config('services.telegram.code');
+                if (empty($code)) {
+                    throw new \Exception('Код подтверждения не указан в конфигурации');
+                }
+
+                // Подтверждаем код
+                $authorization = $this->madelineProto->completePhoneLogin($code);
+
+                if ($authorization['_'] === 'account.password') {
+                    // Если требуется двухфакторная аутентификация
+                    $password = config('services.telegram.password');
+                    if (empty($password)) {
+                        throw new \Exception('Пароль двухфакторной аутентификации не указан в конфигурации');
+                    }
+                    $this->madelineProto->complete2faLogin($password);
+                }
+
+                Log::info('Авторизация в Telegram успешно завершена');
+            }
+        } catch (\Exception $e) {
+            Log::error('Ошибка авторизации в Telegram: ' . $e->getMessage());
             throw $e;
         }
     }
