@@ -40,13 +40,6 @@ class TelegramClientService
                 throw new \Exception("Нет прав на запись в директорию: {$this->sessionPath}");
             }
 
-            // Проверяем существование файла логов и права на запись
-            if (file_exists($this->logPath) && !is_writable($this->logPath)) {
-                if (!chmod($this->logPath, 0666)) {
-                    throw new \Exception("Не удалось установить права на файл логов: {$this->logPath}");
-                }
-            }
-
             // Создаем объект настроек
             $settings = new \danog\MadelineProto\Settings;
 
@@ -56,11 +49,10 @@ class TelegramClientService
             $appInfo->setApiHash(config('services.telegram.api_hash'));
             $settings->setAppInfo($appInfo);
 
-            // Настройки логгера
+            // Настройки логгера - используем только встроенный логгер Laravel
             $logger = new \danog\MadelineProto\Settings\Logger;
-            $logger->setType(\danog\MadelineProto\Logger::FILE_LOGGER);
+            $logger->setType(\danog\MadelineProto\Logger::LOGGER_DEFAULT);
             $logger->setLevel(\danog\MadelineProto\Logger::VERBOSE);
-            $logger->setExtra($this->logPath);
             $settings->setLogger($logger);
 
             // Настройки сериализации
@@ -83,14 +75,12 @@ class TelegramClientService
 
             \Log::info('MadelineProto успешно инициализирован', [
                 'session_path' => $this->sessionPath,
-                'log_path' => $this->logPath,
                 'session_file' => $sessionFile
             ]);
 
         } catch (\Exception $e) {
             \Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage(), [
-                'session_path' => $this->sessionPath ?? 'не определен',
-                'log_path' => $this->logPath ?? 'не определен'
+                'session_path' => $this->sessionPath ?? 'не определен'
             ]);
             throw $e;
         }
