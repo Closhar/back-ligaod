@@ -38,7 +38,7 @@ class TelegramClientService
 
             // Проверяем права на запись в директорию
             if (!is_writable($sessionDir)) {
-                chmod($sessionDir, 0777);
+                throw new \Exception("Нет прав на запись в директорию: {$sessionDir}");
             }
 
             // Настройки MadelineProto
