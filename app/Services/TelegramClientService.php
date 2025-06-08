@@ -24,14 +24,10 @@ class TelegramClientService
     {
         $this->cachePrefix = 'telegram_parse_';
         $this->sessionPath = storage_path('app/madeline');
-        $this->logPath = storage_path('logs/madeline');
 
-        // Создаем директории, если они не существуют
+        // Создаем директорию для сессии, если она не существует
         if (!file_exists($this->sessionPath)) {
             mkdir($this->sessionPath, 0777, true);
-        }
-        if (!file_exists($this->logPath)) {
-            mkdir($this->logPath, 0777, true);
         }
 
         try {
@@ -43,11 +39,9 @@ class TelegramClientService
             $appInfo->setApiHash(config('services.telegram.api_hash'));
             $settings->setAppInfo($appInfo);
 
-            // Настройки логгера
+            // Отключаем логирование в MadelineProto
             $logger = new \danog\MadelineProto\Settings\Logger;
-            $logger->setType(\danog\MadelineProto\Logger::FILE_LOGGER);
-            $logger->setLevel(\danog\MadelineProto\Logger::VERBOSE);
-            $logger->setExtra($this->logPath . '/madeline.log');
+            $logger->setType(\danog\MadelineProto\Logger::LOGGER_NONE);
             $settings->setLogger($logger);
 
             // Настройки сериализации
@@ -76,12 +70,14 @@ class TelegramClientService
 
         // Проверяем ограничение запросов
         if (!$this->checkRateLimit()) {
+            Log::error('Превышен лимит запросов к Telegram API');
             throw new \Exception('Превышен лимит запросов к Telegram API');
         }
 
         try {
             // Получаем peer (канал)
             $peer = $this->madelineProto->getPwrChat($channel);
+            Log::info('Получен peer для канала: ' . $channel);
 
             // Получаем сообщения
             $messages = $this->madelineProto->messages->getHistory([
@@ -94,6 +90,7 @@ class TelegramClientService
                 'min_id' => 0,
                 'hash' => 0
             ]);
+            Log::info('Получено сообщений: ' . count($messages['messages']));
 
             $result = [];
             foreach ($messages['messages'] as $message) {
