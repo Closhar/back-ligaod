@@ -140,19 +140,19 @@ class TelegramClientService
             $self = $this->madelineProto->getSelf();
             \Log::info('Информация о текущем пользователе:', ['self' => $self]);
 
-            // Получаем информацию о канале
-            $channelInfo = $this->madelineProto->getInfo($channel->channel_id);
-            \Log::info('Получена информация о канале:', ['info' => $channelInfo]);
+            // Получаем полную информацию о канале
+            $fullInfo = $this->madelineProto->getFullInfo($channel->channel_id);
+            \Log::info('Получена полная информация о канале:', ['fullInfo' => $fullInfo]);
 
-            if (!isset($channelInfo['Chat']) || !isset($channelInfo['Chat']['access_hash'])) {
-                throw new \Exception('Не удалось получить информацию о канале');
+            if (!isset($fullInfo['Chat']) || !isset($fullInfo['Chat']['id']) || !isset($fullInfo['Chat']['access_hash'])) {
+                throw new \Exception('Не удалось получить полную информацию о канале');
             }
 
             // Формируем InputPeerChannel
             $inputPeer = [
                 '_' => 'inputPeerChannel',
-                'channel_id' => abs($channelInfo['Chat']['id']),
-                'access_hash' => $channelInfo['Chat']['access_hash']
+                'channel_id' => abs($fullInfo['Chat']['id']),
+                'access_hash' => $fullInfo['Chat']['access_hash']
             ];
 
             \Log::info('Сформирован InputPeerChannel:', ['inputPeer' => $inputPeer]);
