@@ -67,6 +67,50 @@ class TelegramClientService
     }
 
     /**
+     * Авторизация в Telegram
+     */
+    public function login()
+    {
+        try {
+            Log::info('Начинаем процесс авторизации в Telegram');
+
+            // Проверяем, существует ли файл сессии
+            if (file_exists($this->sessionPath)) {
+                Log::info('Найдена существующая сессия, пробуем использовать её');
+                try {
+                    $self = $this->madelineProto->getSelf();
+                    if ($self) {
+                        Log::info('Успешно авторизованы через существующую сессию');
+                        return true;
+                    }
+                } catch (\Exception $e) {
+                    Log::warning('Не удалось использовать существующую сессию: ' . $e->getMessage());
+                }
+            }
+
+            // Если сессия не существует или не работает, начинаем новую авторизацию
+            Log::info('Начинаем новую авторизацию');
+
+            // Запускаем процесс авторизации
+            $this->madelineProto->start();
+
+            // Проверяем результат авторизации
+            $self = $this->madelineProto->getSelf();
+            if (!$self) {
+                throw new \Exception('Не удалось получить информацию о пользователе после авторизации');
+            }
+
+            Log::info('Успешно авторизованы в Telegram');
+            return true;
+
+        } catch (\Exception $e) {
+            Log::error('Ошибка при авторизации: ' . $e->getMessage());
+            Log::error('Трейс ошибки: ' . $e->getTraceAsString());
+            throw $e;
+        }
+    }
+
+    /**
      * Получить информацию о текущем пользователе
      */
     public function getSelf()
@@ -74,7 +118,7 @@ class TelegramClientService
         try {
             Log::info('Начинаем получение информации о пользователе');
 
-            // Проверяем, что MadelineProto инициализирован
+            // Проверяем авторизацию
             if (!$this->madelineProto) {
                 throw new \Exception('MadelineProto не инициализирован');
             }
@@ -84,16 +128,15 @@ class TelegramClientService
             Log::info('Получена информация о пользователе:', ['self' => $self]);
 
             if (!$self) {
-                // Если getSelf вернул false, пробуем получить информацию через getFullInfo
-                Log::info('getSelf вернул false, пробуем getFullInfo');
-                $fullInfo = $this->madelineProto->getFullInfo('me');
-                Log::info('Получена полная информация:', ['fullInfo' => $fullInfo]);
+                // Если не авторизованы, пробуем авторизоваться
+                Log::info('Пользователь не авторизован, пробуем авторизоваться');
+                $this->login();
 
-                if (!$fullInfo || !isset($fullInfo['User'])) {
-                    throw new \Exception('Не удалось получить информацию о пользователе через getFullInfo');
+                // После авторизации пробуем снова получить информацию
+                $self = $this->madelineProto->getSelf();
+                if (!$self) {
+                    throw new \Exception('Не удалось получить информацию о пользователе после авторизации');
                 }
-
-                $self = $fullInfo['User'];
             }
 
             // Формируем ответ
@@ -125,8 +168,14 @@ class TelegramClientService
             // Убираем @ если он есть в начале
             $channelId = ltrim($channelId, '@');
 
+            // Проверяем авторизацию
+            if (!$this->madelineProto) {
+                throw new \Exception('MadelineProto не инициализирован');
+            }
+
             // Получаем информацию о канале через getFullInfo
             $channelInfo = $this->madelineProto->getFullInfo($channelId);
+            Log::info('Получена информация о канале:', ['channelInfo' => $channelInfo]);
 
             if (!$channelInfo || !isset($channelInfo['Chat'])) {
                 throw new \Exception('Не удалось получить информацию о канале');
@@ -156,6 +205,11 @@ class TelegramClientService
         try {
             // Убираем @ если он есть в начале
             $channelId = ltrim($channelId, '@');
+
+            // Проверяем авторизацию
+            if (!$this->madelineProto) {
+                throw new \Exception('MadelineProto не инициализирован');
+            }
 
             // Получаем информацию о канале для проверки ID
             $channelInfo = $this->getChannelInfo($channelId);
