@@ -136,20 +136,20 @@ class TelegramClientService
                 $channelIdentifier = $channel->username ? '@' . $channel->username : $channel->channel_id;
                 \Log::info('Используем идентификатор канала:', ['channelIdentifier' => $channelIdentifier]);
 
-                // Получаем информацию о канале через getInfo
-                $info = $this->madelineProto->getInfo($channelIdentifier);
-                \Log::info('Получена информация через getInfo:', ['info' => $info]);
+                // Получаем информацию о канале через getPwrChat
+                $pwrChat = $this->madelineProto->getPwrChat($channelIdentifier);
+                \Log::info('Получена информация через getPwrChat:', ['pwrChat' => $pwrChat]);
 
                 // Проверяем наличие необходимых данных
-                if (!isset($info['InputPeer'])) {
-                    throw new \Exception('Не удалось получить InputPeer из getInfo');
+                if (!isset($pwrChat['InputPeer'])) {
+                    throw new \Exception('Не удалось получить InputPeer из getPwrChat');
                 }
 
-                \Log::info('Используем InputPeer для получения сообщений:', ['InputPeer' => $info['InputPeer']]);
+                \Log::info('Используем InputPeer для получения сообщений:', ['InputPeer' => $pwrChat['InputPeer']]);
 
                 // Получаем сообщения
                 $messages = $this->madelineProto->messages->getHistory([
-                    'peer' => $info['InputPeer'],
+                    'peer' => $pwrChat['InputPeer'],
                     'offset_id' => 0,
                     'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
                     'add_offset' => 0,
