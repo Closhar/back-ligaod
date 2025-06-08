@@ -138,11 +138,15 @@ class TelegramClientService
                 $channelId = '@' . $channel;
             }
 
-            Log::info('Попытка получения сообщений из канала: ' . $channelId);
+            Log::info('Попытка получения информации о канале: ' . $channelId);
+
+            // Получаем информацию о канале
+            $peer = $this->madelineProto->getPwrChat($channelId);
+            Log::info('Получена информация о канале: ' . json_encode($peer));
 
             // Получаем сообщения
             $messages = $this->madelineProto->messages->getHistory([
-                'peer' => $channelId,
+                'peer' => $peer,
                 'offset_id' => 0,
                 'offset_date' => 0,
                 'add_offset' => 0,
