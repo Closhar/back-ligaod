@@ -127,34 +127,24 @@ class TelegramClientService
                 'username' => $channel->username
             ]);
 
-            // Форматируем ID канала
-            $channelId = $channel->channel_id;
-            if (!str_starts_with($channelId, '-100')) {
-                $channelId = '-100' . ltrim($channelId, '-');
-            }
-            \Log::info('Форматированный ID канала:', ['channel_id' => $channelId]);
+            // Форматируем идентификатор канала
+            $channelIdentifier = $channel->username ? '@' . ltrim($channel->username, '@') : $channel->channel_id;
+            \Log::info('Используем идентификатор канала:', ['identifier' => $channelIdentifier]);
 
-            // Получаем информацию о канале
+            // Получаем информацию о канале через getFullInfo
             try {
-                $channels = $this->madelineProto->channels->getChannels([
-                    'id' => [$channelId]
-                ]);
-                \Log::info('Получена информация о канале:', ['channels' => $channels]);
+                $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
+                \Log::info('Получена информация о канале:', ['fullInfo' => $fullInfo]);
 
-                if (empty($channels['chats'])) {
-                    throw new \Exception('Канал не найден');
-                }
-
-                $chat = $channels['chats'][0];
-                if ($chat['_'] !== 'channel') {
-                    throw new \Exception('Указанный ID не является каналом');
+                if (!isset($fullInfo['type']) || $fullInfo['type'] !== 'channel') {
+                    throw new \Exception('Указанный идентификатор не является каналом');
                 }
 
                 // Формируем InputPeer для канала
                 $inputPeer = [
                     '_' => 'inputPeerChannel',
-                    'channel_id' => $chat['id'],
-                    'access_hash' => $chat['access_hash']
+                    'channel_id' => $fullInfo['id'],
+                    'access_hash' => $fullInfo['access_hash']
                 ];
 
                 \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
