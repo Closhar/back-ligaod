@@ -133,12 +133,12 @@ class TelegramClientService
                 $self = $this->madelineProto->getSelf();
                 \Log::info('Информация о текущем пользователе:', ['self' => $self]);
 
-                // Формируем идентификатор канала
-                $channelIdentifier = $channel->username ? '@' . $channel->username : $channel->channel_id;
-                \Log::info('Используем идентификатор канала:', ['channelIdentifier' => $channelIdentifier]);
+                // Используем числовой ID канала
+                $channelId = str_replace('-100', '', $channel->channel_id);
+                \Log::info('Используем числовой ID канала:', ['channelId' => $channelId]);
 
                 // Получаем информацию о канале через getFullInfo
-                $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
+                $fullInfo = $this->madelineProto->getFullInfo($channelId);
                 \Log::info('Получена информация через getFullInfo:', ['fullInfo' => $fullInfo]);
 
                 // Проверяем структуру данных
@@ -170,42 +170,28 @@ class TelegramClientService
                     throw new \Exception('Отсутствуют необходимые данные канала');
                 }
 
-                // Формируем InputChannel
-                $inputChannel = [
-                    '_' => 'inputChannel',
+                // Формируем InputPeerChannel
+                $inputPeer = [
+                    '_' => 'inputPeerChannel',
                     'channel_id' => abs($chat['id']),
                     'access_hash' => $chat['access_hash']
                 ];
 
-                \Log::info('Сформирован InputChannel:', ['inputChannel' => $inputChannel]);
+                \Log::info('Сформирован InputPeerChannel:', ['inputPeer' => $inputPeer]);
 
-                // Пробуем получить сообщения
-                try {
-                    $messages = $this->madelineProto->channels->getMessages([
-                        'channel' => $inputChannel,
-                        'id' => [] // Пустой массив для получения последних сообщений
-                    ]);
-                    \Log::info('Получены сообщения через channels->getMessages');
-                } catch (\Exception $e) {
-                    \Log::warning('Ошибка при получении сообщений через channels->getMessages: ' . $e->getMessage());
+                // Получаем сообщения через messages->getHistory
+                $messages = $this->madelineProto->messages->getHistory([
+                    'peer' => $inputPeer,
+                    'offset_id' => 0,
+                    'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
+                    'add_offset' => 0,
+                    'limit' => $limit,
+                    'max_id' => 0,
+                    'min_id' => 0,
+                    'hash' => 0
+                ]);
 
-                    // Пробуем альтернативный метод
-                    $messages = $this->madelineProto->messages->getHistory([
-                        'peer' => [
-                            '_' => 'inputPeerChannel',
-                            'channel_id' => abs($chat['id']),
-                            'access_hash' => $chat['access_hash']
-                        ],
-                        'offset_id' => 0,
-                        'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
-                        'add_offset' => 0,
-                        'limit' => $limit,
-                        'max_id' => 0,
-                        'min_id' => 0,
-                        'hash' => 0
-                    ]);
-                    \Log::info('Получены сообщения через messages->getHistory');
-                }
+                \Log::info('Получены сообщения через messages->getHistory');
 
                 if (!isset($messages['messages'])) {
                     throw new \Exception('Не удалось получить сообщения из канала');
