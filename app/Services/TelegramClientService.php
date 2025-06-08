@@ -33,7 +33,19 @@ class TelegramClientService
             ]);
 
             if ($response->successful()) {
-                return $response->json()['result'];
+                $result = $response->json()['result'];
+
+                // Форматируем результат
+                return [
+                    'id' => $result['id'],
+                    'title' => $result['title'],
+                    'username' => $result['username'],
+                    'type' => $result['type'],
+                    'description' => $result['description'] ?? null,
+                    'members_count' => $result['members_count'] ?? null,
+                    'photo' => $result['photo'] ?? null,
+                    'pinned_message' => $result['pinned_message'] ?? null,
+                ];
             }
 
             throw new \Exception("Не удалось получить информацию о канале: " . $response->body());
@@ -52,17 +64,46 @@ class TelegramClientService
             // Убираем @ если он есть в начале
             $channelId = ltrim($channelId, '@');
 
+            // Получаем информацию о канале для проверки ID
+            $channelInfo = $this->getChannelInfo($channelId);
+            $channelNumericId = $channelInfo['id'];
+
             // Получаем сообщения через getUpdates
             $response = Http::get("{$this->baseUrl}/bot{$this->apiHash}/getUpdates", [
-                'chat_id' => "@{$channelId}",
-                'limit' => $limit,
+                'limit' => 100, // Получаем больше сообщений для фильтрации
                 'offset' => $offset
             ]);
 
             if ($response->successful()) {
                 $result = $response->json();
                 if (isset($result['ok']) && $result['ok']) {
-                    return $result['result'];
+                    // Фильтруем сообщения только из нужного канала
+                    $messages = [];
+                    foreach ($result['result'] as $update) {
+                        if (isset($update['channel_post']) &&
+                            isset($update['channel_post']['chat']) &&
+                            $update['channel_post']['chat']['id'] == $channelNumericId) {
+
+                            $post = $update['channel_post'];
+                            $messages[] = [
+                                'message_id' => $post['message_id'],
+                                'date' => date('Y-m-d H:i:s', $post['date']),
+                                'text' => $post['text'] ?? null,
+                                'caption' => $post['caption'] ?? null,
+                                'photo' => $post['photo'] ?? null,
+                                'video' => $post['video'] ?? null,
+                                'document' => $post['document'] ?? null,
+                                'entities' => $post['entities'] ?? [],
+                                'link_preview' => $post['link_preview_options'] ?? null,
+                            ];
+
+                            // Ограничиваем количество сообщений
+                            if (count($messages) >= $limit) {
+                                break;
+                            }
+                        }
+                    }
+                    return $messages;
                 }
             }
 
@@ -84,7 +125,14 @@ class TelegramClientService
             if ($response->successful()) {
                 $result = $response->json();
                 if (isset($result['ok']) && $result['ok']) {
-                    return $result['result'];
+                    return [
+                        'id' => $result['result']['id'],
+                        'username' => $result['result']['username'],
+                        'first_name' => $result['result']['first_name'],
+                        'can_join_groups' => $result['result']['can_join_groups'] ?? false,
+                        'can_read_all_group_messages' => $result['result']['can_read_all_group_messages'] ?? false,
+                        'supports_inline_queries' => $result['result']['supports_inline_queries'] ?? false,
+                    ];
                 }
             }
 
@@ -110,13 +158,39 @@ class TelegramClientService
             if ($response->successful()) {
                 $result = $response->json();
                 if (isset($result['ok']) && $result['ok']) {
-                    return $result['result'];
+                    return [
+                        'message_id' => $result['result']['message_id'],
+                        'date' => date('Y-m-d H:i:s', $result['result']['date']),
+                        'text' => $result['result']['text'],
+                        'chat' => $result['result']['chat'],
+                    ];
                 }
             }
 
             throw new \Exception("Не удалось отправить сообщение: " . $response->body());
         } catch (\Exception $e) {
             Log::error('Ошибка при отправке сообщения: ' . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    /**
+     * Получить статистику канала
+     */
+    public function getChannelStats($channelId)
+    {
+        try {
+            $info = $this->getChannelInfo($channelId);
+            $messages = $this->getChannelMessages($channelId, 1);
+
+            return [
+                'channel_info' => $info,
+                'last_message' => $messages[0] ?? null,
+                'members_count' => $info['members_count'] ?? null,
+                'description' => $info['description'] ?? null,
+            ];
+        } catch (\Exception $e) {
+            Log::error('Ошибка при получении статистики канала: ' . $e->getMessage());
             throw $e;
         }
     }
