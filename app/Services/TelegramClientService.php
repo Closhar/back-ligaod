@@ -140,38 +140,40 @@ class TelegramClientService
                 $channelInfo = null;
                 $error = null;
 
-                // Способ 1: через getDialogs
+                // Способ 1: через messages->getDialogs
                 try {
-                    $dialogs = $this->madelineProto->getDialogs([
+                    $dialogs = $this->madelineProto->messages->getDialogs([
                         'limit' => 100,
                         'offset_peer' => ['_' => 'inputPeerEmpty'],
                         'offset_date' => 0,
-                        'offset_id' => 0
+                        'offset_id' => 0,
+                        'hash' => 0
                     ]);
                     \Log::info('Получены диалоги:', ['dialogs' => $dialogs]);
 
                     // Ищем нужный канал в диалогах
-                    foreach ($dialogs['dialogs'] as $dialog) {
-                        if (isset($dialog['peer']) &&
-                            $dialog['peer']['_'] === 'peerChannel' &&
-                            (
-                                ($channel->username && isset($dialog['peer']['username']) && $dialog['peer']['username'] === $channel->username) ||
-                                ($channel->channel_id && isset($dialog['peer']['channel_id']) && $dialog['peer']['channel_id'] === (int)$channel->channel_id)
-                            )
-                        ) {
-                            $channelInfo = [
-                                'InputPeer' => [
-                                    '_' => 'inputPeerChannel',
-                                    'channel_id' => $dialog['peer']['channel_id'],
-                                    'access_hash' => $dialog['peer']['access_hash']
-                                ]
-                            ];
-                            break;
+                    if (isset($dialogs['chats'])) {
+                        foreach ($dialogs['chats'] as $chat) {
+                            if ($chat['_'] === 'channel' &&
+                                (
+                                    ($channel->username && isset($chat['username']) && $chat['username'] === $channel->username) ||
+                                    ($channel->channel_id && isset($chat['id']) && $chat['id'] === (int)$channel->channel_id)
+                                )
+                            ) {
+                                $channelInfo = [
+                                    'InputPeer' => [
+                                        '_' => 'inputPeerChannel',
+                                        'channel_id' => $chat['id'],
+                                        'access_hash' => $chat['access_hash']
+                                    ]
+                                ];
+                                break;
+                            }
                         }
                     }
                 } catch (\Exception $e) {
                     $error = $e->getMessage();
-                    \Log::warning('Ошибка при получении информации через getDialogs: ' . $error);
+                    \Log::warning('Ошибка при получении информации через messages->getDialogs: ' . $error);
                 }
 
                 // Способ 2: через getInfo
