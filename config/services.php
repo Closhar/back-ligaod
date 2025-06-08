@@ -42,7 +42,15 @@ return [
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
-        'default_model' => env('TELEGRAM_DEFAULT_MODEL', 'gpt-3.5-turbo'),
+        'api_id' => env('TELEGRAM_API_ID'),
+        'api_hash' => env('TELEGRAM_API_HASH'),
+        'proxy' => [
+            'enabled' => env('TELEGRAM_PROXY_ENABLED', false),
+            'address' => env('TELEGRAM_PROXY_ADDRESS'),
+            'port' => env('TELEGRAM_PROXY_PORT'),
+            'username' => env('TELEGRAM_PROXY_USERNAME'),
+            'password' => env('TELEGRAM_PROXY_PASSWORD'),
+        ],
     ],
 
     'openai' => [

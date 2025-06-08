@@ -5,17 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\TelegramChannel;
 use App\Models\TelegramMessage;
-use App\Services\TelegramService;
+use App\Services\TelegramClientService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class TelegramMessageController extends Controller
 {
-    private $telegramService;
+    private $telegramClientService;
 
-    public function __construct(TelegramService $telegramService)
+    public function __construct(TelegramClientService $telegramClientService)
     {
-        $this->telegramService = $telegramService;
+        $this->telegramClientService = $telegramClientService;
     }
 
     /**
@@ -36,9 +36,9 @@ class TelegramMessageController extends Controller
         $channel = TelegramChannel::findOrFail($request->channel_id);
 
         try {
-            // Получаем сообщения через Telegram API
-            $messages = $this->telegramService->getChannelMessages(
-                $channel->chat_id,
+            // Получаем сообщения через Telegram Client API
+            $messages = $this->telegramClientService->getChannelMessages(
+                $channel->username ?? $channel->chat_id,
                 $request->date_from,
                 $request->input('limit', 100)
             );
@@ -52,7 +52,7 @@ class TelegramMessageController extends Controller
                         'message_id' => $message['message_id']
                     ],
                     [
-                        'content' => $message['text'] ?? $message['caption'],
+                        'content' => $message['text'],
                         'media' => $message['media'],
                         'message_date' => $message['date'],
                         'raw_data' => $message['raw_data']
