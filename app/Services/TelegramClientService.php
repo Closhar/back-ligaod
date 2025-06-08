@@ -133,7 +133,8 @@ class TelegramClientService
         try {
             // Форматируем идентификатор канала
             $channelId = $channel;
-            if (!str_starts_with($channel, '@') && !str_starts_with($channel, '-100')) {
+            // Если это числовой ID канала (начинается с -100), используем как есть
+            if (!str_starts_with($channel, '-100') && !str_starts_with($channel, '@')) {
                 $channelId = '@' . $channel;
             }
 
