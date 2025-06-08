@@ -131,20 +131,20 @@ class TelegramClientService
                 throw new \Exception('Username канала не указан');
             }
 
-            // Получаем информацию о канале через username
+            // Получаем информацию о канале через getPwrChat
             try {
-                $info = $this->madelineProto->getInfo($channel->username);
-                \Log::info('Получена информация о канале:', ['info' => $info]);
+                $chat = $this->madelineProto->getPwrChat($channel->username);
+                \Log::info('Получена информация о канале:', ['chat' => $chat]);
 
-                if (!isset($info['type']) || $info['type'] !== 'channel') {
+                if (!isset($chat['type']) || $chat['type'] !== 'channel') {
                     throw new \Exception('Указанный username не является каналом');
                 }
 
                 // Формируем InputPeer для канала
                 $inputPeer = [
                     '_' => 'inputPeerChannel',
-                    'channel_id' => $info['id'],
-                    'access_hash' => $info['access_hash']
+                    'channel_id' => $chat['id'],
+                    'access_hash' => $chat['access_hash']
                 ];
 
                 \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
