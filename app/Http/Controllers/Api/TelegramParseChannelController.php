@@ -251,4 +251,38 @@ class TelegramParseChannelController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Тестирование получения сообщений из канала
+     */
+    public function testMessages(Request $request)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'channel_id' => 'required|string'
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $telegramService = app(TelegramClientService::class);
+            $results = $telegramService->testChannelMessages($request->channel_id);
+
+            return response()->json([
+                'success' => true,
+                'data' => $results
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при тестировании',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
 }

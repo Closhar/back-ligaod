@@ -353,4 +353,90 @@ class TelegramClientService
             throw $e;
         }
     }
+
+    /**
+     * Тестирование получения сообщений из канала
+     *
+     * @param string $channelId ID канала (username или числовой ID)
+     * @return array
+     * @throws \Exception
+     */
+    public function testChannelMessages($channelId)
+    {
+        try {
+            // Проверяем авторизацию
+            $self = $this->madelineProto->getSelf();
+            \Log::info('Информация о текущем пользователе:', ['self' => $self]);
+
+            // Получаем информацию о канале
+            $channelInfo = $this->madelineProto->getInfo($channelId);
+            \Log::info('Информация о канале:', ['info' => $channelInfo]);
+
+            // Пробуем разные методы получения сообщений
+            $results = [];
+
+            // 1. Пробуем channels->getMessages
+            try {
+                $messages1 = $this->madelineProto->channels->getMessages([
+                    'channel' => $channelId,
+                    'id' => [0]
+                ]);
+                $results['channels_getMessages'] = [
+                    'success' => true,
+                    'data' => $messages1
+                ];
+            } catch (\Exception $e) {
+                $results['channels_getMessages'] = [
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ];
+            }
+
+            // 2. Пробуем messages->getHistory
+            try {
+                $messages2 = $this->madelineProto->messages->getHistory([
+                    'peer' => $channelId,
+                    'offset_id' => 0,
+                    'offset_date' => 0,
+                    'add_offset' => 0,
+                    'limit' => 10,
+                    'max_id' => 0,
+                    'min_id' => 0,
+                    'hash' => 0
+                ]);
+                $results['messages_getHistory'] = [
+                    'success' => true,
+                    'data' => $messages2
+                ];
+            } catch (\Exception $e) {
+                $results['messages_getHistory'] = [
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ];
+            }
+
+            // 3. Пробуем messages->getMessages
+            try {
+                $messages3 = $this->madelineProto->messages->getMessages([
+                    'id' => [0]
+                ]);
+                $results['messages_getMessages'] = [
+                    'success' => true,
+                    'data' => $messages3
+                ];
+            } catch (\Exception $e) {
+                $results['messages_getMessages'] = [
+                    'success' => false,
+                    'error' => $e->getMessage()
+                ];
+            }
+
+            \Log::info('Результаты тестирования:', $results);
+            return $results;
+
+        } catch (\Exception $e) {
+            \Log::error('Ошибка при тестировании: ' . $e->getMessage());
+            throw new \Exception('Ошибка при тестировании: ' . $e->getMessage());
+        }
+    }
 }
