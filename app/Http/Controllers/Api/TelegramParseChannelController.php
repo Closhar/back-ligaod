@@ -78,6 +78,8 @@ class TelegramParseChannelController extends Controller
      */
     public function update(Request $request, $id)
     {
+        \Log::info('Получены данные для обновления:', $request->all());
+
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'username' => 'sometimes|nullable|string|max:255',
@@ -91,6 +93,7 @@ class TelegramParseChannelController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Ошибка валидации:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка валидации',
@@ -102,7 +105,11 @@ class TelegramParseChannelController extends Controller
 
         try {
             $channel = TelegramParseChannel::findOrFail($id);
+            \Log::info('Текущие данные канала:', $channel->toArray());
+
             $channel->update($request->all());
+            \Log::info('Обновленные данные канала:', $channel->fresh()->toArray());
+
             Cache::forget('telegram_parse_channels');
 
             return response()->json([
@@ -111,6 +118,7 @@ class TelegramParseChannelController extends Controller
                 'data' => $channel
             ]);
         } catch (\Exception $e) {
+            \Log::error('Ошибка обновления канала: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Не удалось обновить канал',
