@@ -131,20 +131,20 @@ class TelegramClientService
             $channelUrl = "https://t.me/" . ltrim($channel->username, '@');
             \Log::info('Используем URL канала:', ['url' => $channelUrl]);
 
-            // Получаем информацию о канале через URL
+            // Получаем информацию о канале через getPwrChat
             try {
-                $fullInfo = $this->madelineProto->getFullInfo($channelUrl);
-                \Log::info('Получена информация о канале:', ['fullInfo' => $fullInfo]);
+                $chat = $this->madelineProto->getPwrChat($channelUrl);
+                \Log::info('Получена информация о канале:', ['chat' => $chat]);
 
-                if (!isset($fullInfo['type']) || $fullInfo['type'] !== 'channel') {
+                if (!isset($chat['type']) || $chat['type'] !== 'channel') {
                     throw new \Exception('Указанный URL не является каналом');
                 }
 
                 // Формируем InputPeer для канала
                 $inputPeer = [
                     '_' => 'inputPeerChannel',
-                    'channel_id' => $fullInfo['id'],
-                    'access_hash' => $fullInfo['access_hash']
+                    'channel_id' => $chat['id'],
+                    'access_hash' => $chat['access_hash']
                 ];
 
                 \Log::info('Используем inputPeer:', ['inputPeer' => $inputPeer]);
