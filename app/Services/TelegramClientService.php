@@ -58,7 +58,7 @@ class TelegramClientService
     /**
      * Получить сообщения из канала
      */
-    public function getChannelMessages($channelId, $limit = 10, $offset = 0)
+    public function getChannelMessages($channelId, $limit = 10, $offset = 0, $dateFrom = null)
     {
         try {
             // Убираем @ если он есть в начале
@@ -68,16 +68,54 @@ class TelegramClientService
             $channelInfo = $this->getChannelInfo($channelId);
             $channelNumericId = $channelInfo['id'];
 
-            // Получаем сообщения через getUpdates
-            $response = Http::get("{$this->baseUrl}/bot{$this->apiHash}/getUpdates", [
-                'limit' => 100, // Получаем больше сообщений для фильтрации
-                'offset' => $offset
+            // Конвертируем дату в timestamp если она передана
+            $dateFromTimestamp = $dateFrom ? strtotime($dateFrom) : null;
+
+            // Получаем сообщения через getChatHistory
+            $response = Http::post("{$this->baseUrl}/bot{$this->apiHash}/getChatHistory", [
+                'chat_id' => $channelNumericId,
+                'limit' => $limit,
+                'offset' => $offset,
+                'offset_date' => $dateFromTimestamp
             ]);
 
             if ($response->successful()) {
                 $result = $response->json();
                 if (isset($result['ok']) && $result['ok']) {
-                    // Фильтруем сообщения только из нужного канала
+                    $messages = [];
+                    foreach ($result['result']['messages'] as $message) {
+                        $messages[] = [
+                            'message_id' => $message['message_id'],
+                            'date' => date('Y-m-d H:i:s', $message['date']),
+                            'text' => $message['text'] ?? null,
+                            'caption' => $message['caption'] ?? null,
+                            'photo' => $message['photo'] ?? null,
+                            'video' => $message['video'] ?? null,
+                            'document' => $message['document'] ?? null,
+                            'entities' => $message['entities'] ?? [],
+                            'link_preview' => $message['link_preview_options'] ?? null,
+                        ];
+                    }
+
+                    // Сортируем сообщения по дате (новые сверху)
+                    usort($messages, function($a, $b) {
+                        return strtotime($b['date']) - strtotime($a['date']);
+                    });
+
+                    return $messages;
+                }
+            }
+
+            // Если getChatHistory не сработал, пробуем через getUpdates
+            $response = Http::get("{$this->baseUrl}/bot{$this->apiHash}/getUpdates", [
+                'limit' => 100,
+                'offset' => $offset,
+                'timeout' => 30
+            ]);
+
+            if ($response->successful()) {
+                $result = $response->json();
+                if (isset($result['ok']) && $result['ok']) {
                     $messages = [];
                     foreach ($result['result'] as $update) {
                         if (isset($update['channel_post']) &&
@@ -85,6 +123,11 @@ class TelegramClientService
                             $update['channel_post']['chat']['id'] == $channelNumericId) {
 
                             $post = $update['channel_post'];
+
+                            if ($dateFromTimestamp && $post['date'] < $dateFromTimestamp) {
+                                continue;
+                            }
+
                             $messages[] = [
                                 'message_id' => $post['message_id'],
                                 'date' => date('Y-m-d H:i:s', $post['date']),
@@ -97,12 +140,16 @@ class TelegramClientService
                                 'link_preview' => $post['link_preview_options'] ?? null,
                             ];
 
-                            // Ограничиваем количество сообщений
                             if (count($messages) >= $limit) {
                                 break;
                             }
                         }
                     }
+
+                    usort($messages, function($a, $b) {
+                        return strtotime($b['date']) - strtotime($a['date']);
+                    });
+
                     return $messages;
                 }
             }
