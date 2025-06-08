@@ -262,18 +262,6 @@ class TelegramClientService
 
             Log::info('Попытка получения информации о канале: ' . $channelId);
 
-            // Пробуем получить информацию через getPwrChat
-            try {
-                $peer = $this->madelineProto->getPwrChat($channelId);
-                Log::info('Получена информация через getPwrChat: ' . json_encode($peer));
-                return [
-                    'type' => 'getPwrChat',
-                    'data' => $peer
-                ];
-            } catch (\Exception $e) {
-                Log::info('Ошибка getPwrChat: ' . $e->getMessage());
-            }
-
             // Пробуем получить информацию через channels.getFullChannel
             try {
                 $fullChannel = $this->madelineProto->channels->getFullChannel([
@@ -302,7 +290,51 @@ class TelegramClientService
                 Log::info('Ошибка getChannels: ' . $e->getMessage());
             }
 
-            throw new \Exception('Не удалось получить информацию о канале ни одним из методов');
+            // Пробуем получить информацию через channels.getMessages
+            try {
+                $messages = $this->madelineProto->channels->getMessages([
+                    'channel' => $channelId,
+                    'id' => [1] // Пробуем получить первое сообщение
+                ]);
+                Log::info('Получена информация через getMessages: ' . json_encode($messages));
+                return [
+                    'type' => 'getMessages',
+                    'data' => $messages
+                ];
+            } catch (\Exception $e) {
+                Log::info('Ошибка getMessages: ' . $e->getMessage());
+            }
+
+            // Пробуем получить информацию через channels.getParticipants
+            try {
+                $participants = $this->madelineProto->channels->getParticipants([
+                    'channel' => $channelId,
+                    'filter' => ['_' => 'channelParticipantsRecent'],
+                    'offset' => 0,
+                    'limit' => 1
+                ]);
+                Log::info('Получена информация через getParticipants: ' . json_encode($participants));
+                return [
+                    'type' => 'getParticipants',
+                    'data' => $participants
+                ];
+            } catch (\Exception $e) {
+                Log::info('Ошибка getParticipants: ' . $e->getMessage());
+            }
+
+            // Пробуем получить информацию о себе (для проверки авторизации)
+            try {
+                $self = $this->madelineProto->getSelf();
+                Log::info('Информация о текущем пользователе: ' . json_encode($self));
+                return [
+                    'type' => 'self',
+                    'data' => $self,
+                    'error' => 'Не удалось получить информацию о канале, но авторизация работает'
+                ];
+            } catch (\Exception $e) {
+                Log::info('Ошибка получения информации о себе: ' . $e->getMessage());
+                throw new \Exception('Проблема с авторизацией: ' . $e->getMessage());
+            }
         } catch (\Exception $e) {
             Log::error('Ошибка получения информации о канале: ' . $e->getMessage());
             throw $e;
