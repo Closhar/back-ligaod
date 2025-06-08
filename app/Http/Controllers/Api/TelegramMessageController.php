@@ -23,7 +23,11 @@ class TelegramMessageController extends Controller
      */
     public function fetchMessages(Request $request)
     {
-        \Log::info('Получен запрос на получение сообщений:', $request->all());
+        \Log::info('Получен запрос на получение сообщений:', [
+            'all' => $request->all(),
+            'query' => $request->query(),
+            'headers' => $request->headers->all()
+        ]);
 
         $validator = Validator::make($request->all(), [
             'channel_id' => 'required|exists:telegram_parse_channels,id',
@@ -40,7 +44,10 @@ class TelegramMessageController extends Controller
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Ошибка валидации:', $validator->errors()->toArray());
+            \Log::error('Ошибка валидации:', [
+                'errors' => $validator->errors()->toArray(),
+                'input' => $request->all()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка валидации',
@@ -97,7 +104,10 @@ class TelegramMessageController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+            \Log::error('Ошибка при получении сообщений: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при получении сообщений',
