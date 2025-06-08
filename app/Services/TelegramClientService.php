@@ -10,6 +10,7 @@ use danog\MadelineProto\Settings\Proxy;
 use danog\MadelineProto\Settings\Serialization;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
+use App\Models\TelegramParseChannel;
 
 class TelegramClientService
 {
@@ -113,58 +114,37 @@ class TelegramClientService
     }
 
     /**
-     * Получение сообщений из публичного канала
+     * Получить сообщения из канала
      */
-    public function getChannelMessages($channel, $dateFrom, $limit = 100)
+    public function getChannelMessages($channelId, $dateFrom = null, $limit = 100)
     {
-        $cacheKey = $this->cachePrefix . "messages_{$channel}_{$dateFrom}";
-
-        // Проверяем кэш
-        if (Cache::has($cacheKey)) {
-            return Cache::get($cacheKey);
-        }
-
-        // Проверяем ограничение запросов
-        if (!$this->checkRateLimit()) {
-            Log::error('Превышен лимит запросов к Telegram API');
-            throw new \Exception('Превышен лимит запросов к Telegram API');
-        }
-
         try {
-            // Форматируем идентификатор канала
-            $channelId = $channel;
+            $channel = TelegramParseChannel::findOrFail($channelId);
+            \Log::info('Получение сообщений для канала:', [
+                'channel_id' => $channel->channel_id,
+                'username' => $channel->username
+            ]);
 
-            // Если это числовой ID канала (начинается с -100)
-            if (str_starts_with($channel, '-100')) {
-                Log::info('Используем числовой ID канала: ' . $channelId);
-            } else {
-                // Если это username
-                if (!str_starts_with($channel, '@')) {
-                    $channelId = '@' . $channel;
-                }
-                Log::info('Используем username канала: ' . $channelId);
-            }
-
-            // Пробуем получить информацию о канале
+            // Сначала пробуем получить информацию о канале
             try {
-                $channelInfo = $this->madelineProto->channels->getFullChannel([
-                    'channel' => $channelId
-                ]);
-                Log::info('Получена информация о канале: ' . json_encode($channelInfo));
+                $channelInfo = $this->getChannelInfo($channel->channel_id);
+                \Log::info('Информация о канале получена:', $channelInfo);
             } catch (\Exception $e) {
-                Log::error('Ошибка получения информации о канале: ' . $e->getMessage());
-                // Если не удалось получить информацию по username, пробуем числовой ID
-                if (!str_starts_with($channel, '-100')) {
-                    $channelId = '-1002055440288'; // Используем известный ID канала
-                    Log::info('Пробуем использовать числовой ID: ' . $channelId);
-                }
+                \Log::warning('Не удалось получить информацию о канале: ' . $e->getMessage());
             }
+
+            // Формируем идентификатор канала
+            $peer = $channel->username
+                ? '@' . ltrim($channel->username, '@')
+                : $channel->channel_id;
+
+            \Log::info('Используем peer:', ['peer' => $peer]);
 
             // Получаем сообщения
             $messages = $this->madelineProto->messages->getHistory([
-                'peer' => $channelId,
+                'peer' => $peer,
                 'offset_id' => 0,
-                'offset_date' => 0,
+                'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
                 'add_offset' => 0,
                 'limit' => $limit,
                 'max_id' => 0,
@@ -172,22 +152,16 @@ class TelegramClientService
                 'hash' => 0
             ]);
 
-            Log::info('Получено сообщений: ' . count($messages['messages']));
+            \Log::info('Получены сообщения:', ['count' => count($messages['messages'])]);
 
-            $result = [];
-            foreach ($messages['messages'] as $message) {
-                if (isset($message['date']) && date('Y-m-d H:i:s', $message['date']) >= $dateFrom) {
-                    $result[] = $this->formatMessage($message);
-                }
-            }
+            // Кэшируем результат на 1 час
+            $cacheKey = "telegram_messages_{$channelId}_{$dateFrom}_{$limit}";
+            Cache::put($cacheKey, $messages, 3600);
 
-            // Сохраняем в кэш на 1 час
-            Cache::put($cacheKey, $result, 3600);
-
-            return $result;
+            return $messages;
         } catch (\Exception $e) {
-            Log::error('Ошибка получения сообщений через MadelineProto: ' . $e->getMessage());
-            throw $e;
+            \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+            throw new \Exception('Ошибка при получении сообщений: ' . $e->getMessage());
         }
     }
 
