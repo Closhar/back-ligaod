@@ -141,11 +141,9 @@ class TelegramClientService
 
             \Log::info('Используем peer:', ['peer' => $peer]);
 
-            // Сначала получаем информацию о канале
+            // Получаем информацию о канале
             try {
-                $channelInfo = $this->madelineProto->channels->getFullChannel([
-                    'channel' => $peer
-                ]);
+                $channelInfo = $this->madelineProto->getFullInfo($peer);
                 \Log::info('Получена информация о канале:', ['info' => $channelInfo]);
             } catch (\Exception $e) {
                 \Log::warning('Не удалось получить информацию о канале: ' . $e->getMessage());
@@ -156,23 +154,35 @@ class TelegramClientService
             $messages = null;
             $lastError = null;
 
-            // Способ 1: через channels->getMessages
+            // Способ 1: через getPwrChat
             try {
-                $messages = $this->madelineProto->channels->getMessages([
-                    'channel' => $peer,
-                    'id' => [1] // Пробуем получить первое сообщение
+                $chat = $this->madelineProto->getPwrChat($peer);
+                \Log::info('Получена информация о чате через getPwrChat:', ['chat' => $chat]);
+
+                $messages = $this->madelineProto->messages->getHistory([
+                    'peer' => $chat,
+                    'offset_id' => 0,
+                    'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
+                    'add_offset' => 0,
+                    'limit' => $limit,
+                    'max_id' => 0,
+                    'min_id' => 0,
+                    'hash' => 0
                 ]);
-                \Log::info('Получены сообщения через channels->getMessages');
+                \Log::info('Получены сообщения через getPwrChat');
             } catch (\Exception $e) {
                 $lastError = $e;
-                \Log::warning('Не удалось получить сообщения через channels->getMessages: ' . $e->getMessage());
+                \Log::warning('Не удалось получить сообщения через getPwrChat: ' . $e->getMessage());
             }
 
-            // Способ 2: через messages->getHistory
+            // Способ 2: через getInfo
             if (!$messages) {
                 try {
+                    $chat = $this->madelineProto->getInfo($peer);
+                    \Log::info('Получена информация о чате через getInfo:', ['chat' => $chat]);
+
                     $messages = $this->madelineProto->messages->getHistory([
-                        'peer' => $peer,
+                        'peer' => $chat,
                         'offset_id' => 0,
                         'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
                         'add_offset' => 0,
@@ -181,10 +191,10 @@ class TelegramClientService
                         'min_id' => 0,
                         'hash' => 0
                     ]);
-                    \Log::info('Получены сообщения через messages->getHistory');
+                    \Log::info('Получены сообщения через getInfo');
                 } catch (\Exception $e) {
                     $lastError = $e;
-                    \Log::warning('Не удалось получить сообщения через messages->getHistory: ' . $e->getMessage());
+                    \Log::warning('Не удалось получить сообщения через getInfo: ' . $e->getMessage());
                 }
             }
 
