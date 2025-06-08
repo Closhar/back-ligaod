@@ -141,17 +141,56 @@ class TelegramClientService
 
             \Log::info('Используем peer:', ['peer' => $peer]);
 
-            // Получаем сообщения
-            $messages = $this->madelineProto->messages->getHistory([
-                'peer' => $peer,
-                'offset_id' => 0,
-                'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
-                'add_offset' => 0,
-                'limit' => $limit,
-                'max_id' => 0,
-                'min_id' => 0,
-                'hash' => 0
-            ]);
+            // Сначала получаем информацию о канале
+            try {
+                $channelInfo = $this->madelineProto->channels->getFullChannel([
+                    'channel' => $peer
+                ]);
+                \Log::info('Получена информация о канале:', ['info' => $channelInfo]);
+            } catch (\Exception $e) {
+                \Log::warning('Не удалось получить информацию о канале: ' . $e->getMessage());
+                // Продолжаем выполнение, так как это не критическая ошибка
+            }
+
+            // Пробуем получить сообщения разными способами
+            $messages = null;
+            $lastError = null;
+
+            // Способ 1: через channels->getMessages
+            try {
+                $messages = $this->madelineProto->channels->getMessages([
+                    'channel' => $peer,
+                    'id' => [1] // Пробуем получить первое сообщение
+                ]);
+                \Log::info('Получены сообщения через channels->getMessages');
+            } catch (\Exception $e) {
+                $lastError = $e;
+                \Log::warning('Не удалось получить сообщения через channels->getMessages: ' . $e->getMessage());
+            }
+
+            // Способ 2: через messages->getHistory
+            if (!$messages) {
+                try {
+                    $messages = $this->madelineProto->messages->getHistory([
+                        'peer' => $peer,
+                        'offset_id' => 0,
+                        'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
+                        'add_offset' => 0,
+                        'limit' => $limit,
+                        'max_id' => 0,
+                        'min_id' => 0,
+                        'hash' => 0
+                    ]);
+                    \Log::info('Получены сообщения через messages->getHistory');
+                } catch (\Exception $e) {
+                    $lastError = $e;
+                    \Log::warning('Не удалось получить сообщения через messages->getHistory: ' . $e->getMessage());
+                }
+            }
+
+            if (!$messages) {
+                throw new \Exception('Не удалось получить сообщения. Последняя ошибка: ' . $lastError->getMessage());
+            }
 
             \Log::info('Успешно получены сообщения:', ['count' => count($messages['messages'])]);
 
