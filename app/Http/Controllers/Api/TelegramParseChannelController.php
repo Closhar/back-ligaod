@@ -48,7 +48,9 @@ class TelegramParseChannelController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка валидации',
-                'errors' => $validator->errors()
+                'errors' => collect($validator->errors())->map(function ($errors) {
+                    return $errors[0];
+                })->toArray()
             ], 422);
         }
 
@@ -89,7 +91,9 @@ class TelegramParseChannelController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка валидации',
-                'errors' => $validator->errors()
+                'errors' => collect($validator->errors())->map(function ($errors) {
+                    return $errors[0];
+                })->toArray()
             ], 422);
         }
 
