@@ -172,12 +172,13 @@ class TelegramClientService
                 $messages = $this->madelineProto->messages->getHistory([
                     'peer' => $inputPeer,
                     'offset_id' => 0,
-                    'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
+                    'offset_date' => 0,
                     'add_offset' => 0,
                     'limit' => $limit,
                     'max_id' => 0,
                     'min_id' => 0,
-                    'hash' => 0
+                    'hash' => 0,
+                    'from_id' => null
                 ]);
 
                 \Log::info('Получены сообщения через messages->getHistory');
