@@ -142,7 +142,6 @@ Route::prefix('telegram')->group(function () {
     Route::post('/send', [TelegramController::class, 'sendMessage']);
 
     // Маршруты для тестирования
-    Route::match(['get', 'post'], '/test-auth', [TelegramParseChannelController::class, 'testAuth']);
     Route::get('/test-messages', [TelegramParseChannelController::class, 'testMessages']);
 
     // Маршруты для управления каналами парсинга
@@ -162,6 +161,9 @@ Route::prefix('telegram')->group(function () {
         Route::post('/fetch', [TelegramMessageController::class, 'fetchMessages']);
     });
 });
+
+// Тестовый маршрут для авторизации Telegram
+Route::match(['get', 'post'], '/telegram/test-auth', [TelegramParseChannelController::class, 'testAuth']);
 
 // ChatGPT
 Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
