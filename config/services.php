@@ -42,10 +42,12 @@ return [
 
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
+        'default_model' => env('TELEGRAM_DEFAULT_MODEL', 'gpt-3.5-turbo'),
     ],
 
     'openai' => [
-    'api_key' => env('OPENAI_API_KEY'),
+        'api_key' => env('OPENAI_API_KEY'),
+        'default_model' => env('OPENAI_DEFAULT_MODEL', 'gpt-3.5-turbo'),
     ],
 
 ];

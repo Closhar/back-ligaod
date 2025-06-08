@@ -33,6 +33,7 @@ use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TelegramMessageController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
@@ -137,6 +138,7 @@ Route::apiResource('admin-pages', AdminPageController::class);
     Route::prefix('telegram')->middleware('api')->group(function () {
         Route::apiResource('channels', TelegramController::class);
         Route::post('/send', [TelegramController::class, 'sendMessage']);
+        Route::post('messages/fetch', [TelegramMessageController::class, 'fetchMessages']);
     });
 
     // ChatGPT
