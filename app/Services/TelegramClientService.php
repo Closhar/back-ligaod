@@ -36,11 +36,18 @@ class TelegramClientService
 
             // Настройки MadelineProto
             $settings = new Settings;
-            $settings->getConnection()->setProxy('none');
-            $settings->getLogger()->setLevel(Logger::NOTICE);
-            $settings->getLogger()->setExtra(storage_path('madeline/madeline.log'));
-            $settings->getAppInfo()->setApiId($this->apiId);
-            $settings->getAppInfo()->setApiHash($this->apiHash);
+
+            // Настройки логгера
+            $logger = new Logger;
+            $logger->setLevel(Logger::NOTICE);
+            $logger->setExtra(storage_path('madeline/madeline.log'));
+            $settings->setLogger($logger);
+
+            // Настройки приложения
+            $appInfo = new AppInfo;
+            $appInfo->setApiId($this->apiId);
+            $appInfo->setApiHash($this->apiHash);
+            $settings->setAppInfo($appInfo);
 
             // Инициализация MadelineProto
             $this->madelineProto = new API($this->sessionPath, $settings);
