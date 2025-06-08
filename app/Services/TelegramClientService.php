@@ -200,82 +200,102 @@ class TelegramClientService
     /**
      * Получить сообщения из канала
      */
-    public function getChannelMessages($channelId, $limit = 50, $offset = 0, $dateFrom = null)
+    public function getChannelMessages(string $channelId, int $limit = 50, int $offset = 0, ?string $dateFrom = null): array
     {
         try {
-            // Убираем @ если он есть в начале
+            // Убираем @ из начала channelId, если он есть
             $channelId = ltrim($channelId, '@');
 
-            // Проверяем авторизацию
-            if (!$this->madelineProto) {
-                throw new \Exception('MadelineProto не инициализирован');
+            \Log::info('Начало получения сообщений из канала', [
+                'channel_id' => $channelId,
+                'limit' => $limit,
+                'offset' => $offset,
+                'date_from' => $dateFrom
+            ]);
+
+            // Получаем информацию о канале
+            $channelInfo = $this->getChannelInfo($channelId);
+            if (!$channelInfo) {
+                throw new \Exception('Не удалось получить информацию о канале');
             }
 
-            // Получаем информацию о канале для проверки ID
-            $channelInfo = $this->getChannelInfo($channelId);
-            $channelNumericId = $channelInfo['id'];
-
-            // Конвертируем дату в timestamp если она передана
-            $dateFromTimestamp = $dateFrom ? strtotime($dateFrom) : null;
-
-            // Получаем сообщения из канала через messages.getHistory
+            // Получаем сообщения
             $messages = $this->madelineProto->messages->getHistory([
                 'peer' => $channelId,
-                'offset_id' => $offset,
+                'offset_id' => 0,
                 'offset_date' => 0,
-                'add_offset' => 0,
-                'limit' => $limit * 2, // Запрашиваем больше сообщений, так как некоторые могут быть отфильтрованы
+                'add_offset' => $offset,
+                'limit' => $limit * 2, // Запрашиваем больше сообщений для фильтрации
                 'max_id' => 0,
                 'min_id' => 0,
                 'hash' => 0
             ]);
 
-            Log::info('Получены сообщения из канала:', ['messages' => $messages]);
+            if (!isset($messages['messages'])) {
+                throw new \Exception('Не удалось получить сообщения из канала');
+            }
 
-            $result = [];
+            // Фильтруем и сортируем сообщения
+            $filteredMessages = [];
             $count = 0;
-            if (isset($messages['messages'])) {
-                foreach ($messages['messages'] as $message) {
-                    // Пропускаем служебные сообщения
-                    if (!isset($message['message']) && !isset($message['media'])) {
-                        continue;
-                    }
+            $dateFromTimestamp = $dateFrom ? strtotime($dateFrom) : null;
 
-                    if ($dateFromTimestamp && $message['date'] < $dateFromTimestamp) {
-                        continue;
-                    }
+            // Сортируем сообщения по дате (от ранних к поздним)
+            usort($messages['messages'], function($a, $b) {
+                return ($a['date'] ?? 0) - ($b['date'] ?? 0);
+            });
 
-                    $result[] = [
-                        'message_id' => $message['id'],
-                        'date' => date('Y-m-d H:i:s', $message['date']),
-                        'text' => $message['message'] ?? null,
-                        'caption' => $message['caption'] ?? null,
-                        'photo' => $message['media']['photo'] ?? null,
-                        'video' => $message['media']['document'] ?? null,
-                        'document' => $message['media']['document'] ?? null,
-                        'entities' => $message['entities'] ?? [],
-                        'link_preview' => $message['media']['webpage'] ?? null,
-                    ];
+            foreach ($messages['messages'] as $message) {
+                // Пропускаем служебные сообщения
+                if (!isset($message['message']) && !isset($message['media'])) {
+                    continue;
+                }
 
-                    $count++;
-                    if ($count >= $limit) {
-                        break;
-                    }
+                // Проверяем дату, если указана
+                if ($dateFromTimestamp && ($message['date'] ?? 0) < $dateFromTimestamp) {
+                    continue;
+                }
+
+                // Формируем данные сообщения
+                $messageData = [
+                    'id' => $message['id'],
+                    'date' => $message['date'] ?? null,
+                    'message' => $message['message'] ?? null,
+                    'media' => $message['media'] ?? null,
+                    'views' => $message['views'] ?? 0,
+                    'forwards' => $message['forwards'] ?? 0,
+                    'reactions' => $message['reactions'] ?? null
+                ];
+
+                $filteredMessages[] = $messageData;
+                $count++;
+
+                // Прерываем, если достигли лимита
+                if ($count >= $limit) {
+                    break;
                 }
             }
 
-            // Сортируем сообщения по дате (новые сверху)
-            usort($result, function($a, $b) {
-                return strtotime($b['date']) - strtotime($a['date']);
-            });
+            // Определяем, есть ли еще сообщения
+            $hasMore = count($messages['messages']) > $count;
+            $nextOffset = $hasMore ? $offset + $count : null;
+
+            \Log::info('Успешно получены сообщения', [
+                'channel_id' => $channelId,
+                'total_messages' => count($messages['messages']),
+                'filtered_messages' => count($filteredMessages),
+                'has_more' => $hasMore,
+                'next_offset' => $nextOffset
+            ]);
 
             return [
-                'messages' => $result,
-                'has_more' => count($messages['messages']) > $count,
-                'next_offset' => $offset + $count
+                'messages' => $filteredMessages,
+                'has_more' => $hasMore,
+                'next_offset' => $nextOffset
             ];
+
         } catch (\Exception $e) {
-            Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+            \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
             throw $e;
         }
     }
