@@ -140,40 +140,32 @@ class TelegramClientService
                 $channelInfo = null;
                 $error = null;
 
-                // Способ 1: через messages->getDialogs
+                // Способ 1: через channels->getFullChannel
                 try {
-                    $dialogs = $this->madelineProto->messages->getDialogs([
-                        'limit' => 100,
-                        'offset_peer' => ['_' => 'inputPeerEmpty'],
-                        'offset_date' => 0,
-                        'offset_id' => 0,
-                        'hash' => 0
-                    ]);
-                    \Log::info('Получены диалоги:', ['dialogs' => $dialogs]);
+                    $channelInput = [
+                        '_' => 'inputChannel',
+                        'channel_id' => (int)$channel->channel_id,
+                        'access_hash' => 0 // Временное значение, будет обновлено
+                    ];
 
-                    // Ищем нужный канал в диалогах
-                    if (isset($dialogs['chats'])) {
-                        foreach ($dialogs['chats'] as $chat) {
-                            if ($chat['_'] === 'channel' &&
-                                (
-                                    ($channel->username && isset($chat['username']) && $chat['username'] === $channel->username) ||
-                                    ($channel->channel_id && isset($chat['id']) && $chat['id'] === (int)$channel->channel_id)
-                                )
-                            ) {
-                                $channelInfo = [
-                                    'InputPeer' => [
-                                        '_' => 'inputPeerChannel',
-                                        'channel_id' => $chat['id'],
-                                        'access_hash' => $chat['access_hash']
-                                    ]
-                                ];
-                                break;
-                            }
-                        }
+                    $fullChannel = $this->madelineProto->channels->getFullChannel([
+                        'channel' => $channelInput
+                    ]);
+                    \Log::info('Получена информация через channels->getFullChannel:', ['fullChannel' => $fullChannel]);
+
+                    if (isset($fullChannel['chats'][0])) {
+                        $chat = $fullChannel['chats'][0];
+                        $channelInfo = [
+                            'InputPeer' => [
+                                '_' => 'inputPeerChannel',
+                                'channel_id' => $chat['id'],
+                                'access_hash' => $chat['access_hash']
+                            ]
+                        ];
                     }
                 } catch (\Exception $e) {
                     $error = $e->getMessage();
-                    \Log::warning('Ошибка при получении информации через messages->getDialogs: ' . $error);
+                    \Log::warning('Ошибка при получении информации через channels->getFullChannel: ' . $error);
                 }
 
                 // Способ 2: через getInfo
