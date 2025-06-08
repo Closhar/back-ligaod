@@ -49,11 +49,6 @@ class TelegramClientService
             $appInfo->setApiHash(config('services.telegram.api_hash'));
             $settings->setAppInfo($appInfo);
 
-            // Отключаем логирование
-            $logger = new \danog\MadelineProto\Settings\Logger;
-            $logger->setType(0);
-            $settings->setLogger($logger);
-
             // Настройки сериализации
             $serialization = new \danog\MadelineProto\Settings\Serialization;
             $serialization->setInterval(30);
