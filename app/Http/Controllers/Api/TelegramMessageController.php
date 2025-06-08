@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\TelegramChannel;
+use App\Models\TelegramParseChannel;
 use App\Models\TelegramMessage;
 use App\Services\TelegramClientService;
 use Illuminate\Http\Request;
@@ -24,7 +24,7 @@ class TelegramMessageController extends Controller
     public function fetchMessages(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'channel_id' => 'required|exists:telegram_channels,id',
+            'channel_id' => 'required|exists:telegram_parse_channels,id',
             'date_from' => 'required|date',
             'limit' => 'nullable|integer|min:1|max:100'
         ], [
@@ -48,11 +48,11 @@ class TelegramMessageController extends Controller
         }
 
         try {
-            $channel = TelegramChannel::findOrFail($request->channel_id);
+            $channel = TelegramParseChannel::findOrFail($request->channel_id);
 
             // Получаем сообщения через Telegram Client API
             $messages = $this->telegramClientService->getChannelMessages(
-                $channel->username ?? $channel->chat_id,
+                $channel->channel_id,
                 $request->date_from,
                 $request->input('limit', 100)
             );
@@ -76,7 +76,7 @@ class TelegramMessageController extends Controller
             }
 
             // Обновляем время последнего парсинга
-            $channel->update(['last_parsed_at' => now()]);
+            $channel->update(['last_parse_at' => now()]);
 
             return response()->json([
                 'success' => true,
