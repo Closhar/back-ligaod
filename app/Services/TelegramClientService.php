@@ -131,13 +131,17 @@ class TelegramClientService
         }
 
         try {
-            // Получаем peer (канал)
-            $peer = $this->madelineProto->getPwrChat($channel);
-            Log::info('Получен peer для канала: ' . $channel);
+            // Форматируем идентификатор канала
+            $channelId = $channel;
+            if (!str_starts_with($channel, '@') && !str_starts_with($channel, '-100')) {
+                $channelId = '@' . $channel;
+            }
+
+            Log::info('Попытка получения сообщений из канала: ' . $channelId);
 
             // Получаем сообщения
             $messages = $this->madelineProto->messages->getHistory([
-                'peer' => $channel,
+                'peer' => $channelId,
                 'offset_id' => 0,
                 'offset_date' => 0,
                 'add_offset' => 0,
@@ -146,6 +150,7 @@ class TelegramClientService
                 'min_id' => 0,
                 'hash' => 0
             ]);
+
             Log::info('Получено сообщений: ' . count($messages['messages']));
 
             $result = [];
