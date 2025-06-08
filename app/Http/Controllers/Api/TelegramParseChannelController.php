@@ -35,12 +35,19 @@ class TelegramParseChannelController extends Controller
             'username' => 'nullable|string|max:255',
             'title' => 'required|string|max:255',
             'is_active' => 'boolean'
+        ], [
+            'channel_id.required' => 'ID канала обязателен для заполнения',
+            'channel_id.unique' => 'Канал с таким ID уже существует',
+            'title.required' => 'Название канала обязательно для заполнения',
+            'title.max' => 'Название канала не должно превышать 255 символов',
+            'username.max' => 'Имя пользователя не должно превышать 255 символов',
+            'is_active.boolean' => 'Статус активности должен быть true или false'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation error',
+                'message' => 'Ошибка валидации',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -51,13 +58,13 @@ class TelegramParseChannelController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Channel added successfully',
+                'message' => 'Канал успешно добавлен',
                 'data' => $channel
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to add channel',
+                'message' => 'Не удалось добавить канал',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -71,12 +78,17 @@ class TelegramParseChannelController extends Controller
         $validator = Validator::make($request->all(), [
             'title' => 'sometimes|required|string|max:255',
             'is_active' => 'sometimes|required|boolean'
+        ], [
+            'title.required' => 'Название канала обязательно для заполнения',
+            'title.max' => 'Название канала не должно превышать 255 символов',
+            'is_active.required' => 'Статус активности обязателен для заполнения',
+            'is_active.boolean' => 'Статус активности должен быть true или false'
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation error',
+                'message' => 'Ошибка валидации',
                 'errors' => $validator->errors()
             ], 422);
         }
@@ -88,13 +100,13 @@ class TelegramParseChannelController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Channel updated successfully',
+                'message' => 'Канал успешно обновлен',
                 'data' => $channel
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to update channel',
+                'message' => 'Не удалось обновить канал',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -112,12 +124,12 @@ class TelegramParseChannelController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Channel deleted successfully'
+                'message' => 'Канал успешно удален'
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to delete channel',
+                'message' => 'Не удалось удалить канал',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -146,7 +158,7 @@ class TelegramParseChannelController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to get channel stats',
+                'message' => 'Не удалось получить статистику канала',
                 'error' => $e->getMessage()
             ], 500);
         }
