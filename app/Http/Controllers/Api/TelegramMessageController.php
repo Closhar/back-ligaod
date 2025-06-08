@@ -19,95 +19,93 @@ class TelegramMessageController extends Controller
     }
 
     /**
-     * Получение сообщений из канала
+     * Получить сообщения из канала
      */
     public function fetchMessages(Request $request)
     {
-        \Log::info('Получен запрос на получение сообщений:', [
-            'all' => $request->all(),
-            'query' => $request->query(),
-            'headers' => $request->headers->all()
-        ]);
-
-        $validator = Validator::make($request->all(), [
-            'channel_id' => 'required|exists:telegram_parse_channels,id',
-            'date_from' => 'required|date',
-            'limit' => 'nullable|integer|min:1|max:100'
-        ], [
-            'channel_id.required' => 'ID канала обязателен для заполнения',
-            'channel_id.exists' => 'Канал с указанным ID не найден',
-            'date_from.required' => 'Дата начала обязательна для заполнения',
-            'date_from.date' => 'Неверный формат даты',
-            'limit.integer' => 'Лимит должен быть целым числом',
-            'limit.min' => 'Лимит должен быть не менее 1',
-            'limit.max' => 'Лимит не может быть более 100'
-        ]);
-
-        if ($validator->fails()) {
-            \Log::error('Ошибка валидации:', [
-                'errors' => $validator->errors()->toArray(),
-                'input' => $request->all()
-            ]);
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка валидации',
-                'errors' => collect($validator->errors())->map(function ($errors) {
-                    return $errors[0];
-                })->toArray()
-            ], 422);
-        }
-
         try {
-            $channel = TelegramParseChannel::findOrFail($request->channel_id);
-            \Log::info('Найден канал:', $channel->toArray());
+            $validator = Validator::make($request->all(), [
+                'channel_id' => 'required|integer|exists:telegram_parse_channels,id',
+                'limit' => 'nullable|integer|min:1|max:100',
+                'offset' => 'nullable|integer|min:0',
+                'date_from' => 'nullable|date'
+            ]);
 
-            // Получаем сообщения через Telegram Client API
-            $messages = $this->telegramClientService->getChannelMessages(
-                $channel->id,
-                $request->date_from,
-                $request->input('limit', 100)
-            );
-
-            \Log::info('Получены сообщения:', ['count' => count($messages['messages'])]);
-
-            // Сохраняем сообщения в базу данных
-            $savedMessages = [];
-            foreach ($messages['messages'] as $message) {
-                $savedMessage = TelegramMessage::updateOrCreate(
-                    [
-                        'channel_id' => $channel->id,
-                        'message_id' => $message['id']
-                    ],
-                    [
-                        'content' => $message['message'] ?? null,
-                        'media' => $message['media'] ?? null,
-                        'message_date' => date('Y-m-d H:i:s', $message['date']),
-                        'raw_data' => $message
-                    ]
-                );
-                $savedMessages[] = $savedMessage;
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка валидации',
+                    'errors' => $validator->errors()
+                ], 422);
             }
 
-            // Обновляем время последнего парсинга
-            $channel->update(['last_parse_at' => now()]);
+            // Получаем канал из базы данных
+            $channel = TelegramParseChannel::findOrFail($request->channel_id);
+
+            \Log::info('Начало получения сообщений', [
+                'channel_id' => $channel->id,
+                'channel_username' => $channel->channel_id,
+                'limit' => $request->limit,
+                'offset' => $request->offset,
+                'date_from' => $request->date_from
+            ]);
+
+            $telegramService = app(TelegramClientService::class);
+
+            // Получаем сообщения
+            try {
+                $messages = $telegramService->getChannelMessages(
+                    $channel->channel_id,
+                    $request->limit ?? 50,
+                    $request->offset ?? 0,
+                    $request->date_from
+                );
+                \Log::info('Получены сообщения:', ['messages' => $messages]);
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Ошибка при получении сообщений',
+                    'error' => $e->getMessage()
+                ], 500);
+            }
+
+            // Обновляем статистику канала
+            $channel->update([
+                'last_parse_at' => now(),
+                'parse_status' => 'success',
+                'error_message' => null
+            ]);
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'messages' => $savedMessages,
-                    'total' => count($savedMessages),
                     'channel' => [
                         'id' => $channel->id,
                         'title' => $channel->title,
-                        'username' => $channel->username
+                        'username' => $channel->username,
+                        'channel_id' => $channel->channel_id
+                    ],
+                    'messages' => $messages['messages'],
+                    'pagination' => [
+                        'has_more' => $messages['has_more'],
+                        'next_offset' => $messages['next_offset']
                     ]
                 ]
             ]);
+
         } catch (\Exception $e) {
-            \Log::error('Ошибка при получении сообщений: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString(),
-                'request' => $request->all()
-            ]);
+            \Log::error('Общая ошибка: ' . $e->getMessage());
+
+            // Если канал найден, обновляем его статистику с ошибкой
+            if (isset($channel)) {
+                $channel->update([
+                    'last_parse_at' => now(),
+                    'parse_status' => 'error',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
+
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при получении сообщений',
