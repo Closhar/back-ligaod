@@ -40,6 +40,13 @@ class TelegramClientService
                 throw new \Exception("Нет прав на запись в директорию: {$this->sessionPath}");
             }
 
+            // Проверяем существование файла логов и права на запись
+            if (file_exists($this->logPath) && !is_writable($this->logPath)) {
+                if (!chmod($this->logPath, 0666)) {
+                    throw new \Exception("Не удалось установить права на файл логов: {$this->logPath}");
+                }
+            }
+
             // Создаем объект настроек
             $settings = new \danog\MadelineProto\Settings;
 
@@ -63,6 +70,13 @@ class TelegramClientService
 
             // Путь к файлу сессии
             $sessionFile = $this->sessionPath . '/madeline.madeline';
+
+            // Проверяем права на файл сессии
+            if (file_exists($sessionFile) && !is_writable($sessionFile)) {
+                if (!chmod($sessionFile, 0666)) {
+                    throw new \Exception("Не удалось установить права на файл сессии: {$sessionFile}");
+                }
+            }
 
             // Инициализация MadelineProto
             $this->madelineProto = new \danog\MadelineProto\API($sessionFile, $settings);
