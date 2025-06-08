@@ -3,6 +3,11 @@
 namespace App\Services;
 
 use danog\MadelineProto\API;
+use danog\MadelineProto\Settings;
+use danog\MadelineProto\Settings\AppInfo;
+use danog\MadelineProto\Settings\Connection;
+use danog\MadelineProto\Settings\Proxy;
+use danog\MadelineProto\Settings\Serialization;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 
@@ -26,40 +31,44 @@ class TelegramClientService
     private function initializeMadelineProto()
     {
         try {
-            $settings = [
-                'app_info' => [
-                    'api_id' => config('services.telegram.api_id'),
-                    'api_hash' => config('services.telegram.api_hash')
-                ],
-                'connection' => [
-                    'proxy' => [
-                        'proxy' => config('services.telegram.proxy.enabled', false) ? 'socks5' : 'none',
-                        'proxy_extra' => [
-                            'address' => config('services.telegram.proxy.address'),
-                            'port' => config('services.telegram.proxy.port'),
-                            'username' => config('services.telegram.proxy.username'),
-                            'password' => config('services.telegram.proxy.password')
-                        ]
-                    ]
-                ],
-                'serialization' => [
-                    'serialization_interval' => 30,
-                    'serialization_timeout' => 30
-                ],
-                'connection_settings' => [
-                    'all' => [
-                        'proxy_extra' => [
-                            'proxy' => config('services.telegram.proxy.enabled', false) ? 'socks5' : 'none',
-                            'proxy_extra' => [
-                                'address' => config('services.telegram.proxy.address'),
-                                'port' => config('services.telegram.proxy.port'),
-                                'username' => config('services.telegram.proxy.username'),
-                                'password' => config('services.telegram.proxy.password')
-                            ]
-                        ]
-                    ]
-                ]
-            ];
+            $apiId = config('services.telegram.api_id');
+            $apiHash = config('services.telegram.api_hash');
+
+            // Отладочная информация
+            Log::info('Telegram API ID: ' . $apiId);
+            Log::info('Telegram API Hash: ' . $apiHash);
+            Log::info('Raw API ID from env: ' . env('TELEGRAM_API_ID'));
+            Log::info('Raw API Hash from env: ' . env('TELEGRAM_API_HASH'));
+
+            if (empty($apiId) || empty($apiHash)) {
+                throw new \Exception('TELEGRAM_API_ID и TELEGRAM_API_HASH должны быть установлены в .env файле. Текущие значения: API_ID=' . $apiId . ', API_HASH=' . $apiHash);
+            }
+
+            $settings = new Settings;
+
+            // Настройки приложения
+            $appInfo = new AppInfo;
+            $appInfo->setApiId((int)$apiId);
+            $appInfo->setApiHash($apiHash);
+            $settings->setAppInfo($appInfo);
+
+            // Настройки прокси
+            if (config('services.telegram.proxy.enabled', false)) {
+                $proxy = new Proxy;
+                $proxy->setExtra([
+                    'address' => config('services.telegram.proxy.address'),
+                    'port' => (int)config('services.telegram.proxy.port'),
+                    'username' => config('services.telegram.proxy.username'),
+                    'password' => config('services.telegram.proxy.password')
+                ]);
+                $settings->setProxy($proxy);
+            }
+
+            // Настройки сериализации
+            $serialization = new Serialization;
+            $serialization->setInterval(30);
+            $serialization->setTimeout(30);
+            $settings->setSerialization($serialization);
 
             $this->madelineProto = new API($this->sessionFile, $settings);
             $this->madelineProto->start();
