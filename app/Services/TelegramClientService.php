@@ -121,10 +121,11 @@ class TelegramClientService
         try {
             // Получаем канал из базы данных по ID
             $channel = TelegramParseChannel::findOrFail($channelId);
-            \Log::info('Получение сообщений для канала:', [
+            \Log::info('Начинаем получение сообщений для канала:', [
                 'id' => $channel->id,
                 'channel_id' => $channel->channel_id,
-                'username' => $channel->username
+                'username' => $channel->username,
+                'title' => $channel->title
             ]);
 
             try {
@@ -140,31 +141,80 @@ class TelegramClientService
                 $fullInfo = $this->madelineProto->getFullInfo($channelIdentifier);
                 \Log::info('Получена информация через getFullInfo:', ['fullInfo' => $fullInfo]);
 
-                // Проверяем наличие необходимых данных
-                if (!isset($fullInfo['Chat']) || !isset($fullInfo['Chat']['id']) || !isset($fullInfo['Chat']['access_hash'])) {
-                    throw new \Exception('Не удалось получить необходимые данные канала из getFullInfo');
+                // Проверяем структуру данных
+                if (!isset($fullInfo['Chat'])) {
+                    \Log::error('Отсутствует ключ Chat в ответе getFullInfo');
+                    throw new \Exception('Неверная структура данных канала');
                 }
 
-                // Формируем InputChannel из полученных данных
+                $chat = $fullInfo['Chat'];
+                \Log::info('Информация о чате:', [
+                    'type' => $chat['_'] ?? 'unknown',
+                    'id' => $chat['id'] ?? 'unknown',
+                    'title' => $chat['title'] ?? 'unknown',
+                    'username' => $chat['username'] ?? 'unknown'
+                ]);
+
+                // Проверяем, что это действительно канал
+                if (!isset($chat['_']) || $chat['_'] !== 'channel') {
+                    \Log::error('Полученный чат не является каналом');
+                    throw new \Exception('Указанный идентификатор не является каналом');
+                }
+
+                // Проверяем наличие необходимых данных
+                if (!isset($chat['id']) || !isset($chat['access_hash'])) {
+                    \Log::error('Отсутствуют необходимые данные канала', [
+                        'has_id' => isset($chat['id']),
+                        'has_access_hash' => isset($chat['access_hash'])
+                    ]);
+                    throw new \Exception('Отсутствуют необходимые данные канала');
+                }
+
+                // Формируем InputChannel
                 $inputChannel = [
                     '_' => 'inputChannel',
-                    'channel_id' => abs($fullInfo['Chat']['id']),
-                    'access_hash' => $fullInfo['Chat']['access_hash']
+                    'channel_id' => abs($chat['id']),
+                    'access_hash' => $chat['access_hash']
                 ];
 
-                \Log::info('Используем InputChannel для получения сообщений:', ['inputChannel' => $inputChannel]);
+                \Log::info('Сформирован InputChannel:', ['inputChannel' => $inputChannel]);
 
-                // Получаем сообщения через channels->getMessages
-                $messages = $this->madelineProto->channels->getMessages([
-                    'channel' => $inputChannel,
-                    'id' => [] // Пустой массив для получения последних сообщений
-                ]);
+                // Пробуем получить сообщения
+                try {
+                    $messages = $this->madelineProto->channels->getMessages([
+                        'channel' => $inputChannel,
+                        'id' => [] // Пустой массив для получения последних сообщений
+                    ]);
+                    \Log::info('Получены сообщения через channels->getMessages');
+                } catch (\Exception $e) {
+                    \Log::warning('Ошибка при получении сообщений через channels->getMessages: ' . $e->getMessage());
+
+                    // Пробуем альтернативный метод
+                    $messages = $this->madelineProto->messages->getHistory([
+                        'peer' => [
+                            '_' => 'inputPeerChannel',
+                            'channel_id' => abs($chat['id']),
+                            'access_hash' => $chat['access_hash']
+                        ],
+                        'offset_id' => 0,
+                        'offset_date' => $dateFrom ? strtotime($dateFrom) : 0,
+                        'add_offset' => 0,
+                        'limit' => $limit,
+                        'max_id' => 0,
+                        'min_id' => 0,
+                        'hash' => 0
+                    ]);
+                    \Log::info('Получены сообщения через messages->getHistory');
+                }
 
                 if (!isset($messages['messages'])) {
                     throw new \Exception('Не удалось получить сообщения из канала');
                 }
 
-                \Log::info('Успешно получены сообщения:', ['count' => count($messages['messages'])]);
+                \Log::info('Успешно получены сообщения:', [
+                    'count' => count($messages['messages']),
+                    'first_message' => $messages['messages'][0] ?? null
+                ]);
 
                 // Кэшируем результат на 1 час
                 $cacheKey = "telegram_messages_{$channelId}_{$dateFrom}_{$limit}";
