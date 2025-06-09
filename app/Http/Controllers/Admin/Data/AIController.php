@@ -127,27 +127,7 @@ class AIController extends Controller
 
     private function postProcessText($text) {
         // Декодируем Unicode-последовательности
-        $text = $this->decodeUnicode($text);
-
-        // Удаляем лишние пробелы в начале и конце
-        $text = trim($text);
-
-        // Заменяем множественные пробелы на один
-        $text = preg_replace('/\s+/', ' ', $text);
-
-        // Добавляем переносы строк после каждого события
-        $text = preg_replace('/([🏇⚾🏑⚽🏀🎾🏐🏈🏉🎱🏓🏸🏒🏑🏏🎯🎳⛳🏌️🏄🏊🤽🚣🏇🚴🚵🤸🏋️🤼🤾])/u', "\n$1", $text);
-
-        // Добавляем переносы строк после мест проведения
-        $text = preg_replace('/Место проведения:.*?(?=[🏇⚾🏑⚽🏀🎾🏐🏈🏉🎱🏓🏸🏒🏑🏏🎯🎳⛳🏌️🏄🏊🤽🚣🏇🚴🚵🤸🏋️🤼🤾])/u', "$0\n", $text);
-
-        // Удаляем множественные переносы строк
-        $text = preg_replace('/\n{3,}/', "\n\n", $text);
-
-        // Удаляем лишние пробелы в начале и конце
-        $text = trim($text);
-
-        return $text;
+        return $this->decodeUnicode($text);
     }
 
     private function fetchWebContent($url, $maxLength = 2000) {
@@ -392,7 +372,8 @@ class AIController extends Controller
                 'presence_penalty' => 0.3,
                 'frequency_penalty' => 0.3,
                 'top_p' => 0.8,
-                'response_format' => ['type' => 'text']
+                'response_format' => ['type' => 'text'],
+                'preserve_newlines' => true
             ]);
 
             if (!$response->successful()) {
@@ -452,7 +433,7 @@ class AIController extends Controller
                     'model' => $model ?? config('services.openai.default_model', 'gpt-3.5-turbo'),
                     'temperature' => 0.5
                 ]
-            ], 200, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
 
         } catch (\Exception $e) {
             Log::error('AI Generation Error: ' . $e->getMessage());
