@@ -18,9 +18,13 @@ class AIController extends Controller
             'system_prompt' => 'Вы - опытный спортивный журналист. Пишите статьи в следующем формате:
 
 1. Заголовок: краткий, информативный, с ключевым событием
+
 2. Вступление (2-3 предложения): основная информация о матче, важные цифры
+
 3. Подзаголовок "Первый тайм": хронология событий, ключевые моменты
+
 4. Подзаголовок "Второй тайм": развитие событий, голы, важные эпизоды
+
 5. Подзаголовок "Итоги": статистика, награды, важные факты
 
 Правила написания:
@@ -33,19 +37,7 @@ class AIController extends Controller
 - Пишите в активном залоге
 - Используйте прямую речь для цитат
 
-Пример хорошей статьи:
-"Зенит" уверенно берет реванш — разгромная победа в Суперкубке над "Локомотивом"
-
-Матч за Winline Суперкубок России между московским "Локомотивом" и петербургским "Зенитом" на "Екатеринбург Арене" собрал 9807 зрителей — второй по посещаемости результат в истории турнира.
-
-Первый тайм: удаление и инициатива "Зенита"
-Матч начался в высоком темпе с опасными моментами у обеих ворот. Уже на 7-й минуте Ола Буваро ("Локомотив") пробила в створ из-за штрафной.
-
-Второй тайм: доминирование "Зенита" и три безответных мяча
-Во втором тайме численное преимущество "Зенита" быстро дало результат. На 50-й минуте Пантюхина с фланга точно навесила во вратарскую, и Кики без сопротивления открыла счёт — 0:1.
-
-Итоги и награды
-"Зенит" завоевал свой второй Суперкубок России. Лучшим игроком встречи признана Екатерина Пантюхина (гол + результативная передача).'
+ВАЖНО: После каждого подзаголовка делайте пустую строку. После каждого абзаца делайте пустую строку. Используйте переносы строк для структурирования текста.'
         ],
         'gpt-4-turbo-preview' => [
             'max_tokens' => 4000,
@@ -55,6 +47,7 @@ class AIController extends Controller
             'system_prompt' => 'Вы - ведущий спортивный аналитик. Создавайте глубокие аналитические статьи по следующей структуре:
 
 1. Заголовок: отражает главное событие и его значимость
+
 2. Вступление (3-4 предложения):
    - Контекст матча
    - Важные цифры и факты
@@ -92,22 +85,7 @@ class AIController extends Controller
 - Цитируйте ключевых участников
 - Следите за балансом между аналитикой и повествованием
 
-Пример хорошей аналитической статьи:
-"Зенит" уверенно берет реванш — разгромная победа в Суперкубке над "Локомотивом"
-
-Матч за Winline Суперкубок России между московским "Локомотивом" и петербургским "Зенитом" на "Екатеринбург Арене" собрал 9807 зрителей — второй по посещаемости результат в истории турнира. Команды встретились в борьбе за трофей уже в третий раз: ранее "Локомотив" дважды завоевывал кубок, тогда как у "Зенита" на тот момент была лишь одна победа.
-
-Первый тайм: удаление и инициатива "Зенита"
-Матч начался в высоком темпе с опасными моментами у обеих ворот. Уже на 7-й минуте Ола Буваро ("Локомотив") пробила в створ из-за штрафной, а следом едва не забила Габриэла Гживиньска ("Зенит"), чей удар ногами отразила голкипер Татьяна Щербак.
-
-Второй тайм: доминирование "Зенита" и три безответных мяча
-Во втором тайме численное преимущество "Зенита" быстро дало результат. На 50-й минуте Пантюхина с фланга точно навесила во вратарскую, и Кики без сопротивления открыла счёт — 0:1.
-
-Анализ
-Ключевым фактором победы "Зенита" стало удаление Олы Буваро на 38-й минуте. Команда из Санкт-Петербурга эффективно использовала численное преимущество, контролируя 65% владения мячом.
-
-Итоги и награды
-"Зенит" завоевал свой второй Суперкубок России. Лучшим игроком встречи признана Екатерина Пантюхина (гол + результативная передача). В составе "Локомотива" наиболее активной была Полина Юкляева.'
+ВАЖНО: После каждого подзаголовка делайте пустую строку. После каждого абзаца делайте пустую строку. Используйте переносы строк для структурирования текста.'
         ]
     ];
 
@@ -160,7 +138,124 @@ class AIController extends Controller
         // Удаляем множественные пробелы
         $processedText = preg_replace('/\s+/', ' ', $processedText);
 
+        // Форматируем заголовки
+        $processedText = preg_replace('/^([^:]+):/m', "\n$1:", $processedText);
+
+        // Добавляем переносы строк после заголовков
+        $processedText = preg_replace('/^([^:]+):\s*/m', "$1:\n\n", $processedText);
+
+        // Добавляем переносы строк после абзацев
+        $processedText = preg_replace('/\.\s+/', ".\n\n", $processedText);
+
+        // Удаляем лишние переносы строк
+        $processedText = preg_replace('/\n{3,}/', "\n\n", $processedText);
+
+        // Форматируем списки
+        $processedText = preg_replace('/^\s*-\s*/m', "\n- ", $processedText);
+
+        // Добавляем отступы для абзацев
+        $processedText = preg_replace('/\n\n([^\n])/m', "\n\n    $1", $processedText);
+
+        // Удаляем лишние пробелы в начале и конце
+        $processedText = trim($processedText);
+
+        // Форматируем цитаты
+        $processedText = preg_replace('/"([^"]+)"/', '«$1»', $processedText);
+
+        // Форматируем тире
+        $processedText = preg_replace('/\s*-\s*/', ' — ', $processedText);
+
+        // Форматируем скобки
+        $processedText = preg_replace('/\s*\(\s*/', ' (', $processedText);
+        $processedText = preg_replace('/\s*\)\s*/', ') ', $processedText);
+
+        // Форматируем двоеточие
+        $processedText = preg_replace('/\s*:\s*/', ': ', $processedText);
+
+        // Форматируем запятую
+        $processedText = preg_replace('/\s*,\s*/', ', ', $processedText);
+
+        // Форматируем точку
+        $processedText = preg_replace('/\s*\.\s*/', '. ', $processedText);
+
+        // Форматируем восклицательный знак
+        $processedText = preg_replace('/\s*!\s*/', '! ', $processedText);
+
+        // Форматируем вопросительный знак
+        $processedText = preg_replace('/\s*\?\s*/', '? ', $processedText);
+
+        // Удаляем лишние пробелы перед знаками препинания
+        $processedText = preg_replace('/\s+([.,!?:;])/', '$1', $processedText);
+
+        // Удаляем лишние пробелы после знаков препинания
+        $processedText = preg_replace('/([.,!?:;])\s+/', '$1 ', $processedText);
+
+        // Форматируем цифры и единицы измерения
+        $processedText = preg_replace('/(\d+)\s*%/', '$1%', $processedText);
+        $processedText = preg_replace('/(\d+)\s*:/', '$1:', $processedText);
+
+        // Форматируем названия команд
+        $processedText = preg_replace('/"([^"]+)"\s*\(([^)]+)\)/', '«$1» ($2)', $processedText);
+
         return $processedText;
+    }
+
+    private function fetchWebContent($url) {
+        try {
+            $response = Http::timeout(30)->get($url);
+            if ($response->successful()) {
+                $html = $response->body();
+
+                // Удаляем скрипты и стили
+                $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+                $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
+
+                // Извлекаем основной контент
+                $dom = new \DOMDocument();
+                @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+                $xpath = new \DOMXPath($dom);
+
+                // Ищем основной контент (можно настроить под конкретные сайты)
+                $content = '';
+
+                // Пробуем найти основной контент по разным селекторам
+                $selectors = [
+                    '//article',
+                    '//div[contains(@class, "article")]',
+                    '//div[contains(@class, "content")]',
+                    '//div[contains(@class, "post")]',
+                    '//main'
+                ];
+
+                foreach ($selectors as $selector) {
+                    $nodes = $xpath->query($selector);
+                    if ($nodes->length > 0) {
+                        foreach ($nodes as $node) {
+                            $content .= $node->textContent . "\n";
+                        }
+                        break;
+                    }
+                }
+
+                // Если контент не найден, берем body
+                if (empty($content)) {
+                    $body = $xpath->query('//body');
+                    if ($body->length > 0) {
+                        $content = $body->item(0)->textContent;
+                    }
+                }
+
+                // Очищаем текст
+                $content = preg_replace('/\s+/', ' ', $content);
+                $content = trim($content);
+
+                return $content;
+            }
+        } catch (\Exception $e) {
+            Log::error('Error fetching web content: ' . $e->getMessage());
+        }
+
+        return null;
     }
 
     public function generate(Request $request)
@@ -173,14 +268,33 @@ class AIController extends Controller
             'min_sentence_length' => 'nullable|integer|min:10|max:100',
             'max_sentence_length' => 'nullable|integer|min:20|max:200',
             'min_paragraph_length' => 'nullable|integer|min:1|max:5',
-            'max_paragraph_length' => 'nullable|integer|min:2|max:10'
+            'max_paragraph_length' => 'nullable|integer|min:2|max:10',
+            'format' => 'nullable|string|in:plain,html,markdown',
+            'url' => 'nullable|url'
         ]);
 
         try {
             $fullPrompt = $request->input('prompt');
             $model = $request->input('model');
             $useCache = $request->input('use_cache', true);
+            $format = $request->input('format', 'plain');
+            $url = $request->input('url');
             $config = $this->getModelConfig($model);
+
+            // Если передан URL, получаем контент с веб-страницы
+            if ($url) {
+                $webContent = $this->fetchWebContent($url);
+                if ($webContent) {
+                    $fullPrompt .= "\n\nИспользуйте следующий контент как источник информации:\n\n" . $webContent;
+                }
+            }
+
+            // Добавляем в промпт требования к форматированию
+            if ($format === 'html') {
+                $fullPrompt .= "\n\nПожалуйста, форматируйте текст с использованием HTML-тегов для заголовков, абзацев и списков.";
+            } elseif ($format === 'markdown') {
+                $fullPrompt .= "\n\nПожалуйста, форматируйте текст с использованием Markdown для заголовков, абзацев и списков.";
+            }
 
             // Проверяем длину промпта
             if (mb_strlen($fullPrompt) > 4000) {
@@ -254,6 +368,13 @@ class AIController extends Controller
             // Применяем постобработку текста
             $content = $this->postProcessText($content);
 
+            // Конвертируем в нужный формат
+            if ($format === 'html') {
+                $content = $this->convertToHtml($content);
+            } elseif ($format === 'markdown') {
+                $content = $this->convertToMarkdown($content);
+            }
+
             // Кэшируем результат
             if ($useCache) {
                 $this->setCachedResponse($cacheKey, $content);
@@ -294,6 +415,35 @@ class AIController extends Controller
         }
     }
 
+    private function convertToHtml($text) {
+        // Конвертируем заголовки
+        $text = preg_replace('/^([^:]+):/m', '<h3>$1</h3>', $text);
+
+        // Конвертируем абзацы
+        $text = '<p>' . str_replace("\n\n", '</p><p>', $text) . '</p>';
+
+        // Конвертируем списки
+        $text = preg_replace('/<p>-\s*(.*?)<\/p>/m', '<li>$1</li>', $text);
+        $text = preg_replace('/<li>.*?<\/li>/s', '<ul>$0</ul>', $text);
+
+        // Конвертируем цитаты
+        $text = preg_replace('/«(.*?)»/', '<q>$1</q>', $text);
+
+        return $text;
+    }
+
+    private function convertToMarkdown($text) {
+        // Конвертируем заголовки
+        $text = preg_replace('/^([^:]+):/m', '### $1', $text);
+
+        // Конвертируем списки
+        $text = preg_replace('/^-\s*(.*?)$/m', '- $1', $text);
+
+        // Конвертируем цитаты
+        $text = preg_replace('/«(.*?)»/', '> $1', $text);
+
+        return $text;
+    }
 
     public function uploadFile(Request $request)
     {
