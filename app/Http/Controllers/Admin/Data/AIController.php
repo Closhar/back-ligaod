@@ -520,7 +520,7 @@ class AIController extends Controller
             $content = preg_replace('/"inflated":".*?"/', '"inflated":""', $content);
 
             // Сохраняем очищенный контент
-            Storage::disk('public')->put('ai_files/' . $fileName, $content);
+            Storage::disk('public')->put("ai_files/$fileName", $content);
 
             return response()->json([
                 'success' => true,
