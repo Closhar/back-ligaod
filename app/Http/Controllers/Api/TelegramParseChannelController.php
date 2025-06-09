@@ -17,25 +17,18 @@ class TelegramParseChannelController extends Controller
      */
     public function index(Request $request)
     {
-        \Log::info('Поиск каналов:', ['query' => $request->q]);
+        $query = TelegramParseChannel::query();
 
-        $channels = Cache::remember('telegram_parse_channels', 3600, function () use ($request) {
-            $query = TelegramParseChannel::query();
+        if ($request->has('q')) {
+            $searchTerm = $request->q;
+            $query->where(function($q) use ($searchTerm) {
+                $q->where('title', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('username', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('channel_id', 'like', '%' . $searchTerm . '%');
+            });
+        }
 
-            if ($request->has('q')) {
-                $searchTerm = $request->q;
-                $query->where(function($q) use ($searchTerm) {
-                    $q->where('title', 'like', '%' . $searchTerm . '%')
-                      ->orWhere('username', 'like', '%' . $searchTerm . '%')
-                      ->orWhere('channel_id', 'like', '%' . $searchTerm . '%');
-                });
-            }
-
-            $results = $query->orderBy('created_at', 'desc')->get();
-            \Log::info('Найдено каналов:', ['count' => $results->count()]);
-
-            return $results;
-        });
+        $channels = $query->orderBy('created_at', 'desc')->get();
 
         return response()->json([
             'success' => true,
