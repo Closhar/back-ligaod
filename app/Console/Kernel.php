@@ -5,9 +5,6 @@ namespace App\Console;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\TelegramInitSession;
-use App\Console\Commands\CleanupMadelineLogs;
-use App\Console\Commands\CheckTelegramConfig;
-use App\Console\Commands\RecreateMadelineSession;
 
 class Kernel extends ConsoleKernel
 {
@@ -17,9 +14,7 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        Commands\CleanupMadelineLogs::class,
-        Commands\CheckTelegramConfig::class,
-        Commands\RecreateMadelineSession::class,
+        TelegramInitSession::class,
     ];
 
     /**
@@ -28,7 +23,6 @@ class Kernel extends ConsoleKernel
     protected function schedule(Schedule $schedule): void
     {
         // $schedule->command('inspire')->hourly();
-        $schedule->command('madeline:cleanup-logs')->daily();
     }
 
     /**

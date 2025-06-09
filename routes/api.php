@@ -165,11 +165,9 @@ Route::prefix('telegram')->group(function () {
 // Тестовый маршрут для авторизации Telegram
 Route::match(['get', 'post'], '/telegram/test-auth', [TelegramParseChannelController::class, 'testAuth']);
 
-// ChatGPT - публичные маршруты без авторизации
-Route::prefix('ai')->group(function () {
-    Route::post('/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
-    Route::post('/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
-});
+// ChatGPT
+Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
+Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
 
 // Парсинг
 Route::post('/parse-tables/parse', [ParseTableController::class, 'parse']);
@@ -310,7 +308,6 @@ Route::prefix('telegram-parse-channels')->group(function () {
     Route::get('/{id}/check', [TelegramParseChannelController::class, 'checkChannel']);
     Route::post('/test-messages', [TelegramParseChannelController::class, 'testMessages']);
     Route::get('/test-auth', [TelegramParseChannelController::class, 'testAuth']);
-    Route::post('/check-access', [TelegramParseChannelController::class, 'checkAccess']);
 });
 
 Route::get('test-telegram', [TelegramParseChannelController::class, 'testMessages']);

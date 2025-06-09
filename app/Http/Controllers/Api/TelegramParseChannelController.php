@@ -357,46 +357,10 @@ class TelegramParseChannelController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Общая ошибка при тестировании сообщений: ' . $e->getMessage());
+            \Log::error('Общая ошибка: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Произошла ошибка при тестировании сообщений',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Проверка доступа к каналу
-     */
-    public function checkAccess(Request $request)
-    {
-        try {
-            $validator = Validator::make($request->all(), [
-                'channel_id' => 'required|string'
-            ]);
-
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ошибка валидации',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            $telegramService = app(TelegramClientService::class);
-            $result = $telegramService->checkChannelAccess($request->channel_id);
-
-            return response()->json([
-                'success' => true,
-                'data' => $result
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error('Ошибка при проверке доступа к каналу: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка при проверке доступа к каналу',
+                'message' => 'Ошибка при тестировании',
                 'error' => $e->getMessage()
             ], 500);
         }
