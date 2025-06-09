@@ -341,10 +341,6 @@ class AIController extends Controller
             'file_id' => 'nullable|string',
             'model' => 'nullable|string|in:gpt-3.5-turbo,gpt-4-turbo-preview',
             'use_cache' => 'nullable|boolean',
-            'min_sentence_length' => 'nullable|integer|min:10|max:100',
-            'max_sentence_length' => 'nullable|integer|min:20|max:200',
-            'min_paragraph_length' => 'nullable|integer|min:1|max:5',
-            'max_paragraph_length' => 'nullable|integer|min:2|max:10',
             'format' => 'nullable|string|in:plain,html,markdown',
             'url' => 'nullable|url',
             'max_content_length' => 'nullable|integer|min:500|max:5000'
@@ -358,6 +354,17 @@ class AIController extends Controller
             $url = $request->input('url');
             $maxContentLength = $request->input('max_content_length', 2000);
             $config = $this->getModelConfig($model);
+
+            // Если есть file_id, добавляем содержимое файла к промту
+            if ($request->has('file_id')) {
+                $filePath = storage_path('app/public/ai_files/' . $request->file_id);
+                if (file_exists($filePath)) {
+                    $fileContent = file_get_contents($filePath);
+                    if ($fileContent) {
+                        $fullPrompt .= "\n\nСодержимое файла для анализа:\n\n" . $fileContent;
+                    }
+                }
+            }
 
             // Если передан URL, получаем контент с веб-страницы
             if ($url) {
@@ -380,13 +387,6 @@ class AIController extends Controller
                 }
             }
 
-            // Добавляем в промпт требования к форматированию
-            if ($format === 'html') {
-                $fullPrompt .= "\n\nПожалуйста, форматируйте текст с использованием HTML-тегов для заголовков, абзацев и списков.";
-            } elseif ($format === 'markdown') {
-                $fullPrompt .= "\n\nПожалуйста, форматируйте текст с использованием Markdown для заголовков, абзацев и списков.";
-            }
-
             // Проверяем длину промпта
             if (mb_strlen($fullPrompt) > 4000) {
                 return response()->json([
@@ -397,15 +397,6 @@ class AIController extends Controller
                         'current_prompt_length' => mb_strlen($fullPrompt)
                     ]
                 ], 400);
-            }
-
-            // Если есть file_id, добавляем содержимое файла к промту
-            if ($request->has('file_id')) {
-                $filePath = storage_path('app/public/ai_files/' . $request->file_id);
-                if (file_exists($filePath)) {
-                    $fileContent = file_get_contents($filePath);
-                    $fullPrompt .= "\n\nСодержимое файла:\n" . $fileContent;
-                }
             }
 
             // Проверяем кэш
