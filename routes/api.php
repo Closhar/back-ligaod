@@ -265,16 +265,7 @@ Route::post('/upload-image', function(Request $request) {
 
     try {
         $file = $request->file('image');
-
-        // Генерация уникального имени файла
-        //$fileName = Str::uuid() . '.' . $file->getClientOriginalExtension();
-        $fileName = $file;
-
-        // Сохранение с указанием явного пути
-        //$path = $file->storeAs('images/' . date('Y/m'), $fileName);
         $path = $request->file('image')->store('images/' . date('Y/m'), 'public');
-
-        // Генерация URL без использования asset() для API
         $url = Storage::url($path);
 
         return response()->json([
@@ -282,12 +273,11 @@ Route::post('/upload-image', function(Request $request) {
             'file' => [
                 'url' => $url,
                 'path' => $path,
-                'name' => $fileName,
+                'name' => $file->getClientOriginalName(),
                 'size' => Storage::size($path),
                 'mime' => Storage::mimeType($path)
             ]
         ]);
-
     } catch (\Exception $e) {
         return response()->json([
             'success' => false,
