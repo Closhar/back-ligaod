@@ -520,10 +520,31 @@ class AIController extends Controller
 
         try {
             $file = $request->file('file');
+            \Log::info('File received', [
+                'original_name' => $file->getClientOriginalName(),
+                'mime_type' => $file->getMimeType(),
+                'size' => $file->getSize()
+            ]);
+
             $fileName = time() . '_' . $file->getClientOriginalName();
+            $directory = storage_path('app/public/ai_files');
+
+            \Log::info('Directory check', [
+                'path' => $directory,
+                'exists' => file_exists($directory),
+                'writable' => is_writable($directory)
+            ]);
+
+            if (!file_exists($directory)) {
+                \Log::info('Creating directory');
+                mkdir($directory, 0755, true);
+            }
 
             // Читаем содержимое файла
             $content = file_get_contents($file->getRealPath());
+            \Log::info('File content read', [
+                'content_length' => strlen($content)
+            ]);
 
             // Очищаем JSON от слишком глубокой вложенности
             $content = preg_replace('/"dc_id":\d+}/', '"dc_id":2}', $content);
@@ -531,7 +552,15 @@ class AIController extends Controller
             $content = preg_replace('/"inflated":".*?"/', '"inflated":""', $content);
 
             // Сохраняем очищенный контент
-            Storage::disk('public')->put("ai_files/$fileName", $content);
+            $filePath = "ai_files/$fileName";
+            \Log::info('Attempting to save file', [
+                'path' => $filePath,
+                'storage_path' => storage_path('app/public/' . $filePath)
+            ]);
+
+            Storage::disk('public')->put($filePath, $content);
+
+            \Log::info('File saved successfully');
 
             return response()->json([
                 'success' => true,
@@ -540,6 +569,10 @@ class AIController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            \Log::error('Error uploading file', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при сохранении файла: ' . $e->getMessage()
