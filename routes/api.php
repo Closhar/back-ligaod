@@ -125,13 +125,13 @@ Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 // АДМИНКА
 Route::post('/adminlogin', [\App\Http\Controllers\Admin\Auth\AuthController::class, 'login']);
 
-// Публичные маршруты
-Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
-Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
-
 // Защищенные маршруты (требуют авторизации)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/adminlogout', [AuthController::class, 'logout']);
+
+    // AI маршруты
+    Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
+    Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
 
     //Route::middleware('can:admin')->group(function () {
 //    Route::apiResource('admin-pages', AdminPageController::class);
