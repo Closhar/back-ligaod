@@ -84,15 +84,13 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
 });
 
 // Аутентификация
-Route::group(['middleware' => 'api'], function () {
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
-    Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
-    // Восстановление пароля
-    Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail']);
-    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
-    Route::post('/resend-verification-email', [AuthController::class, 'resendVerificationEmail']);
-});
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
+// Восстановление пароля
+Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail']);
+Route::post('/reset-password', [AuthController::class, 'resetPassword']);
+Route::post('/resend-verification-email', [AuthController::class, 'resendVerificationEmail']);
 
 // Управление пользователем
 Route::middleware('auth:sanctum')->group(function () {
