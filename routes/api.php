@@ -165,9 +165,11 @@ Route::prefix('telegram')->group(function () {
 // Тестовый маршрут для авторизации Telegram
 Route::match(['get', 'post'], '/telegram/test-auth', [TelegramParseChannelController::class, 'testAuth']);
 
-// ChatGPT
-Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
-Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
+// ChatGPT - публичные маршруты без авторизации
+Route::prefix('ai')->group(function () {
+    Route::post('/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
+    Route::post('/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
+});
 
 // Парсинг
 Route::post('/parse-tables/parse', [ParseTableController::class, 'parse']);
