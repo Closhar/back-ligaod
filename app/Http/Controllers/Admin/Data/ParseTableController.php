@@ -15,61 +15,88 @@ class ParseTableController extends Controller
      */
     public function index(Request $request)
     {
-        $searchQuery = $request->query('q');
-        $perPage = $request->query('per_page', 15);
-        $searchId = $request->query('id');
-        $fieldParam = $request->query('field');
-        $type = $request->query('type');
-        $sortField = $request->query('sort', 'id');
-        $sortOrder = $request->query('order', 'asc');
+        try {
+            $searchQuery = $request->query('q');
+            $perPage = $request->query('per_page', 15);
+            $searchId = $request->query('id');
+            $fieldParam = $request->query('field');
+            $type = $request->query('type');
+            $sortField = $request->query('sort', 'id');
+            $sortOrder = $request->query('order', 'asc');
 
-        $query = ParseTable::query()
-            ->select(
-                'id',
-                'title',
-                'description',
+            // Валидация параметров сортировки
+            if (!in_array($sortOrder, ['asc', 'desc'])) {
+                $sortOrder = 'asc';
+            }
+
+            // Проверка допустимых полей для сортировки
+            $allowedSortFields = [
+                'id', 'title', 'description',
                 'field1', 'field2', 'field3', 'field4', 'field5',
                 'field6', 'field7', 'field8', 'field9', 'field10',
                 'field11', 'field12', 'field13', 'field14', 'field15',
                 'field16', 'field17', 'field18', 'field19', 'field20'
-            );
+            ];
 
-        if ($searchId) {
-            $query->where('id', $searchId);
-        }
-
-        if ($searchQuery) {
-            if ($fieldParam) {
-                $query->where($fieldParam, 'LIKE', "%{$searchQuery}%");
-            } else {
-                $query->where('title', 'LIKE', "%{$searchQuery}%");
+            if (!in_array($sortField, $allowedSortFields)) {
+                $sortField = 'id';
             }
+
+            $query = ParseTable::query()
+                ->select(
+                    'id',
+                    'title',
+                    'description',
+                    'field1', 'field2', 'field3', 'field4', 'field5',
+                    'field6', 'field7', 'field8', 'field9', 'field10',
+                    'field11', 'field12', 'field13', 'field14', 'field15',
+                    'field16', 'field17', 'field18', 'field19', 'field20'
+                );
+
+            if ($searchId) {
+                $query->where('id', $searchId);
+            }
+
+            if ($searchQuery) {
+                if ($fieldParam && in_array($fieldParam, $allowedSortFields)) {
+                    $query->where($fieldParam, 'LIKE', "%{$searchQuery}%");
+                } else {
+                    $query->where('title', 'LIKE', "%{$searchQuery}%");
+                }
+            }
+
+            $query->orderBy($sortField, $sortOrder);
+
+            if ($type === 'async') {
+                return $query->get();
+            }
+
+            $tables = $query->paginate($perPage);
+            $total = $tables->total();
+
+            return [
+                'current_page' => $tables->currentPage(),
+                'data' => $tables->items(),
+                'first_page_url' => $tables->url(1),
+                'from' => $tables->firstItem(),
+                'last_page' => $tables->lastPage(),
+                'last_page_url' => $tables->url($tables->lastPage()),
+                'links' => $tables->links(),
+                'next_page_url' => $tables->nextPageUrl(),
+                'path' => $tables->path(),
+                'per_page' => $tables->perPage(),
+                'prev_page_url' => $tables->previousPageUrl(),
+                'to' => $tables->lastItem(),
+                'total' => $total,
+            ];
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Internal Server Error',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
-
-        $query->orderBy($sortField, $sortOrder);
-
-        if ($type === 'async') {
-            return $query->get();
-        }
-
-        $tables = $query->paginate($perPage);
-        $total = $tables->total();
-
-        return [
-            'current_page' => $tables->currentPage(),
-            'data' => $tables->items(),
-            'first_page_url' => $tables->url(1),
-            'from' => $tables->firstItem(),
-            'last_page' => $tables->lastPage(),
-            'last_page_url' => $tables->url($tables->lastPage()),
-            'links' => $tables->links(),
-            'next_page_url' => $tables->nextPageUrl(),
-            'path' => $tables->path(),
-            'per_page' => $tables->perPage(),
-            'prev_page_url' => $tables->previousPageUrl(),
-            'to' => $tables->lastItem(),
-            'total' => $total,
-        ];
     }
 
     /**
