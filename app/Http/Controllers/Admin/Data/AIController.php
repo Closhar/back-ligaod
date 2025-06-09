@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class AIController extends Controller
 {
@@ -517,7 +518,17 @@ class AIController extends Controller
         try {
             $file = $request->file('file');
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $file->storeAs('ai_files', $fileName, 'public');
+
+            // Читаем содержимое файла
+            $content = file_get_contents($file->getRealPath());
+
+            // Очищаем JSON от слишком глубокой вложенности
+            $content = preg_replace('/"dc_id":\d+}/', '"dc_id":2}', $content);
+            $content = preg_replace('/"bytes":".*?"/', '"bytes":""', $content);
+            $content = preg_replace('/"inflated":".*?"/', '"inflated":""', $content);
+
+            // Сохраняем очищенный контент
+            Storage::disk('public')->put('ai_files/' . $fileName, $content);
 
             return response()->json([
                 'success' => true,
@@ -526,9 +537,10 @@ class AIController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
+            Log::error('Ошибка при сохранении файла: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => $e->getMessage()
+                'message' => 'Ошибка при сохранении файла: ' . $e->getMessage()
             ], 500);
         }
     }
