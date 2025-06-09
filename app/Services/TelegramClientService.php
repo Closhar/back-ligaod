@@ -25,43 +25,60 @@ class TelegramClientService
         $this->initializeMadelineProto();
     }
 
-    protected function initializeMadelineProto()
+    /**
+     * Инициализация MadelineProto
+     */
+    private function initializeMadelineProto()
     {
         try {
-            // Создаем директорию для сессии если её нет
-            $sessionDir = dirname($this->sessionPath);
-            if (!file_exists($sessionDir)) {
-                if (!mkdir($sessionDir, 0777, true)) {
-                    throw new \Exception("Не удалось создать директорию для сессии: {$sessionDir}");
-                }
+            \Log::info('Начало инициализации MadelineProto', [
+                'session_path' => $this->sessionPath,
+                'api_id' => $this->apiId,
+                'api_hash' => substr($this->apiHash, 0, 5) . '...' // Логируем только часть хэша для безопасности
+            ]);
+
+            if (!file_exists($this->sessionPath)) {
+                \Log::info('Файл сессии не найден, создаем новый');
+                $settings = [
+                    'app_info' => [
+                        'api_id' => $this->apiId,
+                        'api_hash' => $this->apiHash,
+                    ],
+                    'logger' => [
+                        'logger' => 'file',
+                        'logger_level' => 'verbose',
+                        'logger_path' => storage_path('logs/madeline-' . date('Y-m-d') . '.log'),
+                    ],
+                    'serialization' => [
+                        'serialization_interval' => 30,
+                        'cleanup_before_serialization' => true,
+                    ],
+                ];
+
+                $this->madelineProto = new \danog\MadelineProto\API($this->sessionPath, $settings);
+                \Log::info('MadelineProto успешно инициализирован с новыми настройками');
+            } else {
+                \Log::info('Файл сессии найден, загружаем существующую сессию');
+                $this->madelineProto = new \danog\MadelineProto\API($this->sessionPath);
+                \Log::info('Существующая сессия MadelineProto успешно загружена');
             }
 
-            // Проверяем права на запись в директорию
-            if (!is_writable($sessionDir)) {
-                throw new \Exception("Нет прав на запись в директорию: {$sessionDir}");
+            // Проверяем авторизацию
+            try {
+                $self = $this->madelineProto->getSelf();
+                \Log::info('Авторизация подтверждена', [
+                    'user_id' => $self['id'] ?? null,
+                    'username' => $self['username'] ?? null
+                ]);
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при проверке авторизации: ' . $e->getMessage());
+                throw new \Exception('Ошибка авторизации в Telegram: ' . $e->getMessage());
             }
 
-            // Настройки MadelineProto
-            $settings = new Settings;
-
-            // Полностью отключаем логирование
-            $logger = new Logger;
-            $logger->setLevel(5); // FATAL_ERROR - максимальный уровень, фактически отключает логирование
-            $logger->setExtra(storage_path('logs/madeline-' . date('Y-m-d') . '.log')); // Добавляем дату к имени файла
-            $settings->setLogger($logger);
-
-            // Настройки приложения
-            $appInfo = new AppInfo;
-            $appInfo->setApiId($this->apiId);
-            $appInfo->setApiHash($this->apiHash);
-            $settings->setAppInfo($appInfo);
-
-            // Инициализация MadelineProto с отключенным логированием
-            $this->madelineProto = new API($this->sessionPath, $settings);
-
-            Log::info('MadelineProto успешно инициализирован');
+            return true;
         } catch (\Exception $e) {
-            Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage());
+            \Log::error('Ошибка при инициализации MadelineProto: ' . $e->getMessage());
+            \Log::error('Трейс ошибки: ' . $e->getTraceAsString());
             throw $e;
         }
     }

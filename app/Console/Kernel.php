@@ -7,6 +7,7 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\TelegramInitSession;
 use App\Console\Commands\CleanupMadelineLogs;
 use App\Console\Commands\CheckTelegramConfig;
+use App\Console\Commands\RecreateMadelineSession;
 
 class Kernel extends ConsoleKernel
 {
@@ -18,6 +19,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         Commands\CleanupMadelineLogs::class,
         Commands\CheckTelegramConfig::class,
+        Commands\RecreateMadelineSession::class,
     ];
 
     /**
