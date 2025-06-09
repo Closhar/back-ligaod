@@ -267,47 +267,6 @@ class AIController extends Controller
         return $this->models[$model]['system_prompt'] ?? $this->models['gpt-3.5-turbo']['system_prompt'];
     }
 
-    private function splitTextIntoChunks($text, $maxLength = 3000) {
-        $chunks = [];
-        $paragraphs = explode("\n\n", $text);
-        $currentChunk = '';
-
-        foreach ($paragraphs as $paragraph) {
-            if (mb_strlen($currentChunk . $paragraph) > $maxLength) {
-                if (!empty($currentChunk)) {
-                    $chunks[] = trim($currentChunk);
-                    $currentChunk = '';
-                }
-                // Если один параграф больше максимальной длины, разбиваем его
-                if (mb_strlen($paragraph) > $maxLength) {
-                    $words = explode(' ', $paragraph);
-                    $tempChunk = '';
-                    foreach ($words as $word) {
-                        if (mb_strlen($tempChunk . ' ' . $word) <= $maxLength) {
-                            $tempChunk .= ' ' . $word;
-                        } else {
-                            $chunks[] = trim($tempChunk);
-                            $tempChunk = $word;
-                        }
-                    }
-                    if (!empty($tempChunk)) {
-                        $currentChunk = $tempChunk;
-                    }
-                } else {
-                    $currentChunk = $paragraph;
-                }
-            } else {
-                $currentChunk .= "\n\n" . $paragraph;
-            }
-        }
-
-        if (!empty($currentChunk)) {
-            $chunks[] = trim($currentChunk);
-        }
-
-        return $chunks;
-    }
-
     public function generate(Request $request)
     {
         $request->validate([
@@ -317,8 +276,7 @@ class AIController extends Controller
             'use_cache' => 'nullable|boolean',
             'format' => 'nullable|string|in:plain,html,markdown',
             'url' => 'nullable|url',
-            'max_content_length' => 'nullable|integer|min:500|max:5000',
-            'process_large_files' => 'nullable|boolean'
+            'max_content_length' => 'nullable|integer|min:500|max:5000'
         ]);
 
         try {
@@ -328,10 +286,8 @@ class AIController extends Controller
             $format = $request->input('format', 'plain');
             $url = $request->input('url');
             $maxContentLength = $request->input('max_content_length', 2000);
-            $processLargeFiles = $request->input('process_large_files', true);
             $config = $this->getModelConfig($model);
             $hasFile = false;
-            $fileContent = '';
 
             // Если есть file_id, добавляем содержимое файла к промту
             if ($request->has('file_id')) {
@@ -340,32 +296,7 @@ class AIController extends Controller
                     $fileContent = file_get_contents($filePath);
                     if ($fileContent) {
                         $hasFile = true;
-
-                        // Если включена обработка больших файлов
-                        if ($processLargeFiles) {
-                            $chunks = $this->splitTextIntoChunks($fileContent);
-                            $responses = [];
-
-                            foreach ($chunks as $index => $chunk) {
-                                $chunkPrompt = $fullPrompt . "\n\nЧасть " . ($index + 1) . " из " . count($chunks) . ":\n\n" . $chunk;
-
-                                // Отправляем запрос для каждой части
-                                $response = $this->processChunk($chunkPrompt, $model, $config, $hasFile);
-                                $responses[] = $response['data'];
-                            }
-
-                            // Объединяем результаты
-                            $finalResponse = implode("\n\n", $responses);
-
-                            return response()->json([
-                                'success' => true,
-                                'data' => $finalResponse,
-                                'source' => 'api',
-                                'chunks_processed' => count($chunks)
-                            ]);
-                        } else {
-                            $fullPrompt .= "\n\nСодержимое файла для анализа:\n\n" . $fileContent;
-                        }
+                        $fullPrompt .= "\n\nСодержимое файла для анализа:\n\n" . $fileContent;
                     }
                 }
             }
@@ -391,11 +322,11 @@ class AIController extends Controller
                 }
             }
 
-            // Проверяем длину промпта только если не обрабатываем большие файлы
-            if (!$processLargeFiles && mb_strlen($fullPrompt) > 4000) {
+            // Проверяем длину промпта
+            if (mb_strlen($fullPrompt) > 4000) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Превышен лимит длины промпта (4000 символов). Включите опцию process_large_files для обработки больших файлов.',
+                    'message' => 'Превышен лимит длины промпта (4000 символов)',
                     'limits' => [
                         'max_prompt_length' => 4000,
                         'current_prompt_length' => mb_strlen($fullPrompt)
@@ -522,48 +453,6 @@ class AIController extends Controller
                 'success' => false,
                 'message' => $e->getMessage()
             ], 500);
-        }
-    }
-
-    private function processChunk($prompt, $model, $config, $hasFile) {
-        try {
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . config('services.openai.api_key')
-            ])->timeout(120)->post('https://api.openai.com/v1/chat/completions', [
-                'model' => $model ?? config('services.openai.default_model', 'gpt-3.5-turbo'),
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => $this->getSystemPrompt($model, $hasFile)
-                    ],
-                    [
-                        'role' => 'user',
-                        'content' => $prompt
-                    ]
-                ],
-                'temperature' => 0.5,
-                'max_tokens' => $config['max_tokens'],
-                'presence_penalty' => 0.3,
-                'frequency_penalty' => 0.3,
-                'top_p' => 0.8,
-                'response_format' => ['type' => 'text']
-            ]);
-
-            if (!$response->successful()) {
-                throw new \Exception('Ошибка при обращении к AI API: ' . $response->body());
-            }
-
-            $responseData = $response->json();
-            return [
-                'success' => true,
-                'data' => $responseData['choices'][0]['message']['content']
-            ];
-        } catch (\Exception $e) {
-            Log::error('Chunk Processing Error: ' . $e->getMessage());
-            return [
-                'success' => false,
-                'data' => 'Ошибка при обработке части текста: ' . $e->getMessage()
-            ];
         }
     }
 
