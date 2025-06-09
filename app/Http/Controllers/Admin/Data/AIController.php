@@ -255,7 +255,20 @@ class AIController extends Controller
                 return $content;
             }
         } catch (\Exception $e) {
-            Log::error('Error fetching web content: ' . $e->getMessage());
+            // Если канал найден, обновляем его статистику с ошибкой
+            if (isset($channel)) {
+                $channel->update([
+                    'last_parse_at' => now(),
+                    'parse_status' => 'error',
+                    'error_message' => $e->getMessage()
+                ]);
+            }
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении сообщений',
+                'error' => $e->getMessage()
+            ], 500);
         }
 
         return null;
@@ -378,44 +391,24 @@ class AIController extends Controller
                 ]);
 
                 if (!$response->successful()) {
-                    Log::error('API Error Response:', [
-                        'status' => $response->status(),
-                        'body' => $response->body(),
-                        'headers' => $response->headers()
-                    ]);
                     throw new \Exception('Ошибка при обращении к AI API: ' . $response->body());
                 }
             } catch (\Exception $e) {
-                Log::error('API Request Error:', [
-                    'message' => $e->getMessage(),
-                    'trace' => $e->getTraceAsString()
-                ]);
                 throw new \Exception('Ошибка при обращении к AI API: ' . $e->getMessage());
             }
 
             $responseData = $response->json();
             $content = $responseData['choices'][0]['message']['content'];
 
-            // Логируем исходный ответ
-            Log::info('Original API response:', ['content' => $content]);
-
             // Применяем постобработку текста
             $content = $this->postProcessText($content);
-
-            // Логируем после постобработки
-            Log::info('After post-processing:', ['content' => $content]);
 
             // Конвертируем в нужный формат
             if ($format === 'html') {
                 $content = $this->convertToHtml($content);
-                Log::info('After HTML conversion:', ['content' => $content]);
             } elseif ($format === 'markdown') {
                 $content = $this->convertToMarkdown($content);
-                Log::info('After Markdown conversion:', ['content' => $content]);
             }
-
-            // Логируем финальный ответ
-            Log::info('Final response:', ['content' => $content]);
 
             // Кэшируем результат
             if ($useCache) {
@@ -449,7 +442,6 @@ class AIController extends Controller
             ], 200, [], JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
 
         } catch (\Exception $e) {
-            Log::error('AI Generation Error: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
@@ -537,7 +529,6 @@ class AIController extends Controller
                 ]
             ]);
         } catch (\Exception $e) {
-            Log::error('Ошибка при сохранении файла: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при сохранении файла: ' . $e->getMessage()

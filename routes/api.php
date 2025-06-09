@@ -122,9 +122,13 @@ Route::post('/email/verification-notification', [AuthController::class, 'resendV
 Route::get('/captcha', [AuthController::class, 'generateCaptcha']);
 Route::post('/verify-email', [AuthController::class, 'verifyEmail']);
 
-
 // АДМИНКА
 Route::post('/adminlogin', [\App\Http\Controllers\Admin\Auth\AuthController::class, 'login']);
+
+// Публичные маршруты
+Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
+Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
+
 // Защищенные маршруты (требуют авторизации)
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/adminlogout', [AuthController::class, 'logout']);
@@ -154,20 +158,16 @@ Route::prefix('telegram')->group(function () {
         Route::get('/{id}/check', [TelegramParseChannelController::class, 'checkChannel']);
         Route::get('/{id}/stats', [TelegramParseChannelController::class, 'stats']);
     });
+});
 
-    // Маршруты для получения сообщений
-    Route::prefix('messages')->group(function () {
-        Route::get('/fetch', [TelegramMessageController::class, 'fetchMessages']);
-        Route::post('/fetch', [TelegramMessageController::class, 'fetchMessages']);
-    });
+// Публичные маршруты для получения сообщений из Telegram
+Route::prefix('telegram/messages')->group(function () {
+    Route::get('/fetch', [TelegramMessageController::class, 'fetchMessages']);
+    Route::post('/fetch', [TelegramMessageController::class, 'fetchMessages']);
 });
 
 // Тестовый маршрут для авторизации Telegram
 Route::match(['get', 'post'], '/telegram/test-auth', [TelegramParseChannelController::class, 'testAuth']);
-
-// ChatGPT
-Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class, 'generate']);
-Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::class, 'uploadFile']);
 
 // Парсинг
 Route::post('/parse-tables/parse', [ParseTableController::class, 'parse']);
