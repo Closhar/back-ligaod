@@ -15,10 +15,16 @@ class TelegramParseChannelController extends Controller
     /**
      * Получить список каналов для парсинга
      */
-    public function index()
+    public function index(Request $request)
     {
-        $channels = Cache::remember('telegram_parse_channels', 3600, function () {
-            return TelegramParseChannel::orderBy('created_at', 'desc')->get();
+        $channels = Cache::remember('telegram_parse_channels', 3600, function () use ($request) {
+            $query = TelegramParseChannel::query();
+
+            if ($request->has('q')) {
+                $query->where('title', 'like', '%' . $request->q . '%');
+            }
+
+            return $query->orderBy('created_at', 'desc')->get();
         });
 
         return response()->json([
