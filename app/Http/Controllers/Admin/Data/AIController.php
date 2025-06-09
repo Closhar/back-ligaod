@@ -107,7 +107,7 @@ class AIController extends Controller
             // Отправляем запрос к AI
             $response = Http::withHeaders([
                 'Authorization' => 'Bearer ' . config('services.openai.api_key')
-            ])->post('https://api.openai.com/v1/chat/completions', [
+            ])->timeout(120)->post('https://api.openai.com/v1/chat/completions', [
                 'model' => $model ?? config('services.openai.default_model', 'gpt-3.5-turbo'),
                 'messages' => [
                     [
