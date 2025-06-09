@@ -310,6 +310,7 @@ Route::prefix('telegram-parse-channels')->group(function () {
     Route::get('/{id}/check', [TelegramParseChannelController::class, 'checkChannel']);
     Route::post('/test-messages', [TelegramParseChannelController::class, 'testMessages']);
     Route::get('/test-auth', [TelegramParseChannelController::class, 'testAuth']);
+    Route::post('/check-access', [TelegramParseChannelController::class, 'checkAccess']);
 });
 
 Route::get('test-telegram', [TelegramParseChannelController::class, 'testMessages']);

@@ -215,28 +215,49 @@ class TelegramClientService
 
             // Проверяем авторизацию
             if (!$this->madelineProto) {
+                \Log::error('MadelineProto не инициализирован');
                 throw new \Exception('MadelineProto не инициализирован');
             }
 
+            \Log::info('MadelineProto инициализирован, получаем информацию о канале');
+
             // Получаем информацию о канале
-            $channelInfo = $this->getChannelInfo($channelId);
+            try {
+                $channelInfo = $this->getChannelInfo($channelId);
+                \Log::info('Информация о канале получена:', ['channelInfo' => $channelInfo]);
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при получении информации о канале: ' . $e->getMessage());
+                throw $e;
+            }
+
             if (!$channelInfo) {
+                \Log::error('Не удалось получить информацию о канале');
                 throw new \Exception('Не удалось получить информацию о канале');
             }
 
+            \Log::info('Начинаем получение истории сообщений');
+
             // Получаем сообщения
-            $messages = $this->madelineProto->messages->getHistory([
-                'peer' => $channelId,
-                'offset_id' => 0,
-                'offset_date' => 0,
-                'add_offset' => $offset,
-                'limit' => $limit * 2, // Запрашиваем больше сообщений для фильтрации
-                'max_id' => 0,
-                'min_id' => 0,
-                'hash' => 0
-            ]);
+            try {
+                $messages = $this->madelineProto->messages->getHistory([
+                    'peer' => $channelId,
+                    'offset_id' => 0,
+                    'offset_date' => 0,
+                    'add_offset' => $offset,
+                    'limit' => $limit * 2, // Запрашиваем больше сообщений для фильтрации
+                    'max_id' => 0,
+                    'min_id' => 0,
+                    'hash' => 0
+                ]);
+                \Log::info('История сообщений получена:', ['messages_count' => count($messages['messages'] ?? [])]);
+            } catch (\Exception $e) {
+                \Log::error('Ошибка при получении истории сообщений: ' . $e->getMessage());
+                \Log::error('Трейс ошибки: ' . $e->getTraceAsString());
+                throw $e;
+            }
 
             if (!isset($messages['messages'])) {
+                \Log::error('В ответе отсутствует ключ messages');
                 throw new \Exception('Не удалось получить сообщения из канала');
             }
 
@@ -244,6 +265,11 @@ class TelegramClientService
             $filteredMessages = [];
             $count = 0;
             $dateFromTimestamp = $dateFrom ? strtotime($dateFrom) : null;
+
+            \Log::info('Начинаем фильтрацию сообщений', [
+                'total_messages' => count($messages['messages']),
+                'date_from_timestamp' => $dateFromTimestamp
+            ]);
 
             // Сортируем сообщения по дате (от ранних к поздним)
             usort($messages['messages'], function($a, $b) {
@@ -285,7 +311,7 @@ class TelegramClientService
             $hasMore = count($messages['messages']) > $count;
             $nextOffset = $hasMore ? $offset + $count : null;
 
-            \Log::info('Успешно получены сообщения', [
+            \Log::info('Фильтрация сообщений завершена', [
                 'channel_id' => $channelId,
                 'total_messages' => count($messages['messages']),
                 'filtered_messages' => count($filteredMessages),
@@ -355,6 +381,63 @@ class TelegramClientService
         } catch (\Exception $e) {
             Log::error('Ошибка при получении статистики канала: ' . $e->getMessage());
             throw $e;
+        }
+    }
+
+    /**
+     * Проверка доступа к каналу
+     */
+    public function checkChannelAccess($channelId)
+    {
+        try {
+            // Убираем @ из начала channelId, если он есть
+            $channelId = ltrim($channelId, '@');
+
+            \Log::info('Проверка доступа к каналу', ['channel_id' => $channelId]);
+
+            // Проверяем авторизацию
+            if (!$this->madelineProto) {
+                throw new \Exception('MadelineProto не инициализирован');
+            }
+
+            // Пробуем получить информацию о канале
+            $channelInfo = $this->getChannelInfo($channelId);
+            if (!$channelInfo) {
+                throw new \Exception('Не удалось получить информацию о канале');
+            }
+
+            // Пробуем получить одно сообщение для проверки доступа
+            $messages = $this->madelineProto->messages->getHistory([
+                'peer' => $channelId,
+                'offset_id' => 0,
+                'offset_date' => 0,
+                'add_offset' => 0,
+                'limit' => 1,
+                'max_id' => 0,
+                'min_id' => 0,
+                'hash' => 0
+            ]);
+
+            \Log::info('Доступ к каналу подтвержден', [
+                'channel_id' => $channelId,
+                'channel_info' => $channelInfo,
+                'has_messages' => isset($messages['messages']) && !empty($messages['messages'])
+            ]);
+
+            return [
+                'success' => true,
+                'channel_info' => $channelInfo,
+                'has_access' => true,
+                'has_messages' => isset($messages['messages']) && !empty($messages['messages'])
+            ];
+
+        } catch (\Exception $e) {
+            \Log::error('Ошибка при проверке доступа к каналу: ' . $e->getMessage());
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'has_access' => false
+            ];
         }
     }
 }
