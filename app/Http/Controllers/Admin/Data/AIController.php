@@ -171,7 +171,16 @@ class AIController extends Controller
         \Cache::put($cacheKey, $response, $ttl);
     }
 
+    private function decodeUnicode($text) {
+        return preg_replace_callback('/\\\\u([0-9a-f]{4})/i', function($matches) {
+            return mb_convert_encoding(pack('H*', $matches[1]), 'UTF-8', 'UCS-2BE');
+        }, $text);
+    }
+
     private function postProcessText($text) {
+        // Декодируем Unicode-последовательности
+        $text = $this->decodeUnicode($text);
+
         // Удаляем лишние пробелы в начале и конце
         $text = trim($text);
 
@@ -467,15 +476,26 @@ class AIController extends Controller
             $responseData = $response->json();
             $content = $responseData['choices'][0]['message']['content'];
 
+            // Логируем исходный ответ
+            Log::info('Original API response:', ['content' => $content]);
+
             // Применяем постобработку текста
             $content = $this->postProcessText($content);
+
+            // Логируем после постобработки
+            Log::info('After post-processing:', ['content' => $content]);
 
             // Конвертируем в нужный формат
             if ($format === 'html') {
                 $content = $this->convertToHtml($content);
+                Log::info('After HTML conversion:', ['content' => $content]);
             } elseif ($format === 'markdown') {
                 $content = $this->convertToMarkdown($content);
+                Log::info('After Markdown conversion:', ['content' => $content]);
             }
+
+            // Логируем финальный ответ
+            Log::info('Final response:', ['content' => $content]);
 
             // Кэшируем результат
             if ($useCache) {
@@ -506,7 +526,7 @@ class AIController extends Controller
                     'model' => $model ?? config('services.openai.default_model', 'gpt-3.5-turbo'),
                     'temperature' => 0.5
                 ]
-            ]);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
 
         } catch (\Exception $e) {
             Log::error('AI Generation Error: ' . $e->getMessage());
