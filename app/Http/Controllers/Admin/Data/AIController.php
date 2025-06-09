@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\Storage;
 
 class AIController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth');
+    }
+
     private $models = [
         'gpt-3.5-turbo' => [
             'max_tokens' => 2000,
