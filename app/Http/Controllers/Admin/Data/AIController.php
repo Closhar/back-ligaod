@@ -16,6 +16,7 @@ class AIController extends Controller
             'temperature' => 0.5,
             'cost_per_1k_input' => 0.002,
             'cost_per_1k_output' => 0.002,
+            'max_file_length' => 4000,
             'system_prompt' => 'Вы - опытный спортивный журналист. Ваша задача - создавать качественные тексты на основе предоставленной информации.
 
 Правила работы с информацией:
@@ -35,6 +36,7 @@ class AIController extends Controller
             'temperature' => 0.5,
             'cost_per_1k_input' => 0.01,
             'cost_per_1k_output' => 0.03,
+            'max_file_length' => 8000,
             'system_prompt' => 'Вы - ведущий спортивный аналитик. Ваша задача - создавать качественные аналитические тексты на основе предоставленной информации.
 
 Правила работы с информацией:
@@ -290,7 +292,8 @@ class AIController extends Controller
             'use_cache' => 'nullable|boolean',
             'format' => 'nullable|string|in:plain,html,markdown',
             'url' => 'nullable|url',
-            'max_content_length' => 'nullable|integer|min:500|max:5000'
+            'max_content_length' => 'nullable|integer|min:500|max:5000',
+            'max_file_length' => 'nullable|integer|min:1000|max:10000'
         ]);
 
         try {
@@ -301,6 +304,7 @@ class AIController extends Controller
             $url = $request->input('url');
             $maxContentLength = $request->input('max_content_length', 2000);
             $config = $this->getModelConfig($model);
+            $maxFileLength = $request->input('max_file_length', $config['max_file_length']);
             $hasFile = false;
 
             // Если есть file_id, добавляем содержимое файла к промту
@@ -310,6 +314,10 @@ class AIController extends Controller
                     $fileContent = file_get_contents($filePath);
                     if ($fileContent) {
                         $hasFile = true;
+                        // Обрезаем содержимое файла если оно превышает лимит для выбранной модели
+                        if (mb_strlen($fileContent) > $maxFileLength) {
+                            $fileContent = mb_substr($fileContent, 0, $maxFileLength) . "\n\n... (текст обрезан до " . $maxFileLength . " символов для модели " . $model . ")";
+                        }
                         $fullPrompt .= "\n\nСодержимое файла для анализа:\n\n" . $fileContent;
                     }
                 }
@@ -336,8 +344,8 @@ class AIController extends Controller
                 }
             }
 
-            // Проверяем длину промпта
-            if (mb_strlen($fullPrompt) > 4000) {
+            // Проверяем длину промпта только если нет файла
+            if (!$hasFile && mb_strlen($fullPrompt) > 4000) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Превышен лимит длины промпта (4000 символов)',
