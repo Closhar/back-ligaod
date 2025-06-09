@@ -173,8 +173,10 @@ Route::post('/ai/upload-file', [App\Http\Controllers\Admin\Data\AIController::cl
 Route::post('/parse-tables/parse', [ParseTableController::class, 'parse']);
 
 // Админка
-Route::apiResource('parse-tables', \App\Http\Controllers\Admin\Data\ParseTableController::class);
-Route::apiResource('parse-table-contents', \App\Http\Controllers\Admin\Data\ParseTableContentController::class);
+Route::middleware('auth:sanctum')->group(function () {
+    Route::apiResource('parse-tables', \App\Http\Controllers\Admin\Data\ParseTableController::class);
+    Route::apiResource('parse-table-contents', \App\Http\Controllers\Admin\Data\ParseTableContentController::class);
+});
 
 Route::apiResource('events', EventController::class);
 Route::get('events/{id}/check-field', [EventController::class, 'checkField']);
