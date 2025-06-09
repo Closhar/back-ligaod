@@ -353,31 +353,43 @@ class AIController extends Controller
             }
 
             // Отправляем запрос к AI
-            $response = Http::withHeaders([
-                'Authorization' => 'Bearer ' . config('services.openai.api_key')
-            ])->timeout(120)->post('https://api.openai.com/v1/chat/completions', [
-                'model' => $model ?? config('services.openai.default_model', 'gpt-3.5-turbo'),
-                'messages' => [
-                    [
-                        'role' => 'system',
-                        'content' => $this->getSystemPrompt($model, $hasFile)
+            try {
+                $response = Http::withHeaders([
+                    'Authorization' => 'Bearer ' . config('services.openai.api_key')
+                ])->timeout(120)->post('https://api.openai.com/v1/chat/completions', [
+                    'model' => $model ?? config('services.openai.default_model', 'gpt-3.5-turbo'),
+                    'messages' => [
+                        [
+                            'role' => 'system',
+                            'content' => $this->getSystemPrompt($model, $hasFile)
+                        ],
+                        [
+                            'role' => 'user',
+                            'content' => $fullPrompt
+                        ]
                     ],
-                    [
-                        'role' => 'user',
-                        'content' => $fullPrompt
-                    ]
-                ],
-                'temperature' => 0.5,
-                'max_tokens' => $config['max_tokens'],
-                'presence_penalty' => 0.3,
-                'frequency_penalty' => 0.3,
-                'top_p' => 0.8,
-                'response_format' => ['type' => 'text'],
-                'preserve_newlines' => true
-            ]);
+                    'temperature' => 0.5,
+                    'max_tokens' => $config['max_tokens'],
+                    'presence_penalty' => 0.3,
+                    'frequency_penalty' => 0.3,
+                    'top_p' => 0.8,
+                    'response_format' => ['type' => 'text']
+                ]);
 
-            if (!$response->successful()) {
-                throw new \Exception('Ошибка при обращении к AI API');
+                if (!$response->successful()) {
+                    Log::error('API Error Response:', [
+                        'status' => $response->status(),
+                        'body' => $response->body(),
+                        'headers' => $response->headers()
+                    ]);
+                    throw new \Exception('Ошибка при обращении к AI API: ' . $response->body());
+                }
+            } catch (\Exception $e) {
+                Log::error('API Request Error:', [
+                    'message' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                throw new \Exception('Ошибка при обращении к AI API: ' . $e->getMessage());
             }
 
             $responseData = $response->json();
