@@ -172,90 +172,47 @@ class AIController extends Controller
     }
 
     private function postProcessText($text) {
-        // Разбиваем текст на предложения
-        $sentences = preg_split('/(?<=[.!?])\s+/', $text, -1, PREG_SPLIT_NO_EMPTY);
-
-        // Обрабатываем каждое предложение
-        $processedSentences = array_map(function($sentence) {
-            // Удаляем лишние пробелы
-            $sentence = trim($sentence);
-
-            // Проверяем длину предложения
-            if (mb_strlen($sentence) > 100) {
-                // Разбиваем длинное предложение на более короткие
-                $parts = preg_split('/(?<=[,;])\s+/', $sentence);
-                return implode(' ', $parts);
-            }
-
-            return $sentence;
-        }, $sentences);
-
-        // Собираем текст обратно
-        $processedText = implode(' ', $processedSentences);
-
-        // Удаляем множественные пробелы
-        $processedText = preg_replace('/\s+/', ' ', $processedText);
-
-        // Форматируем заголовки
-        $processedText = preg_replace('/^([^:]+):/m', "\n$1:", $processedText);
-
-        // Добавляем переносы строк после заголовков
-        $processedText = preg_replace('/^([^:]+):\s*/m', "$1:\n\n", $processedText);
-
-        // Добавляем переносы строк после абзацев
-        $processedText = preg_replace('/\.\s+/', ".\n\n", $processedText);
-
-        // Удаляем лишние переносы строк
-        $processedText = preg_replace('/\n{3,}/', "\n\n", $processedText);
-
-        // Форматируем списки
-        $processedText = preg_replace('/^\s*-\s*/m', "\n- ", $processedText);
-
-        // Добавляем отступы для абзацев
-        $processedText = preg_replace('/\n\n([^\n])/m', "\n\n    $1", $processedText);
-
         // Удаляем лишние пробелы в начале и конце
-        $processedText = trim($processedText);
+        $text = trim($text);
+
+        // Заменяем множественные переносы строк на двойные
+        $text = preg_replace('/\n{3,}/', "\n\n", $text);
+
+        // Обрабатываем заголовки
+        $text = preg_replace('/^([^:]+):/m', "\n$1:\n", $text);
+
+        // Обрабатываем абзацы
+        $text = preg_replace('/\.\s+/', ".\n\n", $text);
+
+        // Обрабатываем списки
+        $text = preg_replace('/^\s*-\s*/m', "\n- ", $text);
 
         // Форматируем цитаты
-        $processedText = preg_replace('/"([^"]+)"/', '«$1»', $processedText);
+        $text = preg_replace('/"([^"]+)"/', '«$1»', $text);
 
         // Форматируем тире
-        $processedText = preg_replace('/\s*-\s*/', ' — ', $processedText);
-
-        // Форматируем скобки
-        $processedText = preg_replace('/\s*\(\s*/', ' (', $processedText);
-        $processedText = preg_replace('/\s*\)\s*/', ') ', $processedText);
-
-        // Форматируем двоеточие
-        $processedText = preg_replace('/\s*:\s*/', ': ', $processedText);
-
-        // Форматируем запятую
-        $processedText = preg_replace('/\s*,\s*/', ', ', $processedText);
-
-        // Форматируем точку
-        $processedText = preg_replace('/\s*\.\s*/', '. ', $processedText);
-
-        // Форматируем восклицательный знак
-        $processedText = preg_replace('/\s*!\s*/', '! ', $processedText);
-
-        // Форматируем вопросительный знак
-        $processedText = preg_replace('/\s*\?\s*/', '? ', $processedText);
+        $text = preg_replace('/\s*-\s*/', ' — ', $text);
 
         // Удаляем лишние пробелы перед знаками препинания
-        $processedText = preg_replace('/\s+([.,!?:;])/', '$1', $processedText);
+        $text = preg_replace('/\s+([.,!?:;])/', '$1', $text);
 
         // Удаляем лишние пробелы после знаков препинания
-        $processedText = preg_replace('/([.,!?:;])\s+/', '$1 ', $processedText);
+        $text = preg_replace('/([.,!?:;])\s+/', '$1 ', $text);
 
         // Форматируем цифры и единицы измерения
-        $processedText = preg_replace('/(\d+)\s*%/', '$1%', $processedText);
-        $processedText = preg_replace('/(\d+)\s*:/', '$1:', $processedText);
+        $text = preg_replace('/(\d+)\s*%/', '$1%', $text);
+        $text = preg_replace('/(\d+)\s*:/', '$1:', $text);
 
-        // Форматируем названия команд
-        $processedText = preg_replace('/"([^"]+)"\s*\(([^)]+)\)/', '«$1» ($2)', $processedText);
+        // Удаляем множественные пробелы
+        $text = preg_replace('/\s+/', ' ', $text);
 
-        return $processedText;
+        // Добавляем переносы строк после абзацев
+        $text = preg_replace('/\.\s+/', ".\n\n", $text);
+
+        // Удаляем лишние переносы строк в начале и конце
+        $text = trim($text);
+
+        return $text;
     }
 
     private function fetchWebContent($url, $maxLength = 2000) {
@@ -561,33 +518,74 @@ class AIController extends Controller
     }
 
     private function convertToHtml($text) {
-        // Конвертируем заголовки
-        $text = preg_replace('/^([^:]+):/m', '<h3>$1</h3>', $text);
+        // Разбиваем текст на абзацы
+        $paragraphs = explode("\n\n", $text);
+        $html = '';
 
-        // Конвертируем абзацы
-        $text = '<p>' . str_replace("\n\n", '</p><p>', $text) . '</p>';
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim($paragraph);
+            if (empty($paragraph)) continue;
 
-        // Конвертируем списки
-        $text = preg_replace('/<p>-\s*(.*?)<\/p>/m', '<li>$1</li>', $text);
-        $text = preg_replace('/<li>.*?<\/li>/s', '<ul>$0</ul>', $text);
+            // Проверяем, является ли абзац заголовком
+            if (preg_match('/^([^:]+):$/', $paragraph, $matches)) {
+                $html .= '<h3>' . $matches[1] . '</h3>';
+            }
+            // Проверяем, является ли абзац списком
+            else if (strpos($paragraph, '- ') === 0) {
+                $items = explode("\n", $paragraph);
+                $html .= '<ul>';
+                foreach ($items as $item) {
+                    if (strpos($item, '- ') === 0) {
+                        $html .= '<li>' . substr($item, 2) . '</li>';
+                    }
+                }
+                $html .= '</ul>';
+            }
+            // Обычный абзац
+            else {
+                $html .= '<p>' . $paragraph . '</p>';
+            }
+        }
 
-        // Конвертируем цитаты
-        $text = preg_replace('/«(.*?)»/', '<q>$1</q>', $text);
+        // Форматируем цитаты
+        $html = preg_replace('/«(.*?)»/', '<q>$1</q>', $html);
 
-        return $text;
+        return $html;
     }
 
     private function convertToMarkdown($text) {
-        // Конвертируем заголовки
-        $text = preg_replace('/^([^:]+):/m', '### $1', $text);
+        // Разбиваем текст на абзацы
+        $paragraphs = explode("\n\n", $text);
+        $markdown = '';
 
-        // Конвертируем списки
-        $text = preg_replace('/^-\s*(.*?)$/m', '- $1', $text);
+        foreach ($paragraphs as $paragraph) {
+            $paragraph = trim($paragraph);
+            if (empty($paragraph)) continue;
 
-        // Конвертируем цитаты
-        $text = preg_replace('/«(.*?)»/', '> $1', $text);
+            // Проверяем, является ли абзац заголовком
+            if (preg_match('/^([^:]+):$/', $paragraph, $matches)) {
+                $markdown .= '### ' . $matches[1] . "\n\n";
+            }
+            // Проверяем, является ли абзац списком
+            else if (strpos($paragraph, '- ') === 0) {
+                $items = explode("\n", $paragraph);
+                foreach ($items as $item) {
+                    if (strpos($item, '- ') === 0) {
+                        $markdown .= $item . "\n";
+                    }
+                }
+                $markdown .= "\n";
+            }
+            // Обычный абзац
+            else {
+                $markdown .= $paragraph . "\n\n";
+            }
+        }
 
-        return $text;
+        // Форматируем цитаты
+        $markdown = preg_replace('/«(.*?)»/', '> $1', $markdown);
+
+        return trim($markdown);
     }
 
     public function uploadFile(Request $request)
