@@ -508,6 +508,12 @@ class AIController extends Controller
 
     public function uploadFile(Request $request)
     {
+        \Log::info('Upload file request', [
+            'headers' => $request->headers->all(),
+            'user' => $request->user(),
+            'token' => $request->bearerToken()
+        ]);
+
         $request->validate([
             'file' => 'required|file|mimes:txt|max:10240' // макс. 10MB
         ]);
