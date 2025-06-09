@@ -47,7 +47,7 @@ class TelegramClientService
             // Полностью отключаем логирование
             $logger = new Logger;
             $logger->setLevel(5); // FATAL_ERROR - максимальный уровень, фактически отключает логирование
-            $logger->setExtra(storage_path('logs/madeline.log')); // Указываем путь к лог-файлу в storage
+            $logger->setExtra(storage_path('logs/madeline-' . date('Y-m-d') . '.log')); // Добавляем дату к имени файла
             $settings->setLogger($logger);
 
             // Настройки приложения
