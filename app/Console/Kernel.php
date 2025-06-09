@@ -6,6 +6,7 @@ use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 use App\Console\Commands\TelegramInitSession;
 use App\Console\Commands\CleanupMadelineLogs;
+use App\Console\Commands\CheckTelegramConfig;
 
 class Kernel extends ConsoleKernel
 {
@@ -15,7 +16,8 @@ class Kernel extends ConsoleKernel
      * @var array
      */
     protected $commands = [
-        // Удаляем старый способ регистрации команд
+        Commands\CleanupMadelineLogs::class,
+        Commands\CheckTelegramConfig::class,
     ];
 
     /**

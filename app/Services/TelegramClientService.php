@@ -200,7 +200,7 @@ class TelegramClientService
     /**
      * Получить сообщения из канала
      */
-    public function getChannelMessages(string $channelId, int $limit = 50, int $offset = 0, ?string $dateFrom = null): array
+    public function getChannelMessages($channelId, $limit = 50, $offset = 0, $dateFrom = null)
     {
         try {
             // Убираем @ из начала channelId, если он есть
@@ -212,6 +212,11 @@ class TelegramClientService
                 'offset' => $offset,
                 'date_from' => $dateFrom
             ]);
+
+            // Проверяем авторизацию
+            if (!$this->madelineProto) {
+                throw new \Exception('MadelineProto не инициализирован');
+            }
 
             // Получаем информацию о канале
             $channelInfo = $this->getChannelInfo($channelId);
@@ -296,6 +301,7 @@ class TelegramClientService
 
         } catch (\Exception $e) {
             \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+            \Log::error('Трейс ошибки: ' . $e->getTraceAsString());
             throw $e;
         }
     }

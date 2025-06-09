@@ -357,10 +357,10 @@ class TelegramParseChannelController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error('Общая ошибка: ' . $e->getMessage());
+            \Log::error('Общая ошибка при тестировании сообщений: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при тестировании',
+                'message' => 'Произошла ошибка при тестировании сообщений',
                 'error' => $e->getMessage()
             ], 500);
         }
