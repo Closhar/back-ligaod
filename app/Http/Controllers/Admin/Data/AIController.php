@@ -509,9 +509,7 @@ class AIController extends Controller
     public function uploadFile(Request $request)
     {
         \Log::info('Upload file request', [
-            'headers' => $request->headers->all(),
-            'user' => $request->user(),
-            'token' => $request->bearerToken()
+            'headers' => $request->headers->all()
         ]);
 
         $request->validate([
