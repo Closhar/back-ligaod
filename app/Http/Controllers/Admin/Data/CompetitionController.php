@@ -73,6 +73,7 @@ class CompetitionController extends Controller
                 'facebooks',
                 'xs',
                 'gallery_id',
+                'parse_table_id',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", bg_image) AS full_bg_image_path')
             )
@@ -87,6 +88,9 @@ class CompetitionController extends Controller
                     $query->select(['arenas.id', 'title']);
                 },
                 'gallery' => function ($query) {
+                    $query->select(['id', 'title']);
+                },
+                'parseTable' => function ($query) {
                     $query->select(['id', 'title']);
                 }
             ]);
@@ -236,12 +240,14 @@ class CompetitionController extends Controller
                     'facebooks' => $competition->facebooks,
                     'xs' => $competition->xs,
                     'gallery_id' => $competition->gallery_id,
+                    'parse_table_id' => $competition->parse_table_id,
                     'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
                     'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
                     'gender' => $competition->gender,
                     'sport' => $competition->sport,
                     'arenas' => $competition->arenas,
-                    'gallery' => $competition->gallery
+                    'gallery' => $competition->gallery,
+                    'parseTable' => $competition->parseTable
                 ];
             })->toArray();
         }
@@ -286,12 +292,14 @@ class CompetitionController extends Controller
                 'facebooks' => $competition->facebooks,
                 'xs' => $competition->xs,
                 'gallery_id' => $competition->gallery_id,
+                'parse_table_id' => $competition->parse_table_id,
                 'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
                 'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
                 'gender' => $competition->gender,
                 'sport' => $competition->sport,
                 'arenas' => $competition->arenas,
-                'gallery' => $competition->gallery
+                'gallery' => $competition->gallery,
+                'parseTable' => $competition->parseTable
             ];
         });
 
@@ -338,7 +346,8 @@ class CompetitionController extends Controller
                 'instagrams' => 'nullable|string',
                 'facebooks' => 'nullable|string',
                 'xs' => 'nullable|string',
-                'gallery_id' => 'nullable|exists:galleries,id'
+                'gallery_id' => 'nullable|exists:galleries,id',
+                'parse_table_id' => 'nullable|exists:parse_tables,id'
             ]);
 
             $item = Competition::create($validated);
@@ -386,7 +395,8 @@ class CompetitionController extends Controller
                 'instagrams' => 'nullable|string',
                 'facebooks' => 'nullable|string',
                 'xs' => 'nullable|string',
-                'gallery_id' => 'nullable|exists:galleries,id'
+                'gallery_id' => 'nullable|exists:galleries,id',
+                'parse_table_id' => 'nullable|exists:parse_tables,id'
             ]);
 
             // Затем поиск и обновление
