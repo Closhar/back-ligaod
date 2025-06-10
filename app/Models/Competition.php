@@ -48,6 +48,11 @@ class Competition extends Model
         return $this->hasMany(Event::class);
     }
 
+    public function parseTable(): BelongsTo
+    {
+        return $this->belongsTo(ParseTable::class);
+    }
+
     public function clubs1()
     {
         return $this->hasManyThrough(

@@ -54,6 +54,7 @@ class ApiCompetitionController extends Controller
                 'gender_id',
                 'date_from',
                 'date_to',
+                'parse_table_id',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path')
             )
             ->with([
@@ -63,6 +64,9 @@ class ApiCompetitionController extends Controller
                 },
                 'arenas' => function ($query) {
                     $query->select(['arenas.id', 'title']);
+                },
+                'parseTable' => function ($query) {
+                    $query->select(['id', 'title']);
                 }
             ]);
 
@@ -280,6 +284,9 @@ class ApiCompetitionController extends Controller
                 },
                 'gender' => function ($genderQuery) {
                     $genderQuery->select(['genders.id', 'genders.title', 'genders.icon']);
+                },
+                'parseTable' => function ($query) {
+                    $query->select(['id', 'title']);
                 },
                 'gallery' => function ($galleryQuery) {
                     $galleryQuery->select(['galleries.id', 'galleries.title'])->with([
