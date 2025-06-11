@@ -705,8 +705,10 @@ class ParseTableController extends Controller
                 }
             }
 
-            // В любом случае удаляем существующие записи
-            ParseTableContent::where('table_id', $table->id)->delete();
+            // Удаляем существующие записи только если есть URL для парсинга
+            if ($request->has('url') || !empty($table->url)) {
+                ParseTableContent::where('table_id', $table->id)->delete();
+            }
 
             // Создаем новый запрос с параметрами
             $newRequest = new Request([
