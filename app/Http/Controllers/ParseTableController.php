@@ -38,6 +38,9 @@ class ParseTableController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'url' => 'nullable|url',
+            'table_no' => 'nullable|integer|min:1',
+            'last_parse_data' => 'nullable|date',
             'field1' => 'nullable|string|max:255',
             'field2' => 'nullable|string|max:255',
             'field3' => 'nullable|string|max:255',
@@ -76,6 +79,9 @@ class ParseTableController extends Controller
         $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'url' => 'nullable|url',
+            'table_no' => 'nullable|integer|min:1',
+            'last_parse_data' => 'nullable|date',
             'field1' => 'nullable|string|max:255',
             'field2' => 'nullable|string|max:255',
             'field3' => 'nullable|string|max:255',
@@ -620,8 +626,8 @@ class ParseTableController extends Controller
             $tableModel = new ParseTable();
             $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
             $tableModel->description = 'Импортировано из ' . $request->url;
-            $tableModel->url = $request->url;
-            $tableModel->table_no = $request->table_no;
+            $tableModel->url = $request->input('url');
+            $tableModel->table_no = $request->input('table_no');
             $tableModel->last_parse_data = now();
 
             // Заполняем заголовки полей
