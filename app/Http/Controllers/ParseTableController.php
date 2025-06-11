@@ -143,7 +143,8 @@ class ParseTableController extends Controller
         $request->validate([
             'url' => 'required|url',
             'search_text' => 'nullable|string|max:255',
-            'table_no' => 'nullable|integer|min:1'
+            'table_no' => 'nullable|integer|min:1',
+            'parse_table_id' => 'nullable|exists:parse_tables,id'
         ]);
 
         try {
@@ -622,13 +623,20 @@ class ParseTableController extends Controller
                 }
             }
 
-            // Создаем таблицу
-            $tableModel = new ParseTable();
-            $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
-            $tableModel->description = 'Импортировано из ' . $request->url;
-            $tableModel->url = $request->input('url');
-            $tableModel->table_no = $request->input('table_no');
-            $tableModel->last_parse_data = now();
+            // Создаем или обновляем таблицу
+            if ($request->has('parse_table_id')) {
+                $tableModel = ParseTable::findOrFail($request->parse_table_id);
+                $tableModel->url = $request->input('url');
+                $tableModel->table_no = $request->input('table_no');
+                $tableModel->last_parse_data = now();
+            } else {
+                $tableModel = new ParseTable();
+                $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
+                $tableModel->description = 'Импортировано из ' . $request->url;
+                $tableModel->url = $request->input('url');
+                $tableModel->table_no = $request->input('table_no');
+                $tableModel->last_parse_data = now();
+            }
 
             // Заполняем заголовки полей
             foreach ($headers as $index => $header) {
@@ -661,7 +669,7 @@ class ParseTableController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Таблица успешно импортирована',
+                'message' => $request->has('parse_table_id') ? 'Таблица успешно обновлена' : 'Таблица успешно импортирована',
                 'data' => [
                     'table' => $tableModel,
                     'rows_count' => count($rows)
@@ -714,21 +722,14 @@ class ParseTableController extends Controller
             // Создаем новый запрос с параметрами
             $newRequest = new Request([
                 'url' => !empty($requestUrl) ? $requestUrl : $table->url,
-                'table_no' => $request->input('table_no') ?: $table->table_no
+                'table_no' => $request->input('table_no') ?: $table->table_no,
+                'parse_table_id' => $request->parse_table_id
             ]);
 
             // Вызываем метод parse с новыми параметрами
             $result = $this->parse($newRequest);
 
-            // Обновляем время последнего парсинга
-            $table->last_parse_data = now();
-            $table->save();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Таблица успешно перепарсена',
-                'data' => $table
-            ]);
+            return $result;
 
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return response()->json([
