@@ -695,7 +695,17 @@ class ParseTableController extends Controller
         try {
             $table = ParseTable::findOrFail($request->parse_table_id);
 
-            // Удаляем все существующие записи содержимого
+            // Если URL не передан в запросе, проверяем его наличие в таблице
+            if (!$request->has('url')) {
+                if (empty($table->url)) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'URL не указан ни в запросе, ни в таблице'
+                    ], 400);
+                }
+            }
+
+            // В любом случае удаляем существующие записи
             ParseTableContent::where('table_id', $table->id)->delete();
 
             // Создаем новый запрос с параметрами
