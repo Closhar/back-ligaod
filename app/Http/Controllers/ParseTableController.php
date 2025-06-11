@@ -687,7 +687,9 @@ class ParseTableController extends Controller
     public function reparse(Request $request)
     {
         $request->validate([
-            'parse_table_id' => 'required|exists:parse_tables,id'
+            'parse_table_id' => 'required|exists:parse_tables,id',
+            'url' => 'nullable|url',
+            'table_no' => 'nullable|integer|min:1'
         ]);
 
         try {
@@ -696,10 +698,10 @@ class ParseTableController extends Controller
             // Удаляем все существующие записи содержимого
             ParseTableContent::where('table_id', $table->id)->delete();
 
-            // Создаем новый запрос с параметрами из таблицы
+            // Создаем новый запрос с параметрами
             $newRequest = new Request([
-                'url' => $table->url,
-                'table_no' => $table->table_no
+                'url' => $request->input('url') ?: $table->url,
+                'table_no' => $request->input('table_no') ?: $table->table_no
             ]);
 
             // Вызываем метод parse с новыми параметрами
