@@ -695,8 +695,9 @@ class ParseTableController extends Controller
         try {
             $table = ParseTable::findOrFail($request->parse_table_id);
 
-            // Если URL не передан в запросе, проверяем его наличие в таблице
-            if (!$request->has('url')) {
+            // Проверяем наличие URL в запросе (учитывая пустые значения)
+            $requestUrl = $request->input('url');
+            if (empty($requestUrl)) {
                 if (empty($table->url)) {
                     return response()->json([
                         'success' => false,
@@ -706,13 +707,13 @@ class ParseTableController extends Controller
             }
 
             // Удаляем существующие записи только если есть URL для парсинга
-            if ($request->has('url') || !empty($table->url)) {
+            if (!empty($requestUrl) || !empty($table->url)) {
                 ParseTableContent::where('table_id', $table->id)->delete();
             }
 
             // Создаем новый запрос с параметрами
             $newRequest = new Request([
-                'url' => $request->input('url') ?: $table->url,
+                'url' => !empty($requestUrl) ? $requestUrl : $table->url,
                 'table_no' => $request->input('table_no') ?: $table->table_no
             ]);
 
