@@ -620,6 +620,9 @@ class ParseTableController extends Controller
             $tableModel = new ParseTable();
             $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
             $tableModel->description = 'Импортировано из ' . $request->url;
+            $tableModel->url = $request->url;
+            $tableModel->table_no = $request->table_no;
+            $tableModel->last_parse_data = now();
 
             // Заполняем заголовки полей
             foreach ($headers as $index => $header) {
@@ -668,6 +671,48 @@ class ParseTableController extends Controller
                 'success' => false,
                 'message' => 'Ошибка при импорте таблицы: ' . $e->getMessage(),
                 'debug' => $debug
+            ], 500);
+        }
+    }
+
+    /**
+     * Репарсинг существующей таблицы
+     */
+    public function reparse(Request $request)
+    {
+        $request->validate([
+            'parse_table_id' => 'required|exists:parse_tables,id'
+        ]);
+
+        try {
+            $table = ParseTable::findOrFail($request->parse_table_id);
+
+            // Удаляем все существующие записи содержимого
+            ParseTableContent::where('table_id', $table->id)->delete();
+
+            // Создаем новый запрос с параметрами из таблицы
+            $newRequest = new Request([
+                'url' => $table->url,
+                'table_no' => $table->table_no
+            ]);
+
+            // Вызываем метод parse с новыми параметрами
+            $result = $this->parse($newRequest);
+
+            // Обновляем время последнего парсинга
+            $table->last_parse_data = now();
+            $table->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Таблица успешно перепарсена',
+                'data' => $table
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при репарсинге таблицы: ' . $e->getMessage()
             ], 500);
         }
     }
