@@ -727,6 +727,11 @@ class ParseTableController extends Controller
                 'data' => $table
             ]);
 
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Таблица не найдена'
+            ], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
