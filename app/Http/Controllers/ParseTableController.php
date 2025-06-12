@@ -626,8 +626,8 @@ class ParseTableController extends Controller
             // Создаем или обновляем таблицу
             if ($request->has('parse_table_id')) {
                 $tableModel = ParseTable::findOrFail($request->parse_table_id);
-                $tableModel->url = $request->input('url');
-                $tableModel->table_no = $request->input('table_no');
+                $tableModel->url = $request->has('url') ? ($request->url ?: null) : $tableModel->url;
+                $tableModel->table_no = $request->has('table_no') ? ($request->table_no ?: null) : $tableModel->table_no;
                 $tableModel->last_parse_data = now();
             } else {
                 $tableModel = new ParseTable();
