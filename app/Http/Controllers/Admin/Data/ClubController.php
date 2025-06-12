@@ -61,6 +61,7 @@ class ClubController extends Controller
                     'clubs.is_alien',
                     'clubs.image',
                     'clubs.image_bg',
+                    'clubs.tlgs_to_parse',
                     DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info'),
                     DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path'),
                     DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image_bg) AS full_image_bg_path')
@@ -92,7 +93,7 @@ class ClubController extends Controller
                 $allowedFields = [
                     'id', 'title', 'title_short', 'about', 'address', 'slug',
                     'city_id', 'sport_id', 'gender_id', 'age_id', 'is_alien',
-                    'club_info'
+                    'club_info', 'tlgs_to_parse'
                 ];
 
                 if (in_array($field, $allowedFields)) {
@@ -214,6 +215,7 @@ class ClubController extends Controller
                 'facebooks' => 'nullable|string',
                 'xs' => 'nullable|string',
                 'map' => 'nullable|string',
+                'tlgs_to_parse' => 'nullable|string',
                 'slug' => 'nullable|string|max:255|unique:clubs,slug',
                 'city_id' => 'required_without:city_title|exists:cities,id',
                 'city_title' => 'required_without:city_id|string|max:255',
@@ -285,6 +287,7 @@ class ClubController extends Controller
                 'facebooks' => 'nullable|string',
                 'xs' => 'nullable|string',
                 'map' => 'nullable|string',
+                'tlgs_to_parse' => 'nullable|string',
                 'slug' => 'nullable|string|max:255|unique:clubs,slug,' . $id,
                 'city_id' => 'exists:cities,id',
                 'gallery_id' => 'nullable|exists:galleries,id',

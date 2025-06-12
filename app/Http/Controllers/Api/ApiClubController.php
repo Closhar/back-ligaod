@@ -47,7 +47,8 @@ class ApiClubController extends Controller
                     'age_id',
                     'region_id',
                     DB::raw('CASE WHEN region_id = ' . $regionId . ' THEN 0 ELSE 1 END as alien'),
-                    DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info')
+                    DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info'),
+                    'clubs.tlgs_to_parse'
                 )
                 ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
                 ->join('cities as city', 'clubs.city_id', '=', 'city.id')
@@ -66,7 +67,8 @@ class ApiClubController extends Controller
                     'clubs.gender_id',
                     'clubs.age_id',
                     'clubs.region_id',
-                    DB::raw('CASE WHEN region_id = ' . $regionId . ' THEN 0 ELSE 1 END as alien')
+                    DB::raw('CASE WHEN region_id = ' . $regionId . ' THEN 0 ELSE 1 END as alien'),
+                    'clubs.tlgs_to_parse'
                 )
                 ->with([
                     'city' => function ($cityQuery) {
