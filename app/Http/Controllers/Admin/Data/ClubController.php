@@ -45,6 +45,7 @@ class ClubController extends Controller
                     'clubs.phones',
                     'clubs.emails',
                     'clubs.sites',
+                    'clubs.telegrams',
                     'clubs.vks',
                     'clubs.instagrams',
                     'clubs.youtubes',
