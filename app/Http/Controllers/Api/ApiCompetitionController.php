@@ -55,6 +55,7 @@ class ApiCompetitionController extends Controller
                 'date_from',
                 'date_to',
                 'parse_table_id',
+                'tlgs_to_parse',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path')
             )
             ->with([
