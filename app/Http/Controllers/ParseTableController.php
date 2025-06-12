@@ -63,7 +63,12 @@ class ParseTableController extends Controller
             'field20' => 'nullable|string|max:255',
         ]);
 
-        $table = ParseTable::create($request->all());
+        $data = $request->all();
+        // Обработка пустых значений для url и table_no
+        $data['url'] = $request->has('url') ? ($request->url ?: null) : null;
+        $data['table_no'] = $request->has('table_no') ? ($request->table_no ?: null) : null;
+
+        $table = ParseTable::create($data);
 
         return response()->json([
             'success' => true,
@@ -104,7 +109,12 @@ class ParseTableController extends Controller
             'field20' => 'nullable|string|max:255',
         ]);
 
-        $table->update($request->all());
+        $data = $request->all();
+        // Обработка пустых значений для url и table_no
+        $data['url'] = $request->has('url') ? ($request->url ?: null) : $table->url;
+        $data['table_no'] = $request->has('table_no') ? ($request->table_no ?: null) : $table->table_no;
+
+        $table->update($data);
 
         return response()->json([
             'success' => true,
