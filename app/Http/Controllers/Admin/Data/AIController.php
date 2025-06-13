@@ -326,6 +326,8 @@ class AIController extends Controller
         ]);
 
         try {
+            \Log::info('Начало обработки запроса generate', $request->all());
+
             $fullPrompt = $request->input('prompt');
             $model = $request->input('model');
             $useCache = $request->input('use_cache', true);
@@ -337,7 +339,8 @@ class AIController extends Controller
             $hasFile = false;
 
             // Если есть file_id, добавляем содержимое файла к промту
-            if ($request->has('file_id')) {
+            if ($request->has('file_id') && $request->file_id !== null) {
+                \Log::info('Обработка file_id', ['file_id' => $request->file_id]);
                 $filePath = storage_path('app/public/ai_files/' . $request->file_id);
                 if (file_exists($filePath)) {
                     $fileContent = file_get_contents($filePath);
@@ -354,7 +357,7 @@ class AIController extends Controller
 
             // Если передан URL, получаем контент с веб-страницы
             if ($url) {
-                \Log::info('Начинаем получение контента с URL', ['url' => $url]);
+                \Log::info('Обработка URL', ['url' => $url]);
                 try {
                     $webContent = $this->fetchWebContent($url, $maxContentLength);
                     \Log::info('Получен контент с URL', ['content_length' => mb_strlen($webContent ?? '')]);
@@ -495,6 +498,10 @@ class AIController extends Controller
             ], 200, [], JSON_UNESCAPED_UNICODE | JSON_PRESERVE_ZERO_FRACTION);
 
         } catch (\Exception $e) {
+            \Log::error('Ошибка в методе generate', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage()
