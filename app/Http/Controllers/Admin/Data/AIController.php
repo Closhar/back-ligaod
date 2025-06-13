@@ -257,20 +257,11 @@ class AIController extends Controller
                 return $content;
             }
         } catch (\Exception $e) {
-            // Если канал найден, обновляем его статистику с ошибкой
-            if (isset($channel)) {
-                $channel->update([
-                    'last_parse_at' => now(),
-                    'parse_status' => 'error',
-                    'error_message' => $e->getMessage()
-                ]);
-            }
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Ошибка при получении сообщений',
+            \Log::error('Error fetching web content', [
+                'url' => $url,
                 'error' => $e->getMessage()
-            ], 500);
+            ]);
+            throw new \Exception('Ошибка при получении контента с сайта: ' . $e->getMessage());
         }
 
         return null;
