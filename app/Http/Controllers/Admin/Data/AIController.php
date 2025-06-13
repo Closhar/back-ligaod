@@ -135,12 +135,22 @@ class AIController extends Controller
 
     private function fetchWebContent($url, $maxLength = 2000) {
         try {
+            \Log::info('Начало fetchWebContent', ['url' => $url, 'maxLength' => $maxLength]);
+
             // Проверяем кэш
             $cacheKey = 'web_content_' . md5($url);
             $cachedContent = \Cache::get($cacheKey);
             if ($cachedContent) {
+                \Log::info('Найден кэшированный контент', ['url' => $url]);
                 return $cachedContent;
             }
+
+            // Проверяем URL
+            if (!filter_var($url, FILTER_VALIDATE_URL)) {
+                throw new \Exception('Некорректный URL: ' . $url);
+            }
+
+            \Log::info('Отправляем HTTP запрос', ['url' => $url]);
 
             $response = Http::timeout(30)
                 ->withHeaders([
@@ -158,81 +168,73 @@ class AIController extends Controller
                 ])
                 ->get($url);
 
-            if ($response->successful()) {
-                $html = $response->body();
+            \Log::info('Получен HTTP ответ', [
+                'status' => $response->status(),
+                'headers' => $response->headers()
+            ]);
 
-                // Удаляем скрипты, стили, комментарии и рекламу
-                $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
-                $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
-                $html = preg_replace('/<!--(.*?)-->/s', '', $html);
-                $html = preg_replace('/<div[^>]*class="[^"]*ad[^"]*"[^>]*>.*?<\/div>/is', '', $html);
-                $html = preg_replace('/<div[^>]*id="[^"]*ad[^"]*"[^>]*>.*?<\/div>/is', '', $html);
+            if (!$response->successful()) {
+                throw new \Exception('Ошибка HTTP запроса: ' . $response->status());
+            }
 
-                // Извлекаем основной контент
-                $dom = new \DOMDocument();
-                @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
-                $xpath = new \DOMXPath($dom);
+            $html = $response->body();
+            \Log::info('Получен HTML контент', ['length' => strlen($html)]);
 
-                // Ищем основной контент статьи
-                $content = '';
-                $articleFound = false;
+            if (empty($html)) {
+                throw new \Exception('Получен пустой ответ от сервера');
+            }
 
-                // Сначала ищем заголовок
-                $titleSelectors = [
-                    '//h1',
-                    '//meta[@property="og:title"]/@content',
-                    '//title'
-                ];
+            // Удаляем скрипты, стили, комментарии и рекламу
+            $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
+            $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
+            $html = preg_replace('/<!--(.*?)-->/s', '', $html);
+            $html = preg_replace('/<div[^>]*class="[^"]*ad[^"]*"[^>]*>.*?<\/div>/is', '', $html);
+            $html = preg_replace('/<div[^>]*id="[^"]*ad[^"]*"[^>]*>.*?<\/div>/is', '', $html);
 
-                foreach ($titleSelectors as $selector) {
-                    $nodes = $xpath->query($selector);
-                    if ($nodes->length > 0) {
-                        $content .= "Заголовок: " . trim($nodes->item(0)->textContent) . "\n\n";
-                        break;
-                    }
+            // Извлекаем основной контент
+            $dom = new \DOMDocument();
+            @$dom->loadHTML(mb_convert_encoding($html, 'HTML-ENTITIES', 'UTF-8'));
+            $xpath = new \DOMXPath($dom);
+
+            // Ищем основной контент статьи
+            $content = '';
+            $articleFound = false;
+
+            // Сначала ищем заголовок
+            $titleSelectors = [
+                '//h1',
+                '//meta[@property="og:title"]/@content',
+                '//title'
+            ];
+
+            foreach ($titleSelectors as $selector) {
+                $nodes = $xpath->query($selector);
+                if ($nodes->length > 0) {
+                    $content .= "Заголовок: " . trim($nodes->item(0)->textContent) . "\n\n";
+                    break;
                 }
+            }
 
-                // Ищем основной контент статьи
-                $articleSelectors = [
-                    '//article',
-                    '//div[contains(@class, "article")]',
-                    '//div[contains(@class, "post")]',
-                    '//div[contains(@class, "content")]',
-                    '//main'
-                ];
+            // Ищем основной контент статьи
+            $articleSelectors = [
+                '//article',
+                '//div[contains(@class, "article")]',
+                '//div[contains(@class, "post")]',
+                '//div[contains(@class, "content")]',
+                '//main'
+            ];
 
-                foreach ($articleSelectors as $selector) {
-                    $nodes = $xpath->query($selector);
-                    if ($nodes->length > 0) {
-                        $articleFound = true;
-                        foreach ($nodes as $node) {
-                            // Извлекаем только текст из параграфов и заголовков
-                            $elements = $xpath->query('.//p | .//h2 | .//h3 | .//h4', $node);
-                            foreach ($elements as $element) {
-                                $text = trim($element->textContent);
-                                if (!empty($text)) {
-                                    // Определяем тип элемента
-                                    $tagName = $element->nodeName;
-                                    if (in_array($tagName, ['h2', 'h3', 'h4'])) {
-                                        $content .= "\n" . $text . "\n\n";
-                                    } else {
-                                        $content .= $text . "\n\n";
-                                    }
-                                }
-                            }
-                        }
-                        break;
-                    }
-                }
-
-                // Если статья не найдена, ищем в body
-                if (!$articleFound) {
-                    $body = $xpath->query('//body');
-                    if ($body->length > 0) {
-                        $elements = $xpath->query('.//p | .//h2 | .//h3 | .//h4', $body->item(0));
+            foreach ($articleSelectors as $selector) {
+                $nodes = $xpath->query($selector);
+                if ($nodes->length > 0) {
+                    $articleFound = true;
+                    foreach ($nodes as $node) {
+                        // Извлекаем только текст из параграфов и заголовков
+                        $elements = $xpath->query('.//p | .//h2 | .//h3 | .//h4', $node);
                         foreach ($elements as $element) {
                             $text = trim($element->textContent);
                             if (!empty($text)) {
+                                // Определяем тип элемента
                                 $tagName = $element->nodeName;
                                 if (in_array($tagName, ['h2', 'h3', 'h4'])) {
                                     $content .= "\n" . $text . "\n\n";
@@ -242,42 +244,68 @@ class AIController extends Controller
                             }
                         }
                     }
+                    break;
                 }
+            }
 
-                // Очищаем текст
-                $content = preg_replace('/\s+/', ' ', $content);
-                $content = preg_replace('/\n\s*\n/', "\n\n", $content);
-                $content = trim($content);
-
-                // Если текст слишком длинный, берем только начало
-                if (mb_strlen($content) > $maxLength) {
-                    // Находим последний полный абзац в пределах лимита
-                    $truncated = mb_substr($content, 0, $maxLength);
-                    $lastParagraph = mb_strrpos($truncated, "\n\n");
-                    if ($lastParagraph !== false) {
-                        $content = mb_substr($content, 0, $lastParagraph) . "\n\n...";
-                    } else {
-                        $content = $truncated . "...";
+            // Если статья не найдена, ищем в body
+            if (!$articleFound) {
+                $body = $xpath->query('//body');
+                if ($body->length > 0) {
+                    $elements = $xpath->query('.//p | .//h2 | .//h3 | .//h4', $body->item(0));
+                    foreach ($elements as $element) {
+                        $text = trim($element->textContent);
+                        if (!empty($text)) {
+                            $tagName = $element->nodeName;
+                            if (in_array($tagName, ['h2', 'h3', 'h4'])) {
+                                $content .= "\n" . $text . "\n\n";
+                            } else {
+                                $content .= $text . "\n\n";
+                            }
+                        }
                     }
                 }
-
-                // Кэшируем результат на 1 час
-                \Cache::put($cacheKey, $content, 3600);
-
-                return $content;
             }
+
+            // Очищаем текст
+            $content = preg_replace('/\s+/', ' ', $content);
+            $content = preg_replace('/\n\s*\n/', "\n\n", $content);
+            $content = trim($content);
+
+            if (empty($content)) {
+                throw new \Exception('Не удалось извлечь контент из HTML');
+            }
+
+            // Если текст слишком длинный, берем только начало
+            if (mb_strlen($content) > $maxLength) {
+                // Находим последний полный абзац в пределах лимита
+                $truncated = mb_substr($content, 0, $maxLength);
+                $lastParagraph = mb_strrpos($truncated, "\n\n");
+                if ($lastParagraph !== false) {
+                    $content = mb_substr($content, 0, $lastParagraph) . "\n\n...";
+                } else {
+                    $content = $truncated . "...";
+                }
+            }
+
+            \Log::info('Успешно извлечен контент', ['length' => mb_strlen($content)]);
+
+            // Кэшируем результат на 1 час
+            \Cache::put($cacheKey, $content, 3600);
+
+            return $content;
         } catch (\Exception $e) {
-            \Log::error('Error fetching web content', [
+            \Log::error('Ошибка в fetchWebContent', [
                 'url' => $url,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             throw new \Exception('Ошибка при получении контента с сайта: ' . $e->getMessage());
         }
-
-        return null;
     }
 
-    private function getSystemPrompt($model, $hasFile = false) {
+    private function getSystemPrompt($model, $hasFile = false)
+    {
         if ($hasFile) {
             return $this->fileSystemPrompts[$model] ?? $this->fileSystemPrompts['gpt-3.5-turbo'];
         }
@@ -326,22 +354,38 @@ class AIController extends Controller
 
             // Если передан URL, получаем контент с веб-страницы
             if ($url) {
-                $webContent = $this->fetchWebContent($url, $maxContentLength);
-                if ($webContent) {
-                    // Проверяем, не превысит ли добавление контента лимит промпта
-                    $promptWithContent = $fullPrompt . "\n\nИспользуйте следующий контент как источник информации:\n\n" . $webContent;
-                    if (mb_strlen($promptWithContent) > 4000) {
-                        // Если превышает, сокращаем контент
-                        $availableLength = 4000 - mb_strlen($fullPrompt) - 50; // 50 символов на служебный текст
-                        $webContent = $this->fetchWebContent($url, $availableLength);
+                \Log::info('Начинаем получение контента с URL', ['url' => $url]);
+                try {
+                    $webContent = $this->fetchWebContent($url, $maxContentLength);
+                    \Log::info('Получен контент с URL', ['content_length' => mb_strlen($webContent ?? '')]);
+
+                    if ($webContent) {
+                        // Проверяем, не превысит ли добавление контента лимит промпта
                         $promptWithContent = $fullPrompt . "\n\nИспользуйте следующий контент как источник информации:\n\n" . $webContent;
+                        if (mb_strlen($promptWithContent) > 4000) {
+                            // Если превышает, сокращаем контент
+                            $availableLength = 4000 - mb_strlen($fullPrompt) - 50; // 50 символов на служебный текст
+                            $webContent = $this->fetchWebContent($url, $availableLength);
+                            $promptWithContent = $fullPrompt . "\n\nИспользуйте следующий контент как источник информации:\n\n" . $webContent;
+                        }
+                        $fullPrompt = $promptWithContent;
+                    } else {
+                        \Log::error('Не удалось получить контент с URL', ['url' => $url]);
+                        return response()->json([
+                            'success' => false,
+                            'message' => 'Не удалось получить контент с указанного URL'
+                        ], 400);
                     }
-                    $fullPrompt = $promptWithContent;
-                } else {
+                } catch (\Exception $e) {
+                    \Log::error('Ошибка при получении контента с URL', [
+                        'url' => $url,
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
                     return response()->json([
                         'success' => false,
-                        'message' => 'Не удалось получить контент с указанного URL'
-                    ], 400);
+                        'message' => 'Ошибка при получении контента с URL: ' . $e->getMessage()
+                    ], 500);
                 }
             }
 
