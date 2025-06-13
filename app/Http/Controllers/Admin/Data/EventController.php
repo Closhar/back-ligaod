@@ -88,9 +88,9 @@ class EventController extends Controller
                 'club1_id', 'club2_id', 'event_name', "is_active", 'about', 'series_count', 'tickets', 'report', 'free_tickets',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path'),
                 DB::raw('CONCAT_WS(",",
-                    (SELECT GROUP_CONCAT(telegrams) FROM clubs WHERE id = events.club1_id),
-                    (SELECT GROUP_CONCAT(telegrams) FROM clubs WHERE id = events.club2_id),
-                    (SELECT GROUP_CONCAT(telegrams) FROM competitions WHERE id = events.competition_id)
+                    (SELECT telegrams FROM clubs WHERE id = events.club1_id),
+                    (SELECT telegrams FROM clubs WHERE id = events.club2_id),
+                    (SELECT telegrams FROM competitions WHERE id = events.competition_id)
                 ) as telegram_parse')
             )
             ->withCount('streams')
