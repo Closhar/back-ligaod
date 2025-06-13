@@ -86,7 +86,12 @@ class EventController extends Controller
         $query = Event::query()
             ->select('id', 'region_id', 'series_id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image', 'competition_id', 'arena_id',
                 'club1_id', 'club2_id', 'event_name', "is_active", 'about', 'series_count', 'tickets', 'report', 'free_tickets',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path')
+                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", events.image) AS event_image_path'),
+                DB::raw('CONCAT_WS(",",
+                    (SELECT GROUP_CONCAT(telegrams) FROM clubs WHERE id = events.club1_id),
+                    (SELECT GROUP_CONCAT(telegrams) FROM clubs WHERE id = events.club2_id),
+                    (SELECT GROUP_CONCAT(telegrams) FROM competitions WHERE id = events.competition_id)
+                ) as telegram_parse')
             )
             ->withCount('streams')
             ->with([
@@ -470,6 +475,7 @@ class EventController extends Controller
                 'tickets' => $event->tickets,
                 'free_tickets' => $event->free_tickets,
                 'event_image_path' => $event->event_image_path,
+                'telegram_parse' => $event->telegram_parse,
                 'competition_id' => $event->competition_id,
                 'arena_id' => $event->arena_id,
                 'region_id' => $event->region_id,
