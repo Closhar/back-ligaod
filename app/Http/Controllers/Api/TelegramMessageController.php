@@ -48,6 +48,9 @@ class TelegramMessageController extends Controller
                 ], 422);
             }
 
+            $allMessages = [];
+            $errors = [];
+
             // Если передан channel_usernames, используем его
             if ($request->has('channel_usernames')) {
                 // Разбиваем строку channel_usernames на массив и очищаем от @ если есть
@@ -55,13 +58,10 @@ class TelegramMessageController extends Controller
                     return trim(str_replace('@', '', $username));
                 }, explode(',', $request->channel_usernames));
 
-                $results = [];
-                $errors = [];
-
                 foreach ($usernames as $username) {
                     try {
-                        $result = $this->processSingleChannel($username, $request);
-                        $results[] = $result;
+                        $messages = $this->processSingleChannel($username, $request);
+                        $allMessages = array_merge($allMessages, $messages);
                     } catch (\Exception $e) {
                         $errors[] = [
                             'username' => $username,
@@ -69,83 +69,35 @@ class TelegramMessageController extends Controller
                         ];
                     }
                 }
-
-                return response()->json([
-                    'success' => true,
-                    'data' => [
-                        'results' => $results,
-                        'errors' => $errors
-                    ]
-                ]);
+            } else {
+                // Если передан channel_id, получаем username из базы и парсим канал
+                try {
+                    $channel = TelegramParseChannel::findOrFail($request->channel_id);
+                    $messages = $this->processSingleChannel($channel->username, $request);
+                    $allMessages = array_merge($allMessages, $messages);
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'channel_id' => $request->channel_id,
+                        'error' => $e->getMessage()
+                    ];
+                }
             }
 
-            // Если передан только channel_id, используем старую логику
-            $channel = TelegramParseChannel::findOrFail($request->channel_id);
-
-            \Log::info('Начало получения сообщений', [
-                'channel_id' => $channel->id,
-                'channel_username' => $channel->channel_id,
-                'limit' => $request->limit,
-                'offset' => $request->offset,
-                'date_from' => $request->date_from
-            ]);
-
-            $telegramService = app(TelegramClientService::class);
-
-            // Получаем сообщения
-            try {
-                $messages = $telegramService->getChannelMessages(
-                    $channel->channel_id,
-                    $request->limit ?? 50,
-                    $request->offset ?? 0,
-                    $request->date_from
-                );
-                \Log::info('Получены сообщения:', ['messages' => $messages]);
-            } catch (\Exception $e) {
-                \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Ошибка при получении сообщений',
-                    'error' => $e->getMessage()
-                ], 500);
-            }
-
-            // Обновляем статистику канала
-            $channel->update([
-                'last_parse_at' => now(),
-                'parse_status' => 'success',
-                'error_message' => null
-            ]);
+            // Сортируем все сообщения по дате
+            usort($allMessages, function($a, $b) {
+                return strtotime($b['date']) - strtotime($a['date']);
+            });
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'channel' => [
-                        'id' => $channel->id,
-                        'title' => $channel->title,
-                        'username' => $channel->username,
-                        'channel_id' => $channel->channel_id
-                    ],
-                    'messages' => $messages['messages'],
-                    'pagination' => [
-                        'has_more' => $messages['has_more'],
-                        'next_offset' => $messages['next_offset']
-                    ]
+                    'messages' => $allMessages,
+                    'errors' => $errors
                 ]
             ]);
 
         } catch (\Exception $e) {
             \Log::error('Общая ошибка: ' . $e->getMessage());
-
-            // Если канал найден, обновляем его статистику с ошибкой
-            if (isset($channel)) {
-                $channel->update([
-                    'last_parse_at' => now(),
-                    'parse_status' => 'error',
-                    'error_message' => $e->getMessage()
-                ]);
-            }
-
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при получении сообщений',
@@ -177,16 +129,20 @@ class TelegramMessageController extends Controller
                 $request->date_from
             );
 
-            return [
-                'channel' => [
-                    'username' => $username
-                ],
-                'messages' => $messages['messages'],
-                'pagination' => [
-                    'has_more' => $messages['has_more'],
-                    'next_offset' => $messages['next_offset']
-                ]
-            ];
+            // Форматируем сообщения
+            $formattedMessages = array_map(function($message) use ($username) {
+                return [
+                    'channel' => $username,
+                    'date' => $message['date'] ?? null,
+                    'message' => $message['message'] ?? null,
+                    'message_id' => $message['id'] ?? null,
+                    'views' => $message['views'] ?? null,
+                    'forwards' => $message['forwards'] ?? null
+                ];
+            }, $messages['messages']);
+
+            return $formattedMessages;
+
         } catch (\Exception $e) {
             \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
             throw $e;
