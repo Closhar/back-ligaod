@@ -84,9 +84,7 @@ class TelegramMessageController extends Controller
             }
 
             // Сортируем все сообщения по дате
-            $allMessages = collect($allMessages)->sortBy(function($message) {
-                return strtotime($message['date']);
-            })->values()->all();
+            $allMessages = collect($allMessages)->sortBy('date')->values()->all();
 
             return response()->json([
                 'success' => true,
