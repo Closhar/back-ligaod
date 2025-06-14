@@ -159,14 +159,8 @@ class TelegramMessageController extends Controller
      */
     private function processSingleChannel($username, Request $request)
     {
-        // Получаем канал из базы данных по username
-        $channel = TelegramParseChannel::where('username', $username)
-            ->orWhere('channel_id', $username)
-            ->firstOrFail();
-
         \Log::info('Начало получения сообщений', [
-            'channel_id' => $channel->id,
-            'channel_username' => $channel->username,
+            'channel_username' => $username,
             'limit' => $request->limit,
             'offset' => $request->offset,
             'date_from' => $request->date_from
@@ -174,33 +168,28 @@ class TelegramMessageController extends Controller
 
         $telegramService = app(TelegramClientService::class);
 
-        // Получаем сообщения
-        $messages = $telegramService->getChannelMessages(
-            $channel->channel_id,
-            $request->limit ?? 50,
-            $request->offset ?? 0,
-            $request->date_from
-        );
+        try {
+            // Получаем сообщения напрямую по username
+            $messages = $telegramService->getChannelMessages(
+                $username,
+                $request->limit ?? 50,
+                $request->offset ?? 0,
+                $request->date_from
+            );
 
-        // Обновляем статистику канала
-        $channel->update([
-            'last_parse_at' => now(),
-            'parse_status' => 'success',
-            'error_message' => null
-        ]);
-
-        return [
-            'channel' => [
-                'id' => $channel->id,
-                'title' => $channel->title,
-                'username' => $channel->username,
-                'channel_id' => $channel->channel_id
-            ],
-            'messages' => $messages['messages'],
-            'pagination' => [
-                'has_more' => $messages['has_more'],
-                'next_offset' => $messages['next_offset']
-            ]
-        ];
+            return [
+                'channel' => [
+                    'username' => $username
+                ],
+                'messages' => $messages['messages'],
+                'pagination' => [
+                    'has_more' => $messages['has_more'],
+                    'next_offset' => $messages['next_offset']
+                ]
+            ];
+        } catch (\Exception $e) {
+            \Log::error('Ошибка при получении сообщений: ' . $e->getMessage());
+            throw $e;
+        }
     }
 }
