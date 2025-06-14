@@ -79,20 +79,7 @@ class TelegramMessageController extends Controller
                         throw new \Exception('У канала не указан username');
                     }
 
-                    // Проверяем существование канала в Telegram
-                    $telegramService = app(TelegramClientService::class);
-                    try {
-                        $messages = $telegramService->getChannelMessages(
-                            $channel->username,
-                            1, // Запрашиваем только 1 сообщение для проверки
-                            0,
-                            null
-                        );
-                    } catch (\Exception $e) {
-                        throw new \Exception('Канал не найден в Telegram: ' . $e->getMessage());
-                    }
-
-                    // Если канал существует, получаем все сообщения
+                    // Пытаемся получить сообщения напрямую
                     $messages = $this->processSingleChannel($channel->username, $request);
                     $allMessages = array_merge($allMessages, $messages);
                 } catch (\Exception $e) {
@@ -139,13 +126,39 @@ class TelegramMessageController extends Controller
         $telegramService = app(TelegramClientService::class);
 
         try {
-            // Получаем сообщения напрямую по username
-            $messages = $telegramService->getChannelMessages(
-                $username,
-                $request->limit ?? 50,
-                $request->offset ?? 0,
-                $request->date_from
-            );
+            // Пробуем разные форматы идентификатора канала
+            $channelIdentifiers = [
+                $username,                    // zenit2fc
+                '@' . $username,              // @zenit2fc
+                'https://t.me/' . $username,  // https://t.me/zenit2fc
+                't.me/' . $username,          // t.me/zenit2fc
+            ];
+
+            $lastError = null;
+            foreach ($channelIdentifiers as $identifier) {
+                try {
+                    // Получаем сообщения напрямую по username
+                    $messages = $telegramService->getChannelMessages(
+                        $identifier,
+                        $request->limit ?? 50,
+                        $request->offset ?? 0,
+                        $request->date_from
+                    );
+
+                    // Если успешно получили сообщения, выходим из цикла
+                    if (!empty($messages['messages'])) {
+                        break;
+                    }
+                } catch (\Exception $e) {
+                    $lastError = $e;
+                    continue;
+                }
+            }
+
+            // Если все попытки не удались, выбрасываем последнюю ошибку
+            if (empty($messages['messages'])) {
+                throw $lastError ?? new \Exception('Не удалось получить сообщения из канала');
+            }
 
             // Форматируем сообщения
             $formattedMessages = array_map(function($message) use ($username) {
