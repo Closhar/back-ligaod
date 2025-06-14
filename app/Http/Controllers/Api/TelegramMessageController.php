@@ -73,6 +73,26 @@ class TelegramMessageController extends Controller
                 // Если передан channel_id, получаем username из базы и парсим канал
                 try {
                     $channel = TelegramParseChannel::findOrFail($request->channel_id);
+
+                    // Проверяем, что у канала есть username
+                    if (empty($channel->username)) {
+                        throw new \Exception('У канала не указан username');
+                    }
+
+                    // Проверяем существование канала в Telegram
+                    $telegramService = app(TelegramClientService::class);
+                    try {
+                        $messages = $telegramService->getChannelMessages(
+                            $channel->username,
+                            1, // Запрашиваем только 1 сообщение для проверки
+                            0,
+                            null
+                        );
+                    } catch (\Exception $e) {
+                        throw new \Exception('Канал не найден в Telegram: ' . $e->getMessage());
+                    }
+
+                    // Если канал существует, получаем все сообщения
                     $messages = $this->processSingleChannel($channel->username, $request);
                     $allMessages = array_merge($allMessages, $messages);
                 } catch (\Exception $e) {
