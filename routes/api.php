@@ -166,12 +166,10 @@ Route::prefix('telegram/messages')->group(function () {
     Route::post('/fetch', [TelegramMessageController::class, 'fetchMessages']);
 });
 
-Route::prefix('prompt-templates')->group(function () {
-    Route::get('/', [PromptTemplateController::class, 'index']);
-    Route::post('/', [PromptTemplateController::class, 'store']);
-    Route::put('/{template}', [PromptTemplateController::class, 'update']);
-    Route::delete('/{template}', [PromptTemplateController::class, 'destroy']);
-});
+Route::get('prompt-templates', [PromptTemplateController::class, 'index']);
+Route::post('prompt-templates', [PromptTemplateController::class, 'store']);
+Route::put('prompt-templates/{template}', [PromptTemplateController::class, 'update']);
+Route::delete('prompt-templates/{template}', [PromptTemplateController::class, 'destroy']);
 
 // Тестовый маршрут для авторизации Telegram
 Route::match(['get', 'post'], '/telegram/test-auth', [TelegramParseChannelController::class, 'testAuth']);
