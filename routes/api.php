@@ -30,6 +30,7 @@ use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\ParseTableController;
+use App\Http\Controllers\PromptTemplateController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
@@ -163,6 +164,13 @@ Route::prefix('telegram')->group(function () {
 Route::prefix('telegram/messages')->group(function () {
     Route::get('/fetch', [TelegramMessageController::class, 'fetchMessages']);
     Route::post('/fetch', [TelegramMessageController::class, 'fetchMessages']);
+});
+
+Route::prefix('prompt-templates')->group(function () {
+    Route::get('/', [PromptTemplateController::class, 'index']);
+    Route::post('/', [PromptTemplateController::class, 'store']);
+    Route::put('/{template}', [PromptTemplateController::class, 'update']);
+    Route::delete('/{template}', [PromptTemplateController::class, 'destroy']);
 });
 
 // Тестовый маршрут для авторизации Telegram
