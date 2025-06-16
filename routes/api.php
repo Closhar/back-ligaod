@@ -166,13 +166,6 @@ Route::prefix('telegram/messages')->group(function () {
     Route::post('/fetch', [TelegramMessageController::class, 'fetchMessages']);
 });
 
-Route::group(['prefix' => '/'], function () {
-    Route::get('prompt-templates', [PromptTemplateController::class, 'index']);
-    Route::post('prompt-templates', [PromptTemplateController::class, 'store']);
-    Route::put('prompt-templates/{template}', [PromptTemplateController::class, 'update']);
-    Route::delete('prompt-templates/{template}', [PromptTemplateController::class, 'destroy']);
-});
-
 // Тестовый маршрут для авторизации Telegram
 Route::match(['get', 'post'], '/telegram/test-auth', [TelegramParseChannelController::class, 'testAuth']);
 
@@ -182,6 +175,8 @@ Route::post('/parse-tables/reparse', [ParseTableController::class, 'reparse']);
 
 Route::apiResource('parse-tables', \App\Http\Controllers\Admin\Data\ParseTableController::class);
 Route::apiResource('parse-table-contents', \App\Http\Controllers\Admin\Data\ParseTableContentController::class);
+
+Route::apiResource('prompt-templates', PromptTemplateController::class);
 
 Route::apiResource('events', EventController::class);
 Route::get('events/{id}/check-field', [EventController::class, 'checkField']);
