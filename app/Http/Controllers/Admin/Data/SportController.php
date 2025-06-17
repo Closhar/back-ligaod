@@ -37,6 +37,13 @@ class SportController extends Controller
                 'annotation',
                 'icon',
                 'image',
+                'sites',
+                'vks',
+                'youtubes',
+                'facebooks',
+                'telegrams',
+                'instagrams',
+                'xs',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 'slug',
                 'vin')
@@ -99,6 +106,13 @@ class SportController extends Controller
                 'icon' => 'string|max:255',
                 'slug' => 'string|max:255|unique:sports',
                 'annotation' => 'string|max:50000|nullable',
+                'sites' => 'string|max:50000|nullable',
+                'vks' => 'string|max:50000|nullable',
+                'youtubes' => 'string|max:50000|nullable',
+                'facebooks' => 'string|max:50000|nullable',
+                'telegrams' => 'string|max:50000|nullable',
+                'instagrams' => 'string|max:50000|nullable',
+                'xs' => 'string|max:50000|nullable',
             ]);
 
             $item = Sport::create($validated);
@@ -139,6 +153,13 @@ class SportController extends Controller
                 'icon' => 'string|max:255',
                 'slug' => 'string|max:255|unique:sports',
                 'annotation' => 'string|max:50000|nullable',
+                'sites' => 'string|max:50000|nullable',
+                'vks' => 'string|max:50000|nullable',
+                'youtubes' => 'string|max:50000|nullable',
+                'facebooks' => 'string|max:50000|nullable',
+                'telegrams' => 'string|max:50000|nullable',
+                'instagrams' => 'string|max:50000|nullable',
+                'xs' => 'string|max:50000|nullable',
             ]);
 
             // Затем поиск и обновление
