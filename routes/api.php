@@ -173,6 +173,18 @@ Route::prefix('prompt-templates')->group(function () {
     Route::delete('/{template}', [PromptTemplateController::class, 'destroy']);
 });
 
+Route::post('/api/vk/video-preview', function (Request $request) {
+    $ownerId = $request->input('ownerId');
+    $videoId = $request->input('videoId');
+    $vkToken = $request->input('vkToken');
+
+    $apiUrl = "https://api.vk.com/method/video.get?videos={$ownerId}_{$videoId}&access_token={$vkToken}&v=5.131";
+
+    $response = Http::get($apiUrl);
+
+    return $response->json();
+});
+
 // Тестовый маршрут для авторизации Telegram
 Route::match(['get', 'post'], '/telegram/test-auth', [TelegramParseChannelController::class, 'testAuth']);
 
