@@ -194,6 +194,15 @@ Route::match(['get', 'post'], '/rutube/video-preview', function (Request $reques
     return $response->json();
 });
 
+Route::post('/api/image-proxy', function (Request $request) {
+    $url = $request->input('url');
+
+    $response = Http::get($url);
+
+    return response($response->body())
+        ->header('Content-Type', $response->header('Content-Type'));
+});
+
 // Тестовый маршрут для авторизации Telegram
 Route::match(['get', 'post'], '/telegram/test-auth', [TelegramParseChannelController::class, 'testAuth']);
 
