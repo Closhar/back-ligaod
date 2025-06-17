@@ -194,7 +194,7 @@ Route::match(['get', 'post'], '/rutube/video-preview', function (Request $reques
     return $response->json();
 });
 
-Route::post('/api/image-proxy', function (Request $request) {
+Route::match(['get', 'post'], '/image-proxy', function (Request $request) {
     $url = $request->input('url');
 
     $response = Http::get($url);
