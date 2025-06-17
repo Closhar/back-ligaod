@@ -41,6 +41,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Http;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -173,7 +174,7 @@ Route::prefix('prompt-templates')->group(function () {
     Route::delete('/{template}', [PromptTemplateController::class, 'destroy']);
 });
 
-Route::post('/api/vk/video-preview', function (Request $request) {
+Route::match(['get', 'post'], '/vk/video-preview', function (Request $request) {
     $ownerId = $request->input('ownerId');
     $videoId = $request->input('videoId');
     $vkToken = $request->input('vkToken');
