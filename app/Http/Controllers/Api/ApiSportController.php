@@ -27,7 +27,6 @@ class ApiSportController extends Controller
                 'title',
                 'title_short',
                 'annotation',
-                'about',
                 'icon',
                 'image',
                 'sites',
@@ -84,7 +83,6 @@ class ApiSportController extends Controller
                 'title',
                 'title_short',
                 'annotation',
-                'about',
                 'icon',
                 'image',
                 'sites',
@@ -144,29 +142,7 @@ class ApiSportController extends Controller
                         'sport_properties.title',
                         'sport_properties.icon'
                     ]);
-                },
-                'arenas' => function ($query) use ($homeRegion, $showNative) {
-                    $query->select([
-                        'arenas.id', // Явно указываем таблицу
-                        'arenas.title',
-                        'arenas.address',
-                        'arenas.city_id',
-                        'arenas.slug',
-                        'arenas.region_id',
-                        'full_image_path' => function ($query) {
-                            $query->select(DB::raw("CONCAT('" . config('app.url') . "', '/storage/', arenas.image) AS full_image_path"));
-                        },
-                    ])
-                    ->when($showNative == 1, function ($query) use ($homeRegion) {
-                        $query->where('arenas.region_id', $homeRegion);
-                    })
-                    ->with([
-                        'city' => function ($cityQuery) {
-                            $cityQuery->select(['cities.id', 'cities.title']);
-                        }
-                    ]);
-                },
-            ])
+                }])
             ->get()
             ->toArray();
     }
