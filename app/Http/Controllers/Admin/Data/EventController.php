@@ -486,6 +486,7 @@ class EventController extends Controller
                 'event_name' => $event->event_name,
                 'event_name_top' => $event->event_name_top,
                 'report' => $event->report,
+                'parse_table_id' => $event->competition->parse_table_id ?? null,
                 'sport_icon' => $event->competition->sport->icon,
                 'gender_icon' => $event->competition->gender->icon,
                 'date_formatted' => Carbon::parse($event->date_from)->format('d.m.Y.'),
