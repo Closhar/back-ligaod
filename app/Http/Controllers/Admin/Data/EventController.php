@@ -108,6 +108,7 @@ class EventController extends Controller
                         'bg_image',
                         'sport_id',
                         'gender_id',
+                        'parse_table_id',
                     ])->with(['sport:id,title,title_short,icon', 'gender']);
                 },
                 'club1' => function ($query) {
