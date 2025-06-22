@@ -79,7 +79,8 @@ class ApiEventController extends Controller
                         'bg_image',
                         'sport_id',
                         'gender_id',
-                        'about'
+                        'about',
+                        'parse_table_id'
                     ])->with(['sport', 'gender']);
                 },
                 'club1' => function ($query) {
@@ -380,6 +381,9 @@ class ApiEventController extends Controller
             $event->tickets = $event->tickets;
             $event->free_tickets = $event->free_tickets;
 
+            // Добавляем parse_table_id в корень
+            $event->parse_table_id = $event->competition->parse_table_id ?? null;
+
             // Вычисляем series_count если он не установлен
             if ($event->series_id) {
                 if ($event->series_count === null) {
@@ -440,6 +444,7 @@ class ApiEventController extends Controller
                     'image',
                     'sport_id',
                     'gender_id',
+                    'parse_table_id',
                 ])->with([
                     'sport' => function ($sportQuery) {
                         $sportQuery->select(['id', 'title', 'slug', 'icon']);
@@ -574,6 +579,9 @@ class ApiEventController extends Controller
 
             $event->series->events = $seriesEvents;
         }
+
+        // Добавляем parse_table_id в корень
+        $event->parse_table_id = $event->competition->parse_table_id ?? null;
 
         return [$event->toArray()];
     }
