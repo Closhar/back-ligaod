@@ -150,77 +150,138 @@ class ApiGalleryController extends Controller
             ], 404);
         }
 
-        $validator = Validator::make($request->all(), [
-            'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:2048', // 2MB max
-        ]);
-
-        if ($validator->fails()) {
+        // Проверяем, есть ли файлы для загрузки
+        if (!$request->hasFile('image') && !$request->hasFile('images')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'message' => 'No images provided'
             ], 422);
         }
 
-        try {
-            $file = $request->file('image');
-            $fileName = Str::random(32) . '.' . $file->getClientOriginalExtension();
+        $uploadedImages = [];
+        $errors = [];
 
-            // Создаем папку для галереи если её нет
-            $galleryPath = "galleries/{$gallery->id}";
-            if (!Storage::disk('public')->exists($galleryPath)) {
-                Storage::disk('public')->makeDirectory($galleryPath);
-            }
+        // Получаем файлы (один или несколько)
+        $files = [];
+        if ($request->hasFile('image')) {
+            $files[] = $request->file('image');
+        }
+        if ($request->hasFile('images')) {
+            $files = array_merge($files, $request->file('images'));
+        }
 
-            // Обрабатываем изображение
-            $image = ImageIntervention::make($file);
-
-            // Изменяем размер до 1600px по ширине, сохраняя пропорции
-            $image->resize(1600, null, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
-
-            // Сохраняем основное изображение
-            $imagePath = "{$galleryPath}/{$fileName}";
-            $image->save(storage_path("app/public/{$imagePath}"), 80, 'jpeg');
-
-            // Создаем thumbnail (50px высота)
-            $thumbnail = ImageIntervention::make($file);
-            $thumbnail->resize(null, 50, function ($constraint) {
-                $constraint->aspectRatio();
-                $constraint->upsize();
-            });
-
-            $thumbnailPath = "{$galleryPath}/thmb_{$fileName}";
-            $thumbnail->save(storage_path("app/public/{$thumbnailPath}"), 80, 'jpeg');
-
-            // Сохраняем информацию в базу данных
-            $imageModel = Image::create([
-                'title' => null,
-                'image' => $imagePath,
-                'gallery_id' => $gallery->id,
-                'position' => Image::where('gallery_id', $gallery->id)->max('position') + 1,
+        // Валидируем каждый файл
+        foreach ($files as $index => $file) {
+            $validator = Validator::make(['image' => $file], [
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp',
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Image uploaded successfully',
-                'data' => [
-                    'id' => $imageModel->id,
-                    'title' => $imageModel->title,
-                    'image' => $imagePath,
-                    'thumbnail' => Storage::disk('public')->url($thumbnailPath),
-                    'gallery_image_path' => Storage::disk('public')->url($imagePath),
-                ]
-            ], 201);
+            if ($validator->fails()) {
+                $errors[] = [
+                    'file' => $file->getClientOriginalName(),
+                    'errors' => $validator->errors()->first()
+                ];
+                continue;
+            }
 
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error uploading image: ' . $e->getMessage()
-            ], 500);
+            try {
+                $uploadedImage = $this->processAndSaveImage($file, $gallery);
+                $uploadedImages[] = $uploadedImage;
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'file' => $file->getClientOriginalName(),
+                    'error' => $e->getMessage()
+                ];
+            }
         }
+
+        // Формируем ответ
+        $response = [
+            'success' => count($uploadedImages) > 0,
+            'message' => $this->generateUploadMessage(count($uploadedImages), count($errors)),
+            'uploaded' => $uploadedImages,
+        ];
+
+        if (count($errors) > 0) {
+            $response['errors'] = $errors;
+        }
+
+        $statusCode = count($uploadedImages) > 0 ? 201 : 422;
+        return response()->json($response, $statusCode);
+    }
+
+    /**
+     * Обработать и сохранить изображение
+     */
+    private function processAndSaveImage($file, $gallery): array
+    {
+        $fileName = Str::random(32) . '.' . $file->getClientOriginalExtension();
+
+        // Создаем папку для галереи если её нет
+        $galleryPath = "galleries/{$gallery->id}";
+        if (!Storage::disk('public')->exists($galleryPath)) {
+            Storage::disk('public')->makeDirectory($galleryPath);
+        }
+
+        // Обрабатываем изображение
+        $image = ImageIntervention::make($file);
+
+        // Изменяем размер до 1600px по ширине, сохраняя пропорции
+        $image->resize(1600, null, function ($constraint) {
+            $constraint->aspectRatio();
+            $constraint->upsize();
+        });
+
+        // Сохраняем основное изображение
+        $imagePath = "{$galleryPath}/{$fileName}";
+        $image->save(storage_path("app/public/{$imagePath}"), 80, 'jpeg');
+
+        // Создаем thumbnail (50px высота)
+        $thumbnail = ImageIntervention::make($file);
+        $thumbnail->resize(null, 50, function ($constraint) {
+            $constraint->aspectRatio();
+            $constraint->upsize();
+        });
+
+        $thumbnailPath = "{$galleryPath}/thmb_{$fileName}";
+        $thumbnail->save(storage_path("app/public/{$thumbnailPath}"), 80, 'jpeg');
+
+        // Сохраняем информацию в базу данных
+        $imageModel = Image::create([
+            'title' => null,
+            'image' => $imagePath,
+            'gallery_id' => $gallery->id,
+            'position' => Image::where('gallery_id', $gallery->id)->max('position') + 1,
+        ]);
+
+        return [
+            'id' => $imageModel->id,
+            'title' => $imageModel->title,
+            'image' => $imagePath,
+            'thumbnail' => Storage::disk('public')->url($thumbnailPath),
+            'gallery_image_path' => Storage::disk('public')->url($imagePath),
+            'original_name' => $file->getClientOriginalName(),
+        ];
+    }
+
+    /**
+     * Генерировать сообщение о результатах загрузки
+     */
+    private function generateUploadMessage(int $uploadedCount, int $errorCount): string
+    {
+        if ($uploadedCount === 0 && $errorCount === 0) {
+            return 'No files were processed';
+        }
+
+        if ($uploadedCount === 0) {
+            return "Failed to upload {$errorCount} file(s)";
+        }
+
+        if ($errorCount === 0) {
+            return "Successfully uploaded {$uploadedCount} file(s)";
+        }
+
+        return "Successfully uploaded {$uploadedCount} file(s), {$errorCount} failed";
     }
 
     /**
