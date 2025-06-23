@@ -88,6 +88,7 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     Route::post('/galleries/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
     Route::delete('/galleries/{id}/image', [ApiGalleryController::class, 'destroyImage']);
     Route::post('/galleries/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
+    Route::post('/galleries/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
 });
 
 // Аутентификация

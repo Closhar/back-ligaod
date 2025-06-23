@@ -266,9 +266,9 @@ class ApiGalleryController extends Controller
             throw new \Exception('Failed to save main image');
         }
 
-        // Создаем thumbnail (50px высота)
-        $thumbHeight = 50;
-        $thumbWidth = round(($newWidth * $thumbHeight) / $newHeight);
+        // Создаем thumbnail (300px ширина)
+        $thumbWidth = 300;
+        $thumbHeight = round(($newHeight * $thumbWidth) / $newWidth);
 
         $thumbnailImage = imagecreatetruecolor($thumbWidth, $thumbHeight);
 
@@ -462,5 +462,68 @@ class ApiGalleryController extends Controller
         if (Storage::disk('public')->exists($thumbnailPath)) {
             Storage::disk('public')->delete($thumbnailPath);
         }
+    }
+
+    /**
+     * Массовое удаление изображений
+     */
+    public function deleteMultipleImages(Request $request, $id): JsonResponse
+    {
+        $gallery = Gallery::find($id);
+
+        if (!$gallery) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gallery not found'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'image_ids' => 'required|array',
+            'image_ids.*' => 'integer|exists:images,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $imageIds = $request->image_ids;
+        $deletedCount = 0;
+        $errors = [];
+
+        foreach ($imageIds as $imageId) {
+            $image = Image::where('id', $imageId)
+                ->where('gallery_id', $gallery->id)
+                ->first();
+
+            if ($image) {
+                try {
+                    $this->deleteImageFiles($image);
+                    $image->delete();
+                    $deletedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'image_id' => $imageId,
+                        'error' => $e->getMessage()
+                    ];
+                }
+            }
+        }
+
+        $message = "Successfully deleted {$deletedCount} image(s)";
+        if (count($errors) > 0) {
+            $message .= ", " . count($errors) . " failed";
+        }
+
+        return response()->json([
+            'success' => $deletedCount > 0,
+            'message' => $message,
+            'deleted_count' => $deletedCount,
+            'errors' => $errors
+        ]);
     }
 }
