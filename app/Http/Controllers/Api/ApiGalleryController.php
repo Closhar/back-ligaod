@@ -10,7 +10,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Intervention\Image\Facades\Image as ImageIntervention;
 
 class ApiGalleryController extends Controller
 {
@@ -19,9 +18,7 @@ class ApiGalleryController extends Controller
      */
     public function index(): JsonResponse
     {
-        $galleries = Gallery::with(['images' => function ($query) {
-            $query->orderBy('position', 'asc');
-        }])->get();
+        $galleries = Gallery::with('images')->get();
 
         return response()->json($galleries);
     }
@@ -44,7 +41,7 @@ class ApiGalleryController extends Controller
         }
 
         $gallery = Gallery::create([
-            'title' => $request->title,
+            'title' => $request->title
         ]);
 
         return response()->json([
@@ -59,9 +56,7 @@ class ApiGalleryController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $gallery = Gallery::with(['images' => function ($query) {
-            $query->orderBy('position', 'asc');
-        }])->find($id);
+        $gallery = Gallery::with('images')->find($id);
 
         if (!$gallery) {
             return response()->json([
@@ -211,11 +206,11 @@ class ApiGalleryController extends Controller
     }
 
     /**
-     * Обработать и сохранить изображение
+     * Обработать и сохранить изображение (без Intervention Image)
      */
     private function processAndSaveImage($file, $gallery): array
     {
-        $fileName = Str::random(32) . '.' . $file->getClientOriginalExtension();
+        $fileName = Str::random(32) . '.jpg'; // Всегда сохраняем как JPEG
 
         // Создаем папку для галереи если её нет
         $galleryPath = "galleries/{$gallery->id}";
@@ -223,28 +218,81 @@ class ApiGalleryController extends Controller
             Storage::disk('public')->makeDirectory($galleryPath);
         }
 
-        // Обрабатываем изображение
-        $image = ImageIntervention::make($file);
+        // Получаем информацию об изображении
+        $imageInfo = getimagesize($file->getPathname());
+        if (!$imageInfo) {
+            throw new \Exception('Invalid image file');
+        }
 
-        // Изменяем размер до 1600px по ширине, сохраняя пропорции
-        $image->resize(1600, null, function ($constraint) {
-            $constraint->aspectRatio();
-            $constraint->upsize();
-        });
+        $originalWidth = $imageInfo[0];
+        $originalHeight = $imageInfo[1];
+        $imageType = $imageInfo[2];
+
+        // Загружаем изображение в зависимости от типа
+        $sourceImage = $this->loadImage($file->getPathname(), $imageType);
+        if (!$sourceImage) {
+            throw new \Exception('Failed to load image');
+        }
+
+        // Вычисляем новые размеры (максимум 1600px по ширине)
+        $maxWidth = 1600;
+        $newWidth = $originalWidth;
+        $newHeight = $originalHeight;
+
+        if ($originalWidth > $maxWidth) {
+            $newWidth = $maxWidth;
+            $newHeight = round(($originalHeight * $maxWidth) / $originalWidth);
+        }
+
+        // Создаем новое изображение
+        $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+
+        // Сохраняем прозрачность для PNG
+        if ($imageType === IMAGETYPE_PNG) {
+            imagealphablending($resizedImage, false);
+            imagesavealpha($resizedImage, true);
+            $transparent = imagecolorallocatealpha($resizedImage, 255, 255, 255, 127);
+            imagefill($resizedImage, 0, 0, $transparent);
+        }
+
+        // Изменяем размер
+        imagecopyresampled($resizedImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
 
         // Сохраняем основное изображение
         $imagePath = "{$galleryPath}/{$fileName}";
-        $image->save(storage_path("app/public/{$imagePath}"), 80, 'jpeg');
+        $fullImagePath = storage_path("app/public/{$imagePath}");
+
+        if (!imagejpeg($resizedImage, $fullImagePath, 80)) {
+            throw new \Exception('Failed to save main image');
+        }
 
         // Создаем thumbnail (50px высота)
-        $thumbnail = ImageIntervention::make($file);
-        $thumbnail->resize(null, 50, function ($constraint) {
-            $constraint->aspectRatio();
-            $constraint->upsize();
-        });
+        $thumbHeight = 50;
+        $thumbWidth = round(($newWidth * $thumbHeight) / $newHeight);
+
+        $thumbnailImage = imagecreatetruecolor($thumbWidth, $thumbHeight);
+
+        // Сохраняем прозрачность для PNG
+        if ($imageType === IMAGETYPE_PNG) {
+            imagealphablending($thumbnailImage, false);
+            imagesavealpha($thumbnailImage, true);
+            $transparent = imagecolorallocatealpha($thumbnailImage, 255, 255, 255, 127);
+            imagefill($thumbnailImage, 0, 0, $transparent);
+        }
+
+        imagecopyresampled($thumbnailImage, $resizedImage, 0, 0, 0, 0, $thumbWidth, $thumbHeight, $newWidth, $newHeight);
 
         $thumbnailPath = "{$galleryPath}/thmb_{$fileName}";
-        $thumbnail->save(storage_path("app/public/{$thumbnailPath}"), 80, 'jpeg');
+        $fullThumbnailPath = storage_path("app/public/{$thumbnailPath}");
+
+        if (!imagejpeg($thumbnailImage, $fullThumbnailPath, 80)) {
+            throw new \Exception('Failed to save thumbnail');
+        }
+
+        // Освобождаем память
+        imagedestroy($sourceImage);
+        imagedestroy($resizedImage);
+        imagedestroy($thumbnailImage);
 
         // Сохраняем информацию в базу данных
         $imageModel = Image::create([
@@ -265,6 +313,25 @@ class ApiGalleryController extends Controller
     }
 
     /**
+     * Загрузить изображение в зависимости от типа
+     */
+    private function loadImage($path, $imageType)
+    {
+        switch ($imageType) {
+            case IMAGETYPE_JPEG:
+                return imagecreatefromjpeg($path);
+            case IMAGETYPE_PNG:
+                return imagecreatefrompng($path);
+            case IMAGETYPE_GIF:
+                return imagecreatefromgif($path);
+            case IMAGETYPE_WEBP:
+                return imagecreatefromwebp($path);
+            default:
+                return false;
+        }
+    }
+
+    /**
      * Генерировать сообщение о результатах загрузки
      */
     private function generateUploadMessage(int $uploadedCount, int $errorCount): string
@@ -281,11 +348,11 @@ class ApiGalleryController extends Controller
             return "Successfully uploaded {$uploadedCount} file(s)";
         }
 
-        return "Successfully uploaded {$uploadedCount} file(s), {$errorCount} failed";
+        return "Uploaded {$uploadedCount} file(s), {$errorCount} failed";
     }
 
     /**
-     * Обновить изображение (название)
+     * Обновить изображение
      */
     public function updateImage(Request $request, $id): JsonResponse
     {
@@ -312,8 +379,8 @@ class ApiGalleryController extends Controller
         }
 
         $image = Image::where('id', $request->image_id)
-                     ->where('gallery_id', $gallery->id)
-                     ->first();
+            ->where('gallery_id', $gallery->id)
+            ->first();
 
         if (!$image) {
             return response()->json([
@@ -334,7 +401,7 @@ class ApiGalleryController extends Controller
     }
 
     /**
-     * Удалить изображение из галереи
+     * Удалить изображение
      */
     public function deleteImage(Request $request, $id): JsonResponse
     {
@@ -360,8 +427,8 @@ class ApiGalleryController extends Controller
         }
 
         $image = Image::where('id', $request->image_id)
-                     ->where('gallery_id', $gallery->id)
-                     ->first();
+            ->where('gallery_id', $gallery->id)
+            ->first();
 
         if (!$image) {
             return response()->json([
@@ -370,10 +437,7 @@ class ApiGalleryController extends Controller
             ], 404);
         }
 
-        // Удаляем файлы изображения
         $this->deleteImageFiles($image);
-
-        // Удаляем запись из базы данных
         $image->delete();
 
         return response()->json([
@@ -387,20 +451,16 @@ class ApiGalleryController extends Controller
      */
     private function deleteImageFiles(Image $image): void
     {
-        try {
-            // Удаляем основное изображение
-            if ($image->image && Storage::disk('public')->exists($image->image)) {
-                Storage::disk('public')->delete($image->image);
-            }
+        // Удаляем основное изображение
+        if (Storage::disk('public')->exists($image->image)) {
+            Storage::disk('public')->delete($image->image);
+        }
 
-            // Удаляем thumbnail
-            $thumbnailPath = str_replace('.', '/thmb_', $image->image);
-            if (Storage::disk('public')->exists($thumbnailPath)) {
-                Storage::disk('public')->delete($thumbnailPath);
-            }
-        } catch (\Exception $e) {
-            // Логируем ошибку, но не прерываем выполнение
-            \Log::error('Error deleting image files: ' . $e->getMessage());
+        // Удаляем thumbnail
+        $thumbnailPath = str_replace('.jpg', '', $image->image);
+        $thumbnailPath = str_replace('galleries/', 'galleries/thmb_', $thumbnailPath);
+        if (Storage::disk('public')->exists($thumbnailPath)) {
+            Storage::disk('public')->delete($thumbnailPath);
         }
     }
 }
