@@ -83,6 +83,11 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     Route::get('/page/{id}', [ApiParamsController::class, 'getPage'])->name('params.page');
     Route::get('/apage/{id}', [ApiParamsController::class, 'getAdminPage'])->name('params.apage');
     Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->name('params.amenu');
+
+    // Маршруты для загрузки изображений в галереи
+    // Route::post('/galleries/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
+    Route::delete('/galleries/{id}/image', [ApiGalleryController::class, 'destroyImage']);
+    Route::post('/galleries/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
 });
 
 // Аутентификация
@@ -266,9 +271,9 @@ Route::delete('articles/{id}/image', [ArticleController::class, 'destroyImage'])
 Route::post('articles/{id}/delete-image', [ArticleController::class, 'deleteImage']);
 
 Route::apiResource('galleries', GalleryController::class);
-Route::post('galleries/{id}/upload-image', [GalleryController::class, 'uploadImage']);
+// Route::post('galleries/{id}/upload-image', [GalleryController::class, 'uploadImage']);
 Route::delete('galleries/{id}/image', [GalleryController::class, 'destroyImage']);
-Route::post('galleries/{id}/delete-image', [GalleryController::class, 'deleteImage']);
+// Route::post('galleries/{id}/delete-image', [GalleryController::class, 'deleteImage']);
 
 Route::apiResource('videos', VideoController::class);
 
