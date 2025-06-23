@@ -85,7 +85,7 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->name('params.amenu');
 
     // Маршруты для загрузки изображений в галереи
-    // Route::post('/galleries/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
+    Route::post('/galleries/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
     Route::delete('/galleries/{id}/image', [ApiGalleryController::class, 'destroyImage']);
     Route::post('/galleries/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
 });
