@@ -91,7 +91,7 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     // Route::post('/galleries/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
 
         // Маршруты для галерей
-        Route::prefix('api/v1/galleries')->group(function () {
+        Route::prefix('galleries')->group(function () {
             Route::get('/', [ApiGalleryController::class, 'index']);
             Route::post('/', [ApiGalleryController::class, 'store']);
             Route::get('/{id}', [ApiGalleryController::class, 'show']);
