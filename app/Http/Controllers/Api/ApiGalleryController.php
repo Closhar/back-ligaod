@@ -531,4 +531,170 @@ class ApiGalleryController extends Controller
             'errors' => $errors
         ]);
     }
+
+    /**
+     * Массовое удаление изображений
+     */
+    public function deleteMultipleImages(Request $request, $id): JsonResponse
+    {
+        $gallery = Gallery::find($id);
+
+        if (!$gallery) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gallery not found'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'image_ids' => 'required|array',
+            'image_ids.*' => 'integer|exists:images,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $imageIds = $request->image_ids;
+        $deletedCount = 0;
+        $errors = [];
+
+        foreach ($imageIds as $imageId) {
+            $image = Image::where('id', $imageId)
+                ->where('gallery_id', $gallery->id)
+                ->first();
+
+            if ($image) {
+                try {
+                    $this->deleteImageFiles($image);
+                    $image->delete();
+                    $deletedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'image_id' => $imageId,
+                        'error' => $e->getMessage()
+                    ];
+                }
+            }
+        }
+
+        $message = "Successfully deleted {$deletedCount} image(s)";
+        if (count($errors) > 0) {
+            $message .= ", " . count($errors) . " failed";
+        }
+
+        return response()->json([
+            'success' => $deletedCount > 0,
+            'message' => $message,
+            'deleted_count' => $deletedCount,
+            'errors' => $errors
+        ]);
+    }
+
+    /**
+     * Изменить порядок изображений (drag & drop)
+     */
+    public function reorderImages(Request $request, $id): JsonResponse
+    {
+        $gallery = Gallery::find($id);
+
+        if (!$gallery) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gallery not found'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'dragged_image_id' => 'required|integer|exists:images,id',
+            'target_image_id' => 'required|integer|exists:images,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Получаем изображения
+        $draggedImage = Image::where('id', $request->dragged_image_id)
+            ->where('gallery_id', $gallery->id)
+            ->first();
+
+        $targetImage = Image::where('id', $request->target_image_id)
+            ->where('gallery_id', $gallery->id)
+            ->first();
+
+        if (!$draggedImage || !$targetImage) {
+            return response()->json([
+                'success' => false,
+                'message' => 'One or both images not found in this gallery'
+            ], 404);
+        }
+
+        if ($draggedImage->id === $targetImage->id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot reorder image to itself'
+            ], 422);
+        }
+
+        try {
+            // Получаем все изображения галереи, отсортированные по position
+            $images = Image::where('gallery_id', $gallery->id)
+                ->orderBy('position')
+                ->get();
+
+            $draggedIndex = $images->search(function ($image) use ($draggedImage) {
+                return $image->id === $draggedImage->id;
+            });
+
+            $targetIndex = $images->search(function ($image) use ($targetImage) {
+                return $image->id === $targetImage->id;
+            });
+
+            if ($draggedIndex === false || $targetIndex === false) {
+                throw new \Exception('Image positions not found');
+            }
+
+            // Удаляем перетаскиваемое изображение из массива
+            $images->splice($draggedIndex, 1);
+
+            // Вставляем перетаскиваемое изображение на новую позицию
+            $images->splice($targetIndex, 0, [$draggedImage]);
+
+            // Обновляем позиции всех изображений
+            foreach ($images as $index => $image) {
+                $image->update(['position' => $index + 1]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Images reordered successfully',
+                'data' => [
+                    'dragged_image_id' => $draggedImage->id,
+                    'target_image_id' => $targetImage->id,
+                    'new_positions' => $images->map(function ($image) {
+                        return [
+                            'id' => $image->id,
+                            'position' => $image->position
+                        ];
+                    })
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to reorder images: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
