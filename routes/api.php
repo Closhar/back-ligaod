@@ -85,10 +85,25 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->name('params.amenu');
 
     // Маршруты для загрузки изображений в галереи
-    Route::post('/galleries/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
-    Route::delete('/galleries/{id}/image', [ApiGalleryController::class, 'destroyImage']);
-    Route::post('/galleries/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
-    Route::post('/galleries/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
+    // Route::post('/galleries/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
+    // Route::delete('/galleries/{id}/image', [ApiGalleryController::class, 'destroyImage']);
+    // Route::post('/galleries/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
+    // Route::post('/galleries/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
+
+        // Маршруты для галерей
+        Route::prefix('api/v1/galleries')->group(function () {
+            Route::get('/', [ApiGalleryController::class, 'index']);
+            Route::post('/', [ApiGalleryController::class, 'store']);
+            Route::get('/{id}', [ApiGalleryController::class, 'show']);
+            Route::put('/{id}', [ApiGalleryController::class, 'update']);
+            Route::patch('/{id}', [ApiGalleryController::class, 'update']);
+            Route::delete('/{id}', [ApiGalleryController::class, 'destroy']);
+            Route::post('/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
+            Route::post('/{id}/image', [ApiGalleryController::class, 'updateImage']);
+            Route::post('/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
+            Route::post('/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
+        });
+
 });
 
 // Аутентификация
