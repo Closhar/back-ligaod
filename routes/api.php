@@ -102,6 +102,8 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
             Route::post('/{id}/image', [ApiGalleryController::class, 'updateImage']);
             Route::post('/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
             Route::post('/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
+            Route::post('/{id}/update-positions', [ApiGalleryController::class, 'updatePositions']);
+
         });
 
 });

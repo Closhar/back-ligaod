@@ -531,4 +531,82 @@ class ApiGalleryController extends Controller
             'errors' => $errors
         ]);
     }
+
+    /**
+     * Обновить позиции изображений (drag-and-drop)
+     */
+    public function updatePositions(Request $request, $id): JsonResponse
+    {
+        $gallery = Gallery::find($id);
+
+        if (!$gallery) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gallery not found'
+            ], 404);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'positions' => 'required|array',
+            'positions.*.image_id' => 'required|integer|exists:images,id',
+            'positions.*.position' => 'required|integer|min:1',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $positions = $request->positions;
+        $updatedCount = 0;
+        $errors = [];
+
+        // Проверяем, что все изображения принадлежат данной галерее
+        $imageIds = collect($positions)->pluck('image_id')->toArray();
+        $galleryImages = Image::where('gallery_id', $gallery->id)
+            ->whereIn('id', $imageIds)
+            ->pluck('id')
+            ->toArray();
+
+        if (count($imageIds) !== count($galleryImages)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Some images do not belong to this gallery'
+            ], 422);
+        }
+
+        // Обновляем позиции
+        foreach ($positions as $positionData) {
+            try {
+                $image = Image::where('id', $positionData['image_id'])
+                    ->where('gallery_id', $gallery->id)
+                    ->first();
+
+                if ($image) {
+                    $image->update(['position' => $positionData['position']]);
+                    $updatedCount++;
+                }
+            } catch (\Exception $e) {
+                $errors[] = [
+                    'image_id' => $positionData['image_id'],
+                    'error' => $e->getMessage()
+                ];
+            }
+        }
+
+        $message = "Successfully updated positions for {$updatedCount} image(s)";
+        if (count($errors) > 0) {
+            $message .= ", " . count($errors) . " failed";
+        }
+
+        return response()->json([
+            'success' => $updatedCount > 0,
+            'message' => $message,
+            'updated_count' => $updatedCount,
+            'errors' => $errors
+        ]);
+    }
 }
