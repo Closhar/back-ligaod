@@ -28,6 +28,11 @@ class ApiGalleryController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
+        // Проверяем, является ли это обновлением существующей галереи
+        if ($request->has('action') && $request->action === 'update' && $request->has('id')) {
+            return $this->update($request, $request->id);
+        }
+
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
         ]);
