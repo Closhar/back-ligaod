@@ -107,29 +107,26 @@ class ArticleController extends Controller
     public function show($id)
     {
         try {
-            \Log::info("Запрос статьи с ID: " . $id);
-
             $article = Article::select([
                 'id', 'title', 'description', 'data', 'slug', 'region_id',
                 'published', 'image', 'content', 'created_at', 'updated_at'
             ])->with([
-                'region',
-                'sports',
-                'clubs',
-                'arenas',
-                'competitions',
-                'events',
-                'galleries',
-                'videos'
+                'region:id,title,title_short',
+                'sports:id,title,title_short',
+                'clubs:id,title,title_short,city_id,sport_id,gender_id' => function($query) {
+                    $query->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short']);
+                },
+                'arenas:id,title',
+                'competitions:id,title',
+                'events:id,title,title_short',
+                'galleries:id,title',
+                'videos:id,title'
             ])->findOrFail($id);
 
-            \Log::info("Статья найдена: " . $article->title);
             return response()->json($article);
         } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            \Log::warning("Статья с ID {$id} не найдена");
             return response()->json(['message' => 'Статья не найдена'], 404);
         } catch (\Exception $e) {
-            \Log::error("Ошибка при получении статьи: " . $e->getMessage());
             return response()->json([
                 'message' => 'Внутренняя ошибка сервера',
                 'error' => $e->getMessage()
