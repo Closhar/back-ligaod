@@ -16,7 +16,7 @@ class Club extends Model
     protected $guarded = [];
 
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
-    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name'];
+    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info'];
 
     protected static function booted(): void
     {
@@ -91,6 +91,27 @@ class Club extends Model
     {
         $cityTitle = $this->city ? $this->city->title : 'Город не указан';
         return $this->title . ' (' . $cityTitle . ')';
+    }
+
+    public function getFullInfoAttribute()
+    {
+        $cityTitle = $this->city ? $this->city->title_short : '';
+        $sportTitle = $this->sport ? $this->sport->title_short : '';
+        $genderTitle = $this->gender ? $this->gender->title_short : '';
+
+        $parts = [];
+        if ($cityTitle) {
+            $parts[] = "({$cityTitle})";
+        }
+        if ($sportTitle) {
+            $parts[] = $sportTitle;
+        }
+        if ($genderTitle) {
+            $parts[] = $genderTitle;
+        }
+
+        $info = implode(' | ', $parts);
+        return $this->title . ' ' . $info;
     }
 
 }
