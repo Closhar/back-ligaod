@@ -10,6 +10,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use ZipArchive;
+use Illuminate\Support\Facades\Response;
 
 class ApiGalleryController extends Controller
 {
@@ -752,5 +754,58 @@ class ApiGalleryController extends Controller
                 imagesetpixel($im, $x, $y, $newColor);
             }
         }
+    }
+
+    public function downloadImages(Request $request, $galleryId)
+    {
+        $gallery = Gallery::findOrFail($galleryId);
+
+        $validator = Validator::make($request->all(), [
+            'image_ids' => 'required|array',
+            'image_ids.*' => 'integer|exists:images,id',
+        ]);
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $images = Image::whereIn('id', $request->image_ids)
+            ->where('gallery_id', $gallery->id)
+            ->get();
+
+        if ($images->isEmpty()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'No images found'
+            ], 404);
+        }
+
+        $zipFileName = 'gallery_images_' . time() . '.zip';
+        $zipPath = storage_path('app/tmp/' . $zipFileName);
+
+        if (!file_exists(storage_path('app/tmp'))) {
+            mkdir(storage_path('app/tmp'), 0777, true);
+        }
+
+        $zip = new ZipArchive;
+        if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
+            foreach ($images as $img) {
+                $filePath = storage_path('app/public/' . $img->image);
+                if (file_exists($filePath)) {
+                    $zip->addFile($filePath, basename($img->image));
+                }
+            }
+            $zip->close();
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'Could not create zip'
+            ], 500);
+        }
+
+        return response()->download($zipPath)->deleteFileAfterSend(true);
     }
 }

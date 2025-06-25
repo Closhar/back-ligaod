@@ -103,6 +103,7 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
             Route::post('/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
             Route::post('/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
             Route::post('/{id}/update-positions', [ApiGalleryController::class, 'updatePositions']);
+            Route::post('/{id}/download-images', [ApiGalleryController::class, 'downloadImages']);
 
         });
 
