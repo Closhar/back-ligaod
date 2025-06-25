@@ -23,21 +23,7 @@ class ArticleController extends Controller
         $sortDirection = $request->input('sort_direction', 'desc');
         $id = $request->input('id');
 
-        $query = Article::query()->select([
-            'id', 'title', 'description', 'data', 'slug', 'region_id',
-            'published', 'image', 'created_at', 'updated_at'
-        ])->with([
-            'region:id,title,title_short',
-            'sports:id,title,title_short',
-            'clubs:id,title,title_short,city_id,sport_id,gender_id' => function($query) {
-                $query->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short']);
-            },
-            'arenas:id,title',
-            'competitions:id,title',
-            'events:id,title,title_short',
-            'galleries:id,title',
-            'videos:id,title'
-        ]);
+        $query = Article::query()->with('region');
 
         if ($id) {
             $query->where('id', $id);
@@ -46,7 +32,8 @@ class ArticleController extends Controller
         if ($searchQuery) {
             $query->where(function ($q) use ($searchQuery) {
                 $q->where('title', 'LIKE', "%{$searchQuery}%")
-                    ->orWhere('description', 'LIKE', "%{$searchQuery}%");
+                    ->orWhere('description', 'LIKE', "%{$searchQuery}%")
+                    ->orWhere('content', 'LIKE', "%{$searchQuery}%");
             });
         }
 
@@ -120,7 +107,19 @@ class ArticleController extends Controller
     public function show($id)
     {
         try {
-            $article = Article::findOrFail($id);
+            $article = Article::with([
+                'region:id,title,title_short',
+                'sports:id,title,title_short',
+                'clubs:id,title,title_short,city_id,sport_id,gender_id' => function($query) {
+                    $query->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short']);
+                },
+                'arenas:id,title',
+                'competitions:id,title',
+                'events:id,title,title_short',
+                'galleries:id,title',
+                'videos:id,title'
+            ])->findOrFail($id);
+
             return response()->json($article);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Not Found'], 404);
