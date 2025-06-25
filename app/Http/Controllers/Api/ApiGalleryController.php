@@ -621,17 +621,28 @@ class ApiGalleryController extends Controller
      */
     private function imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct)
     {
-        $cut = imagecreatetruecolor($src_w, $src_h);
-        imagealphablending($cut, false);
-        imagesavealpha($cut, true);
-        $transparent = imagecolorallocatealpha($cut, 255, 255, 255, 127);
-        imagefill($cut, 0, 0, $transparent);
+        // $pct: 0 (полностью прозрачно) ... 100 (полностью непрозрачно)
+        $opacity = $pct / 100;
 
-        imagecopy($cut, $dst_im, 0, 0, $dst_x, $dst_y, $src_w, $src_h);
-        imagecopy($cut, $src_im, 0, 0, $src_x, $src_y, $src_w, $src_h);
+        for ($x = 0; $x < $src_w; $x++) {
+            for ($y = 0; $y < $src_h; $y++) {
+                $rgba = imagecolorat($src_im, $x + $src_x, $y + $src_y);
+                $alpha = ($rgba & 0x7F000000) >> 24;
+                $color = imagecolorsforindex($src_im, $rgba);
 
-        imagecopy($dst_im, $cut, $dst_x, $dst_y, 0, 0, $src_w, $src_h);
-        imagedestroy($cut);
+                // Итоговая альфа: альфа пикселя * opacity
+                $finalAlpha = 127 - (127 - $alpha) * $opacity;
+
+                $colorIndex = imagecolorallocatealpha(
+                    $dst_im,
+                    $color['red'],
+                    $color['green'],
+                    $color['blue'],
+                    $finalAlpha
+                );
+                imagesetpixel($dst_im, $dst_x + $x, $dst_y + $y, $colorIndex);
+            }
+        }
     }
 
     /**
