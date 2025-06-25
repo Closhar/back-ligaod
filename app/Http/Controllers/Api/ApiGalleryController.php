@@ -263,6 +263,9 @@ class ApiGalleryController extends Controller
         // Изменяем размер
         imagecopyresampled($resizedImage, $sourceImage, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
 
+        // Накладываем логотип если включен
+        $this->applyLogoToImage($resizedImage, request());
+
         // Сохраняем основное изображение
         $imagePath = "{$galleryPath}/{$fileName}";
         $fullImagePath = storage_path("app/public/{$imagePath}");
@@ -286,6 +289,9 @@ class ApiGalleryController extends Controller
         }
 
         imagecopyresampled($thumbnailImage, $resizedImage, 0, 0, 0, 0, $thumbWidth, $thumbHeight, $newWidth, $newHeight);
+
+        // Накладываем логотип на thumbnail если включен
+        $this->applyLogoToImage($thumbnailImage, request(), true);
 
         $thumbnailPath = "{$galleryPath}/thmb_{$fileName}";
         $fullThumbnailPath = storage_path("app/public/{$thumbnailPath}");
@@ -608,5 +614,142 @@ class ApiGalleryController extends Controller
             'updated_count' => $updatedCount,
             'errors' => $errors
         ]);
+    }
+
+    /**
+     * Наложить логотип на изображение
+     */
+    private function applyLogoToImage(&$image, $request, $isThumbnail = false)
+    {
+        // Проверяем, включен ли логотип
+        if (!$request->has('logo_enabled') || $request->logo_enabled !== 'true') {
+            return;
+        }
+
+        try {
+            $logoImage = null;
+
+            // Получаем логотип в зависимости от источника
+            if ($request->hasFile('custom_logo')) {
+                // Используем загруженный кастомный логотип
+                $logoFile = $request->file('custom_logo');
+                $logoInfo = getimagesize($logoFile->getPathname());
+                if ($logoInfo) {
+                    $logoImage = $this->loadImage($logoFile->getPathname(), $logoInfo[2]);
+                }
+            } elseif ($request->has('default_logo_url') && !empty($request->default_logo_url)) {
+                // Используем логотип по умолчанию
+                $logoUrl = $request->default_logo_url;
+
+                // Если URL относительный, добавляем базовый путь
+                if (!filter_var($logoUrl, FILTER_VALIDATE_URL)) {
+                    $logoUrl = storage_path("app/public/{$logoUrl}");
+                }
+
+                // Проверяем, существует ли файл
+                if (file_exists($logoUrl)) {
+                    $logoInfo = getimagesize($logoUrl);
+                    if ($logoInfo) {
+                        $logoImage = $this->loadImage($logoUrl, $logoInfo[2]);
+                    }
+                }
+            }
+
+            if (!$logoImage) {
+                return;
+            }
+
+            // Получаем настройки логотипа
+            $position = $request->get('logo_position', 'bottom-right');
+            $size = (int) $request->get('logo_size', 15);
+            $opacity = (float) $request->get('logo_opacity', 0.8);
+
+            // Вычисляем размер логотипа
+            $imageWidth = imagesx($image);
+            $imageHeight = imagesy($image);
+            $logoWidth = ($imageWidth * $size) / 100;
+            $logoHeight = ($logoWidth * imagesy($logoImage)) / imagesx($logoImage);
+
+            // Для thumbnail используем меньший размер
+            if ($isThumbnail) {
+                $logoWidth = min($logoWidth, 30); // Максимум 30px для thumbnail
+                $logoHeight = ($logoWidth * imagesy($logoImage)) / imagesx($logoImage);
+            }
+
+            // Создаем уменьшенную версию логотипа
+            $resizedLogo = imagecreatetruecolor($logoWidth, $logoHeight);
+
+            // Сохраняем прозрачность для PNG
+            imagealphablending($resizedLogo, false);
+            imagesavealpha($resizedLogo, true);
+            $transparent = imagecolorallocatealpha($resizedLogo, 255, 255, 255, 127);
+            imagefill($resizedLogo, 0, 0, $transparent);
+
+            // Изменяем размер логотипа
+            imagecopyresampled($resizedLogo, $logoImage, 0, 0, 0, 0, $logoWidth, $logoHeight, imagesx($logoImage), imagesy($logoImage));
+
+            // Применяем прозрачность
+            if ($opacity < 1) {
+                $this->applyOpacity($resizedLogo, $opacity);
+            }
+
+            // Вычисляем позицию логотипа
+            $x = 0;
+            $y = 0;
+            $padding = 10; // Отступ от краев
+
+            switch ($position) {
+                case 'top-left':
+                    $x = $padding;
+                    $y = $padding;
+                    break;
+                case 'top-right':
+                    $x = $imageWidth - $logoWidth - $padding;
+                    $y = $padding;
+                    break;
+                case 'bottom-left':
+                    $x = $padding;
+                    $y = $imageHeight - $logoHeight - $padding;
+                    break;
+                case 'bottom-right':
+                default:
+                    $x = $imageWidth - $logoWidth - $padding;
+                    $y = $imageHeight - $logoHeight - $padding;
+                    break;
+            }
+
+            // Накладываем логотип на изображение
+            imagecopy($image, $resizedLogo, $x, $y, 0, 0, $logoWidth, $logoHeight);
+
+            // Освобождаем память
+            imagedestroy($logoImage);
+            imagedestroy($resizedLogo);
+
+        } catch (\Exception $e) {
+            // Логируем ошибку, но не прерываем обработку изображения
+            \Log::warning("Failed to apply logo to image: " . $e->getMessage());
+        }
+    }
+
+    /**
+     * Применить прозрачность к изображению
+     */
+    private function applyOpacity(&$image, $opacity)
+    {
+        $width = imagesx($image);
+        $height = imagesy($image);
+
+        for ($x = 0; $x < $width; $x++) {
+            for ($y = 0; $y < $height; $y++) {
+                $colorIndex = imagecolorat($image, $x, $y);
+                $colors = imagecolorsforindex($image, $colorIndex);
+
+                // Применяем прозрачность к альфа-каналу
+                $newAlpha = (int)($colors['alpha'] * (1 - $opacity));
+                $newColor = imagecolorallocatealpha($image, $colors['red'], $colors['green'], $colors['blue'], $newAlpha);
+
+                imagesetpixel($image, $x, $y, $newColor);
+            }
+        }
     }
 }
