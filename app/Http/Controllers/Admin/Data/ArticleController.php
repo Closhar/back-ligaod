@@ -111,16 +111,14 @@ class ArticleController extends Controller
                 'id', 'title', 'description', 'data', 'slug', 'region_id',
                 'published', 'image', 'content', 'created_at', 'updated_at'
             ])->with([
-                'region:id,title,title_short',
-                'sports:id,title,title_short',
-                'clubs:id,title,title_short,city_id,sport_id,gender_id' => function($query) {
-                    $query->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short']);
-                },
-                'arenas:id,title',
-                'competitions:id,title',
-                'events:id,title,title_short',
-                'galleries:id,title',
-                'videos:id,title'
+                'region',
+                'sports',
+                'clubs',
+                'arenas',
+                'competitions',
+                'events',
+                'galleries',
+                'videos'
             ])->findOrFail($id);
 
             return response()->json($article);
