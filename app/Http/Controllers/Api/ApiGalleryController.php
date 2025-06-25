@@ -621,28 +621,17 @@ class ApiGalleryController extends Controller
      */
     private function imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct)
     {
-        // $pct: 0 (полностью прозрачно) ... 100 (полностью непрозрачно)
-        $opacity = $pct / 100;
+        $cut = imagecreatetruecolor($src_w, $src_h);
+        imagealphablending($cut, false);
+        imagesavealpha($cut, true);
+        $transparent = imagecolorallocatealpha($cut, 255, 255, 255, 127);
+        imagefill($cut, 0, 0, $transparent);
 
-        for ($x = 0; $x < $src_w; $x++) {
-            for ($y = 0; $y < $src_h; $y++) {
-                $rgba = imagecolorat($src_im, $x + $src_x, $y + $src_y);
-                $alpha = ($rgba & 0x7F000000) >> 24;
-                $color = imagecolorsforindex($src_im, $rgba);
+        imagecopy($cut, $dst_im, 0, 0, $dst_x, $dst_y, $src_w, $src_h);
+        imagecopy($cut, $src_im, 0, 0, $src_x, $src_y, $src_w, $src_h);
 
-                // Итоговая альфа: альфа пикселя * opacity
-                $finalAlpha = 127 - (127 - $alpha) * $opacity;
-
-                $colorIndex = imagecolorallocatealpha(
-                    $dst_im,
-                    $color['red'],
-                    $color['green'],
-                    $color['blue'],
-                    $finalAlpha
-                );
-                imagesetpixel($dst_im, $dst_x + $x, $dst_y + $y, $colorIndex);
-            }
-        }
+        imagecopy($dst_im, $cut, $dst_x, $dst_y, 0, 0, $src_w, $src_h);
+        imagedestroy($cut);
     }
 
     /**
@@ -727,11 +716,10 @@ class ApiGalleryController extends Controller
                     $y = $imageHeight - $logoHeight - $padding;
                     break;
             }
-            if ($opacity >= 1) {
-                imagecopy($image, $resizedLogo, $x, $y, 0, 0, $logoWidth, $logoHeight);
-            } else {
-                $this->imagecopymerge_alpha($image, $resizedLogo, $x, $y, 0, 0, $logoWidth, $logoHeight, $opacity * 100);
+            if ($opacity < 1) {
+                $this->applyPngOpacity($resizedLogo, $opacity);
             }
+            imagecopy($image, $resizedLogo, $x, $y, 0, 0, $logoWidth, $logoHeight);
             imagedestroy($logoImage);
             imagedestroy($resizedLogo);
             if ($tempFile && file_exists($tempFile)) {
@@ -740,6 +728,28 @@ class ApiGalleryController extends Controller
         } catch (\Exception $e) {
             if (isset($tempFile) && $tempFile && file_exists($tempFile)) {
                 unlink($tempFile);
+            }
+        }
+    }
+
+    private function applyPngOpacity(&$im, $opacity)
+    {
+        $w = imagesx($im);
+        $h = imagesy($im);
+
+        $opacity = max(0, min(1, $opacity));
+        $alpha = 127 * (1 - $opacity);
+
+        for ($x = 0; $x < $w; ++$x) {
+            for ($y = 0; $y < $h; ++$y) {
+                $rgba = imagecolorat($im, $x, $y);
+                $a = ($rgba & 0x7F000000) >> 24;
+                $color = imagecolorsforindex($im, $rgba);
+
+                $finalAlpha = min(127, $a + $alpha);
+
+                $newColor = imagecolorallocatealpha($im, $color['red'], $color['green'], $color['blue'], $finalAlpha);
+                imagesetpixel($im, $x, $y, $newColor);
             }
         }
     }
