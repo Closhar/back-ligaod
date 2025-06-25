@@ -43,46 +43,6 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
 
-// Маршрут для сохранения отношений статей (на верхнем уровне)
-Route::post('/api/articles/{id}/relations', function (Request $request, $id) {
-    $article = \App\Models\Article::find($id);
-    if (!$article) {
-        return response()->json(['message' => 'Статья не найдена'], 404);
-    }
-
-    $relationType = $request->relation_type;
-    $relationIds = $request->relation_ids;
-
-    // Обновляем отношения в зависимости от типа
-    switch ($relationType) {
-        case 'sports':
-            $article->sports()->sync($relationIds);
-            break;
-        case 'clubs':
-            $article->clubs()->sync($relationIds);
-            break;
-        case 'arenas':
-            $article->arenas()->sync($relationIds);
-            break;
-        case 'competitions':
-            $article->competitions()->sync($relationIds);
-            break;
-        case 'events':
-            $article->events()->sync($relationIds);
-            break;
-        case 'galleries':
-            $article->galleries()->sync($relationIds);
-            break;
-        case 'videos':
-            $article->videos()->sync($relationIds);
-            break;
-        default:
-            return response()->json(['message' => 'Неизвестный тип отношения'], 400);
-    }
-
-    return response()->json(['message' => 'Отношения успешно обновлены']);
-});
-
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
 //})->middleware('auth:sanctum');
@@ -329,6 +289,46 @@ Route::post('articles/{id}/upload-image', [ArticleController::class, 'uploadImag
 Route::delete('articles/{id}/image', [ArticleController::class, 'destroyImage']);
 Route::post('articles/{id}/delete-image', [ArticleController::class, 'deleteImage']);
 
+// Маршрут для сохранения отношений статей
+Route::post('articles/{id}/relations', function (Request $request, $id) {
+    $article = \App\Models\Article::find($id);
+    if (!$article) {
+        return response()->json(['message' => 'Статья не найдена'], 404);
+    }
+
+    $relationType = $request->relation_type;
+    $relationIds = $request->relation_ids;
+
+    // Обновляем отношения в зависимости от типа
+    switch ($relationType) {
+        case 'sports':
+            $article->sports()->sync($relationIds);
+            break;
+        case 'clubs':
+            $article->clubs()->sync($relationIds);
+            break;
+        case 'arenas':
+            $article->arenas()->sync($relationIds);
+            break;
+        case 'competitions':
+            $article->competitions()->sync($relationIds);
+            break;
+        case 'events':
+            $article->events()->sync($relationIds);
+            break;
+        case 'galleries':
+            $article->galleries()->sync($relationIds);
+            break;
+        case 'videos':
+            $article->videos()->sync($relationIds);
+            break;
+        default:
+            return response()->json(['message' => 'Неизвестный тип отношения'], 400);
+    }
+
+    return response()->json(['message' => 'Отношения успешно обновлены']);
+});
+
 Route::apiResource('galleries', GalleryController::class);
 // Route::post('galleries/{id}/upload-image', [GalleryController::class, 'uploadImage']);
 Route::delete('galleries/{id}/image', [GalleryController::class, 'destroyImage']);
@@ -402,6 +402,3 @@ Route::prefix('telegram-parse-channels')->group(function () {
 });
 
 Route::get('test-telegram', [TelegramParseChannelController::class, 'testMessages']);
-
-
-
