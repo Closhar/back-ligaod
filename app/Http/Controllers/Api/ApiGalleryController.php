@@ -150,6 +150,20 @@ class ApiGalleryController extends Controller
             ], 404);
         }
 
+        // Логируем входящие данные для отладки
+        \Log::info('Upload image request received', [
+            'gallery_id' => $id,
+            'has_image' => $request->hasFile('image'),
+            'has_images' => $request->hasFile('images'),
+            'logo_enabled' => $request->get('logo_enabled'),
+            'logo_position' => $request->get('logo_position'),
+            'logo_size' => $request->get('logo_size'),
+            'logo_opacity' => $request->get('logo_opacity'),
+            'has_custom_logo' => $request->hasFile('custom_logo'),
+            'default_logo_url' => $request->get('default_logo_url'),
+            'all_request_data' => $request->all()
+        ]);
+
         // Проверяем, есть ли файлы для загрузки
         if (!$request->hasFile('image') && !$request->hasFile('images')) {
             return response()->json([
@@ -623,39 +637,75 @@ class ApiGalleryController extends Controller
     {
         // Проверяем, включен ли логотип
         if (!$request->has('logo_enabled') || $request->logo_enabled !== 'true') {
+            \Log::info('Logo not enabled or logo_enabled not set to true');
             return;
         }
 
+        \Log::info('Starting logo application process');
+
         try {
             $logoImage = null;
+            $tempFile = null; // Для отслеживания временного файла
 
             // Получаем логотип в зависимости от источника
             if ($request->hasFile('custom_logo')) {
+                \Log::info('Using custom logo file');
                 // Используем загруженный кастомный логотип
                 $logoFile = $request->file('custom_logo');
                 $logoInfo = getimagesize($logoFile->getPathname());
                 if ($logoInfo) {
                     $logoImage = $this->loadImage($logoFile->getPathname(), $logoInfo[2]);
+                    \Log::info('Custom logo loaded successfully', ['width' => $logoInfo[0], 'height' => $logoInfo[1]]);
+                } else {
+                    \Log::error('Failed to get image info for custom logo');
                 }
             } elseif ($request->has('default_logo_url') && !empty($request->default_logo_url)) {
+                \Log::info('Using default logo from URL', ['url' => $request->default_logo_url]);
                 // Используем логотип по умолчанию
                 $logoUrl = $request->default_logo_url;
 
-                // Если URL относительный, добавляем базовый путь
-                if (!filter_var($logoUrl, FILTER_VALIDATE_URL)) {
+                // Проверяем, является ли это полным URL
+                if (filter_var($logoUrl, FILTER_VALIDATE_URL)) {
+                    \Log::info('Logo URL is a full URL, downloading...');
+                    // Это полный URL, нужно скачать файл
+                    $tempFile = tempnam(sys_get_temp_dir(), 'logo_');
+                    $logoContent = file_get_contents($logoUrl);
+                    if ($logoContent !== false) {
+                        file_put_contents($tempFile, $logoContent);
+                        $logoInfo = getimagesize($tempFile);
+                        if ($logoInfo) {
+                            $logoImage = $this->loadImage($tempFile, $logoInfo[2]);
+                            \Log::info('Logo downloaded and loaded successfully', ['width' => $logoInfo[0], 'height' => $logoInfo[1]]);
+                        } else {
+                            \Log::error('Failed to get image info for downloaded logo');
+                        }
+                    } else {
+                        \Log::error('Failed to download logo from URL');
+                    }
+                } else {
+                    // Если URL относительный, добавляем базовый путь
                     $logoUrl = storage_path("app/public/{$logoUrl}");
-                }
+                    \Log::info('Converted to absolute path', ['path' => $logoUrl]);
 
-                // Проверяем, существует ли файл
-                if (file_exists($logoUrl)) {
-                    $logoInfo = getimagesize($logoUrl);
-                    if ($logoInfo) {
-                        $logoImage = $this->loadImage($logoUrl, $logoInfo[2]);
+                    // Проверяем, существует ли файл
+                    if (file_exists($logoUrl)) {
+                        $logoInfo = getimagesize($logoUrl);
+                        if ($logoInfo) {
+                            $logoImage = $this->loadImage($logoUrl, $logoInfo[2]);
+                            \Log::info('Default logo loaded successfully', ['width' => $logoInfo[0], 'height' => $logoInfo[1]]);
+                        } else {
+                            \Log::error('Failed to get image info for default logo');
+                        }
+                    } else {
+                        \Log::error('Default logo file not found', ['path' => $logoUrl]);
                     }
                 }
+            } else {
+                \Log::warning('No logo source provided');
             }
 
             if (!$logoImage) {
+                \Log::error('No logo image loaded');
                 return;
             }
 
@@ -664,16 +714,31 @@ class ApiGalleryController extends Controller
             $size = (int) $request->get('logo_size', 15);
             $opacity = (float) $request->get('logo_opacity', 0.8);
 
+            \Log::info('Logo settings', [
+                'position' => $position,
+                'size' => $size,
+                'opacity' => $opacity,
+                'isThumbnail' => $isThumbnail
+            ]);
+
             // Вычисляем размер логотипа
             $imageWidth = imagesx($image);
             $imageHeight = imagesy($image);
             $logoWidth = ($imageWidth * $size) / 100;
             $logoHeight = ($logoWidth * imagesy($logoImage)) / imagesx($logoImage);
 
+            \Log::info('Image dimensions', [
+                'imageWidth' => $imageWidth,
+                'imageHeight' => $imageHeight,
+                'logoWidth' => $logoWidth,
+                'logoHeight' => $logoHeight
+            ]);
+
             // Для thumbnail используем меньший размер
             if ($isThumbnail) {
                 $logoWidth = min($logoWidth, 30); // Максимум 30px для thumbnail
                 $logoHeight = ($logoWidth * imagesy($logoImage)) / imagesx($logoImage);
+                \Log::info('Thumbnail logo dimensions', ['width' => $logoWidth, 'height' => $logoHeight]);
             }
 
             // Создаем уменьшенную версию логотипа
@@ -718,16 +783,35 @@ class ApiGalleryController extends Controller
                     break;
             }
 
+            \Log::info('Logo position calculated', ['x' => $x, 'y' => $y]);
+
             // Накладываем логотип на изображение
             imagecopy($image, $resizedLogo, $x, $y, 0, 0, $logoWidth, $logoHeight);
+
+            \Log::info('Logo applied successfully');
 
             // Освобождаем память
             imagedestroy($logoImage);
             imagedestroy($resizedLogo);
 
+            // Удаляем временный файл если он был создан
+            if ($tempFile && file_exists($tempFile)) {
+                unlink($tempFile);
+                \Log::info('Temporary logo file cleaned up');
+            }
+
         } catch (\Exception $e) {
             // Логируем ошибку, но не прерываем обработку изображения
-            \Log::warning("Failed to apply logo to image: " . $e->getMessage());
+            \Log::error("Failed to apply logo to image: " . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            // Удаляем временный файл в случае ошибки
+            if (isset($tempFile) && $tempFile && file_exists($tempFile)) {
+                unlink($tempFile);
+            }
         }
     }
 
