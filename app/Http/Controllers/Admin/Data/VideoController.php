@@ -10,7 +10,7 @@ use Illuminate\Validation\ValidationException;
 
 class VideoController extends Controller
 {
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
         $perPage = $request->input('per_page', 10);
         $page = $request->input('page', 1);
