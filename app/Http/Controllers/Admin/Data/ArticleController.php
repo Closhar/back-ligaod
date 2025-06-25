@@ -74,7 +74,6 @@ class ArticleController extends Controller
                 'data' => 'required|date',
                 'slug' => 'required|string|max:255',
                 'region_id' => 'nullable|integer|exists:regions,id',
-                'published' => 'boolean',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ]);
 
