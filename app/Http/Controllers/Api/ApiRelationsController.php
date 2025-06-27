@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 class ApiRelationsController extends Controller
 {
     /**
-     * Сохранение morphedByMany отношений
+     * Сохранение отношений
      */
     public function saveRelations(Request $request): JsonResponse
     {
@@ -56,14 +56,46 @@ class ApiRelationsController extends Controller
                 ], 404);
             }
 
-            // Сохраняем отношения в транзакции
-            DB::transaction(function () use ($model, $relationName, $relatedIds) {
-                // Удаляем все существующие отношения
-                $model->$relationName()->detach();
+            // Получаем информацию об отношении
+            $relation = $model->$relationName();
+            $relationType = class_basename($relation);
 
-                // Добавляем новые отношения
-                if (!empty($relatedIds)) {
-                    $model->$relationName()->attach($relatedIds);
+            // Сохраняем отношения в транзакции
+            DB::transaction(function () use ($model, $relationName, $relatedIds, $relationType) {
+                if (in_array($relationType, ['BelongsToMany', 'MorphToMany'])) {
+                    // Для belongsToMany и morphToMany используем detach/attach
+                    $model->$relationName()->detach();
+
+                    if (!empty($relatedIds)) {
+                        $model->$relationName()->attach($relatedIds);
+                    }
+                } elseif ($relationType === 'HasMany') {
+                    // Для hasMany обновляем внешний ключ в связанных записях
+                    $relation = $model->$relationName();
+                    $foreignKey = $relation->getForeignKeyName();
+                    $relatedModel = $relation->getRelated();
+
+                    \Log::info("HasMany relation processing", [
+                        'relation_name' => $relationName,
+                        'foreign_key' => $foreignKey,
+                        'model_id' => $model->id,
+                        'related_ids' => $relatedIds,
+                        'related_model' => get_class($relatedModel)
+                    ]);
+
+                    // Сначала убираем связь со всех записей, которые были связаны с этой моделью
+                    $relatedModel::where($foreignKey, $model->id)->update([$foreignKey => null]);
+
+                    // Затем устанавливаем связь для выбранных записей
+                    if (!empty($relatedIds)) {
+                        // Проверяем, что записи существуют
+                        $existingIds = $relatedModel::whereIn('id', $relatedIds)->pluck('id')->toArray();
+                        if (!empty($existingIds)) {
+                            $relatedModel::whereIn('id', $existingIds)->update([$foreignKey => $model->id]);
+                        }
+                    }
+                } else {
+                    throw new \Exception("Неподдерживаемый тип отношения: {$relationType}");
                 }
             });
 
@@ -74,7 +106,8 @@ class ApiRelationsController extends Controller
                     'model_type' => $modelType,
                     'model_id' => $modelId,
                     'relation_name' => $relationName,
-                    'related_ids' => $relatedIds
+                    'related_ids' => $relatedIds,
+                    'relation_type' => $relationType
                 ]
             ]);
 
@@ -211,6 +244,7 @@ class ApiRelationsController extends Controller
             'article' => \App\Models\Article::class,
             'sport' => \App\Models\Sport::class,
             'city' => \App\Models\City::class,
+            'competition' => \App\Models\Competition::class,
             // Добавьте другие модели по необходимости
         ];
 
