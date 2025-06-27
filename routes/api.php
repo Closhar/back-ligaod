@@ -25,6 +25,7 @@ use App\Http\Controllers\Api\ApiCompetitionController;
 use App\Http\Controllers\Api\ApiEventController;
 use App\Http\Controllers\Api\ApiGalleryController;
 use App\Http\Controllers\Api\ApiGenderController;
+use App\Http\Controllers\Api\ApiMenuSectionController;
 use App\Http\Controllers\Api\ApiParamsController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
@@ -162,7 +163,13 @@ Route::middleware('auth:sanctum')->group(function () {
 //    Route::apiResource('admin-pages', AdminPageController::class);
     //});
 });
+//Route::apiResource('admin-pages', AdminPageController::class);
+
 Route::apiResource('admin-pages', AdminPageController::class);
+
+// Маршруты для управления разделами меню
+Route::apiResource('menu-sections', ApiMenuSectionController::class);
+Route::get('/menu-sections/select', [ApiMenuSectionController::class, 'getForSelect']);
 
 // Маршруты для работы с телеграм
 Route::prefix('telegram')->group(function () {

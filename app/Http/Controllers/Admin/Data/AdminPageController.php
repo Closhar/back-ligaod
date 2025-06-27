@@ -3,186 +3,135 @@
 namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Models\AdminPage;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Validation\ValidationException;
+use App\Models\MenuSection;
+use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
 
 class AdminPageController extends Controller
 {
-//    public function __construct()
-//    {
-//        $this->middleware('auth:sanctum');
-//    }
-
     /**
-     * Display a listing of the resource.
+     * Получить список страниц админки
      */
-    public function index(Request $request)
+    public function index(Request $request): JsonResponse
     {
-        $searchQuery = $request->query('q'); // Параметр поиска
-        $perPage = $request->query('per_page', 10); // Количество элементов на странице
-        $searchId = $request->query('id'); // Параметр поиска по ID
-        $fieldParam = $request->query('field'); // Параметр для фильтрации по конкретному полю
+        $query = AdminPage::with('menuSection');
 
-        $query = AdminPage::query()
-            ->select(
-                'id',
-                'title',
-                'description',
-                'slug',
-                'icon',
-                'image',
-                'menu'
-            );
-
-        // Применяем поиск по ID, если указан
-        if ($searchId) {
-            $query->where('id', $searchId);
+        // Поиск
+        if ($request->has('q') && !empty($request->q)) {
+            $search = $request->q;
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
         }
 
-        // Применяем поиск по параметру q и field
-        if ($searchQuery) {
-            if ($fieldParam) {
-                // Если указано конкретное поле, ищем по нему
-                $query->where($fieldParam, 'LIKE', "%{$searchQuery}%");
-            } else {
-                // Если поле не указано, ищем по нескольким полям
-                $query->where(function ($q) use ($searchQuery) {
-                    $q->where('title', 'like', "%{$searchQuery}%")
-                        ->orWhere('description', 'like', "%{$searchQuery}%")
-                        ->orWhere('slug', 'like', "%{$searchQuery}%");
-                });
-            }
+        // Фильтр по меню
+        if ($request->has('menu') && $request->menu !== null) {
+            $query->where('menu', $request->menu);
+        }
+
+        // Фильтр по разделу меню
+        if ($request->has('menu_section_id') && $request->menu_section_id !== null) {
+            $query->where('menu_section_id', $request->menu_section_id);
         }
 
         // Сортировка
-        if ($request->has('sort_field')) {
-            $sortDirection = $request->input('sort_direction', 'asc');
-            $query->orderBy($request->input('sort_field'), $sortDirection);
-        }
+        $sortField = $request->get('sort_field', 'sort_order');
+        $sortDirection = $request->get('sort_direction', 'asc');
+        $query->orderBy($sortField, $sortDirection);
 
-        // Получаем пагинированные результаты
-        $items = $query->paginate($perPage);
-        $total = $items->total();
+        // Пагинация
+        $perPage = $request->get('per_page', 30);
+        $pages = $query->paginate($perPage);
 
-        return [
-            'current_page' => $items->currentPage(),
-            'data' => $items->items(),
-            'first_page_url' => $items->url(1),
-            'from' => $items->firstItem(),
-            'last_page' => $items->lastPage(),
-            'last_page_url' => $items->url($items->lastPage()),
-            'links' => $items->links(),
-            'next_page_url' => $items->nextPageUrl(),
-            'path' => $items->path(),
-            'per_page' => $items->perPage(),
-            'prev_page_url' => $items->previousPageUrl(),
-            'to' => $items->lastItem(),
-            'total' => $total,
-        ];
+        return response()->json($pages);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Получить страницу админки по ID
      */
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function show($id): JsonResponse
     {
-        try {
-            $validated = $request->validate([
-                'title' => 'required|string|max:255',
-                'description' => 'string|max:50000|nullable',
-                'slug' => 'required|string|max:255|unique:admin_pages,slug',
-                'icon' => 'string|max:255|nullable',
-                'image' => 'string|max:255|nullable',
-                'menu' => 'boolean|nullable'
-            ]);
-
-            $item = AdminPage::create($validated);
-
-            return response()->json($item, 201);
-
-        } catch (ValidationException $e) {
-            return response()->json([
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        $page = AdminPage::with('menuSection')->findOrFail($id);
+        return response()->json($page);
     }
 
     /**
-     * Display the specified resource.
+     * Создать новую страницу админки
      */
-    public function show($id)
+    public function store(Request $request): JsonResponse
     {
-        try {
-            $item = AdminPage::findOrFail($id);
-            return response()->json($item);
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:admin_pages',
+            'icon' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'menu' => 'boolean',
+            'menu_section_id' => 'nullable|exists:menu_sections,id',
+            'sort_order' => 'nullable|integer|min:0'
+        ]);
 
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Not Found'], 404);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
+
+        $page = AdminPage::create($request->all());
+        $page->load('menuSection');
+
+        return response()->json($page, 201);
     }
 
     /**
-     * Update the specified resource in storage.
+     * Обновить страницу админки
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, $id): JsonResponse
     {
-        try {
-            // Сначала валидация
-            $validated = $request->validate([
-                'title' => 'string|max:255',
-                'description' => 'string|max:50000|nullable',
-                'slug' => 'string|max:255|unique:admin_pages,slug,' . $id,
-                'icon' => 'string|max:255|nullable',
-                'image' => 'string|max:255|nullable',
-                'menu' => 'boolean|nullable'
-            ]);
+        $page = AdminPage::findOrFail($id);
 
-            // Затем поиск и обновление
-            $item = AdminPage::findOrFail($id);
-            $item->update($validated);
+        $validator = Validator::make($request->all(), [
+            'title' => 'required|string|max:255',
+            'slug' => 'required|string|max:255|unique:admin_pages,slug,' . $id,
+            'icon' => 'nullable|string|max:255',
+            'description' => 'nullable|string',
+            'menu' => 'boolean',
+            'menu_section_id' => 'nullable|exists:menu_sections,id',
+            'sort_order' => 'nullable|integer|min:0'
+        ]);
 
-            return response()->json([
-                'success' => true,
-                'data' => $item,
-                'message' => 'Updated successfully'
-            ]);
-
-        } catch (ValidationException $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validation failed',
-                'errors' => $e->errors()
-            ], 422);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Internal Server Error',
-                'error' => config('app.debug') ? $e->getMessage() : null
-            ], 500);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
         }
+
+        $page->update($request->all());
+        $page->load('menuSection');
+
+        return response()->json($page);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Удалить страницу админки
      */
-    public function destroy($id)
+    public function destroy($id): JsonResponse
     {
-        try {
-            $item = AdminPage::findOrFail($id);
-            $item->delete();
+        $page = AdminPage::findOrFail($id);
+        $page->delete();
 
-            return response()->json(null, 204);
+        return response()->json(['message' => 'Страница админки удалена']);
+    }
 
-        } catch (\Exception $e) {
-            return response()->json(['message' => 'Internal Server Error'], 500);
-        }
+    /**
+     * Получить список разделов меню для селекта
+     */
+    public function getMenuSections(): JsonResponse
+    {
+        $sections = MenuSection::active()
+            ->ordered()
+            ->select('id', 'name')
+            ->get();
+
+        return response()->json($sections);
     }
 }

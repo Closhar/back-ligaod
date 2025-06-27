@@ -18,6 +18,58 @@ use Validator;
 
 class ApiParamsController extends Controller
 {
+
+        /**
+     * Получить меню админки с разделами
+     */
+    public function getAdminMenu(): JsonResponse
+    {
+        // Получаем все активные разделы меню с их страницами
+        $sections = MenuSection::active()
+            ->ordered()
+            ->with(['adminPages' => function ($query) {
+                $query->inMenu()->ordered();
+            }])
+            ->get();
+
+        // Получаем страницы без раздела
+        $pagesWithoutSection = AdminPage::inMenu()
+            ->withActiveSections()
+            ->whereNull('menu_section_id')
+            ->ordered()
+            ->get();
+
+        $menu = [];
+
+        // Добавляем разделы с их страницами
+        foreach ($sections as $section) {
+            if ($section->adminPages->count() > 0) {
+                $menu[] = [
+                    'title' => $section->name,
+                    'icon' => $section->icon,
+                    'submenu' => $section->adminPages->map(function ($page) {
+                        return [
+                            'title' => $page->title,
+                            'icon' => $page->icon,
+                            'link' => '/' . $page->slug
+                        ];
+                    })->toArray()
+                ];
+            }
+        }
+
+        // Добавляем страницы без раздела как отдельные пункты меню
+        foreach ($pagesWithoutSection as $page) {
+            $menu[] = [
+                'title' => $page->title,
+                'icon' => $page->icon,
+                'slug' => $page->slug
+            ];
+        }
+
+        return response()->json($menu);
+    }
+
     /**
      * Display a listing of the resource.
      */
