@@ -109,6 +109,19 @@ class ArenaController extends Controller
                 'map' => $arena->map,
                 'image' => $arena->image,
                 'gallery_id' => $arena->gallery_id,
+                'gallery' => $arena->gallery ? [
+                    'id' => $arena->gallery->id,
+                    'title' => $arena->gallery->title,
+                    'images' => $arena->gallery->images->map(function ($image) {
+                        return [
+                            'id' => $image->id,
+                            'path' => $image->path,
+                            'full_path' => config('app.url') . '/storage/' . $image->path,
+                            'alt' => $image->alt,
+                            'title' => $image->title,
+                        ];
+                    })
+                ] : null,
                 'region' => $arena->region,
                 'city' => $arena->city,
                 'image_path' => $arena->image ? config('app.url') . '/storage/' . $arena->image : null,
