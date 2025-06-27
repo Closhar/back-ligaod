@@ -26,30 +26,51 @@ class ApiParamsController extends Controller
     public function getAdminMenu(): JsonResponse
     {
         try {
-            // Временно возвращаем тестовые данные
-            $menu = [
-                [
-                    'title' => 'Спорт',
-                    'icon' => 'heroicons:sport',
-                    'submenu' => [
-                        [
-                            'title' => 'Виды спорта',
-                            'icon' => 'heroicons:list-bullet',
-                            'link' => '/sports'
-                        ],
-                        [
-                            'title' => 'События',
-                            'icon' => 'heroicons:calendar',
-                            'link' => '/events'
-                        ]
-                    ]
-                ],
-                [
-                    'title' => 'Галереи',
-                    'icon' => 'heroicons:photo',
-                    'slug' => 'galleries'
-                ]
-            ];
+            // Получаем все активные разделы меню с их страницами
+            $sections = MenuSection::active()
+                ->with(['activeAdminPages' => function ($query) {
+                    $query->ordered();
+                }])
+                ->ordered()
+                ->get();
+
+            // Получаем страницы без раздела
+            $pagesWithoutSection = AdminPage::inMenu()
+                ->whereNull('menu_section_id')
+                ->ordered()
+                ->get();
+
+            $menu = [];
+
+            // Добавляем разделы с их страницами
+            foreach ($sections as $section) {
+                if ($section->activeAdminPages->count() > 0) {
+                    $sectionMenu = [
+                        'title' => $section->name,
+                        'icon' => $section->icon ?: 'fluent:folder-list-20-filled',
+                        'submenu' => []
+                    ];
+
+                    foreach ($section->activeAdminPages as $page) {
+                        $sectionMenu['submenu'][] = [
+                            'title' => $page->title,
+                            'icon' => $page->icon ?: 'fluent:document-20-filled',
+                            'link' => '/' . $page->slug
+                        ];
+                    }
+
+                    $menu[] = $sectionMenu;
+                }
+            }
+
+            // Добавляем страницы без раздела
+            foreach ($pagesWithoutSection as $page) {
+                $menu[] = [
+                    'title' => $page->title,
+                    'icon' => $page->icon ?: 'fluent:document-20-filled',
+                    'slug' => $page->slug
+                ];
+            }
 
             return response()->json($menu);
         } catch (\Exception $e) {
@@ -118,18 +139,32 @@ class ApiParamsController extends Controller
     public function getAdminPage($id): JsonResponse
     {
         try {
-            // Возвращаем данные страницы админки
+            // Получаем страницу админки из базы данных
+            $page = AdminPage::find($id);
+
+            if (!$page) {
+                return response()->json([
+                    'error' => 'Страница не найдена'
+                ], 404);
+            }
+
             $pageData = [
-                'id' => $id,
-                'title' => 'Главная страница',
-                'description' => 'Главная страница админки',
-                'icon' => 'heroicons:home',
+                'id' => $page->id,
+                'title' => $page->title,
+                'description' => $page->description ?: 'Описание страницы',
+                'icon' => $page->icon ?: 'fluent:document-20-filled',
                 'breadcrumbs' => [
                     [
                         'id' => 1,
                         'title' => 'Главная',
-                        'icon' => 'heroicons:home',
+                        'icon' => 'fluent:home-20-filled',
                         'slug' => '/'
+                    ],
+                    [
+                        'id' => $page->id,
+                        'title' => $page->title,
+                        'icon' => $page->icon ?: 'fluent:document-20-filled',
+                        'slug' => '/' . $page->slug
                     ]
                 ]
             ];
@@ -139,9 +174,9 @@ class ApiParamsController extends Controller
             // Если есть ошибка, возвращаем данные по умолчанию
             return response()->json([
                 'id' => $id,
-                'title' => 'Главная страница',
-                'description' => 'Главная страница админки',
-                'icon' => 'heroicons:home',
+                'title' => 'Страница',
+                'description' => 'Описание страницы',
+                'icon' => 'fluent:document-20-filled',
                 'breadcrumbs' => []
             ]);
         }
