@@ -74,6 +74,8 @@ class ClubController extends Controller
                 ->with('gender')
                 ->with('sport')
                 ->with('region')
+                ->with('arenas')
+                ->withCount('arenas')
                 ->orderBy($sortField, $sortDirection); // Применение сортировки
 
             // Общий поиск (работает только по заголовку, если нет параметра field)
@@ -262,7 +264,9 @@ class ClubController extends Controller
     public function show($id)
     {
         try {
-            $item = Club::findOrFail($id);
+            $item = Club::with('arenas')
+                ->withCount('arenas')
+                ->findOrFail($id);
             return response()->json($item);
 
         } catch (\Exception $e) {
