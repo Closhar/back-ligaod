@@ -69,7 +69,13 @@ class ApiMenuSectionController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $section = MenuSection::create($request->all());
+        // Устанавливаем значение по умолчанию для sort_order если не передано или пустое
+        $data = $request->all();
+        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '') {
+            $data['sort_order'] = 0;
+        }
+
+        $section = MenuSection::create($data);
         return response()->json($section, 201);
     }
 
@@ -92,7 +98,13 @@ class ApiMenuSectionController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $section->update($request->all());
+        // Устанавливаем значение по умолчанию для sort_order если не передано или пустое
+        $data = $request->all();
+        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '') {
+            $data['sort_order'] = 0;
+        }
+
+        $section->update($data);
         return response()->json($section);
     }
 

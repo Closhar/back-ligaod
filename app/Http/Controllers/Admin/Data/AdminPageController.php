@@ -78,7 +78,13 @@ class AdminPageController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $page = AdminPage::create($request->all());
+        // Устанавливаем значение по умолчанию для sort_order если не передано или пустое
+        $data = $request->all();
+        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '') {
+            $data['sort_order'] = 0;
+        }
+
+        $page = AdminPage::create($data);
         $page->load('menuSection');
 
         return response()->json($page, 201);
@@ -105,7 +111,13 @@ class AdminPageController extends Controller
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        $page->update($request->all());
+        // Устанавливаем значение по умолчанию для sort_order если не передано или пустое
+        $data = $request->all();
+        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '') {
+            $data['sort_order'] = 0;
+        }
+
+        $page->update($data);
         $page->load('menuSection');
 
         return response()->json($page);
