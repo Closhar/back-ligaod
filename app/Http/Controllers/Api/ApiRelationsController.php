@@ -20,7 +20,7 @@ class ApiRelationsController extends Controller
             'model_type' => 'required|string',
             'model_id' => 'required|integer',
             'relation_name' => 'required|string',
-            'related_ids' => 'required|array',
+            'related_ids' => 'array',
             'related_ids.*' => 'integer'
         ]);
 
