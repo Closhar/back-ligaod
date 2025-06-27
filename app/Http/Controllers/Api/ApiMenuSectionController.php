@@ -88,7 +88,7 @@ class ApiMenuSectionController extends Controller
 
         // Устанавливаем значение по умолчанию для sort_order если не передано или пустое
         $data = $request->all();
-        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '') {
+        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '' || (empty($data['sort_order']) && $data['sort_order'] !== 0)) {
             $data['sort_order'] = 0;
         }
 
@@ -138,7 +138,16 @@ class ApiMenuSectionController extends Controller
                     return response()->json(['errors' => $validator->errors()], 422);
                 }
 
-                $section->update($request->all());
+                // Обрабатываем специально поле sort_order
+                $updateData = $request->all();
+                if ($fieldName === 'sort_order') {
+                    // Если значение пустое, null или пустая строка, устанавливаем 0
+                    if (empty($fieldValue) && $fieldValue !== 0) {
+                        $updateData['sort_order'] = 0;
+                    }
+                }
+
+                $section->update($updateData);
                 return response()->json($section);
             }
         }
@@ -158,7 +167,7 @@ class ApiMenuSectionController extends Controller
 
         // Устанавливаем значение по умолчанию для sort_order если не передано или пустое
         $data = $request->all();
-        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '') {
+        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '' || (empty($data['sort_order']) && $data['sort_order'] !== 0)) {
             $data['sort_order'] = 0;
         }
 
