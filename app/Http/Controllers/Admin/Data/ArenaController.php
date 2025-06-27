@@ -51,7 +51,7 @@ class ArenaController extends Controller
                 'clubs' => function ($query) {
                     $query->select('clubs.id', 'clubs.title', 'clubs.city_id', 'clubs.sport_id', 'clubs.gender_id')
                         ->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short'])
-                        ->withCount(['arenas', 'competitions']);
+                        ->withCount(['arenas']);
                 },
                 'competitions' => function ($query) {
                     $query->select('competitions.id', 'competitions.title')
@@ -126,7 +126,6 @@ class ArenaController extends Controller
                         'id' => $club->id,
                         'full_info' => $club->full_info,
                         'arenas_count' => $club->arenas_count,
-                        'competitions_count' => $club->competitions_count,
                     ];
                 }),
                 'competitions' => $arena->competitions->map(function ($competition) {
@@ -230,7 +229,7 @@ class ArenaController extends Controller
                 'clubs' => function ($query) {
                     $query->select('clubs.id', 'clubs.title', 'clubs.city_id', 'clubs.sport_id', 'clubs.gender_id')
                         ->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short'])
-                        ->withCount(['arenas', 'competitions']);
+                        ->withCount(['arenas']);
                 },
                 'competitions' => function ($query) {
                     $query->select('competitions.id', 'competitions.title')
@@ -278,7 +277,6 @@ class ArenaController extends Controller
                         'id' => $club->id,
                         'full_info' => $club->full_info,
                         'arenas_count' => $club->arenas_count,
-                        'competitions_count' => $club->competitions_count,
                     ];
                 }),
                 'competitions' => $item->competitions->map(function ($competition) {
