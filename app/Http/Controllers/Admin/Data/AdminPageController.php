@@ -16,7 +16,9 @@ class AdminPageController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = AdminPage::with('menuSection');
+        $query = AdminPage::with(['menuSection' => function ($query) {
+            $query->select('id', 'name')->addSelect('name as title');
+        }]);
 
         // Поиск
         if ($request->has('q') && !empty($request->q)) {
@@ -55,7 +57,9 @@ class AdminPageController extends Controller
      */
     public function show($id): JsonResponse
     {
-        $page = AdminPage::with('menuSection')->findOrFail($id);
+        $page = AdminPage::with(['menuSection' => function ($query) {
+            $query->select('id', 'name')->addSelect('name as title');
+        }])->findOrFail($id);
         return response()->json($page);
     }
 
@@ -85,7 +89,9 @@ class AdminPageController extends Controller
         }
 
         $page = AdminPage::create($data);
-        $page->load('menuSection');
+        $page->load(['menuSection' => function ($query) {
+            $query->select('id', 'name')->addSelect('name as title');
+        }]);
 
         return response()->json($page, 201);
     }
@@ -118,7 +124,9 @@ class AdminPageController extends Controller
         }
 
         $page->update($data);
-        $page->load('menuSection');
+        $page->load(['menuSection' => function ($query) {
+            $query->select('id', 'name')->addSelect('name as title');
+        }]);
 
         return response()->json($page);
     }

@@ -15,6 +15,23 @@ class ApiMenuSectionController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
+        // Если запрос для селекта (type=async), возвращаем упрощенный список
+        if ($request->has('type') && $request->type === 'async') {
+            $sections = MenuSection::active()
+                ->ordered()
+                ->select('id', 'name')
+                ->get()
+                ->map(function ($section) {
+                    return [
+                        'id' => $section->id,
+                        'name' => $section->name,
+                        'title' => $section->name,
+                    ];
+                });
+
+            return response()->json($sections);
+        }
+
         $query = MenuSection::query();
 
         // Поиск
@@ -134,7 +151,14 @@ class ApiMenuSectionController extends Controller
         $sections = MenuSection::active()
             ->ordered()
             ->select('id', 'name')
-            ->get();
+            ->get()
+            ->map(function ($section) {
+                return [
+                    'id' => $section->id,
+                    'name' => $section->name,
+                    'title' => $section->name,
+                ];
+            });
 
         return response()->json($sections);
     }
