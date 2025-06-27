@@ -289,6 +289,15 @@ Route::post('articles/{id}/upload-image', [ArticleController::class, 'uploadImag
 Route::delete('articles/{id}/image', [ArticleController::class, 'destroyImage']);
 Route::post('articles/{id}/delete-image', [ArticleController::class, 'deleteImage']);
 
+// Маршрут для сохранения morphedByMany отношений
+Route::post('/relations/save', [App\Http\Controllers\Api\ApiRelationsController::class, 'saveRelations']);
+
+// Маршрут для получения связанных записей
+Route::get('/relations/get', [App\Http\Controllers\Api\ApiRelationsController::class, 'getRelations']);
+
+// Маршрут для получения доступных записей для связи
+Route::get('/relations/available', [App\Http\Controllers\Api\ApiRelationsController::class, 'getAvailableRecords']);
+
 // Маршрут для сохранения отношений статей
 Route::post('articles/{id}/relations', function (Request $request, $id) {
     $article = \App\Models\Article::find($id);
