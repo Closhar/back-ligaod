@@ -245,6 +245,15 @@ class ApiRelationsController extends Controller
             'sport' => \App\Models\Sport::class,
             'city' => \App\Models\City::class,
             'competition' => \App\Models\Competition::class,
+            'club' => \App\Models\Club::class,
+            'event' => \App\Models\Event::class,
+            'stream' => \App\Models\Stream::class,
+            'gallery' => \App\Models\Gallery::class,
+            'image' => \App\Models\Image::class,
+            'video' => \App\Models\Video::class,
+            'gender' => \App\Models\Gender::class,
+            'age' => \App\Models\Age::class,
+            'region' => \App\Models\Region::class,
             // Добавьте другие модели по необходимости
         ];
 
