@@ -75,6 +75,7 @@ class ClubController extends Controller
                 ->with('sport')
                 ->with('region')
                 ->with('arenas')
+                ->with('gallery')
                 ->withCount('arenas')
                 ->orderBy($sortField, $sortDirection); // Применение сортировки
 
