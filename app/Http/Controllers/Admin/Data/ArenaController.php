@@ -43,8 +43,19 @@ class ArenaController extends Controller
                 },
                 'city' => function ($query) {
                     $query->select('id', 'title', 'title_short');
+                },
+                'sports' => function ($query) {
+                    $query->select('sports.id', 'sports.title');
+                },
+                'clubs' => function ($query) {
+                    $query->select('clubs.id', 'clubs.title', 'clubs.city_id', 'clubs.sport_id', 'clubs.gender_id')
+                        ->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short']);
+                },
+                'competitions' => function ($query) {
+                    $query->select('competitions.id', 'competitions.title');
                 }
-            ]);
+            ])
+            ->withCount(['sports', 'clubs', 'competitions']);
 
         // Применяем фильтры
         if ($regionId) {
@@ -97,6 +108,17 @@ class ArenaController extends Controller
                 'region' => $arena->region,
                 'city' => $arena->city,
                 'image_path' => $arena->image ? config('app.url') . '/storage/' . $arena->image : null,
+                'sports' => $arena->sports,
+                'clubs' => $arena->clubs->map(function ($club) {
+                    return [
+                        'id' => $club->id,
+                        'full_info' => $club->full_info
+                    ];
+                }),
+                'competitions' => $arena->competitions,
+                'sports_count' => $arena->sports_count,
+                'clubs_count' => $arena->clubs_count,
+                'competitions_count' => $arena->competitions_count,
             ];
         });
 
@@ -176,8 +198,64 @@ class ArenaController extends Controller
     public function show($id)
     {
         try {
-            $item = Arena::findOrFail($id);
-            return response()->json($item);
+            $item = Arena::with([
+                'region' => function ($query) {
+                    $query->select('id', 'title', 'title_short', 'subdomain');
+                },
+                'city' => function ($query) {
+                    $query->select('id', 'title', 'title_short');
+                },
+                'sports' => function ($query) {
+                    $query->select('sports.id', 'sports.title');
+                },
+                'clubs' => function ($query) {
+                    $query->select('clubs.id', 'clubs.title', 'clubs.city_id', 'clubs.sport_id', 'clubs.gender_id')
+                        ->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short']);
+                },
+                'competitions' => function ($query) {
+                    $query->select('competitions.id', 'competitions.title');
+                }
+            ])
+            ->withCount(['sports', 'clubs', 'competitions'])
+            ->findOrFail($id);
+
+            // Трансформируем данные для ответа
+            $transformedItem = [
+                'id' => $item->id,
+                'title' => $item->title,
+                'slug' => $item->slug,
+                'about' => $item->about,
+                'sites' => $item->sites,
+                'vks' => $item->vks,
+                'youtubes' => $item->youtubes,
+                'emails' => $item->emails,
+                'phones' => $item->phones,
+                'telegrams' => $item->telegrams,
+                'instagrams' => $item->instagrams,
+                'facebooks' => $item->facebooks,
+                'xs' => $item->xs,
+                'address' => $item->address,
+                'dop_info' => $item->dop_info,
+                'map' => $item->map,
+                'image' => $item->image,
+                'gallery_id' => $item->gallery_id,
+                'region' => $item->region,
+                'city' => $item->city,
+                'image_path' => $item->image ? config('app.url') . '/storage/' . $item->image : null,
+                'sports' => $item->sports,
+                'clubs' => $item->clubs->map(function ($club) {
+                    return [
+                        'id' => $club->id,
+                        'full_info' => $club->full_info
+                    ];
+                }),
+                'competitions' => $item->competitions,
+                'sports_count' => $item->sports_count,
+                'clubs_count' => $item->clubs_count,
+                'competitions_count' => $item->competitions_count,
+            ];
+
+            return response()->json($transformedItem);
 
         } catch (\Exception $e) {
             return response()->json(['message' => 'Not Found'], 404);
