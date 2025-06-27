@@ -38,6 +38,7 @@ class ArenaController extends Controller
                 'emails', 'phones', 'telegrams', 'instagrams', 'facebooks', 'xs', 'address',
                 'dop_info', 'map', 'image', 'gallery_id')
             ->with([
+                'gallery',
                 'region' => function ($query) {
                     $query->select('id', 'title', 'title_short', 'subdomain');
                 },
