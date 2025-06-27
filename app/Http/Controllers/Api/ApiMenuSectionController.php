@@ -103,6 +103,47 @@ class ApiMenuSectionController extends Controller
     {
         $section = MenuSection::findOrFail($id);
 
+        // Если обновляется только одно поле, используем упрощенную валидацию
+        if (count($request->all()) === 1) {
+            $fieldName = array_keys($request->all())[0];
+            $fieldValue = $request->all()[$fieldName];
+
+            $validationRules = [];
+
+            switch ($fieldName) {
+                case 'status':
+                    $validationRules = ['status' => 'boolean'];
+                    break;
+                case 'sort_order':
+                    $validationRules = ['sort_order' => 'nullable|integer|min:0'];
+                    break;
+                case 'name':
+                    $validationRules = ['name' => 'required|string|max:255'];
+                    break;
+                case 'icon':
+                    $validationRules = ['icon' => 'nullable|string|max:255'];
+                    break;
+                case 'description':
+                    $validationRules = ['description' => 'nullable|string'];
+                    break;
+                default:
+                    // Для неизвестных полей используем полную валидацию
+                    break;
+            }
+
+            if (!empty($validationRules)) {
+                $validator = Validator::make($request->all(), $validationRules);
+
+                if ($validator->fails()) {
+                    return response()->json(['errors' => $validator->errors()], 422);
+                }
+
+                $section->update($request->all());
+                return response()->json($section);
+            }
+        }
+
+        // Полная валидация для обновления всех полей
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'icon' => 'nullable|string|max:255',

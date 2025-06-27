@@ -120,9 +120,6 @@ class AdminPageController extends Controller
                 case 'menu':
                     $validationRules = ['menu' => 'boolean'];
                     break;
-                case 'status':
-                    $validationRules = ['status' => 'boolean'];
-                    break;
                 default:
                     // Для неизвестных полей используем полную валидацию
                     break;
