@@ -50,7 +50,8 @@ class SportController extends Controller
             ->withCount([
                 'arenas',
                 'clubs',
-                'competitions'
+                'competitions',
+                'sport_properties'
             ])
             ->with([
                 'sport_properties' => function ($query) {
@@ -168,7 +169,8 @@ class SportController extends Controller
             $item = Sport::withCount([
                 'arenas',
                 'clubs',
-                'competitions'
+                'competitions',
+                'sport_properties'
             ])->with([
                 'sport_properties',
                 'arenas',
