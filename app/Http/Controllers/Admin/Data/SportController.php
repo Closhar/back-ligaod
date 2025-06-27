@@ -47,6 +47,11 @@ class SportController extends Controller
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 'slug',
                 'vin')
+            ->withCount([
+                'arenas',
+                'clubs',
+                'competitions'
+            ])
             ->with([
                 'sport_properties' => function ($query) {
                     $query->select([
@@ -54,7 +59,32 @@ class SportController extends Controller
                         'sport_properties.title',
                         'sport_properties.icon'
                     ]);
-                }]);
+                },
+                'arenas' => function ($query) {
+                    $query->select([
+                        'arenas.id',
+                        'arenas.title',
+                        'arenas.address',
+                        'arenas.image'
+                    ]);
+                },
+                'clubs' => function ($query) {
+                    $query->select([
+                        'clubs.id',
+                        'clubs.title',
+                        'clubs.image',
+                        'clubs.sport_id'
+                    ]);
+                },
+                'competitions' => function ($query) {
+                    $query->select([
+                        'competitions.id',
+                        'competitions.title',
+                        'competitions.sport_id',
+                        'competitions.image'
+                    ]);
+                }
+            ]);
 
         // Применяем поиск по ID, если указан
         if ($searchId) {
@@ -135,7 +165,16 @@ class SportController extends Controller
     public function show($id)
     {
         try {
-            $item = Sport::findOrFail($id);
+            $item = Sport::withCount([
+                'arenas',
+                'clubs',
+                'competitions'
+            ])->with([
+                'sport_properties',
+                'arenas',
+                'clubs',
+                'competitions'
+            ])->findOrFail($id);
             return response()->json($item);
 
         } catch (\Exception $e) {
