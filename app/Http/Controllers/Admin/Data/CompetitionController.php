@@ -78,6 +78,7 @@ class CompetitionController extends Controller
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", bg_image) AS full_bg_image_path')
             )
+            ->withCount('arenas')
             ->with([
                 'gender' => function ($query) {
                     $query->select(['id', 'title','title_short', 'icon']);
@@ -243,6 +244,7 @@ class CompetitionController extends Controller
                     'gallery_id' => $competition->gallery_id,
                     'parse_table_id' => $competition->parse_table_id,
                     'tlgs_to_parse' => $competition->tlgs_to_parse,
+                    'arenas_count' => $competition->arenas_count,
                     'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
                     'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
                     'gender' => $competition->gender,
@@ -296,6 +298,7 @@ class CompetitionController extends Controller
                 'gallery_id' => $competition->gallery_id,
                 'parse_table_id' => $competition->parse_table_id,
                 'tlgs_to_parse' => $competition->tlgs_to_parse,
+                'arenas_count' => $competition->arenas_count,
                 'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
                 'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
                 'gender' => $competition->gender,
