@@ -103,6 +103,48 @@ class AdminPageController extends Controller
     {
         $page = AdminPage::findOrFail($id);
 
+        // Если обновляется только одно поле, используем упрощенную валидацию
+        if (count($request->all()) === 1) {
+            $fieldName = array_keys($request->all())[0];
+            $fieldValue = $request->all()[$fieldName];
+
+            $validationRules = [];
+
+            switch ($fieldName) {
+                case 'menu_section_id':
+                    $validationRules = ['menu_section_id' => 'nullable|exists:menu_sections,id'];
+                    break;
+                case 'sort_order':
+                    $validationRules = ['sort_order' => 'nullable|integer|min:0'];
+                    break;
+                case 'menu':
+                    $validationRules = ['menu' => 'boolean'];
+                    break;
+                case 'status':
+                    $validationRules = ['status' => 'boolean'];
+                    break;
+                default:
+                    // Для неизвестных полей используем полную валидацию
+                    break;
+            }
+
+            if (!empty($validationRules)) {
+                $validator = Validator::make($request->all(), $validationRules);
+
+                if ($validator->fails()) {
+                    return response()->json(['errors' => $validator->errors()], 422);
+                }
+
+                $page->update($request->all());
+                $page->load(['menuSection' => function ($query) {
+                    $query->select('id', 'name')->addSelect('name as title');
+                }]);
+
+                return response()->json($page);
+            }
+        }
+
+        // Полная валидация для обновления всех полей
         $validator = Validator::make($request->all(), [
             'title' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:admin_pages,slug,' . $id,
