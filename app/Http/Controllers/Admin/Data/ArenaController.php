@@ -45,14 +45,17 @@ class ArenaController extends Controller
                     $query->select('id', 'title', 'title_short');
                 },
                 'sports' => function ($query) {
-                    $query->select('sports.id', 'sports.title');
+                    $query->select('sports.id', 'sports.title')
+                        ->withCount(['arenas', 'clubs', 'sport_properties', 'competitions']);
                 },
                 'clubs' => function ($query) {
                     $query->select('clubs.id', 'clubs.title', 'clubs.city_id', 'clubs.sport_id', 'clubs.gender_id')
-                        ->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short']);
+                        ->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short'])
+                        ->withCount(['arenas', 'competitions']);
                 },
                 'competitions' => function ($query) {
-                    $query->select('competitions.id', 'competitions.title');
+                    $query->select('competitions.id', 'competitions.title')
+                        ->withCount(['arenas', 'events']);
                 }
             ])
             ->withCount(['sports', 'clubs', 'competitions']);
@@ -108,17 +111,32 @@ class ArenaController extends Controller
                 'region' => $arena->region,
                 'city' => $arena->city,
                 'image_path' => $arena->image ? config('app.url') . '/storage/' . $arena->image : null,
-                'sports' => $arena->sports,
+                'sports' => $arena->sports->map(function ($sport) {
+                    return [
+                        'id' => $sport->id,
+                        'title' => $sport->title,
+                        'arenas_count' => $sport->arenas_count,
+                        'clubs_count' => $sport->clubs_count,
+                        'sport_properties_count' => $sport->sport_properties_count,
+                        'competitions_count' => $sport->competitions_count,
+                    ];
+                }),
                 'clubs' => $arena->clubs->map(function ($club) {
                     return [
                         'id' => $club->id,
-                        'full_info' => $club->full_info
+                        'full_info' => $club->full_info,
+                        'arenas_count' => $club->arenas_count,
+                        'competitions_count' => $club->competitions_count,
                     ];
                 }),
-                'competitions' => $arena->competitions,
-                'sports_count' => $arena->sports_count,
-                'clubs_count' => $arena->clubs_count,
-                'competitions_count' => $arena->competitions_count,
+                'competitions' => $arena->competitions->map(function ($competition) {
+                    return [
+                        'id' => $competition->id,
+                        'title' => $competition->title,
+                        'arenas_count' => $competition->arenas_count,
+                        'events_count' => $competition->events_count,
+                    ];
+                }),
             ];
         });
 
@@ -206,14 +224,17 @@ class ArenaController extends Controller
                     $query->select('id', 'title', 'title_short');
                 },
                 'sports' => function ($query) {
-                    $query->select('sports.id', 'sports.title');
+                    $query->select('sports.id', 'sports.title')
+                        ->withCount(['arenas', 'clubs', 'sport_properties', 'competitions']);
                 },
                 'clubs' => function ($query) {
                     $query->select('clubs.id', 'clubs.title', 'clubs.city_id', 'clubs.sport_id', 'clubs.gender_id')
-                        ->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short']);
+                        ->with(['city:id,title_short', 'sport:id,title_short', 'gender:id,title_short'])
+                        ->withCount(['arenas', 'competitions']);
                 },
                 'competitions' => function ($query) {
-                    $query->select('competitions.id', 'competitions.title');
+                    $query->select('competitions.id', 'competitions.title')
+                        ->withCount(['arenas', 'events']);
                 }
             ])
             ->withCount(['sports', 'clubs', 'competitions'])
@@ -242,14 +263,32 @@ class ArenaController extends Controller
                 'region' => $item->region,
                 'city' => $item->city,
                 'image_path' => $item->image ? config('app.url') . '/storage/' . $item->image : null,
-                'sports' => $item->sports,
+                'sports' => $item->sports->map(function ($sport) {
+                    return [
+                        'id' => $sport->id,
+                        'title' => $sport->title,
+                        'arenas_count' => $sport->arenas_count,
+                        'clubs_count' => $sport->clubs_count,
+                        'sport_properties_count' => $sport->sport_properties_count,
+                        'competitions_count' => $sport->competitions_count,
+                    ];
+                }),
                 'clubs' => $item->clubs->map(function ($club) {
                     return [
                         'id' => $club->id,
-                        'full_info' => $club->full_info
+                        'full_info' => $club->full_info,
+                        'arenas_count' => $club->arenas_count,
+                        'competitions_count' => $club->competitions_count,
                     ];
                 }),
-                'competitions' => $item->competitions,
+                'competitions' => $item->competitions->map(function ($competition) {
+                    return [
+                        'id' => $competition->id,
+                        'title' => $competition->title,
+                        'arenas_count' => $competition->arenas_count,
+                        'events_count' => $competition->events_count,
+                    ];
+                }),
                 'sports_count' => $item->sports_count,
                 'clubs_count' => $item->clubs_count,
                 'competitions_count' => $item->competitions_count,
