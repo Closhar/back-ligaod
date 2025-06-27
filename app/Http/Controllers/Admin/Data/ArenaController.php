@@ -111,6 +111,9 @@ class ArenaController extends Controller
                 'region' => $arena->region,
                 'city' => $arena->city,
                 'image_path' => $arena->image ? config('app.url') . '/storage/' . $arena->image : null,
+                'sports_count' => $arena->sports_count,
+                'clubs_count' => $arena->clubs_count,
+                'competitions_count' => $arena->competitions_count,
                 'sports' => $arena->sports->map(function ($sport) {
                     return [
                         'id' => $sport->id,
