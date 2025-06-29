@@ -105,7 +105,7 @@ class ApiParamsController extends Controller
             // Преобразуем в формат name:value с добавлением APP_URL
             $imagesArray = [];
             foreach ($picParams as $picParam) {
-                $imagesArray[$picParam->name] = $appUrl . '/' . $picParam->value;
+                $imagesArray[$picParam->name] = $appUrl . '/storage/' . $picParam->value;
             }
 
             return response()->json([
