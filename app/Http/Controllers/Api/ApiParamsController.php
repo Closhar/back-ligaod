@@ -99,10 +99,13 @@ class ApiParamsController extends Controller
             // Получаем все параметры изображений из таблицы pic_params
             $picParams = PicParam::all();
 
-            // Преобразуем в формат name:value
+            // Получаем APP_URL из .env
+            $appUrl = config('app.url');
+
+            // Преобразуем в формат name:value с добавлением APP_URL
             $imagesArray = [];
             foreach ($picParams as $picParam) {
-                $imagesArray[$picParam->name] = $picParam->value;
+                $imagesArray[$picParam->name] = $appUrl . $picParam->value;
             }
 
             return response()->json([
