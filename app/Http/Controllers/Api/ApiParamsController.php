@@ -132,13 +132,20 @@ class ApiParamsController extends Controller
     }
 
     /**
-     * Получить страницу
+     * Получить страницу по id или slug
      */
     public function getPage($id): JsonResponse
     {
         try {
+            // Определяем, является ли параметр числом (ID) или строкой (slug)
+            $isNumeric = is_numeric($id);
+
             // Получаем страницу из базы данных
-            $page = Page::find($id);
+            if ($isNumeric) {
+                $page = Page::find($id);
+            } else {
+                $page = Page::where('slug', $id)->first();
+            }
 
             if (!$page) {
                 return response()->json([
