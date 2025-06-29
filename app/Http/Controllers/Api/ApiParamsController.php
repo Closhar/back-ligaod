@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AdminPage;
 use App\Models\MenuSection;
+use App\Models\Param;
 use Illuminate\Http\JsonResponse;
 
 class ApiParamsController extends Controller
@@ -85,33 +86,19 @@ class ApiParamsController extends Controller
     public function index(): JsonResponse
     {
         try {
-            // Возвращаем параметры и изображения для фронтенда
-            $params = [
-                ['name' => 'adminka_name', 'value' => 'Админка'],
-                ['name' => 'site_name', 'value' => 'Спортивный портал'],
-                ['name' => 'site_description', 'value' => 'Информационный портал о спортивных событиях'],
-            ];
+            // Получаем все параметры из таблицы params
+            $params = Param::all();
 
-            $images = [
-                ['name' => 'default_user', 'path' => '/images/default-avatar.png'],
-                ['name' => 'logo', 'path' => '/images/logo.png'],
-            ];
+            // Преобразуем в формат name:value
+            $paramsArray = [];
+            foreach ($params as $param) {
+                $paramsArray[$param->name] = $param->value;
+            }
 
-            return response()->json([
-                'params' => $params,
-                'images' => $images
-            ]);
+            return response()->json($paramsArray);
         } catch (\Exception $e) {
-            // Если есть ошибка, возвращаем значения по умолчанию
-            return response()->json([
-                'params' => [
-                    ['name' => 'adminka_name', 'value' => 'Админка'],
-                    ['name' => 'site_name', 'value' => 'Спортивный портал'],
-                ],
-                'images' => [
-                    ['name' => 'default_user', 'path' => '/images/default-avatar.png'],
-                ]
-            ]);
+            // Если есть ошибка, возвращаем пустой массив
+            return response()->json([]);
         }
     }
 
