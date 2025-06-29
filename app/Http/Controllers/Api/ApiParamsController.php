@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\AdminPage;
 use App\Models\MenuSection;
+use App\Models\Page;
 use App\Models\Param;
 use App\Models\PicParam;
 use Illuminate\Http\JsonResponse;
@@ -135,8 +136,39 @@ class ApiParamsController extends Controller
      */
     public function getPage($id): JsonResponse
     {
-        // Здесь должна быть логика получения страницы
-        return response()->json(['message' => 'Page endpoint', 'id' => $id]);
+        try {
+            // Получаем страницу из базы данных
+            $page = Page::find($id);
+
+            if (!$page) {
+                return response()->json([
+                    'error' => 'Страница не найдена'
+                ], 404);
+            }
+
+            // Получаем APP_URL из .env
+            $appUrl = config('app.url');
+
+            $pageData = [
+                'id' => $page->id,
+                'title' => $page->title,
+                'slug' => $page->slug,
+                'description' => $page->description,
+                'keywords' => $page->keywords,
+                'image' => $page->image ? $appUrl . '/storage/' . $page->image : null,
+                'image_default' => $page->image_default ? $appUrl . '/storage/' . $page->image_default : null,
+                'html' => $page->html,
+                'icon' => $page->icon
+            ];
+
+            return response()->json($pageData);
+        } catch (\Exception $e) {
+            // Если есть ошибка, возвращаем ошибку
+            return response()->json([
+                'error' => 'Ошибка при получении страницы',
+                'message' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
