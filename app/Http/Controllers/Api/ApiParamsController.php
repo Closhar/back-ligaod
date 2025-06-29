@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\AdminPage;
 use App\Models\MenuSection;
 use App\Models\Param;
+use App\Models\PicParam;
 use Illuminate\Http\JsonResponse;
 
 class ApiParamsController extends Controller
@@ -95,10 +96,25 @@ class ApiParamsController extends Controller
                 $paramsArray[$param->name] = $param->value;
             }
 
-            return response()->json($paramsArray);
+            // Получаем все параметры изображений из таблицы pic_params
+            $picParams = PicParam::all();
+
+            // Преобразуем в формат name:value
+            $imagesArray = [];
+            foreach ($picParams as $picParam) {
+                $imagesArray[$picParam->name] = $picParam->value;
+            }
+
+            return response()->json([
+                'params' => $paramsArray,
+                'images' => $imagesArray
+            ]);
         } catch (\Exception $e) {
-            // Если есть ошибка, возвращаем пустой массив
-            return response()->json([]);
+            // Если есть ошибка, возвращаем пустые массивы
+            return response()->json([
+                'params' => [],
+                'images' => []
+            ]);
         }
     }
 
