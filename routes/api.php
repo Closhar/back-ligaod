@@ -29,6 +29,7 @@ use App\Http\Controllers\Api\ApiMenuSectionController;
 use App\Http\Controllers\Api\ApiParamsController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
+use App\Http\Controllers\Api\ArticleViewController;
 use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\PromptTemplateController;
@@ -193,9 +194,15 @@ Route::prefix('telegram')->group(function () {
 });
 
 
-Route::prefix('article_count')->group(function () {
+// Альтернативный вариант с middleware для защиты от спама
+Route::prefix('v1/article_count')->middleware(['throttle:60,1'])->group(function () {
+    // Записать просмотр статьи (с ограничением 60 запросов в минуту)
     Route::post('{slug}/views', [ArticleViewController::class, 'recordView']);
+
+    // Получить количество просмотров статьи
     Route::get('{slug}/views', [ArticleViewController::class, 'getViewsCount']);
+
+    // Получить статистику просмотров статьи
     Route::get('{slug}/views/stats', [ArticleViewController::class, 'getViewsStats']);
 });
 
