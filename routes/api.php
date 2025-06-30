@@ -194,81 +194,135 @@ Route::prefix('telegram')->group(function () {
 });
 
 
-// Маршруты для счетчика просмотров статей
 Route::prefix('v1/article_count')->group(function () {
-    // Тестовый маршрут для диагностики
-    Route::get('{slug}/test', [ArticleViewController::class, 'test']);
+    // Записать просмотр статьи (с защитой от дублирования)
+    Route::get('{slug}/record', function ($slug) {
+        try {
+            $article = \App\Models\Article::where('slug', $slug)->first();
 
-    // Временный GET маршрут для записи просмотра (для диагностики)
-    Route::get('{slug}/views-record', [ArticleViewController::class, 'recordViewSimple']);
+            if (!$article) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Статья не найдена'
+                ], 404);
+            }
 
-    // Упрощенная запись просмотра для диагностики
-    Route::post('{slug}/views-simple', [ArticleViewController::class, 'recordViewSimple']);
+            // Проверяем, был ли уже просмотр с этого IP в течение последних 24 часов
+            $ipAddress = request()->ip();
+            $recentView = \App\Models\ArticleView::where('article_id', $article->id)
+                ->where('ip_address', $ipAddress)
+                ->where('viewed_at', '>=', now()->subDay())
+                ->exists();
 
-    // Записать просмотр статьи
-    Route::post('{slug}/views', [ArticleViewController::class, 'recordView']);
+            if ($recentView) {
+                return response()->json([
+                    'success' => true,
+                    'views_count' => $article->views ?? 0,
+                    'message' => 'Просмотр уже был записан с этого IP в течение 24 часов'
+                ]);
+            }
+
+            // Записываем просмотр
+            $currentViews = $article->views ?? 0;
+            $article->update(['views' => $currentViews + 1]);
+
+            // Записываем детальную информацию о просмотре
+            \App\Models\ArticleView::create([
+                'article_id' => $article->id,
+                'ip_address' => $ipAddress,
+                'user_agent' => request()->userAgent(),
+                'session_id' => request()->session()->getId(),
+                'viewed_at' => now(),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'views_count' => $currentViews + 1,
+                'message' => 'Просмотр записан'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: ' . $e->getMessage()
+            ], 500);
+        }
+    });
 
     // Получить количество просмотров статьи
-    Route::get('{slug}/views', [ArticleViewController::class, 'getViewsCount']);
+    Route::get('{slug}/views', function ($slug) {
+        try {
+            $article = \App\Models\Article::where('slug', $slug)->first();
+
+            if (!$article) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Статья не найдена'
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'views_count' => $article->views ?? 0
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка: ' . $e->getMessage()
+            ], 500);
+        }
+    });
 
     // Получить статистику просмотров статьи
-    Route::get('{slug}/views/stats', [ArticleViewController::class, 'getViewsStats']);
-});
+    Route::get('{slug}/stats', function ($slug) {
+        try {
+            $article = \App\Models\Article::where('slug', $slug)->first();
 
+            if (!$article) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Статья не найдена'
+                ], 404);
+            }
 
+            $period = request()->get('period', 'day');
+            $query = \App\Models\ArticleView::where('article_id', $article->id);
 
+            switch ($period) {
+                case 'hour':
+                    $query->where('viewed_at', '>=', now()->subHour());
+                    break;
+                case 'day':
+                    $query->where('viewed_at', '>=', now()->subDay());
+                    break;
+                case 'week':
+                    $query->where('viewed_at', '>=', now()->subWeek());
+                    break;
+                case 'month':
+                    $query->where('viewed_at', '>=', now()->subMonth());
+                    break;
+            }
 
-Route::get('v1/test/article/{slug}', function ($slug) {
-    try {
-        $article = \App\Models\Article::where('slug', $slug)->first();
+            $totalViews = $query->count();
+            $uniqueViews = $query->distinct('ip_address')->count('ip_address');
 
-        if (!$article) {
+            return response()->json([
+                'success' => true,
+                'article_id' => $article->id,
+                'article_title' => $article->title,
+                'total_views' => $article->views ?? 0,
+                'period_stats' => [
+                    'total' => $totalViews,
+                    'unique' => $uniqueViews,
+                    'period' => $period
+                ]
+            ]);
+        } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Статья не найдена'
-            ], 404);
+                'message' => 'Ошибка: ' . $e->getMessage()
+            ], 500);
         }
-
-        return response()->json([
-            'success' => true,
-            'article' => $article->toArray(),
-            'views_count' => $article->views ?? 0
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Ошибка: ' . $e->getMessage()
-        ], 500);
-    }
-});
-
-// Простой маршрут для записи просмотра без контроллера
-Route::get('v1/test/article/{slug}/record-view', function ($slug) {
-    try {
-        $article = \App\Models\Article::where('slug', $slug)->first();
-
-        if (!$article) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Статья не найдена'
-            ], 404);
-        }
-
-        // Просто увеличиваем счетчик
-        $currentViews = $article->views ?? 0;
-        $article->update(['views' => $currentViews + 1]);
-
-        return response()->json([
-            'success' => true,
-            'views_count' => $currentViews + 1,
-            'message' => 'Просмотр записан (простой маршрут)'
-        ]);
-    } catch (\Exception $e) {
-        return response()->json([
-            'success' => false,
-            'message' => 'Ошибка: ' . $e->getMessage()
-        ], 500);
-    }
+    });
 });
 
 
