@@ -192,6 +192,13 @@ Route::prefix('telegram')->group(function () {
     });
 });
 
+
+Route::prefix('article_count')->group(function () {
+    Route::post('{slug}/views', [ArticleViewController::class, 'recordView']);
+    Route::get('{slug}/views', [ArticleViewController::class, 'getViewsCount']);
+    Route::get('{slug}/views/stats', [ArticleViewController::class, 'getViewsStats']);
+});
+
 // Публичные маршруты для получения сообщений из Telegram
 Route::prefix('telegram/messages')->group(function () {
     Route::get('/fetch', [TelegramMessageController::class, 'fetchMessages']);
