@@ -215,6 +215,65 @@ Route::prefix('v1/article_count')->group(function () {
     Route::get('{slug}/views/stats', [ArticleViewController::class, 'getViewsStats']);
 });
 
+
+
+
+Route::get('v1/test/article/{slug}', function ($slug) {
+    try {
+        $article = \App\Models\Article::where('slug', $slug)->first();
+
+        if (!$article) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Статья не найдена'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'article' => $article->toArray(),
+            'views_count' => $article->views ?? 0
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Ошибка: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+// Простой маршрут для записи просмотра без контроллера
+Route::get('v1/test/article/{slug}/record-view', function ($slug) {
+    try {
+        $article = \App\Models\Article::where('slug', $slug)->first();
+
+        if (!$article) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Статья не найдена'
+            ], 404);
+        }
+
+        // Просто увеличиваем счетчик
+        $currentViews = $article->views ?? 0;
+        $article->update(['views' => $currentViews + 1]);
+
+        return response()->json([
+            'success' => true,
+            'views_count' => $currentViews + 1,
+            'message' => 'Просмотр записан (простой маршрут)'
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Ошибка: ' . $e->getMessage()
+        ], 500);
+    }
+});
+
+
+
+
 // Публичные маршруты для получения сообщений из Telegram
 Route::prefix('telegram/messages')->group(function () {
     Route::get('/fetch', [TelegramMessageController::class, 'fetchMessages']);
