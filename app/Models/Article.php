@@ -7,12 +7,26 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Article extends Model
 {
     use KTranslateTrait, HasFactory;
 
     protected $guarded = [];
+
+    // Явно указываем fillable поля для надежности
+    protected $fillable = [
+        'region_id',
+        'title',
+        'data',
+        'slug',
+        'description',
+        'content',
+        'published',
+        'image',
+        'views'
+    ];
 
     protected $hidden = ['pivot', 'created_at', 'updated_at'];
     protected $appends = ['date_formatted', 'article_image_path', 'event_name'];
@@ -64,10 +78,15 @@ class Article extends Model
         return $this->morphedByMany(Video::class, 'articleable');
     }
 
+    // Связь с просмотрами
+    public function views(): HasMany
+    {
+        return $this->hasMany(ArticleView::class);
+    }
+
     public function getDateFormattedAttribute()
     {
         return \Carbon\Carbon::parse($this->data)->format('d.m.Y. H:i');
-
     }
 
     public function getArticleImagePathAttribute()
@@ -79,5 +98,87 @@ class Article extends Model
     public function getEventNameAttribute()
     {
         return $this->title;
+    }
+
+    /**
+     * Увеличить счетчик просмотров
+     */
+    public function incrementViews(): void
+    {
+        $this->increment('views');
+    }
+
+    /**
+     * Получить количество просмотров
+     */
+    public function getViewsCount(): int
+    {
+        // Проверяем, существует ли поле views в модели
+        if (isset($this->views)) {
+            return (int) $this->views;
+        }
+
+        // Если поле не загружено, возвращаем 0
+        return 0;
+    }
+
+    /**
+     * Записать просмотр с дополнительной информацией
+     */
+    public function recordView(string $ipAddress = null, string $userAgent = null, string $sessionId = null): void
+    {
+        // Увеличиваем общий счетчик
+        $this->incrementViews();
+
+        // Записываем детальную информацию о просмотре
+        $this->views()->create([
+            'ip_address' => $ipAddress,
+            'user_agent' => $userAgent,
+            'session_id' => $sessionId,
+            'viewed_at' => now(),
+        ]);
+    }
+
+    /**
+     * Проверить, был ли просмотр с данного IP в течение последних 24 часов
+     */
+    public function hasRecentViewFromIp(string $ipAddress): bool
+    {
+        return $this->views()
+            ->where('ip_address', $ipAddress)
+            ->where('viewed_at', '>=', now()->subDay())
+            ->exists();
+    }
+
+    /**
+     * Получить статистику просмотров за период
+     */
+    public function getViewsStats(string $period = 'day'): array
+    {
+        $query = $this->views();
+
+        switch ($period) {
+            case 'hour':
+                $query->where('viewed_at', '>=', now()->subHour());
+                break;
+            case 'day':
+                $query->where('viewed_at', '>=', now()->subDay());
+                break;
+            case 'week':
+                $query->where('viewed_at', '>=', now()->subWeek());
+                break;
+            case 'month':
+                $query->where('viewed_at', '>=', now()->subMonth());
+                break;
+        }
+
+        $totalViews = $query->count();
+        $uniqueViews = $query->distinct('ip_address')->count('ip_address');
+
+        return [
+            'total' => $totalViews,
+            'unique' => $uniqueViews,
+            'period' => $period
+        ];
     }
 }

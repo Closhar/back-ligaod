@@ -16,7 +16,9 @@ class ArticleViewController extends Controller
     public function recordView(Request $request, string $slug): JsonResponse
     {
         try {
-            $article = Article::where('slug', $slug)->first();
+            $article = Article::where('slug', $slug)
+                ->select(['id', 'slug', 'title', 'views'])
+                ->first();
 
             if (!$article) {
                 return response()->json([
@@ -33,6 +35,9 @@ class ArticleViewController extends Controller
             if (!$article->hasRecentViewFromIp($ipAddress)) {
                 $article->recordView($ipAddress, $userAgent, $sessionId);
             }
+
+            // Получаем обновленное количество просмотров
+            $article->refresh();
 
             return response()->json([
                 'success' => true,
@@ -55,7 +60,9 @@ class ArticleViewController extends Controller
     public function getViewsStats(Request $request, string $slug): JsonResponse
     {
         try {
-            $article = Article::where('slug', $slug)->first();
+            $article = Article::where('slug', $slug)
+                ->select(['id', 'slug', 'title', 'views'])
+                ->first();
 
             if (!$article) {
                 return response()->json([
@@ -90,7 +97,9 @@ class ArticleViewController extends Controller
     public function getViewsCount(string $slug): JsonResponse
     {
         try {
-            $article = Article::where('slug', $slug)->first();
+            $article = Article::where('slug', $slug)
+                ->select(['id', 'slug', 'title', 'views'])
+                ->first();
 
             if (!$article) {
                 return response()->json([
