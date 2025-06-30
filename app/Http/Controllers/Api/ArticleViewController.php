@@ -11,6 +11,7 @@ class ArticleViewController extends Controller
 {
     /**
      * Записать просмотр статьи
+     * Маршрут: POST /api/article_count/{slug}/views
      */
     public function recordView(Request $request, string $slug): JsonResponse
     {
@@ -49,6 +50,7 @@ class ArticleViewController extends Controller
 
     /**
      * Получить статистику просмотров статьи
+     * Маршрут: GET /api/article_count/{slug}/views/stats
      */
     public function getViewsStats(Request $request, string $slug): JsonResponse
     {
@@ -83,6 +85,7 @@ class ArticleViewController extends Controller
 
     /**
      * Получить количество просмотров статьи
+     * Маршрут: GET /api/article_count/{slug}/views
      */
     public function getViewsCount(string $slug): JsonResponse
     {
