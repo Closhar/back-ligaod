@@ -194,9 +194,18 @@ Route::prefix('telegram')->group(function () {
 });
 
 
-// Альтернативный вариант с middleware для защиты от спама
-Route::prefix('v1/article_count')->middleware(['throttle:60,1'])->group(function () {
-    // Записать просмотр статьи (с ограничением 60 запросов в минуту)
+// Маршруты для счетчика просмотров статей
+Route::prefix('v1/article_count')->group(function () {
+    // Тестовый маршрут для диагностики
+    Route::get('{slug}/test', [ArticleViewController::class, 'test']);
+
+    // Временный GET маршрут для записи просмотра (для диагностики)
+    Route::get('{slug}/views-record', [ArticleViewController::class, 'recordViewSimple']);
+
+    // Упрощенная запись просмотра для диагностики
+    Route::post('{slug}/views-simple', [ArticleViewController::class, 'recordViewSimple']);
+
+    // Записать просмотр статьи
     Route::post('{slug}/views', [ArticleViewController::class, 'recordView']);
 
     // Получить количество просмотров статьи
