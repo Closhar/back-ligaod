@@ -43,6 +43,7 @@ class ApiEventController extends Controller
         $show_home = $request->input('show_home'); // Параметр для фильтрации по региону
         $seriesId = $request->input('series_id'); // Добавляем получение series_id
         $sportPropertyId = $request->input('sport_property_id'); // Добавляем получение sport_property_id
+        $tickets = $request->input('tickets'); // Параметр фильтрации по типу билетов (free/paid)
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -297,6 +298,14 @@ class ApiEventController extends Controller
             });
         }
 
+        // Добавляем фильтр по типу билетов
+        if ($tickets) {
+            if ($tickets === 'free') {
+                $query->where('free_tickets', true);
+            } elseif ($tickets === 'paid') {
+                $query->where('free_tickets', false);
+            }
+        }
 
         // Применяем поиск по параметру q
         if ($searchQuery) {
