@@ -42,6 +42,7 @@ class ApiArticleController extends Controller
                 'description',
                 'slug',
                 'data',
+                'views',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
                 DB::raw("DATE_FORMAT(data, '%d.%m.%Y %H:%i') as date_formatted") // Форматируем дату
             )
