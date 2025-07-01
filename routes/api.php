@@ -44,6 +44,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -222,22 +223,28 @@ Route::prefix('v1/article_count')->group(function () {
                 ]);
             }
 
-            // Записываем просмотр
-            $currentViews = $article->views ?? 0;
-            $article->update(['views' => $currentViews + 1]);
+            // Используем транзакцию для атомарности операции
+            \DB::transaction(function () use ($article, $ipAddress) {
+                // Записываем просмотр
+                $currentViews = $article->views ?? 0;
+                $article->update(['views' => $currentViews + 1]);
 
-            // Записываем детальную информацию о просмотре
-            \App\Models\ArticleView::create([
-                'article_id' => $article->id,
-                'ip_address' => $ipAddress,
-                'user_agent' => request()->userAgent(),
-                'session_id' => request()->session()->getId(),
-                'viewed_at' => now(),
-            ]);
+                // Записываем детальную информацию о просмотре
+                \App\Models\ArticleView::create([
+                    'article_id' => $article->id,
+                    'ip_address' => $ipAddress,
+                    'user_agent' => request()->userAgent(),
+                    'session_id' => null, // Убираем зависимость от сессии для API
+                    'viewed_at' => now(),
+                ]);
+            });
+
+            // Обновляем модель после транзакции
+            $article->refresh();
 
             return response()->json([
                 'success' => true,
-                'views_count' => $currentViews + 1,
+                'views_count' => $article->views ?? 0,
                 'message' => 'Просмотр записан'
             ]);
         } catch (\Exception $e) {
