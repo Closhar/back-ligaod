@@ -159,34 +159,39 @@ class ApiEventController extends Controller
             ]);
 
         if ($regionId) {
-            if ($show_home) {
-                if ($show_home === 1) {
-                    $query->where('region_id', $regionId);
-                } elseif ($show_home === 2) {
-                    $query->where(function($q) use ($regionId) {
-                        $q->where('events.region_id', '!=', $regionId)
-                          ->orWhereNull('events.region_id');
-                    })
-                    ->join('clubs as club1', 'events.club1_id', '=', 'club1.id')
-                    ->join('clubs as club2', 'events.club2_id', '=', 'club2.id')
-                    ->where(function($q) use ($regionId) {
-                        $q->where('club1.region_id', $regionId)
-                          ->orWhere('club2.region_id', $regionId);
-                    })
-                    ->select('events.*');
-                }
-            } elseif ($show_native) {
-                $query->where(function($q) use ($regionId) {
-                    $q->where('region_id', $regionId)
-                      ->orWhereHas('club1', function($clubQuery) use ($regionId) {
-                          $clubQuery->where('region_id', $regionId);
-                      })
-                      ->orWhereHas('club2', function($clubQuery) use ($regionId) {
-                          $clubQuery->where('region_id', $regionId);
-                      });
-                });
-            } else {
+            // Если указан параметр tickets, показываем только события домашнего региона
+            if ($tickets) {
                 $query->where('region_id', $regionId);
+            } else {
+                if ($show_home) {
+                    if ($show_home === 1) {
+                        $query->where('region_id', $regionId);
+                    } elseif ($show_home === 2) {
+                        $query->where(function($q) use ($regionId) {
+                            $q->where('events.region_id', '!=', $regionId)
+                              ->orWhereNull('events.region_id');
+                        })
+                        ->join('clubs as club1', 'events.club1_id', '=', 'club1.id')
+                        ->join('clubs as club2', 'events.club2_id', '=', 'club2.id')
+                        ->where(function($q) use ($regionId) {
+                            $q->where('club1.region_id', $regionId)
+                              ->orWhere('club2.region_id', $regionId);
+                        })
+                        ->select('events.*');
+                    }
+                } elseif ($show_native) {
+                    $query->where(function($q) use ($regionId) {
+                        $q->where('region_id', $regionId)
+                          ->orWhereHas('club1', function($clubQuery) use ($regionId) {
+                              $clubQuery->where('region_id', $regionId);
+                          })
+                          ->orWhereHas('club2', function($clubQuery) use ($regionId) {
+                              $clubQuery->where('region_id', $regionId);
+                          });
+                    });
+                } else {
+                    $query->where('region_id', $regionId);
+                }
             }
         }
 
