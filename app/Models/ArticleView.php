@@ -9,6 +9,9 @@ class ArticleView extends Model
 {
     use HasFactory;
 
+    // Отключаем автоматическое управление временными метками
+    public $timestamps = false;
+
     protected $fillable = [
         'article_id',
         'ip_address',
