@@ -3,17 +3,17 @@
 use App\Http\Controllers\Admin\Data\AdminPageController;
 use App\Http\Controllers\Admin\Data\ArenaController;
 use App\Http\Controllers\Admin\Data\ArticleController;
+use App\Http\Controllers\Admin\Data\CityController;
 use App\Http\Controllers\Admin\Data\ClubController;
 use App\Http\Controllers\Admin\Data\CompetitionController;
-use App\Http\Controllers\Admin\Data\CityController;
 use App\Http\Controllers\Admin\Data\EventController;
 use App\Http\Controllers\Admin\Data\EventStreamController;
 use App\Http\Controllers\Admin\Data\GalleryController;
 use App\Http\Controllers\Admin\Data\GenderController;
 use App\Http\Controllers\Admin\Data\ImageController;
 use App\Http\Controllers\Admin\Data\SportController;
-use App\Http\Controllers\Admin\Data\StreamController;
 use App\Http\Controllers\Admin\Data\SportPropertyController;
+use App\Http\Controllers\Admin\Data\StreamController;
 use App\Http\Controllers\Admin\Data\StreamHintController;
 use App\Http\Controllers\Admin\Data\VideoController;
 use App\Http\Controllers\Api\ApiAgeController;
@@ -31,20 +31,27 @@ use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\ArticleViewController;
 use App\Http\Controllers\Api\GalleryAdminController;
+use App\Http\Controllers\Api\PersonClubMembershipController;
+use App\Http\Controllers\Api\PersonController;
+use App\Http\Controllers\Api\PersonImageController;
+use App\Http\Controllers\Api\PersonRoleMembershipController;
+use App\Http\Controllers\Api\PersonSportMembershipController;
+use App\Http\Controllers\Api\PersonSurnameChangeController;
+use App\Http\Controllers\Api\RoleController;
+use App\Http\Controllers\Api\TelegramMessageController;
+use App\Http\Controllers\Api\TelegramParseChannelController;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\PromptTemplateController;
 use App\Http\Controllers\TelegramController;
-use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\Api\TelegramParseChannelController;
-use App\Http\Controllers\Api\TelegramMessageController;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
-use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\DB;
 
 //Route::get('/user', function (Request $request) {
 //    return $request->user();
@@ -93,22 +100,22 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     // Route::post('/galleries/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
     // Route::post('/galleries/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
 
-        // Маршруты для галерей
-        Route::prefix('galleries')->group(function () {
-            Route::get('/', [ApiGalleryController::class, 'index']);
-            Route::post('/', [ApiGalleryController::class, 'store']);
-            Route::get('/{id}', [ApiGalleryController::class, 'show']);
-            Route::put('/{id}', [ApiGalleryController::class, 'update']);
-            Route::patch('/{id}', [ApiGalleryController::class, 'update']);
-            Route::delete('/{id}', [ApiGalleryController::class, 'destroy']);
-            Route::post('/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
-            Route::post('/{id}/image', [ApiGalleryController::class, 'updateImage']);
-            Route::post('/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
-            Route::post('/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
-            Route::post('/{id}/update-positions', [ApiGalleryController::class, 'updatePositions']);
-            Route::post('/{id}/download-images', [ApiGalleryController::class, 'downloadImages']);
+    // Маршруты для галерей
+    Route::prefix('galleries')->group(function () {
+        Route::get('/', [ApiGalleryController::class, 'index']);
+        Route::post('/', [ApiGalleryController::class, 'store']);
+        Route::get('/{id}', [ApiGalleryController::class, 'show']);
+        Route::put('/{id}', [ApiGalleryController::class, 'update']);
+        Route::patch('/{id}', [ApiGalleryController::class, 'update']);
+        Route::delete('/{id}', [ApiGalleryController::class, 'destroy']);
+        Route::post('/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);
+        Route::post('/{id}/image', [ApiGalleryController::class, 'updateImage']);
+        Route::post('/{id}/delete-image', [ApiGalleryController::class, 'deleteImage']);
+        Route::post('/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
+        Route::post('/{id}/update-positions', [ApiGalleryController::class, 'updatePositions']);
+        Route::post('/{id}/download-images', [ApiGalleryController::class, 'downloadImages']);
 
-        });
+    });
 
 });
 
@@ -137,11 +144,11 @@ Route::get('/email/verify/{id}/{hash}', function (Request $request) {
 
     // Перенаправление на страницу Nuxt
     $redirectUrl = env('NUXT_URL') . '/verify-email?' . http_build_query([
-            'id' => $request->route('id'),
-            'hash' => $request->route('hash'),
-            'expires' => $request->query('expires'),
-            'signature' => $request->query('signature'),
-        ]);
+        'id' => $request->route('id'),
+        'hash' => $request->route('hash'),
+        'expires' => $request->query('expires'),
+        'signature' => $request->query('signature'),
+    ]);
 
     return redirect($redirectUrl);
 })->middleware('signed')->name('api.verification.verify');
@@ -504,7 +511,7 @@ Route::get('/sanctum/csrf-cookie', function (Request $request) {
     return response()->noContent();
 })->middleware('web'); // Важно использовать web middleware
 
-Route::post('/upload-image', function(Request $request) {
+Route::post('/upload-image', function (Request $request) {
     $validator = Validator::make($request->all(), [
         'image' => [
             'required',
@@ -546,7 +553,7 @@ Route::post('/upload-image', function(Request $request) {
         ], 500);
     }
 });
-    //->middleware('auth:sanctum');
+//->middleware('auth:sanctum');
 
 Route::prefix('telegram-parse-channels')->group(function () {
     Route::get('/', [TelegramParseChannelController::class, 'index']);
@@ -561,3 +568,80 @@ Route::prefix('telegram-parse-channels')->group(function () {
 });
 
 Route::get('test-telegram', [TelegramParseChannelController::class, 'testMessages']);
+
+// Маршруты для управления персонами
+Route::prefix('people')->group(function () {
+    Route::get('/', [PersonController::class, 'index']);
+    Route::post('/', [PersonController::class, 'store']);
+    Route::get('/statistics', [PersonController::class, 'statistics']);
+    Route::get('/clubs', [PersonController::class, 'clubs']);
+    Route::get('/sports', [PersonController::class, 'sports']);
+    Route::get('/{person}', [PersonController::class, 'show']);
+    Route::put('/{person}', [PersonController::class, 'update']);
+    Route::delete('/{person}', [PersonController::class, 'destroy']);
+
+    // Маршруты для изображений персон
+    Route::prefix('{person}/images')->group(function () {
+        Route::get('/', [PersonImageController::class, 'index']);
+        Route::post('/', [PersonImageController::class, 'store']);
+        Route::put('/{image}', [PersonImageController::class, 'update']);
+        Route::delete('/{image}', [PersonImageController::class, 'destroy']);
+        Route::post('/reorder', [PersonImageController::class, 'reorder']);
+    });
+
+    // Маршруты для членства в клубах
+    Route::prefix('{person}/club-memberships')->group(function () {
+        Route::get('/', [PersonClubMembershipController::class, 'index']);
+        Route::post('/', [PersonClubMembershipController::class, 'store']);
+        Route::put('/{membership}', [PersonClubMembershipController::class, 'update']);
+        Route::delete('/{membership}', [PersonClubMembershipController::class, 'destroy']);
+        Route::post('/{membership}/leave', [PersonClubMembershipController::class, 'leave']);
+        Route::get('/active', [PersonClubMembershipController::class, 'active']);
+    });
+
+    // Маршруты для членства в видах спорта
+    Route::prefix('{person}/sport-memberships')->group(function () {
+        Route::get('/', [PersonSportMembershipController::class, 'index']);
+        Route::post('/', [PersonSportMembershipController::class, 'store']);
+        Route::put('/{membership}', [PersonSportMembershipController::class, 'update']);
+        Route::delete('/{membership}', [PersonSportMembershipController::class, 'destroy']);
+        Route::post('/{membership}/end', [PersonSportMembershipController::class, 'end']);
+        Route::get('/active', [PersonSportMembershipController::class, 'active']);
+    });
+
+    // Маршруты для смен фамилий
+    Route::prefix('{person}/surname-changes')->group(function () {
+        Route::get('/', [PersonSurnameChangeController::class, 'index']);
+        Route::post('/', [PersonSurnameChangeController::class, 'store']);
+        Route::put('/{surnameChange}', [PersonSurnameChangeController::class, 'update']);
+        Route::delete('/{surnameChange}', [PersonSurnameChangeController::class, 'destroy']);
+        Route::get('/valid', [PersonSurnameChangeController::class, 'valid']);
+        Route::get('/historical', [PersonSurnameChangeController::class, 'historical']);
+    });
+
+    // Маршруты для членства в ролях
+    Route::prefix('{person}/role-memberships')->group(function () {
+        Route::get('/', [PersonRoleMembershipController::class, 'index']);
+        Route::post('/', [PersonRoleMembershipController::class, 'store']);
+        Route::put('/{membership}', [PersonRoleMembershipController::class, 'update']);
+        Route::delete('/{membership}', [PersonRoleMembershipController::class, 'destroy']);
+        Route::post('/{membership}/end', [PersonRoleMembershipController::class, 'endMembership']);
+        Route::get('/active', [PersonRoleMembershipController::class, 'active']);
+        Route::get('/history', [PersonRoleMembershipController::class, 'history']);
+    });
+});
+
+// Маршруты для управления ролями
+Route::prefix('roles')->group(function () {
+    Route::get('/', [RoleController::class, 'index']);
+    Route::post('/', [RoleController::class, 'store']);
+    Route::get('/statistics', [RoleController::class, 'statistics']);
+    Route::get('/sportsman', [RoleController::class, 'sportsman']);
+    Route::get('/non-sportsman', [RoleController::class, 'nonSportsman']);
+    Route::get('/{role}', [RoleController::class, 'show']);
+    Route::put('/{role}', [RoleController::class, 'update']);
+    Route::delete('/{role}', [RoleController::class, 'destroy']);
+});
+
+// Маршруты для статистики членств в ролях
+Route::get('/role-memberships/statistics', [PersonRoleMembershipController::class, 'statistics']);
