@@ -231,7 +231,7 @@ Route::prefix('v1/article_count')->group(function () {
             }
 
             // Используем транзакцию для атомарности операции
-            \DB::transaction(function () use ($article, $ipAddress) {
+            \Illuminate\Support\Facades\DB::transaction(function () use ($article, $ipAddress) {
                 // Записываем просмотр
                 $currentViews = $article->views ?? 0;
                 $article->update(['views' => $currentViews + 1]);
