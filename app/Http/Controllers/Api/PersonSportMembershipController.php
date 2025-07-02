@@ -34,8 +34,8 @@ class PersonSportMembershipController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'sport_id' => 'required|exists:sports,id',
-            'started_at' => 'required|date|before_or_equal:today',
-            'ended_at' => 'nullable|date|after:started_at',
+            'started_at' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'ended_at' => 'nullable|date_format:Y-m-d|after:started_at',
             'level' => 'nullable|string|max:255',
             'achievements' => 'nullable|string',
         ]);
@@ -60,13 +60,19 @@ class PersonSportMembershipController extends Controller
             ], 422);
         }
 
+        $data = $validator->validated();
+        if (empty($data['started_at'])) $data['started_at'] = null;
+        if (empty($data['ended_at'])) $data['ended_at'] = null;
+        if (empty($data['level'])) $data['level'] = null;
+        if (empty($data['achievements'])) $data['achievements'] = null;
+
         $membership = PersonSportMembership::create([
             'person_id' => $person->id,
-            'sport_id' => $request->sport_id,
-            'started_at' => $request->started_at,
-            'ended_at' => $request->ended_at,
-            'level' => $request->level,
-            'achievements' => $request->achievements,
+            'sport_id' => $data['sport_id'],
+            'started_at' => $data['started_at'],
+            'ended_at' => $data['ended_at'],
+            'level' => $data['level'],
+            'achievements' => $data['achievements'],
         ]);
 
         $membership->load('sport');

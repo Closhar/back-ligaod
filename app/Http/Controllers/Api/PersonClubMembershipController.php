@@ -34,8 +34,8 @@ class PersonClubMembershipController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'club_id' => 'required|exists:clubs,id',
-            'joined_at' => 'required|date|before_or_equal:today',
-            'left_at' => 'nullable|date|after:joined_at',
+            'joined_at' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'left_at' => 'nullable|date_format:Y-m-d|after:joined_at',
             'position' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
@@ -60,13 +60,19 @@ class PersonClubMembershipController extends Controller
             ], 422);
         }
 
+        $data = $validator->validated();
+        if (empty($data['joined_at'])) $data['joined_at'] = null;
+        if (empty($data['left_at'])) $data['left_at'] = null;
+        if (empty($data['position'])) $data['position'] = null;
+        if (empty($data['notes'])) $data['notes'] = null;
+
         $membership = PersonClubMembership::create([
             'person_id' => $person->id,
-            'club_id' => $request->club_id,
-            'joined_at' => $request->joined_at,
-            'left_at' => $request->left_at,
-            'position' => $request->position,
-            'notes' => $request->notes,
+            'club_id' => $data['club_id'],
+            'joined_at' => $data['joined_at'],
+            'left_at' => $data['left_at'],
+            'position' => $data['position'],
+            'notes' => $data['notes'],
         ]);
 
         $membership->load('club');
@@ -96,7 +102,7 @@ class PersonClubMembershipController extends Controller
 
         $validator = Validator::make($data, [
             'club_id' => 'sometimes|required|exists:clubs,id',
-            'joined_at' => 'nullable|date_format:Y-m-d',
+            'joined_at' => 'sometimes|nullable|date_format:Y-m-d',
             'left_at' => 'nullable|date_format:Y-m-d|after:joined_at',
             'position' => 'nullable|string|max:255',
             'notes' => 'nullable|string',

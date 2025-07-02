@@ -59,8 +59,8 @@ class PersonAmpluaMembershipController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'amplua_id' => 'required|exists:ampluas,id',
-            'started_at' => 'nullable|date',
-            'ended_at' => 'nullable|date|after:started_at',
+            'started_at' => 'nullable|date_format:Y-m-d',
+            'ended_at' => 'nullable|date_format:Y-m-d|after:started_at',
             'notes' => 'nullable|string',
         ]);
 
@@ -72,6 +72,9 @@ class PersonAmpluaMembershipController extends Controller
         }
 
         $data = $validator->validated();
+        if (empty($data['started_at'])) $data['started_at'] = null;
+        if (empty($data['ended_at'])) $data['ended_at'] = null;
+        if (empty($data['notes'])) $data['notes'] = null;
 
         // Проверяем, нет ли уже активного членства в этом амплуа
         $existingActive = $person->activeAmpluaMemberships()
