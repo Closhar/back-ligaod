@@ -39,9 +39,12 @@ class PersonAmpluaMembershipController extends Controller
     /**
      * Получить конкретное членство в амплуа
      */
-    public function show(PersonAmpluaMembership $membership): JsonResponse
+    public function show(Request $request, Person $person, $membershipId): JsonResponse
     {
-        $membership->load(['person', 'amplua']);
+        $membership = PersonAmpluaMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->with(['person', 'amplua'])
+            ->firstOrFail();
 
         return response()->json([
             'success' => true,
@@ -95,11 +98,22 @@ class PersonAmpluaMembershipController extends Controller
     /**
      * Обновить членство в амплуа
      */
-    public function update(Request $request, PersonAmpluaMembership $membership): JsonResponse
+    public function update(Request $request, Person $person, $membershipId): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'started_at' => 'sometimes|required|date',
-            'ended_at' => 'nullable|date|after:started_at',
+        $membership = PersonAmpluaMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
+        // Получаем и обрабатываем данные
+        $data = $request->all();
+        if (empty($data['started_at'])) $data['started_at'] = null;
+        if (empty($data['ended_at'])) $data['ended_at'] = null;
+        if (empty($data['notes'])) $data['notes'] = null;
+
+        $validator = Validator::make($data, [
+            'amplua_id' => 'sometimes|required|exists:ampluas,id',
+            'started_at' => 'nullable|date_format:Y-m-d',
+            'ended_at' => 'nullable|date_format:Y-m-d|after:started_at',
             'notes' => 'nullable|string',
         ]);
 
@@ -110,7 +124,8 @@ class PersonAmpluaMembershipController extends Controller
             ], 422);
         }
 
-        $membership->update($validator->validated());
+        $validatedData = $validator->validated();
+        $membership->update($validatedData);
         $membership->load('amplua');
 
         return response()->json([
@@ -123,8 +138,12 @@ class PersonAmpluaMembershipController extends Controller
     /**
      * Удалить членство в амплуа
      */
-    public function destroy(PersonAmpluaMembership $membership): JsonResponse
+    public function destroy(Request $request, Person $person, $membershipId): JsonResponse
     {
+        $membership = PersonAmpluaMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
         $membership->delete();
 
         return response()->json([
@@ -136,8 +155,12 @@ class PersonAmpluaMembershipController extends Controller
     /**
      * Завершить активное членство в амплуа
      */
-    public function endMembership(PersonAmpluaMembership $membership): JsonResponse
+    public function endMembership(Request $request, Person $person, $membershipId): JsonResponse
     {
+        $membership = PersonAmpluaMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
         if ($membership->ended_at) {
             return response()->json([
                 'success' => false,

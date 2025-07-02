@@ -81,11 +81,23 @@ class PersonClubMembershipController extends Controller
     /**
      * Обновить членство в клубе
      */
-    public function update(Request $request, Person $person, PersonClubMembership $membership): JsonResponse
+    public function update(Request $request, Person $person, $membershipId): JsonResponse
     {
-        $validator = Validator::make($request->all(), [
-            'joined_at' => 'sometimes|required|date|before_or_equal:today',
-            'left_at' => 'nullable|date|after:joined_at',
+        $membership = PersonClubMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
+        // Получаем и обрабатываем данные
+        $data = $request->all();
+        if (empty($data['joined_at'])) $data['joined_at'] = null;
+        if (empty($data['left_at'])) $data['left_at'] = null;
+        if (empty($data['position'])) $data['position'] = null;
+        if (empty($data['notes'])) $data['notes'] = null;
+
+        $validator = Validator::make($data, [
+            'club_id' => 'sometimes|required|exists:clubs,id',
+            'joined_at' => 'nullable|date_format:Y-m-d',
+            'left_at' => 'nullable|date_format:Y-m-d|after:joined_at',
             'position' => 'nullable|string|max:255',
             'notes' => 'nullable|string',
         ]);
@@ -97,7 +109,8 @@ class PersonClubMembershipController extends Controller
             ], 422);
         }
 
-        $membership->update($validator->validated());
+        $validatedData = $validator->validated();
+        $membership->update($validatedData);
         $membership->load('club');
 
         return response()->json([
@@ -110,8 +123,12 @@ class PersonClubMembershipController extends Controller
     /**
      * Удалить членство в клубе
      */
-    public function destroy(Person $person, PersonClubMembership $membership): JsonResponse
+    public function destroy(Request $request, Person $person, $membershipId): JsonResponse
     {
+        $membership = PersonClubMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
         $membership->delete();
 
         return response()->json([
@@ -123,8 +140,12 @@ class PersonClubMembershipController extends Controller
     /**
      * Завершить активное членство в клубе
      */
-    public function leave(Request $request, Person $person, PersonClubMembership $membership): JsonResponse
+    public function leave(Request $request, Person $person, $membershipId): JsonResponse
     {
+        $membership = PersonClubMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
         if ($membership->left_at) {
             return response()->json([
                 'success' => false,
