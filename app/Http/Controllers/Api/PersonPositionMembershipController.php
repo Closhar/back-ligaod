@@ -56,7 +56,7 @@ class PersonPositionMembershipController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'position_id' => 'required|exists:positions,id',
-            'started_at' => 'required|date',
+            'started_at' => 'nullable|date',
             'ended_at' => 'nullable|date|after:started_at',
             'notes' => 'nullable|string',
         ]);

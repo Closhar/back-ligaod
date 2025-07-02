@@ -56,7 +56,7 @@ class PersonAmpluaMembershipController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'amplua_id' => 'required|exists:ampluas,id',
-            'started_at' => 'required|date',
+            'started_at' => 'nullable|date',
             'ended_at' => 'nullable|date|after:started_at',
             'notes' => 'nullable|string',
         ]);
