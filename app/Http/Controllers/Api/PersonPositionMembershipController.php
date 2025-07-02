@@ -8,6 +8,7 @@ use App\Models\PersonPositionMembership;
 use App\Models\Position;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 
 class PersonPositionMembershipController extends Controller
@@ -104,20 +105,38 @@ class PersonPositionMembershipController extends Controller
             ->where('person_id', $person->id)
             ->firstOrFail();
 
-        $validator = Validator::make($request->all(), [
-            'started_at' => 'sometimes|required|date',
-            'ended_at' => 'nullable|date|after:started_at',
+        // Получаем и обрабатываем данные
+        $data = $request->all();
+        if (empty($data['started_at'])) $data['started_at'] = null;
+        if (empty($data['ended_at'])) $data['ended_at'] = null;
+        if (empty($data['notes'])) $data['notes'] = null;
+
+        // Отладочная информация
+        Log::info('Update position membership request:', [
+            'person_id' => $person->id,
+            'membership_id' => $membershipId,
+            'request_data' => $data
+        ]);
+
+        $validator = Validator::make($data, [
+            'position_id' => 'sometimes|required|exists:positions,id',
+            'started_at' => 'nullable|date_format:Y-m-d',
+            'ended_at' => 'nullable|date_format:Y-m-d|after:started_at',
             'notes' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
+            Log::error('Validation failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'errors' => $validator->errors()
             ], 422);
         }
 
-        $membership->update($validator->validated());
+        $validatedData = $validator->validated();
+        Log::info('Validated data:', $validatedData);
+
+        $membership->update($validatedData);
         $membership->load('position');
 
         return response()->json([
