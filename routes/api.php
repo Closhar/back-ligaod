@@ -16,6 +16,7 @@ use App\Http\Controllers\Admin\Data\SportPropertyController;
 use App\Http\Controllers\Admin\Data\StreamController;
 use App\Http\Controllers\Admin\Data\StreamHintController;
 use App\Http\Controllers\Admin\Data\VideoController;
+use App\Http\Controllers\Api\AmpluaController;
 use App\Http\Controllers\Api\ApiAgeController;
 use App\Http\Controllers\Api\ApiArenaController;
 use App\Http\Controllers\Api\ApiArticleController;
@@ -39,6 +40,7 @@ use App\Http\Controllers\Api\PersonPositionMembershipController;
 use App\Http\Controllers\Api\PersonRoleMembershipController;
 use App\Http\Controllers\Api\PersonSportMembershipController;
 use App\Http\Controllers\Api\PersonSurnameChangeController;
+use App\Http\Controllers\Api\PositionController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TelegramMessageController;
 use App\Http\Controllers\Api\TelegramParseChannelController;
@@ -588,8 +590,8 @@ Route::prefix('people')->group(function () {
     Route::prefix('{person}/images')->group(function () {
         Route::get('/', [PersonImageController::class, 'index']);
         Route::post('/', [PersonImageController::class, 'store']);
-        Route::put('/{image}', [PersonImageController::class, 'update']);
-        Route::delete('/{image}', [PersonImageController::class, 'destroy']);
+        Route::put('/{image:PersonImage}', [PersonImageController::class, 'update']);
+        Route::delete('/{image:PersonImage}', [PersonImageController::class, 'destroy']);
         Route::post('/reorder', [PersonImageController::class, 'reorder']);
     });
 
@@ -597,9 +599,9 @@ Route::prefix('people')->group(function () {
     Route::prefix('{person}/club-memberships')->group(function () {
         Route::get('/', [PersonClubMembershipController::class, 'index']);
         Route::post('/', [PersonClubMembershipController::class, 'store']);
-        Route::put('/{membership}', [PersonClubMembershipController::class, 'update']);
-        Route::delete('/{membership}', [PersonClubMembershipController::class, 'destroy']);
-        Route::post('/{membership}/leave', [PersonClubMembershipController::class, 'leave']);
+        Route::put('/{membership:PersonClubMembership}', [PersonClubMembershipController::class, 'update']);
+        Route::delete('/{membership:PersonClubMembership}', [PersonClubMembershipController::class, 'destroy']);
+        Route::post('/{membership:PersonClubMembership}/leave', [PersonClubMembershipController::class, 'leave']);
         Route::get('/active', [PersonClubMembershipController::class, 'active']);
     });
 
@@ -607,9 +609,9 @@ Route::prefix('people')->group(function () {
     Route::prefix('{person}/sport-memberships')->group(function () {
         Route::get('/', [PersonSportMembershipController::class, 'index']);
         Route::post('/', [PersonSportMembershipController::class, 'store']);
-        Route::put('/{membership}', [PersonSportMembershipController::class, 'update']);
-        Route::delete('/{membership}', [PersonSportMembershipController::class, 'destroy']);
-        Route::post('/{membership}/end', [PersonSportMembershipController::class, 'end']);
+        Route::put('/{membership:PersonSportMembership}', [PersonSportMembershipController::class, 'update']);
+        Route::delete('/{membership:PersonSportMembership}', [PersonSportMembershipController::class, 'destroy']);
+        Route::post('/{membership:PersonSportMembership}/end', [PersonSportMembershipController::class, 'end']);
         Route::get('/active', [PersonSportMembershipController::class, 'active']);
     });
 
@@ -617,8 +619,8 @@ Route::prefix('people')->group(function () {
     Route::prefix('{person}/surname-changes')->group(function () {
         Route::get('/', [PersonSurnameChangeController::class, 'index']);
         Route::post('/', [PersonSurnameChangeController::class, 'store']);
-        Route::put('/{surnameChange}', [PersonSurnameChangeController::class, 'update']);
-        Route::delete('/{surnameChange}', [PersonSurnameChangeController::class, 'destroy']);
+        Route::put('/{surnameChange:PersonSurnameChange}', [PersonSurnameChangeController::class, 'update']);
+        Route::delete('/{surnameChange:PersonSurnameChange}', [PersonSurnameChangeController::class, 'destroy']);
         Route::get('/valid', [PersonSurnameChangeController::class, 'valid']);
         Route::get('/historical', [PersonSurnameChangeController::class, 'historical']);
     });
@@ -627,9 +629,9 @@ Route::prefix('people')->group(function () {
     Route::prefix('{person}/role-memberships')->group(function () {
         Route::get('/', [PersonRoleMembershipController::class, 'index']);
         Route::post('/', [PersonRoleMembershipController::class, 'store']);
-        Route::put('/{membership}', [PersonRoleMembershipController::class, 'update']);
-        Route::delete('/{membership}', [PersonRoleMembershipController::class, 'destroy']);
-        Route::post('/{membership}/end', [PersonRoleMembershipController::class, 'endMembership']);
+        Route::put('/{membership:PersonRoleMembership}', [PersonRoleMembershipController::class, 'update']);
+        Route::delete('/{membership:PersonRoleMembership}', [PersonRoleMembershipController::class, 'destroy']);
+        Route::post('/{membership:PersonRoleMembership}/end', [PersonRoleMembershipController::class, 'endMembership']);
         Route::get('/active', [PersonRoleMembershipController::class, 'active']);
         Route::get('/history', [PersonRoleMembershipController::class, 'history']);
     });
@@ -638,9 +640,9 @@ Route::prefix('people')->group(function () {
     Route::prefix('{person}/position-memberships')->group(function () {
         Route::get('/', [PersonPositionMembershipController::class, 'index']);
         Route::post('/', [PersonPositionMembershipController::class, 'store']);
-        Route::put('/{membership}', [PersonPositionMembershipController::class, 'update']);
-        Route::delete('/{membership}', [PersonPositionMembershipController::class, 'destroy']);
-        Route::post('/{membership}/end', [PersonPositionMembershipController::class, 'endMembership']);
+        Route::put('/{membership:PersonPositionMembership}', [PersonPositionMembershipController::class, 'update']);
+        Route::delete('/{membership:PersonPositionMembership}', [PersonPositionMembershipController::class, 'destroy']);
+        Route::post('/{membership:PersonPositionMembership}/end', [PersonPositionMembershipController::class, 'endMembership']);
         Route::get('/active', [PersonPositionMembershipController::class, 'active']);
         Route::get('/history', [PersonPositionMembershipController::class, 'history']);
     });
@@ -649,9 +651,9 @@ Route::prefix('people')->group(function () {
     Route::prefix('{person}/amplua-memberships')->group(function () {
         Route::get('/', [PersonAmpluaMembershipController::class, 'index']);
         Route::post('/', [PersonAmpluaMembershipController::class, 'store']);
-        Route::put('/{membership}', [PersonAmpluaMembershipController::class, 'update']);
-        Route::delete('/{membership}', [PersonAmpluaMembershipController::class, 'destroy']);
-        Route::post('/{membership}/end', [PersonAmpluaMembershipController::class, 'endMembership']);
+        Route::put('/{membership:PersonAmpluaMembership}', [PersonAmpluaMembershipController::class, 'update']);
+        Route::delete('/{membership:PersonAmpluaMembership}', [PersonAmpluaMembershipController::class, 'destroy']);
+        Route::post('/{membership:PersonAmpluaMembership}/end', [PersonAmpluaMembershipController::class, 'endMembership']);
         Route::get('/active', [PersonAmpluaMembershipController::class, 'active']);
         Route::get('/history', [PersonAmpluaMembershipController::class, 'history']);
     });
@@ -674,20 +676,20 @@ Route::get('/role-memberships/statistics', [PersonRoleMembershipController::clas
 
 // Маршруты для управления должностями
 Route::prefix('positions')->group(function () {
-    Route::get('/', [App\Http\Controllers\Api\PositionController::class, 'index']);
-    Route::post('/', [App\Http\Controllers\Api\PositionController::class, 'store']);
-    Route::get('/statistics', [App\Http\Controllers\Api\PositionController::class, 'statistics']);
-    Route::get('/{position}', [App\Http\Controllers\Api\PositionController::class, 'show']);
-    Route::put('/{position}', [App\Http\Controllers\Api\PositionController::class, 'update']);
-    Route::delete('/{position}', [App\Http\Controllers\Api\PositionController::class, 'destroy']);
+    Route::get('/', [PositionController::class, 'index']);
+    Route::post('/', [PositionController::class, 'store']);
+    Route::get('/statistics', [PositionController::class, 'statistics']);
+    Route::get('/{position}', [PositionController::class, 'show']);
+    Route::put('/{position}', [PositionController::class, 'update']);
+    Route::delete('/{position}', [PositionController::class, 'destroy']);
 });
 
 // Маршруты для управления амплуа
 Route::prefix('ampluas')->group(function () {
-    Route::get('/', [App\Http\Controllers\Api\AmpluaController::class, 'index']);
-    Route::post('/', [App\Http\Controllers\Api\AmpluaController::class, 'store']);
-    Route::get('/statistics', [App\Http\Controllers\Api\AmpluaController::class, 'statistics']);
-    Route::get('/{amplua}', [App\Http\Controllers\Api\AmpluaController::class, 'show']);
-    Route::put('/{amplua}', [App\Http\Controllers\Api\AmpluaController::class, 'update']);
-    Route::delete('/{amplua}', [App\Http\Controllers\Api\AmpluaController::class, 'destroy']);
+    Route::get('/', [AmpluaController::class, 'index']);
+    Route::post('/', [AmpluaController::class, 'store']);
+    Route::get('/statistics', [AmpluaController::class, 'statistics']);
+    Route::get('/{amplua}', [AmpluaController::class, 'show']);
+    Route::put('/{amplua}', [AmpluaController::class, 'update']);
+    Route::delete('/{amplua}', [AmpluaController::class, 'destroy']);
 });

@@ -25,6 +25,12 @@ class Person extends Model
         'birth_date' => 'date',
     ];
 
+    protected $appends = [
+        'full_name',
+        'short_name',
+        'age'
+    ];
+
     /**
      * Получить полное имя персоны
      */
@@ -52,8 +58,11 @@ class Person extends Model
     /**
      * Получить возраст персоны
      */
-    public function getAgeAttribute(): int
+    public function getAgeAttribute(): ?int
     {
+        if (!$this->birth_date) {
+            return null;
+        }
         return $this->birth_date->age;
     }
 
