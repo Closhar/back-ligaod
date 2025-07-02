@@ -126,27 +126,53 @@ class Person extends Model
     }
 
     /**
-     * Отношение к ролям через членство
+     * Отношение к должностям через членство
      */
-    public function roleMemberships(): HasMany
+    public function positionMemberships(): HasMany
     {
-        return $this->hasMany(PersonRoleMembership::class);
+        return $this->hasMany(PersonPositionMembership::class);
     }
 
     /**
-     * Получить активные членства в ролях
+     * Получить активные членства в должностях
      */
-    public function activeRoleMemberships(): HasMany
+    public function activePositionMemberships(): HasMany
     {
-        return $this->hasMany(PersonRoleMembership::class)->whereNull('ended_at');
+        return $this->hasMany(PersonPositionMembership::class)->whereNull('ended_at');
     }
 
     /**
-     * Отношение к ролям
+     * Отношение к должностям
      */
-    public function roles(): BelongsToMany
+    public function positions(): BelongsToMany
     {
-        return $this->belongsToMany(Role::class, 'person_role_memberships')
+        return $this->belongsToMany(Position::class, 'person_position_memberships')
+            ->withPivot(['started_at', 'ended_at', 'notes'])
+            ->withTimestamps();
+    }
+
+    /**
+     * Отношение к амплуа через членство
+     */
+    public function ampluaMemberships(): HasMany
+    {
+        return $this->hasMany(PersonAmpluaMembership::class);
+    }
+
+    /**
+     * Получить активные членства в амплуа
+     */
+    public function activeAmpluaMemberships(): HasMany
+    {
+        return $this->hasMany(PersonAmpluaMembership::class)->whereNull('ended_at');
+    }
+
+    /**
+     * Отношение к амплуа
+     */
+    public function ampluas(): BelongsToMany
+    {
+        return $this->belongsToMany(Amplua::class, 'person_amplua_memberships')
             ->withPivot(['started_at', 'ended_at', 'notes'])
             ->withTimestamps();
     }
@@ -176,11 +202,7 @@ class Person extends Model
      */
     public function isSportsman(): bool
     {
-        return $this->activeRoleMemberships()
-            ->whereHas('role', function ($q) {
-                $q->where('type', 'sportsman');
-            })
-            ->exists();
+        return $this->activeAmpluaMemberships()->exists();
     }
 
     /**
@@ -188,45 +210,23 @@ class Person extends Model
      */
     public function isNonSportsman(): bool
     {
-        return $this->activeRoleMemberships()
-            ->whereHas('role', function ($q) {
-                $q->where('type', 'non_sportsman');
-            })
-            ->exists();
+        return $this->activePositionMemberships()->exists();
     }
 
     /**
-     * Получить текущие активные роли
+     * Получить текущие активные должности
      */
-    public function getCurrentRolesAttribute()
+    public function getCurrentPositionsAttribute()
     {
-        return $this->activeRoleMemberships()->with('role')->get();
+        return $this->activePositionMemberships()->with('position')->get();
     }
 
     /**
-     * Получить текущие амплуа (для спортсменов)
+     * Получить текущие активные амплуа
      */
-    public function getCurrentSportsmanRolesAttribute()
+    public function getCurrentAmpluasAttribute()
     {
-        return $this->activeRoleMemberships()
-            ->whereHas('role', function ($q) {
-                $q->where('type', 'sportsman');
-            })
-            ->with('role')
-            ->get();
-    }
-
-    /**
-     * Получить текущие должности (для не спортсменов)
-     */
-    public function getCurrentNonSportsmanRolesAttribute()
-    {
-        return $this->activeRoleMemberships()
-            ->whereHas('role', function ($q) {
-                $q->where('type', 'non_sportsman');
-            })
-            ->with('role')
-            ->get();
+        return $this->activeAmpluaMemberships()->with('amplua')->get();
     }
 
     /**
@@ -234,9 +234,7 @@ class Person extends Model
      */
     public function scopeSportsmen($query)
     {
-        return $query->whereHas('activeRoleMemberships.role', function ($q) {
-            $q->where('type', 'sportsman');
-        });
+        return $query->whereHas('activeAmpluaMemberships');
     }
 
     /**
@@ -244,16 +242,17 @@ class Person extends Model
      */
     public function scopeNonSportsmen($query)
     {
-        return $query->whereHas('activeRoleMemberships.role', function ($q) {
-            $q->where('type', 'non_sportsman');
-        });
+        return $query->whereHas('activePositionMemberships');
     }
 
     /**
-     * Scope для персон с активными ролями
+     * Scope для персон с активными должностями или амплуа
      */
     public function scopeWithActiveRole($query)
     {
-        return $query->whereHas('activeRoleMemberships');
+        return $query->where(function ($q) {
+            $q->whereHas('activePositionMemberships')
+              ->orWhereHas('activeAmpluaMemberships');
+        });
     }
 }

@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Amplua;
 use App\Models\Club;
 use App\Models\Person;
+use App\Models\Position;
 use App\Models\Sport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,7 +20,13 @@ class PersonController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Person::with(['clubs', 'sports', 'mainImage', 'activeRoleMemberships.role']);
+        $query = Person::with([
+            'clubs',
+            'sports',
+            'mainImage',
+            'activePositionMemberships.position',
+            'activeAmpluaMemberships.amplua'
+        ]);
 
         // Поиск по имени
         if ($request->has('search')) {
@@ -32,6 +40,20 @@ class PersonController extends Controller
             } elseif ($request->person_type === 'non_sportsman') {
                 $query->nonSportsmen();
             }
+        }
+
+        // Фильтрация по должности
+        if ($request->has('position_id')) {
+            $query->whereHas('positionMemberships', function ($q) use ($request) {
+                $q->where('position_id', $request->position_id);
+            });
+        }
+
+        // Фильтрация по амплуа
+        if ($request->has('amplua_id')) {
+            $query->whereHas('ampluaMemberships', function ($q) use ($request) {
+                $q->where('amplua_id', $request->amplua_id);
+            });
         }
 
         // Фильтрация по клубу
@@ -80,7 +102,8 @@ class PersonController extends Controller
             'surnameChanges',
             'clubMemberships.club',
             'sportMemberships.sport',
-            'roleMemberships.role'
+            'positionMemberships.position',
+            'ampluaMemberships.amplua'
         ]);
 
         return response()->json([
@@ -184,6 +207,8 @@ class PersonController extends Controller
             'with_clubs' => Person::whereHas('activeClubMemberships')->count(),
             'with_sports' => Person::whereHas('activeSportMemberships')->count(),
             'with_images' => Person::whereHas('images')->count(),
+            'with_positions' => Person::whereHas('activePositionMemberships')->count(),
+            'with_ampluas' => Person::whereHas('activeAmpluaMemberships')->count(),
         ];
 
         return response()->json([
@@ -215,6 +240,32 @@ class PersonController extends Controller
         return response()->json([
             'success' => true,
             'data' => $sports
+        ]);
+    }
+
+    /**
+     * Получить список должностей для фильтрации
+     */
+    public function positions(): JsonResponse
+    {
+        $positions = Position::select('id', 'name')->active()->orderBy('name')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $positions
+        ]);
+    }
+
+    /**
+     * Получить список амплуа для фильтрации
+     */
+    public function ampluas(): JsonResponse
+    {
+        $ampluas = Amplua::select('id', 'name')->active()->orderBy('name')->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $ampluas
         ]);
     }
 }

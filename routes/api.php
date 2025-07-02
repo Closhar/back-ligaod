@@ -576,6 +576,8 @@ Route::prefix('people')->group(function () {
     Route::get('/statistics', [PersonController::class, 'statistics']);
     Route::get('/clubs', [PersonController::class, 'clubs']);
     Route::get('/sports', [PersonController::class, 'sports']);
+    Route::get('/positions', [PersonController::class, 'positions']);
+    Route::get('/ampluas', [PersonController::class, 'ampluas']);
     Route::get('/{person}', [PersonController::class, 'show']);
     Route::put('/{person}', [PersonController::class, 'update']);
     Route::delete('/{person}', [PersonController::class, 'destroy']);
@@ -645,3 +647,23 @@ Route::prefix('roles')->group(function () {
 
 // Маршруты для статистики членств в ролях
 Route::get('/role-memberships/statistics', [PersonRoleMembershipController::class, 'statistics']);
+
+// Маршруты для управления должностями
+Route::prefix('positions')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\PositionController::class, 'index']);
+    Route::post('/', [App\Http\Controllers\Api\PositionController::class, 'store']);
+    Route::get('/statistics', [App\Http\Controllers\Api\PositionController::class, 'statistics']);
+    Route::get('/{position}', [App\Http\Controllers\Api\PositionController::class, 'show']);
+    Route::put('/{position}', [App\Http\Controllers\Api\PositionController::class, 'update']);
+    Route::delete('/{position}', [App\Http\Controllers\Api\PositionController::class, 'destroy']);
+});
+
+// Маршруты для управления амплуа
+Route::prefix('ampluas')->group(function () {
+    Route::get('/', [App\Http\Controllers\Api\AmpluaController::class, 'index']);
+    Route::post('/', [App\Http\Controllers\Api\AmpluaController::class, 'store']);
+    Route::get('/statistics', [App\Http\Controllers\Api\AmpluaController::class, 'statistics']);
+    Route::get('/{amplua}', [App\Http\Controllers\Api\AmpluaController::class, 'show']);
+    Route::put('/{amplua}', [App\Http\Controllers\Api\AmpluaController::class, 'update']);
+    Route::delete('/{amplua}', [App\Http\Controllers\Api\AmpluaController::class, 'destroy']);
+});
