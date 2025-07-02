@@ -17,7 +17,7 @@ class PersonSportMembershipController extends Controller
     public function index(Person $person): JsonResponse
     {
         $memberships = $person->sportMemberships()
-            ->with('sport')
+            ->with(['sport', 'person'])
             ->orderBy('started_at', 'desc')
             ->get();
 
@@ -75,7 +75,7 @@ class PersonSportMembershipController extends Controller
             'achievements' => $data['achievements'],
         ]);
 
-        $membership->load('sport');
+        $membership->load(['sport', 'person']);
 
         return response()->json([
             'success' => true,
@@ -117,7 +117,7 @@ class PersonSportMembershipController extends Controller
 
         $validatedData = $validator->validated();
         $membership->update($validatedData);
-        $membership->load('sport');
+        $membership->load(['sport', 'person']);
 
         return response()->json([
             'success' => true,
@@ -171,7 +171,7 @@ class PersonSportMembershipController extends Controller
         }
 
         $membership->update(['ended_at' => $request->ended_at]);
-        $membership->load('sport');
+        $membership->load(['sport', 'person']);
 
         return response()->json([
             'success' => true,
@@ -186,7 +186,7 @@ class PersonSportMembershipController extends Controller
     public function active(Person $person): JsonResponse
     {
         $memberships = $person->activeSportMemberships()
-            ->with('sport')
+            ->with(['sport', 'person'])
             ->orderBy('started_at', 'desc')
             ->get();
 

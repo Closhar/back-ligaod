@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('person_id')->constrained()->onDelete('cascade');
             $table->foreignId('club_id')->constrained()->onDelete('cascade');
-            $table->date('joined_at');
+            $table->date('joined_at')->nullable();
             $table->date('left_at')->nullable(); // null означает, что персона все еще в клубе
             $table->string('position')->nullable(); // должность/позиция в клубе
             $table->text('notes')->nullable(); // дополнительные заметки

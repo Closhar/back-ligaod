@@ -14,7 +14,7 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('person_id')->constrained()->onDelete('cascade');
             $table->foreignId('sport_id')->constrained()->onDelete('cascade');
-            $table->date('started_at');
+            $table->date('started_at')->nullable();
             $table->date('ended_at')->nullable(); // null означает, что персона все еще занимается этим видом спорта
             $table->string('level')->nullable(); // уровень в спорте (любитель, профессионал, мастер спорта и т.д.)
             $table->text('achievements')->nullable(); // достижения в спорте
