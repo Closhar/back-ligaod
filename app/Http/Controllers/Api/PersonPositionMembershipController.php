@@ -39,9 +39,12 @@ class PersonPositionMembershipController extends Controller
     /**
      * Получить конкретное членство в должности
      */
-    public function show(PersonPositionMembership $membership): JsonResponse
+    public function show(Request $request, Person $person, $membershipId): JsonResponse
     {
-        $membership->load(['person', 'position']);
+        $membership = PersonPositionMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->with(['person', 'position'])
+            ->firstOrFail();
 
         return response()->json([
             'success' => true,
@@ -95,8 +98,12 @@ class PersonPositionMembershipController extends Controller
     /**
      * Обновить членство в должности
      */
-    public function update(Request $request, PersonPositionMembership $membership): JsonResponse
+    public function update(Request $request, Person $person, $membershipId): JsonResponse
     {
+        $membership = PersonPositionMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
         $validator = Validator::make($request->all(), [
             'started_at' => 'sometimes|required|date',
             'ended_at' => 'nullable|date|after:started_at',
@@ -123,8 +130,12 @@ class PersonPositionMembershipController extends Controller
     /**
      * Удалить членство в должности
      */
-    public function destroy(PersonPositionMembership $membership): JsonResponse
+    public function destroy(Request $request, Person $person, $membershipId): JsonResponse
     {
+        $membership = PersonPositionMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
         $membership->delete();
 
         return response()->json([
@@ -136,8 +147,12 @@ class PersonPositionMembershipController extends Controller
     /**
      * Завершить активное членство в должности
      */
-    public function endMembership(PersonPositionMembership $membership): JsonResponse
+    public function endMembership(Request $request, Person $person, $membershipId): JsonResponse
     {
+        $membership = PersonPositionMembership::where('id', $membershipId)
+            ->where('person_id', $person->id)
+            ->firstOrFail();
+
         if ($membership->ended_at) {
             return response()->json([
                 'success' => false,
