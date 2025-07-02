@@ -20,74 +20,92 @@ class PersonController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = Person::with([
-            'clubs',
-            'sports',
-            'mainImage',
-            'activePositionMemberships.position',
-            'activeAmpluaMemberships.amplua'
-        ]);
+        try {
+            // Сначала проверим, есть ли вообще персоны в базе
+            $totalCount = Person::count();
 
-        // Поиск по имени
-        if ($request->has('search')) {
-            $query->searchByName($request->search);
-        }
+            $query = Person::with([
+                'mainImage',
+                'activePositionMemberships.position',
+                'activeAmpluaMemberships.amplua',
+                'activeClubMemberships.club',
+                'activeSportMemberships.sport'
+            ]);
 
-        // Фильтрация по типу персоны
-        if ($request->has('person_type')) {
-            if ($request->person_type === 'sportsman') {
-                $query->sportsmen();
-            } elseif ($request->person_type === 'non_sportsman') {
-                $query->nonSportsmen();
+            // Поиск по имени
+            if ($request->has('search') && !empty($request->search)) {
+                $query->searchByName($request->search);
             }
+
+            // Фильтрация по типу персоны
+            if ($request->has('person_type') && !empty($request->person_type)) {
+                if ($request->person_type === 'sportsman') {
+                    $query->sportsmen();
+                } elseif ($request->person_type === 'non_sportsman') {
+                    $query->nonSportsmen();
+                }
+            }
+
+            // Фильтрация по должности
+            if ($request->has('position_id') && !empty($request->position_id)) {
+                $query->whereHas('positionMemberships', function ($q) use ($request) {
+                    $q->where('position_id', $request->position_id);
+                });
+            }
+
+            // Фильтрация по амплуа
+            if ($request->has('amplua_id') && !empty($request->amplua_id)) {
+                $query->whereHas('ampluaMemberships', function ($q) use ($request) {
+                    $q->where('amplua_id', $request->amplua_id);
+                });
+            }
+
+            // Фильтрация по клубу
+            if ($request->has('club_id') && !empty($request->club_id)) {
+                $query->whereHas('clubMemberships', function ($q) use ($request) {
+                    $q->where('club_id', $request->club_id);
+                });
+            }
+
+            // Фильтрация по виду спорта
+            if ($request->has('sport_id') && !empty($request->sport_id)) {
+                $query->whereHas('sportMemberships', function ($q) use ($request) {
+                    $q->where('sport_id', $request->sport_id);
+                });
+            }
+
+            // Сортировка
+            $sortBy = $request->get('sort_by', 'created_at');
+            $sortOrder = $request->get('sort_order', 'desc');
+            $query->orderBy($sortBy, $sortOrder);
+
+            $perPage = $request->get('per_page', 15);
+            $people = $query->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'data' => $people->items(),
+                'pagination' => [
+                    'current_page' => $people->currentPage(),
+                    'last_page' => $people->lastPage(),
+                    'per_page' => $people->perPage(),
+                    'total' => $people->total(),
+                ],
+                'debug' => [
+                    'total_count' => $totalCount,
+                    'query_count' => $people->total(),
+                    'items_count' => count($people->items())
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки персон: ' . $e->getMessage(),
+                'debug' => [
+                    'total_count' => Person::count()
+                ]
+            ], 500);
         }
-
-        // Фильтрация по должности
-        if ($request->has('position_id')) {
-            $query->whereHas('positionMemberships', function ($q) use ($request) {
-                $q->where('position_id', $request->position_id);
-            });
-        }
-
-        // Фильтрация по амплуа
-        if ($request->has('amplua_id')) {
-            $query->whereHas('ampluaMemberships', function ($q) use ($request) {
-                $q->where('amplua_id', $request->amplua_id);
-            });
-        }
-
-        // Фильтрация по клубу
-        if ($request->has('club_id')) {
-            $query->whereHas('clubMemberships', function ($q) use ($request) {
-                $q->where('club_id', $request->club_id);
-            });
-        }
-
-        // Фильтрация по виду спорта
-        if ($request->has('sport_id')) {
-            $query->whereHas('sportMemberships', function ($q) use ($request) {
-                $q->where('sport_id', $request->sport_id);
-            });
-        }
-
-        // Сортировка
-        $sortBy = $request->get('sort_by', 'created_at');
-        $sortOrder = $request->get('sort_order', 'desc');
-        $query->orderBy($sortBy, $sortOrder);
-
-        $perPage = $request->get('per_page', 15);
-        $people = $query->paginate($perPage);
-
-        return response()->json([
-            'success' => true,
-            'data' => $people->items(),
-            'pagination' => [
-                'current_page' => $people->currentPage(),
-                'last_page' => $people->lastPage(),
-                'per_page' => $people->perPage(),
-                'total' => $people->total(),
-            ]
-        ]);
     }
 
     /**
