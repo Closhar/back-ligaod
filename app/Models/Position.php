@@ -48,6 +48,14 @@ class Position extends Model
     }
 
     /**
+     * Получить активные членства в этой должности (алиас для совместимости)
+     */
+    public function activePositionMemberships(): HasMany
+    {
+        return $this->activeMemberships();
+    }
+
+    /**
      * Scope для активных должностей
      */
     public function scopeActive($query)

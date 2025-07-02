@@ -48,6 +48,14 @@ class Amplua extends Model
     }
 
     /**
+     * Получить активные членства в этом амплуа (алиас для совместимости)
+     */
+    public function activeAmpluaMemberships(): HasMany
+    {
+        return $this->activeMemberships();
+    }
+
+    /**
      * Scope для активных амплуа
      */
     public function scopeActive($query)

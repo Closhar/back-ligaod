@@ -31,9 +31,11 @@ use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\ArticleViewController;
 use App\Http\Controllers\Api\GalleryAdminController;
+use App\Http\Controllers\Api\PersonAmpluaMembershipController;
 use App\Http\Controllers\Api\PersonClubMembershipController;
 use App\Http\Controllers\Api\PersonController;
 use App\Http\Controllers\Api\PersonImageController;
+use App\Http\Controllers\Api\PersonPositionMembershipController;
 use App\Http\Controllers\Api\PersonRoleMembershipController;
 use App\Http\Controllers\Api\PersonSportMembershipController;
 use App\Http\Controllers\Api\PersonSurnameChangeController;
@@ -630,6 +632,28 @@ Route::prefix('people')->group(function () {
         Route::post('/{membership}/end', [PersonRoleMembershipController::class, 'endMembership']);
         Route::get('/active', [PersonRoleMembershipController::class, 'active']);
         Route::get('/history', [PersonRoleMembershipController::class, 'history']);
+    });
+
+    // Маршруты для членства в должностях
+    Route::prefix('{person}/position-memberships')->group(function () {
+        Route::get('/', [PersonPositionMembershipController::class, 'index']);
+        Route::post('/', [PersonPositionMembershipController::class, 'store']);
+        Route::put('/{membership}', [PersonPositionMembershipController::class, 'update']);
+        Route::delete('/{membership}', [PersonPositionMembershipController::class, 'destroy']);
+        Route::post('/{membership}/end', [PersonPositionMembershipController::class, 'endMembership']);
+        Route::get('/active', [PersonPositionMembershipController::class, 'active']);
+        Route::get('/history', [PersonPositionMembershipController::class, 'history']);
+    });
+
+    // Маршруты для членства в амплуа
+    Route::prefix('{person}/amplua-memberships')->group(function () {
+        Route::get('/', [PersonAmpluaMembershipController::class, 'index']);
+        Route::post('/', [PersonAmpluaMembershipController::class, 'store']);
+        Route::put('/{membership}', [PersonAmpluaMembershipController::class, 'update']);
+        Route::delete('/{membership}', [PersonAmpluaMembershipController::class, 'destroy']);
+        Route::post('/{membership}/end', [PersonAmpluaMembershipController::class, 'endMembership']);
+        Route::get('/active', [PersonAmpluaMembershipController::class, 'active']);
+        Route::get('/history', [PersonAmpluaMembershipController::class, 'history']);
     });
 });
 
