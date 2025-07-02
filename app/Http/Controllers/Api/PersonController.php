@@ -222,12 +222,19 @@ class PersonController extends Controller
      */
     public function clubs(): JsonResponse
     {
-        $clubs = Club::select('id', 'name')->orderBy('name')->get();
+        try {
+            $clubs = Club::select('id', 'title as name')->orderBy('title')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $clubs
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $clubs
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки клубов: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -235,12 +242,19 @@ class PersonController extends Controller
      */
     public function sports(): JsonResponse
     {
-        $sports = Sport::select('id', 'name')->orderBy('name')->get();
+        try {
+            $sports = Sport::select('id', 'title as name')->orderBy('title')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $sports
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $sports
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки видов спорта: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -248,12 +262,19 @@ class PersonController extends Controller
      */
     public function positions(): JsonResponse
     {
-        $positions = Position::select('id', 'name')->active()->orderBy('name')->get();
+        try {
+            $positions = Position::select('id', 'name')->where('is_active', true)->orderBy('name')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $positions
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $positions
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки должностей: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -261,11 +282,18 @@ class PersonController extends Controller
      */
     public function ampluas(): JsonResponse
     {
-        $ampluas = Amplua::select('id', 'name')->active()->orderBy('name')->get();
+        try {
+            $ampluas = Amplua::select('id', 'name')->where('is_active', true)->orderBy('name')->get();
 
-        return response()->json([
-            'success' => true,
-            'data' => $ampluas
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $ampluas
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки амплуа: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }
