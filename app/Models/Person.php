@@ -131,7 +131,7 @@ class Person extends Model
      */
     public function images(): HasMany
     {
-        return $this->hasMany(PersonImage::class)->orderBy('sort_order');
+        return $this->hasMany(PersonImage::class)->orderBy('position');
     }
 
     /**
@@ -187,11 +187,11 @@ class Person extends Model
     }
 
     /**
-     * Получить основное изображение (первое по сортировке)
+     * Получить основное изображение
      */
     public function mainImage(): HasMany
     {
-        return $this->hasMany(PersonImage::class)->orderBy('sort_order')->limit(1);
+        return $this->hasMany(PersonImage::class)->where('is_main', true);
     }
 
     /**

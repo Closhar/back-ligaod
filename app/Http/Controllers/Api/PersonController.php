@@ -393,4 +393,250 @@ class PersonController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Получить изображения пользователя
+     */
+        public function getImages(Person $person): JsonResponse
+    {
+        try {
+            $images = $person->images()->orderBy('position')->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $images
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки изображений: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Загрузить изображение пользователя
+     */
+    public function uploadImage(Request $request, Person $person): JsonResponse
+    {
+        try {
+            $request->validate([
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240' // 10MB max
+            ]);
+
+            $file = $request->file('image');
+            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+
+            // Создаем директорию если не существует
+            $directory = 'people/' . $person->id . '/images';
+            Storage::disk('public')->makeDirectory($directory);
+
+            // Сохраняем оригинальный файл
+            $filePath = $file->storeAs($directory, $fileName, 'public');
+
+            // Оптимизируем изображение до 500x750
+            $imagePath = Storage::disk('public')->path($filePath);
+            $this->optimizeImage($imagePath, 500, 750);
+
+            // Создаем запись в базе данных
+            $image = $person->images()->create([
+                'image_path' => $filePath,
+                'title' => $file->getClientOriginalName(),
+                'position' => $person->images()->max('position') + 1,
+                'is_main' => $person->images()->count() === 0 // Первое изображение становится главным
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Изображение успешно загружено',
+                'data' => $image
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки изображения: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Удалить изображение пользователя
+     */
+    public function deleteImage(Person $person, $imageId): JsonResponse
+    {
+        try {
+            $image = $person->images()->findOrFail($imageId);
+
+            // Удаляем файл
+            if (Storage::disk('public')->exists($image->image_path)) {
+                Storage::disk('public')->delete($image->image_path);
+            }
+
+            $image->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Изображение успешно удалено'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка удаления изображения: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Удалить несколько изображений пользователя
+     */
+    public function deleteMultipleImages(Request $request, Person $person): JsonResponse
+    {
+        try {
+            $request->validate([
+                'image_ids' => 'required|array',
+                'image_ids.*' => 'integer|exists:person_images,id'
+            ]);
+
+            $images = $person->images()->whereIn('id', $request->image_ids)->get();
+
+            foreach ($images as $image) {
+                // Удаляем файл
+                if (Storage::disk('public')->exists($image->image_path)) {
+                    Storage::disk('public')->delete($image->image_path);
+                }
+                $image->delete();
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Изображения успешно удалены'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка удаления изображений: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Установить главное изображение
+     */
+    public function setMainImage(Person $person, $imageId): JsonResponse
+    {
+        try {
+            $image = $person->images()->findOrFail($imageId);
+
+            // Сбрасываем главное изображение у всех изображений пользователя
+            $person->images()->update(['is_main' => false]);
+
+            // Устанавливаем новое главное изображение
+            $image->update(['is_main' => true]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Главное изображение установлено'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка установки главного изображения: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Обновить позиции изображений
+     */
+    public function updateImagePositions(Request $request, Person $person): JsonResponse
+    {
+        try {
+            $request->validate([
+                'positions' => 'required|array',
+                'positions.*.image_id' => 'required|integer|exists:person_images,id',
+                'positions.*.position' => 'required|integer|min:1'
+            ]);
+
+            foreach ($request->positions as $positionData) {
+                $person->images()
+                    ->where('id', $positionData['image_id'])
+                    ->update(['position' => $positionData['position']]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Позиции изображений обновлены'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка обновления позиций: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Оптимизировать изображение
+     */
+    private function optimizeImage($imagePath, $maxWidth, $maxHeight)
+    {
+        if (!extension_loaded('gd')) {
+            return; // Если GD не установлен, пропускаем оптимизацию
+        }
+
+        $imageInfo = getimagesize($imagePath);
+        if (!$imageInfo) {
+            return;
+        }
+
+        $originalWidth = $imageInfo[0];
+        $originalHeight = $imageInfo[1];
+        $mimeType = $imageInfo['mime'];
+
+        // Вычисляем новые размеры с сохранением пропорций
+        $ratio = min($maxWidth / $originalWidth, $maxHeight / $originalHeight);
+        $newWidth = round($originalWidth * $ratio);
+        $newHeight = round($originalHeight * $ratio);
+
+        // Создаем новое изображение
+        $newImage = imagecreatetruecolor($newWidth, $newHeight);
+
+        // Загружаем оригинальное изображение
+        switch ($mimeType) {
+            case 'image/jpeg':
+                $originalImage = imagecreatefromjpeg($imagePath);
+                break;
+            case 'image/png':
+                $originalImage = imagecreatefrompng($imagePath);
+                // Сохраняем прозрачность для PNG
+                imagealphablending($newImage, false);
+                imagesavealpha($newImage, true);
+                break;
+            case 'image/gif':
+                $originalImage = imagecreatefromgif($imagePath);
+                break;
+            default:
+                return;
+        }
+
+        // Изменяем размер
+        imagecopyresampled($newImage, $originalImage, 0, 0, 0, 0, $newWidth, $newHeight, $originalWidth, $originalHeight);
+
+        // Сохраняем оптимизированное изображение
+        switch ($mimeType) {
+            case 'image/jpeg':
+                imagejpeg($newImage, $imagePath, 85); // Качество 85%
+                break;
+            case 'image/png':
+                imagepng($newImage, $imagePath, 6); // Сжатие 6
+                break;
+            case 'image/gif':
+                imagegif($newImage, $imagePath);
+                break;
+        }
+
+        // Освобождаем память
+        imagedestroy($originalImage);
+        imagedestroy($newImage);
+    }
 }

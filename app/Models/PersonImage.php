@@ -13,13 +13,20 @@ class PersonImage extends Model
     protected $fillable = [
         'person_id',
         'image_path',
+        'title',
+        'position',
+        'is_main',
         'alt_text',
         'sort_order',
     ];
 
     protected $casts = [
         'sort_order' => 'integer',
+        'position' => 'integer',
+        'is_main' => 'boolean',
     ];
+
+    protected $appends = ['image_url'];
 
     /**
      * Отношение к персоне
@@ -38,11 +45,11 @@ class PersonImage extends Model
     }
 
     /**
-     * Scope для сортировки по порядку
+     * Scope для сортировки по позиции
      */
     public function scopeOrdered($query)
     {
-        return $query->orderBy('sort_order');
+        return $query->orderBy('position');
     }
 
     /**
@@ -50,6 +57,6 @@ class PersonImage extends Model
      */
     public function scopeMain($query)
     {
-        return $query->orderBy('sort_order')->limit(1);
+        return $query->where('is_main', true);
     }
 }

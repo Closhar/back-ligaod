@@ -588,11 +588,12 @@ Route::prefix('people')->group(function () {
 
     // Маршруты для изображений персон
     Route::prefix('{person}/images')->group(function () {
-        Route::get('/', [PersonImageController::class, 'index']);
-        Route::post('/', [PersonImageController::class, 'store']);
-        Route::put('/{image}', [PersonImageController::class, 'update']);
-        Route::delete('/{image}', [PersonImageController::class, 'destroy']);
-        Route::post('/reorder', [PersonImageController::class, 'reorder']);
+        Route::get('/', [PersonController::class, 'getImages']);
+        Route::post('/', [PersonController::class, 'uploadImage']);
+        Route::delete('/{imageId}', [PersonController::class, 'deleteImage']);
+        Route::post('/delete-multiple', [PersonController::class, 'deleteMultipleImages']);
+        Route::post('/{imageId}/set-main', [PersonController::class, 'setMainImage']);
+        Route::post('/update-positions', [PersonController::class, 'updateImagePositions']);
     });
 
     // Маршруты для членства в клубах
