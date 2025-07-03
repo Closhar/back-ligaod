@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Amplua;
 use App\Models\Club;
+use App\Models\Param;
 use App\Models\Person;
 use App\Models\Position;
 use App\Models\Sport;
@@ -478,10 +479,19 @@ class PersonController extends Controller
                     $logoFile = $request->file('custom_logo');
                     $logoPath = $logoFile->getPathname();
                 } else {
-                    // Используем логотип по умолчанию
-                    $defaultLogoPath = public_path('storage/logos/default-logo.png');
-                    if (file_exists($defaultLogoPath)) {
-                        $logoPath = $defaultLogoPath;
+                    // Используем логотип по умолчанию из глобальных параметров
+                    $personLogoParam = Param::where('name', 'person_logo')->first();
+                    if ($personLogoParam && $personLogoParam->value) {
+                        $defaultLogoPath = public_path('storage/' . $personLogoParam->value);
+                        if (file_exists($defaultLogoPath)) {
+                            $logoPath = $defaultLogoPath;
+                        }
+                    } else {
+                        // Fallback на старый путь
+                        $defaultLogoPath = public_path('storage/logos/default-logo.png');
+                        if (file_exists($defaultLogoPath)) {
+                            $logoPath = $defaultLogoPath;
+                        }
                     }
                 }
 
