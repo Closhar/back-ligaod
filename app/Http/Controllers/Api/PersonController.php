@@ -306,9 +306,10 @@ class PersonController extends Controller
 
             $sports = $query->orderBy('title')->limit($limit)->get();
 
-            // Добавляем поле name для совместимости с фронтендом
+            // Добавляем поля для совместимости с фронтендом
             $sports->each(function ($sport) {
                 $sport->name = $sport->title;
+                $sport->icon_name = $sport->icon; // Добавляем название иконки
             });
 
             return response()->json([

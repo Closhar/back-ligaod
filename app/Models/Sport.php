@@ -77,4 +77,12 @@ class Sport extends Model
     {
         return $this->title ?? '';
     }
+
+    /**
+     * Получить название иконки вида спорта (алиас для совместимости с фронтендом)
+     */
+    public function getIconNameAttribute(): ?string
+    {
+        return $this->icon;
+    }
 }
