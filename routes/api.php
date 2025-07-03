@@ -694,3 +694,19 @@ Route::prefix('ampluas')->group(function () {
     Route::put('/{amplua}', [AmpluaController::class, 'update']);
     Route::delete('/{amplua}', [AmpluaController::class, 'destroy']);
 });
+
+Route::get('/storage/{path}', function ($path) {
+    $fullPath = storage_path('app/public/' . $path);
+
+    if (!file_exists($fullPath)) {
+        abort(404);
+    }
+
+    $file = file_get_contents($fullPath);
+    $type = mime_content_type($fullPath);
+
+    return response($file, 200, [
+        'Content-Type' => $type,
+        'Cache-Control' => 'public, max-age=31536000'
+    ]);
+})->where('path', '.*');
