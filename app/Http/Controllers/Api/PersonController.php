@@ -250,17 +250,17 @@ class PersonController extends Controller
         ]);
     }
 
-    /**
+        /**
      * Получить список клубов для фильтрации
      */
     public function clubs(): JsonResponse
     {
         try {
-            $clubs = Club::select('id', 'title')->orderBy('title')->get();
+            $clubs = Club::with(['city', 'sport', 'gender'])->orderBy('title')->get();
 
-            // Добавляем поле name для совместимости с фронтендом
+            // Добавляем поле name для совместимости с фронтендом, используя full_info
             $clubs->each(function ($club) {
-                $club->name = $club->title;
+                $club->name = $club->full_info;
             });
 
             return response()->json([

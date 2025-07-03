@@ -18,6 +18,7 @@ if ($club) {
     echo "   - ID: {$club->id}\n";
     echo "   - Title: {$club->title}\n";
     echo "   - Name (атрибут): {$club->name}\n";
+    echo "   - Full Info: {$club->full_info}\n";
     echo "   - Slug: {$club->slug}\n";
 } else {
     echo "❌ Клуб с ID 57 НЕ найден в таблице clubs\n";
@@ -48,6 +49,7 @@ foreach ($activeMemberships as $membership) {
     if ($membership->club) {
         echo "     Club title: {$membership->club->title}\n";
         echo "     Club name: {$membership->club->name}\n";
+        echo "     Club full_info: {$membership->club->full_info}\n";
     }
     echo "\n";
 }

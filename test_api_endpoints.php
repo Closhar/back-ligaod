@@ -16,18 +16,19 @@ try {
     $response = $controller->clubs();
     $data = json_decode($response->getContent(), true);
 
-    if ($data['success']) {
-        echo "✅ Успешно загружено клубов: " . count($data['data']) . "\n";
-        if (count($data['data']) > 0) {
-            $firstClub = $data['data'][0];
-            echo "   Первый клуб:\n";
-            echo "     - ID: {$firstClub['id']}\n";
-            echo "     - Title: {$firstClub['title']}\n";
-            echo "     - Name: " . (isset($firstClub['name']) ? $firstClub['name'] : 'ОТСУТСТВУЕТ') . "\n";
+            if ($data['success']) {
+            echo "✅ Успешно загружено клубов: " . count($data['data']) . "\n";
+            if (count($data['data']) > 0) {
+                $firstClub = $data['data'][0];
+                echo "   Первый клуб:\n";
+                echo "     - ID: {$firstClub['id']}\n";
+                echo "     - Title: {$firstClub['title']}\n";
+                echo "     - Name: " . (isset($firstClub['name']) ? $firstClub['name'] : 'ОТСУТСТВУЕТ') . "\n";
+                echo "     - Full Info: " . (isset($firstClub['full_info']) ? $firstClub['full_info'] : 'ОТСУТСТВУЕТ') . "\n";
+            }
+        } else {
+            echo "❌ Ошибка: " . $data['message'] . "\n";
         }
-    } else {
-        echo "❌ Ошибка: " . $data['message'] . "\n";
-    }
 } catch (Exception $e) {
     echo "❌ Исключение: " . $e->getMessage() . "\n";
 }
