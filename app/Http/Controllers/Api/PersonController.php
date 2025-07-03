@@ -39,8 +39,11 @@ class PersonController extends Controller
                     $query->whereHas('club'); // Исключаем членства с несуществующими командами
                 },
                 'activeClubMemberships.club' => function ($query) {
-                    $query->select(['id', 'title', 'image']); // Выбираем только нужные поля
+                    $query->select(['id', 'title', 'image', 'city_id', 'sport_id', 'gender_id']); // Выбираем поля для full_info
                 },
+                'activeClubMemberships.club.city',
+                'activeClubMemberships.club.sport',
+                'activeClubMemberships.club.gender',
                 'activeSportMemberships' => function ($query) {
                     $query->whereHas('sport'); // Исключаем членства с несуществующими видами спорта
                 },
