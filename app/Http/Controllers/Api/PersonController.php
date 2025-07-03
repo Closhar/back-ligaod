@@ -434,7 +434,9 @@ class PersonController extends Controller
                 'logo_position' => 'string|in:top-left,top-right,bottom-left,bottom-right',
                 'logo_size' => 'numeric|min:5|max:30',
                 'logo_opacity' => 'numeric|min:0.1|max:1',
-                'custom_logo' => 'image|mimes:jpeg,png,jpg,gif,webp|max:20480'
+                'custom_logo' => 'image|mimes:jpeg,png,jpg,gif,webp|max:20480',
+                'target_width' => 'integer|min:100|max:4000',
+                'target_height' => 'integer|min:100|max:4000'
             ]);
 
             $imagePath = null;
@@ -495,8 +497,10 @@ class PersonController extends Controller
                 }
             }
 
-            // Изменяем размер изображения до 500x750px
-            $this->resizeImageToExactSize($imagePath, 500, 750);
+            // Изменяем размер изображения до указанных размеров
+            $targetWidth = $request->input('target_width', 500);
+            $targetHeight = $request->input('target_height', 750);
+            $this->resizeImageToExactSize($imagePath, $targetWidth, $targetHeight);
 
             // Определяем позицию (последняя + 1)
             $nextPosition = $person->images()->max('position') + 1;
