@@ -593,6 +593,7 @@ Route::prefix('people')->group(function () {
         Route::post('/delete-multiple', [PersonController::class, 'deleteMultipleImages']);
         Route::post('/update-positions', [PersonController::class, 'updateImagePositions']);
         Route::post('/{imageId}/set-main', [PersonController::class, 'setMainImage']);
+        Route::post('/{imageId}/unset-main', [PersonController::class, 'unsetMainImage']);
         Route::delete('/{imageId}', [PersonController::class, 'deleteImage']);
     });
 

@@ -397,10 +397,17 @@ class PersonController extends Controller
     /**
      * Получить изображения пользователя
      */
-        public function getImages(Person $person): JsonResponse
+    public function getImages(Person $person): JsonResponse
     {
         try {
             $images = $person->images()->orderBy('position')->get();
+
+            // Если нет главного изображения, но есть изображения, назначаем первое главным
+            if ($images->count() > 0 && !$images->where('is_main', true)->count()) {
+                $firstImage = $images->first();
+                $firstImage->update(['is_main' => true]);
+                $images = $person->images()->orderBy('position')->get(); // Обновляем коллекцию
+            }
 
             return response()->json([
                 'success' => true,
@@ -421,29 +428,29 @@ class PersonController extends Controller
     {
         try {
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif|max:10240' // 10MB max
+                'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:6144'
             ]);
 
             $file = $request->file('image');
-            $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+            $path = $file->store('people/' . $person->id . '/images', 'public');
 
-            // Создаем директорию если не существует
-            $directory = 'people/' . $person->id . '/images';
-            Storage::disk('public')->makeDirectory($directory);
+            // Оптимизируем изображение
+            $fullPath = Storage::disk('public')->path($path);
+            $this->optimizeImage($fullPath, 500, 750);
 
-            // Сохраняем оригинальный файл
-            $filePath = $file->storeAs($directory, $fileName, 'public');
+            // Определяем позицию (последняя + 1)
+            $nextPosition = $person->images()->max('position') + 1;
 
-            // Оптимизируем изображение до 500x750
-            $imagePath = Storage::disk('public')->path($filePath);
-            $this->optimizeImage($imagePath, 500, 750);
+            // Определяем, будет ли это главное изображение
+            // Если это первое изображение пользователя, то оно становится главным
+            $isMain = $person->images()->count() === 0;
 
-            // Создаем запись в базе данных
             $image = $person->images()->create([
-                'image_path' => $filePath,
+                'image_path' => $path,
+                'image_url' => $path,
                 'title' => $file->getClientOriginalName(),
-                'position' => $person->images()->max('position') + 1,
-                'is_main' => $person->images()->count() === 0 // Первое изображение становится главным
+                'position' => $nextPosition,
+                'is_main' => $isMain
             ]);
 
             return response()->json([
@@ -466,6 +473,7 @@ class PersonController extends Controller
     {
         try {
             $image = $person->images()->findOrFail($imageId);
+            $wasMain = $image->is_main;
 
             // Удаляем файл
             if (Storage::disk('public')->exists($image->image_path)) {
@@ -473,6 +481,14 @@ class PersonController extends Controller
             }
 
             $image->delete();
+
+            // Если удалили главное изображение, назначаем главным первое оставшееся
+            if ($wasMain) {
+                $remainingImages = $person->images()->orderBy('position')->get();
+                if ($remainingImages->count() > 0) {
+                    $remainingImages->first()->update(['is_main' => true]);
+                }
+            }
 
             return response()->json([
                 'success' => true,
@@ -498,13 +514,26 @@ class PersonController extends Controller
             ]);
 
             $images = $person->images()->whereIn('id', $request->image_ids)->get();
+            $deletedMainImage = false;
 
             foreach ($images as $image) {
+                if ($image->is_main) {
+                    $deletedMainImage = true;
+                }
+
                 // Удаляем файл
                 if (Storage::disk('public')->exists($image->image_path)) {
                     Storage::disk('public')->delete($image->image_path);
                 }
                 $image->delete();
+            }
+
+            // Если удалили главное изображение, назначаем главным первое оставшееся
+            if ($deletedMainImage) {
+                $remainingImages = $person->images()->orderBy('position')->get();
+                if ($remainingImages->count() > 0) {
+                    $remainingImages->first()->update(['is_main' => true]);
+                }
             }
 
             return response()->json([
@@ -535,12 +564,50 @@ class PersonController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Главное изображение установлено'
+                'message' => 'Главное изображение установлено',
+                'data' => [
+                    'image_id' => $image->id,
+                    'is_main' => true
+                ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка установки главного изображения: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Отменить главность изображения
+     */
+    public function unsetMainImage(Person $person, $imageId): JsonResponse
+    {
+        try {
+            $image = $person->images()->findOrFail($imageId);
+
+            // Снимаем главность с текущего изображения
+            $image->update(['is_main' => false]);
+
+            // Назначаем главным первое изображение по позиции
+            $firstImage = $person->images()->orderBy('position')->first();
+            if ($firstImage) {
+                $firstImage->update(['is_main' => true]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Главность изображения отменена',
+                'data' => [
+                    'image_id' => $image->id,
+                    'is_main' => false,
+                    'new_main_image_id' => $firstImage ? $firstImage->id : null
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка отмены главности изображения: ' . $e->getMessage()
             ], 500);
         }
     }
