@@ -428,13 +428,13 @@ class PersonController extends Controller
     {
         try {
             $request->validate([
-                'image' => 'required_without:image_url|image|mimes:jpeg,png,jpg,gif,webp|max:6144',
+                'image' => 'required_without:image_url|image|mimes:jpeg,png,jpg,gif,webp|max:20480',
                 'image_url' => 'required_without:image|url',
                 'logo_enabled' => 'boolean',
                 'logo_position' => 'string|in:top-left,top-right,bottom-left,bottom-right',
                 'logo_size' => 'numeric|min:5|max:30',
                 'logo_opacity' => 'numeric|min:0.1|max:1',
-                'custom_logo' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
+                'custom_logo' => 'image|mimes:jpeg,png,jpg,gif,webp|max:20480'
             ]);
 
             $imagePath = null;

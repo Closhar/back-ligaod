@@ -521,7 +521,7 @@ Route::post('/upload-image', function (Request $request) {
             'required',
             'image',
             'mimes:jpeg,png,jpg,gif,webp', // Явное указание разрешенных типов
-            'max:6144', // ~6MB
+            'max:20480', // ~20MB
             'dimensions:max_width=3840,max_height=2160' // 4K макс. разрешение
         ]
     ]);
