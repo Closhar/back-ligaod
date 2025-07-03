@@ -988,27 +988,30 @@ class PersonController extends Controller
 
         switch ($position) {
             case 'top-left':
-                $logoX = 10;
-                $logoY = 10;
+                $logoX = 0;
+                $logoY = 0;
                 break;
             case 'top-right':
-                $logoX = $imageWidth - $newLogoWidth - 10;
-                $logoY = 10;
+                $logoX = $imageWidth - $newLogoWidth;
+                $logoY = 0;
                 break;
             case 'bottom-left':
-                $logoX = 10;
-                $logoY = $imageHeight - $newLogoHeight - 10;
+                $logoX = 0;
+                $logoY = $imageHeight - $newLogoHeight;
                 break;
             case 'bottom-right':
-                $logoX = $imageWidth - $newLogoWidth - 10;
-                $logoY = $imageHeight - $newLogoHeight - 10;
+            default:
+                $logoX = $imageWidth - $newLogoWidth;
+                $logoY = $imageHeight - $newLogoHeight;
                 break;
         }
 
         Log::info("Logo position: x=$logoX, y=$logoY");
+        Log::info("Logo opacity: " . ($opacity * 100) . "%");
 
         // Накладываем логотип с прозрачностью
-        $this->imagecopymerge_alpha($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
+        $mergeResult = imagecopymerge($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
+        Log::info("imagecopymerge result: " . ($mergeResult ? 'success' : 'failed'));
 
         // Сохраняем результат
         $result = $this->saveImage($mainImage, $imagePath, $imageInfo['mime']);
