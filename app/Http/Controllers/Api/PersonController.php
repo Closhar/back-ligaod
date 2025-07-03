@@ -479,18 +479,15 @@ class PersonController extends Controller
 
             // Обработка логотипа (после изменения размера)
             if ($request->boolean('logo_enabled')) {
-                Log::info('Logo enabled, processing logo...');
                 $logoPath = null;
 
                 // Получаем логотип
                 if ($request->hasFile('custom_logo')) {
-                    Log::info('Using custom logo file');
                     $logoFile = $request->file('custom_logo');
                     $logoPath = $logoFile->getPathname();
                 } elseif ($request->has('default_logo_url')) {
                     // Используем URL логотипа, переданный с фронтенда
                     $defaultLogoUrl = $request->input('default_logo_url');
-                    Log::info('Using default logo URL: ' . $defaultLogoUrl);
 
                     // Загружаем логотип по URL во временный файл
                     $tempLogoPath = tempnam(sys_get_temp_dir(), 'logo_');
@@ -498,48 +495,30 @@ class PersonController extends Controller
                     if ($logoContent !== false) {
                         file_put_contents($tempLogoPath, $logoContent);
                         $logoPath = $tempLogoPath;
-                        Log::info('Logo downloaded to temp file: ' . $logoPath);
-                    } else {
-                        Log::warning('Failed to download logo from URL: ' . $defaultLogoUrl);
                     }
                 } else {
                     // Используем логотип по умолчанию из глобальных параметров
-                    Log::info('Looking for default logo in params...');
 
                     // Приоритет 1: photo_image (как в galleries.vue)
                     $photoImageParam = Param::where('name', 'photo_image')->first();
                     if ($photoImageParam && $photoImageParam->value) {
-                        Log::info('Found photo_image param: ' . $photoImageParam->value);
                         $defaultLogoPath = public_path('storage/' . $photoImageParam->value);
-                        Log::info('Full logo path: ' . $defaultLogoPath);
                         if (file_exists($defaultLogoPath)) {
                             $logoPath = $defaultLogoPath;
-                            Log::info('Logo file exists, using: ' . $logoPath);
-                        } else {
-                            Log::warning('Logo file does not exist: ' . $defaultLogoPath);
                         }
                     } else {
                         // Приоритет 2: person_logo
                         $personLogoParam = Param::where('name', 'person_logo')->first();
                         if ($personLogoParam && $personLogoParam->value) {
-                            Log::info('Found person_logo param: ' . $personLogoParam->value);
                             $defaultLogoPath = public_path('storage/' . $personLogoParam->value);
-                            Log::info('Full logo path: ' . $defaultLogoPath);
                             if (file_exists($defaultLogoPath)) {
                                 $logoPath = $defaultLogoPath;
-                                Log::info('Logo file exists, using: ' . $logoPath);
-                            } else {
-                                Log::warning('Logo file does not exist: ' . $defaultLogoPath);
                             }
                         } else {
-                            Log::info('person_logo param not found, trying fallback...');
                             // Fallback на старый путь
                             $defaultLogoPath = public_path('storage/logos/default-logo.png');
                             if (file_exists($defaultLogoPath)) {
                                 $logoPath = $defaultLogoPath;
-                                Log::info('Using fallback logo: ' . $logoPath);
-                            } else {
-                                Log::warning('Fallback logo file does not exist: ' . $defaultLogoPath);
                             }
                         }
                     }
@@ -547,7 +526,6 @@ class PersonController extends Controller
 
                 // Накладываем логотип если он найден
                 if ($logoPath && extension_loaded('gd')) {
-                    Log::info('Adding logo to image: ' . $logoPath);
                     $this->addLogoToImage(
                         $imagePath,
                         $logoPath,
@@ -555,17 +533,7 @@ class PersonController extends Controller
                         $request->input('logo_size', 15),
                         $request->input('logo_opacity', 0.8)
                     );
-                    Log::info('Logo added successfully');
-                } else {
-                    if (!$logoPath) {
-                        Log::warning('Logo path is null or empty');
-                    }
-                    if (!extension_loaded('gd')) {
-                        Log::warning('GD extension not loaded');
-                    }
                 }
-            } else {
-                Log::info('Logo disabled');
             }
 
             // Определяем позицию (последняя + 1)
@@ -920,10 +888,7 @@ class PersonController extends Controller
      */
     private function addLogoToImage($imagePath, $logoPath, $position, $size, $opacity)
     {
-        Log::info("addLogoToImage called with: imagePath=$imagePath, logoPath=$logoPath, position=$position, size=$size, opacity=$opacity");
-
         if (!extension_loaded('gd')) {
-            Log::error('GD extension not loaded');
             return; // Если GD не установлен, пропускаем наложение логотипа
         }
 
@@ -932,12 +897,8 @@ class PersonController extends Controller
         $logoInfo = getimagesize($logoPath);
 
         if (!$imageInfo || !$logoInfo) {
-            Log::error("Failed to get image info: imageInfo=" . json_encode($imageInfo) . ", logoInfo=" . json_encode($logoInfo));
             return;
         }
-
-        Log::info("Image info: " . json_encode($imageInfo));
-        Log::info("Logo info: " . json_encode($logoInfo));
 
         $imageWidth = $imageInfo[0];
         $imageHeight = $imageInfo[1];
@@ -949,24 +910,18 @@ class PersonController extends Controller
         $newLogoWidth = round($imageWidth * $logoSizePercent);
         $newLogoHeight = round($logoHeight * ($newLogoWidth / $logoWidth));
 
-        Log::info("Calculated logo size: newWidth=$newLogoWidth, newHeight=$newLogoHeight");
-
         // Загружаем основное изображение
         $mainImage = $this->loadImage($imagePath, $imageInfo['mime']);
         if (!$mainImage) {
-            Log::error("Failed to load main image");
             return;
         }
 
         // Загружаем логотип
         $logoImage = $this->loadImage($logoPath, $logoInfo['mime']);
         if (!$logoImage) {
-            Log::error("Failed to load logo image");
             imagedestroy($mainImage);
             return;
         }
-
-        Log::info("Both images loaded successfully");
 
         // Создаем новый логотип нужного размера
         $resizedLogo = imagecreatetruecolor($newLogoWidth, $newLogoHeight);
@@ -1006,31 +961,22 @@ class PersonController extends Controller
                 break;
         }
 
-        Log::info("Logo position: x=$logoX, y=$logoY");
-        Log::info("Logo opacity: " . ($opacity * 100) . "%");
-
         // Накладываем логотип с прозрачностью
         if ($logoInfo['mime'] === 'image/png') {
             // Для PNG используем функцию с поддержкой альфа-канала
-            Log::info("Using imagecopymerge_alpha for PNG logo with opacity: " . ($opacity * 100) . "%");
             $this->imagecopymerge_alpha($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
-            Log::info("imagecopymerge_alpha completed for PNG logo");
         } else {
             // Для других форматов используем стандартную функцию
-            $mergeResult = imagecopymerge($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
-            Log::info("imagecopymerge result: " . ($mergeResult ? 'success' : 'failed'));
+            imagecopymerge($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
         }
 
         // Сохраняем результат
-        $result = $this->saveImage($mainImage, $imagePath, $imageInfo['mime']);
-        Log::info("Save result: " . ($result ? 'success' : 'failed'));
+        $this->saveImage($mainImage, $imagePath, $imageInfo['mime']);
 
         // Освобождаем память
         imagedestroy($mainImage);
         imagedestroy($logoImage);
         imagedestroy($resizedLogo);
-
-        Log::info("addLogoToImage completed successfully");
     }
 
     /**
@@ -1038,8 +984,6 @@ class PersonController extends Controller
      */
     private function loadImage($path, $mimeType)
     {
-        Log::info("loadImage called: path=$path, mimeType=$mimeType");
-
         switch ($mimeType) {
             case 'image/jpeg':
                 $result = imagecreatefromjpeg($path);
@@ -1056,14 +1000,7 @@ class PersonController extends Controller
                 $result = imagecreatefromgif($path);
                 break;
             default:
-                Log::error("Unsupported mime type: $mimeType");
                 return false;
-        }
-
-        if (!$result) {
-            Log::error("Failed to load image: $path");
-        } else {
-            Log::info("Image loaded successfully: $path");
         }
 
         return $result;
