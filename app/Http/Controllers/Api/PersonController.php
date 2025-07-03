@@ -496,7 +496,7 @@ class PersonController extends Controller
             }
 
             // Изменяем размер изображения до 500x750px
-            $this->optimizeImage($imagePath, 500, 750);
+            $this->resizeImageToExactSize($imagePath, 500, 750);
 
             // Определяем позицию (последняя + 1)
             $nextPosition = $person->images()->max('position') + 1;
@@ -703,7 +703,85 @@ class PersonController extends Controller
     }
 
     /**
-     * Оптимизировать изображение
+     * Изменить размер изображения до точных размеров с обрезкой
+     */
+    private function resizeImageToExactSize($imagePath, $targetWidth, $targetHeight)
+    {
+        if (!extension_loaded('gd')) {
+            return; // Если GD не установлен, пропускаем изменение размера
+        }
+
+        $imageInfo = getimagesize($imagePath);
+        if (!$imageInfo) {
+            return;
+        }
+
+        $originalWidth = $imageInfo[0];
+        $originalHeight = $imageInfo[1];
+        $mimeType = $imageInfo['mime'];
+
+        // Вычисляем размеры для обрезки с сохранением пропорций
+        $targetRatio = $targetWidth / $targetHeight;
+        $originalRatio = $originalWidth / $originalHeight;
+
+        if ($originalRatio > $targetRatio) {
+            // Изображение шире, обрезаем по ширине
+            $cropWidth = round($originalHeight * $targetRatio);
+            $cropHeight = $originalHeight;
+            $cropX = round(($originalWidth - $cropWidth) / 2);
+            $cropY = 0;
+        } else {
+            // Изображение выше, обрезаем по высоте
+            $cropWidth = $originalWidth;
+            $cropHeight = round($originalWidth / $targetRatio);
+            $cropX = 0;
+            $cropY = round(($originalHeight - $cropHeight) / 2);
+        }
+
+        // Создаем новое изображение
+        $newImage = imagecreatetruecolor($targetWidth, $targetHeight);
+
+        // Загружаем оригинальное изображение
+        switch ($mimeType) {
+            case 'image/jpeg':
+                $originalImage = imagecreatefromjpeg($imagePath);
+                break;
+            case 'image/png':
+                $originalImage = imagecreatefrompng($imagePath);
+                // Сохраняем прозрачность для PNG
+                imagealphablending($newImage, false);
+                imagesavealpha($newImage, true);
+                break;
+            case 'image/gif':
+                $originalImage = imagecreatefromgif($imagePath);
+                break;
+            default:
+                return;
+        }
+
+        // Изменяем размер с обрезкой
+        imagecopyresampled($newImage, $originalImage, 0, 0, $cropX, $cropY, $targetWidth, $targetHeight, $cropWidth, $cropHeight);
+
+        // Сохраняем изображение
+        switch ($mimeType) {
+            case 'image/jpeg':
+                imagejpeg($newImage, $imagePath, 85); // Качество 85%
+                break;
+            case 'image/png':
+                imagepng($newImage, $imagePath, 6); // Сжатие 6
+                break;
+            case 'image/gif':
+                imagegif($newImage, $imagePath);
+                break;
+        }
+
+        // Освобождаем память
+        imagedestroy($originalImage);
+        imagedestroy($newImage);
+    }
+
+    /**
+     * Оптимизировать изображение с сохранением пропорций
      */
     private function optimizeImage($imagePath, $maxWidth, $maxHeight)
     {
