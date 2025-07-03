@@ -940,27 +940,28 @@ class PersonController extends Controller
         // Изменяем размер логотипа
         imagecopyresampled($resizedLogo, $logoImage, 0, 0, 0, 0, $newLogoWidth, $newLogoHeight, $logoWidth, $logoHeight);
 
-        // Вычисляем позицию логотипа
+        // Вычисляем позицию логотипа с отступами 10px от краев
+        $margin = 10;
         $logoX = 0;
         $logoY = 0;
 
         switch ($position) {
             case 'top-left':
-                $logoX = 0;
-                $logoY = 0;
+                $logoX = $margin;
+                $logoY = $margin;
                 break;
             case 'top-right':
-                $logoX = $imageWidth - $newLogoWidth;
-                $logoY = 0;
+                $logoX = $imageWidth - $newLogoWidth - $margin;
+                $logoY = $margin;
                 break;
             case 'bottom-left':
-                $logoX = 0;
-                $logoY = $imageHeight - $newLogoHeight;
+                $logoX = $margin;
+                $logoY = $imageHeight - $newLogoHeight - $margin;
                 break;
             case 'bottom-right':
             default:
-                $logoX = $imageWidth - $newLogoWidth;
-                $logoY = $imageHeight - $newLogoHeight;
+                $logoX = $imageWidth - $newLogoWidth - $margin;
+                $logoY = $imageHeight - $newLogoHeight - $margin;
                 break;
         }
 
