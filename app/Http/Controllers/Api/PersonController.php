@@ -428,15 +428,75 @@ class PersonController extends Controller
     {
         try {
             $request->validate([
-                'image' => 'required|image|mimes:jpeg,png,jpg,gif,webp|max:6144'
+                'image' => 'required_without:image_url|image|mimes:jpeg,png,jpg,gif,webp|max:6144',
+                'image_url' => 'required_without:image|url',
+                'logo_enabled' => 'boolean',
+                'logo_position' => 'string|in:top-left,top-right,bottom-left,bottom-right',
+                'logo_size' => 'numeric|min:5|max:30',
+                'logo_opacity' => 'numeric|min:0.1|max:1',
+                'custom_logo' => 'image|mimes:jpeg,png,jpg,gif,webp|max:2048'
             ]);
 
-            $file = $request->file('image');
-            $path = $file->store('people/' . $person->id . '/images', 'public');
+            $imagePath = null;
+            $originalFile = null;
 
-            // Оптимизируем изображение
-            $fullPath = Storage::disk('public')->path($path);
-            $this->optimizeImage($fullPath, 500, 750);
+            // Обработка загрузки из файла или URL
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $path = $file->store('people/' . $person->id . '/images', 'public');
+                $imagePath = Storage::disk('public')->path($path);
+                $originalFile = $file;
+            } elseif ($request->has('image_url')) {
+                $imageUrl = $request->input('image_url');
+                $fileName = md5(time() . '_' . $imageUrl) . '.jpg';
+                $path = 'people/' . $person->id . '/images/' . $fileName;
+                $fullPath = Storage::disk('public')->path($path);
+
+                // Создаем директорию если не существует
+                Storage::disk('public')->makeDirectory('people/' . $person->id . '/images');
+
+                // Загружаем изображение по URL
+                $imageContent = file_get_contents($imageUrl);
+                if ($imageContent === false) {
+                    throw new \Exception('Не удалось загрузить изображение по URL');
+                }
+
+                file_put_contents($fullPath, $imageContent);
+                $imagePath = $fullPath;
+            } else {
+                throw new \Exception('Не указан файл или URL изображения');
+            }
+
+            // Обработка логотипа
+            if ($request->boolean('logo_enabled')) {
+                $logoPath = null;
+
+                // Получаем логотип
+                if ($request->hasFile('custom_logo')) {
+                    $logoFile = $request->file('custom_logo');
+                    $logoPath = $logoFile->getPathname();
+                } else {
+                    // Используем логотип по умолчанию
+                    $defaultLogoPath = public_path('storage/logos/default-logo.png');
+                    if (file_exists($defaultLogoPath)) {
+                        $logoPath = $defaultLogoPath;
+                    }
+                }
+
+                // Накладываем логотип если он найден
+                if ($logoPath && extension_loaded('gd')) {
+                    $this->addLogoToImage(
+                        $imagePath,
+                        $logoPath,
+                        $request->input('logo_position', 'bottom-right'),
+                        $request->input('logo_size', 15),
+                        $request->input('logo_opacity', 0.8)
+                    );
+                }
+            }
+
+            // Изменяем размер изображения до 500x750px
+            $this->optimizeImage($imagePath, 500, 750);
 
             // Определяем позицию (последняя + 1)
             $nextPosition = $person->images()->max('position') + 1;
@@ -448,7 +508,7 @@ class PersonController extends Controller
             $image = $person->images()->create([
                 'image_path' => $path,
                 'image_url' => $path,
-                'title' => $file->getClientOriginalName(),
+                'title' => $originalFile ? $originalFile->getClientOriginalName() : 'Изображение из URL',
                 'position' => $nextPosition,
                 'is_main' => $isMain
             ]);
@@ -705,5 +765,173 @@ class PersonController extends Controller
         // Освобождаем память
         imagedestroy($originalImage);
         imagedestroy($newImage);
+    }
+
+    /**
+     * Наложить логотип на изображение
+     */
+    private function addLogoToImage($imagePath, $logoPath, $position, $size, $opacity)
+    {
+        if (!extension_loaded('gd')) {
+            return; // Если GD не установлен, пропускаем наложение логотипа
+        }
+
+        // Получаем информацию об изображении
+        $imageInfo = getimagesize($imagePath);
+        $logoInfo = getimagesize($logoPath);
+
+        if (!$imageInfo || !$logoInfo) {
+            return;
+        }
+
+        $imageWidth = $imageInfo[0];
+        $imageHeight = $imageInfo[1];
+        $logoWidth = $logoInfo[0];
+        $logoHeight = $logoInfo[1];
+
+        // Вычисляем размер логотипа (в процентах от изображения)
+        $logoSizePercent = $size / 100;
+        $newLogoWidth = round($imageWidth * $logoSizePercent);
+        $newLogoHeight = round($logoHeight * ($newLogoWidth / $logoWidth));
+
+        // Загружаем основное изображение
+        $mainImage = $this->loadImage($imagePath, $imageInfo['mime']);
+        if (!$mainImage) return;
+
+        // Загружаем логотип
+        $logoImage = $this->loadImage($logoPath, $logoInfo['mime']);
+        if (!$logoImage) {
+            imagedestroy($mainImage);
+            return;
+        }
+
+        // Создаем новый логотип нужного размера
+        $resizedLogo = imagecreatetruecolor($newLogoWidth, $newLogoHeight);
+
+        // Сохраняем прозрачность для PNG
+        if ($logoInfo['mime'] === 'image/png') {
+            imagealphablending($resizedLogo, false);
+            imagesavealpha($resizedLogo, true);
+            $transparent = imagecolorallocatealpha($resizedLogo, 255, 255, 255, 127);
+            imagefill($resizedLogo, 0, 0, $transparent);
+        }
+
+        // Изменяем размер логотипа
+        imagecopyresampled($resizedLogo, $logoImage, 0, 0, 0, 0, $newLogoWidth, $newLogoHeight, $logoWidth, $logoHeight);
+
+        // Вычисляем позицию логотипа
+        $logoX = 0;
+        $logoY = 0;
+
+        switch ($position) {
+            case 'top-left':
+                $logoX = 10;
+                $logoY = 10;
+                break;
+            case 'top-right':
+                $logoX = $imageWidth - $newLogoWidth - 10;
+                $logoY = 10;
+                break;
+            case 'bottom-left':
+                $logoX = 10;
+                $logoY = $imageHeight - $newLogoHeight - 10;
+                break;
+            case 'bottom-right':
+                $logoX = $imageWidth - $newLogoWidth - 10;
+                $logoY = $imageHeight - $newLogoHeight - 10;
+                break;
+        }
+
+        // Накладываем логотип с прозрачностью
+        $this->imagecopymerge_alpha($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
+
+        // Сохраняем результат
+        $this->saveImage($mainImage, $imagePath, $imageInfo['mime']);
+
+        // Освобождаем память
+        imagedestroy($mainImage);
+        imagedestroy($logoImage);
+        imagedestroy($resizedLogo);
+    }
+
+    /**
+     * Загрузить изображение в зависимости от типа
+     */
+    private function loadImage($path, $mimeType)
+    {
+        switch ($mimeType) {
+            case 'image/jpeg':
+                return imagecreatefromjpeg($path);
+            case 'image/png':
+                return imagecreatefrompng($path);
+            case 'image/gif':
+                return imagecreatefromgif($path);
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Сохранить изображение в зависимости от типа
+     */
+    private function saveImage($image, $path, $mimeType)
+    {
+        switch ($mimeType) {
+            case 'image/jpeg':
+                return imagejpeg($image, $path, 85);
+            case 'image/png':
+                return imagepng($image, $path, 6);
+            case 'image/gif':
+                return imagegif($image, $path);
+            default:
+                return false;
+        }
+    }
+
+    /**
+     * Наложить изображение с поддержкой прозрачности
+     */
+    private function imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct)
+    {
+        // Создаем временное изображение для логотипа
+        $opacity = $pct;
+
+        // Получаем размеры
+        $src_w = imagesx($src_im);
+        $src_h = imagesy($src_im);
+
+        // Создаем временное изображение
+        $tmp = imagecreatetruecolor($src_w, $src_h);
+
+        // Копируем логотип во временное изображение
+        imagecopy($tmp, $src_im, 0, 0, 0, 0, $src_w, $src_h);
+
+        // Накладываем с прозрачностью
+        for ($x = 0; $x < $src_w; $x++) {
+            for ($y = 0; $y < $src_h; $y++) {
+                $src_color = imagecolorat($tmp, $x, $y);
+                $dst_color = imagecolorat($dst_im, $dst_x + $x, $dst_y + $y);
+
+                $src_alpha = ($src_color >> 24) & 0xFF;
+                $src_red = ($src_color >> 16) & 0xFF;
+                $src_green = ($src_color >> 8) & 0xFF;
+                $src_blue = $src_color & 0xFF;
+
+                $dst_red = ($dst_color >> 16) & 0xFF;
+                $dst_green = ($dst_color >> 8) & 0xFF;
+                $dst_blue = $dst_color & 0xFF;
+
+                // Смешиваем цвета с учетом прозрачности
+                $alpha = $src_alpha * $opacity / 100;
+                $new_red = ($src_red * $alpha + $dst_red * (255 - $alpha)) / 255;
+                $new_green = ($src_green * $alpha + $dst_green * (255 - $alpha)) / 255;
+                $new_blue = ($src_blue * $alpha + $dst_blue * (255 - $alpha)) / 255;
+
+                $new_color = imagecolorallocate($dst_im, $new_red, $new_green, $new_blue);
+                imagesetpixel($dst_im, $dst_x + $x, $dst_y + $y, $new_color);
+            }
+        }
+
+        imagedestroy($tmp);
     }
 }
