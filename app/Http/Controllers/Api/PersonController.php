@@ -38,11 +38,15 @@ class PersonController extends Controller
                 'activeClubMemberships' => function ($query) {
                     $query->whereHas('club'); // Исключаем членства с несуществующими командами
                 },
-                'activeClubMemberships.club',
+                'activeClubMemberships.club' => function ($query) {
+                    $query->select(['id', 'title', 'image']); // Выбираем только нужные поля
+                },
                 'activeSportMemberships' => function ($query) {
                     $query->whereHas('sport'); // Исключаем членства с несуществующими видами спорта
                 },
-                'activeSportMemberships.sport'
+                'activeSportMemberships.sport' => function ($query) {
+                    $query->select(['id', 'title', 'icon']); // Выбираем только нужные поля
+                }
             ]);
 
             // Поиск по имени
@@ -310,6 +314,7 @@ class PersonController extends Controller
             $sports->each(function ($sport) {
                 $sport->name = $sport->title;
                 $sport->icon_name = $sport->icon; // Добавляем название иконки
+                $sport->icon = $sport->icon; // Добавляем иконку для отображения
             });
 
             return response()->json([

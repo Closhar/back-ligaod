@@ -16,7 +16,7 @@ class Club extends Model
     protected $guarded = [];
 
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
-    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name'];
+    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name', 'logo_url'];
 
     protected static function booted(): void
     {
@@ -120,6 +120,14 @@ class Club extends Model
     public function getNameAttribute(): string
     {
         return $this->full_info;
+    }
+
+    /**
+     * Получить URL логотипа клуба (алиас для совместимости с фронтендом)
+     */
+    public function getLogoUrlAttribute(): ?string
+    {
+        return $this->club_image_path;
     }
 
 }

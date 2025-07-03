@@ -17,7 +17,7 @@ class Sport extends Model
     protected $guarded = [];
 
     protected $hidden = ['updated_at', 'created_at', 'pivot'];
-    protected $appends = ['event_name', 'name'];
+    protected $appends = ['event_name', 'name', 'icon_name'];
 
     protected static function booted(): void
     {
