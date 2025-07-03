@@ -1010,8 +1010,16 @@ class PersonController extends Controller
         Log::info("Logo opacity: " . ($opacity * 100) . "%");
 
         // Накладываем логотип с прозрачностью
-        $mergeResult = imagecopymerge($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
-        Log::info("imagecopymerge result: " . ($mergeResult ? 'success' : 'failed'));
+        if ($logoInfo['mime'] === 'image/png') {
+            // Для PNG используем функцию с поддержкой альфа-канала
+            Log::info("Using imagecopymerge_alpha for PNG logo with opacity: " . ($opacity * 100) . "%");
+            $this->imagecopymerge_alpha($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
+            Log::info("imagecopymerge_alpha completed for PNG logo");
+        } else {
+            // Для других форматов используем стандартную функцию
+            $mergeResult = imagecopymerge($mainImage, $resizedLogo, $logoX, $logoY, 0, 0, $newLogoWidth, $newLogoHeight, $opacity * 100);
+            Log::info("imagecopymerge result: " . ($mergeResult ? 'success' : 'failed'));
+        }
 
         // Сохраняем результат
         $result = $this->saveImage($mainImage, $imagePath, $imageInfo['mime']);
@@ -1038,6 +1046,11 @@ class PersonController extends Controller
                 break;
             case 'image/png':
                 $result = imagecreatefrompng($path);
+                // Включаем поддержку альфа-канала для PNG
+                if ($result) {
+                    imagealphablending($result, true);
+                    imagesavealpha($result, true);
+                }
                 break;
             case 'image/gif':
                 $result = imagecreatefromgif($path);
@@ -1065,6 +1078,9 @@ class PersonController extends Controller
             case 'image/jpeg':
                 return imagejpeg($image, $path, 85);
             case 'image/png':
+                // Включаем поддержку альфа-канала для PNG
+                imagealphablending($image, false);
+                imagesavealpha($image, true);
                 return imagepng($image, $path, 6);
             case 'image/gif':
                 return imagegif($image, $path);
@@ -1078,45 +1094,53 @@ class PersonController extends Controller
      */
     private function imagecopymerge_alpha($dst_im, $src_im, $dst_x, $dst_y, $src_x, $src_y, $src_w, $src_h, $pct)
     {
-        // Создаем временное изображение для логотипа
-        $opacity = $pct;
+        // Включаем поддержку альфа-канала для основного изображения
+        imagealphablending($dst_im, true);
+        imagesavealpha($dst_im, true);
 
         // Получаем размеры
         $src_w = imagesx($src_im);
         $src_h = imagesy($src_im);
 
-        // Создаем временное изображение
-        $tmp = imagecreatetruecolor($src_w, $src_h);
-
-        // Копируем логотип во временное изображение
-        imagecopy($tmp, $src_im, 0, 0, 0, 0, $src_w, $src_h);
-
         // Накладываем с прозрачностью
         for ($x = 0; $x < $src_w; $x++) {
             for ($y = 0; $y < $src_h; $y++) {
-                $src_color = imagecolorat($tmp, $x, $y);
-                $dst_color = imagecolorat($dst_im, $dst_x + $x, $dst_y + $y);
+                $src_color = imagecolorat($src_im, $x, $y);
 
-                $src_alpha = ($src_color >> 24) & 0xFF;
-                $src_red = ($src_color >> 16) & 0xFF;
-                $src_green = ($src_color >> 8) & 0xFF;
-                $src_blue = $src_color & 0xFF;
+                // Проверяем, что координаты в пределах основного изображения
+                if ($dst_x + $x >= 0 && $dst_x + $x < imagesx($dst_im) &&
+                    $dst_y + $y >= 0 && $dst_y + $y < imagesy($dst_im)) {
 
-                $dst_red = ($dst_color >> 16) & 0xFF;
-                $dst_green = ($dst_color >> 8) & 0xFF;
-                $dst_blue = $dst_color & 0xFF;
+                    $dst_color = imagecolorat($dst_im, $dst_x + $x, $dst_y + $y);
 
-                // Смешиваем цвета с учетом прозрачности
-                $alpha = $src_alpha * $opacity / 100;
-                $new_red = ($src_red * $alpha + $dst_red * (255 - $alpha)) / 255;
-                $new_green = ($src_green * $alpha + $dst_green * (255 - $alpha)) / 255;
-                $new_blue = ($src_blue * $alpha + $dst_blue * (255 - $alpha)) / 255;
+                    // Получаем альфа-канал и цвета
+                    $src_alpha = ($src_color >> 24) & 0xFF;
+                    $src_red = ($src_color >> 16) & 0xFF;
+                    $src_green = ($src_color >> 8) & 0xFF;
+                    $src_blue = $src_color & 0xFF;
 
-                $new_color = imagecolorallocate($dst_im, $new_red, $new_green, $new_blue);
-                imagesetpixel($dst_im, $dst_x + $x, $dst_y + $y, $new_color);
+                    $dst_red = ($dst_color >> 16) & 0xFF;
+                    $dst_green = ($dst_color >> 8) & 0xFF;
+                    $dst_blue = $dst_color & 0xFF;
+
+                    // Если пиксель полностью прозрачный, пропускаем
+                    if ($src_alpha == 127) {
+                        continue;
+                    }
+
+                    // Вычисляем итоговую прозрачность
+                    $final_alpha = (127 - $src_alpha) * $pct / 100;
+
+                    // Смешиваем цвета с учетом прозрачности
+                    $blend_ratio = $final_alpha / 127;
+                    $new_red = round($src_red * $blend_ratio + $dst_red * (1 - $blend_ratio));
+                    $new_green = round($src_green * $blend_ratio + $dst_green * (1 - $blend_ratio));
+                    $new_blue = round($src_blue * $blend_ratio + $dst_blue * (1 - $blend_ratio));
+
+                    $new_color = imagecolorallocate($dst_im, $new_red, $new_green, $new_blue);
+                    imagesetpixel($dst_im, $dst_x + $x, $dst_y + $y, $new_color);
+                }
             }
         }
-
-        imagedestroy($tmp);
     }
 }
