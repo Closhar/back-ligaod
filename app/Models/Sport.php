@@ -17,7 +17,7 @@ class Sport extends Model
     protected $guarded = [];
 
     protected $hidden = ['updated_at', 'created_at', 'pivot'];
-    protected $appends = ['event_name'];
+    protected $appends = ['event_name', 'name'];
 
     protected static function booted(): void
     {
@@ -66,6 +66,14 @@ class Sport extends Model
 
 
     public function getEventNameAttribute()
+    {
+        return $this->title;
+    }
+
+    /**
+     * Получить название вида спорта (алиас для совместимости с фронтендом)
+     */
+    public function getNameAttribute(): string
     {
         return $this->title;
     }

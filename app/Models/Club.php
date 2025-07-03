@@ -16,7 +16,7 @@ class Club extends Model
     protected $guarded = [];
 
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
-    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info'];
+    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name'];
 
     protected static function booted(): void
     {
@@ -112,6 +112,14 @@ class Club extends Model
 
         $info = implode(' | ', $parts);
         return $this->title . ' ' . $info;
+    }
+
+    /**
+     * Получить название клуба (алиас для совместимости с фронтендом)
+     */
+    public function getNameAttribute(): string
+    {
+        return $this->title;
     }
 
 }

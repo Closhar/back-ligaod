@@ -10,6 +10,7 @@ use App\Models\Position;
 use App\Models\Sport;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
@@ -93,6 +94,8 @@ class PersonController extends Controller
 
             $perPage = $request->get('per_page', 15);
             $people = $query->paginate($perPage);
+
+
 
             return response()->json([
                 'success' => true,
