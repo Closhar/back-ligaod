@@ -536,8 +536,11 @@ class PersonController extends Controller
                 }
             }
 
-            // Определяем позицию (последняя + 1)
-            $nextPosition = $person->images()->max('position') + 1;
+            // Определяем позицию (первая - новое изображение будет первым)
+            $newPosition = 1;
+
+            // Сдвигаем позиции всех существующих изображений на +1
+            $person->images()->increment('position');
 
             // Определяем, будет ли это главное изображение
             // Если это первое изображение пользователя, то оно становится главным
@@ -547,7 +550,7 @@ class PersonController extends Controller
                 'image_path' => $path,
                 'image_url' => $path,
                 'title' => $originalFile ? $originalFile->getClientOriginalName() : 'Изображение из URL',
-                'position' => $nextPosition,
+                'position' => $newPosition,
                 'is_main' => $isMain
             ]);
 
