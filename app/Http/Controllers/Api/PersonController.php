@@ -26,9 +26,21 @@ class PersonController extends Controller
 
             $query = Person::with([
                 'mainImage',
+                'activePositionMemberships' => function ($query) {
+                    $query->whereHas('position'); // Исключаем членства с несуществующими должностями
+                },
                 'activePositionMemberships.position',
+                'activeAmpluaMemberships' => function ($query) {
+                    $query->whereHas('amplua'); // Исключаем членства с несуществующими амплуа
+                },
                 'activeAmpluaMemberships.amplua',
+                'activeClubMemberships' => function ($query) {
+                    $query->whereHas('club'); // Исключаем членства с несуществующими клубами
+                },
                 'activeClubMemberships.club',
+                'activeSportMemberships' => function ($query) {
+                    $query->whereHas('sport'); // Исключаем членства с несуществующими видами спорта
+                },
                 'activeSportMemberships.sport'
             ]);
 
