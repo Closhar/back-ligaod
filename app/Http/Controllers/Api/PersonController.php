@@ -256,7 +256,12 @@ class PersonController extends Controller
     public function clubs(): JsonResponse
     {
         try {
-            $clubs = Club::select('id', 'title as name')->orderBy('title')->get();
+            $clubs = Club::select('id', 'title')->orderBy('title')->get();
+
+            // Добавляем поле name для совместимости с фронтендом
+            $clubs->each(function ($club) {
+                $club->name = $club->title;
+            });
 
             return response()->json([
                 'success' => true,
@@ -276,7 +281,12 @@ class PersonController extends Controller
     public function sports(): JsonResponse
     {
         try {
-            $sports = Sport::select('id', 'title as name')->orderBy('title')->get();
+            $sports = Sport::select('id', 'title')->orderBy('title')->get();
+
+            // Добавляем поле name для совместимости с фронтендом
+            $sports->each(function ($sport) {
+                $sport->name = $sport->title;
+            });
 
             return response()->json([
                 'success' => true,
