@@ -36,7 +36,7 @@ class PersonController extends Controller
                 },
                 'activeAmpluaMemberships.amplua',
                 'activeClubMemberships' => function ($query) {
-                    $query->whereHas('club'); // Исключаем членства с несуществующими клубами
+                    $query->whereHas('club'); // Исключаем членства с несуществующими командами
                 },
                 'activeClubMemberships.club',
                 'activeSportMemberships' => function ($query) {
@@ -73,7 +73,7 @@ class PersonController extends Controller
                 });
             }
 
-            // Фильтрация по клубу
+            // Фильтрация по команде
             if ($request->has('club_id') && !empty($request->club_id)) {
                 $query->whereHas('clubMemberships', function ($q) use ($request) {
                     $q->where('club_id', $request->club_id);
@@ -251,7 +251,7 @@ class PersonController extends Controller
     }
 
     /**
-     * Получить список клубов для фильтрации
+     * Получить список команд для фильтрации
      */
     public function clubs(): JsonResponse
     {
@@ -269,9 +269,10 @@ class PersonController extends Controller
 
             $clubs = $query->orderBy('title')->limit($limit)->get();
 
-            // Добавляем поле name для совместимости с фронтендом, используя full_info
+            // Добавляем поля для совместимости с фронтендом
             $clubs->each(function ($club) {
                 $club->name = $club->full_info;
+                $club->logo_url = $club->club_image_path; // Добавляем URL логотипа
             });
 
             return response()->json([
@@ -281,7 +282,7 @@ class PersonController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка загрузки клубов: ' . $e->getMessage()
+                'message' => 'Ошибка загрузки команд: ' . $e->getMessage()
             ], 500);
         }
     }
