@@ -472,7 +472,12 @@ class PersonController extends Controller
                 throw new \Exception('Не указан файл или URL изображения');
             }
 
-            // Обработка логотипа
+            // Изменяем размер изображения до указанных размеров
+            $targetWidth = $request->input('target_width', 500);
+            $targetHeight = $request->input('target_height', 750);
+            $this->resizeImageToExactSize($imagePath, $targetWidth, $targetHeight);
+
+            // Обработка логотипа (после изменения размера)
             if ($request->boolean('logo_enabled')) {
                 Log::info('Logo enabled, processing logo...');
                 $logoPath = null;
@@ -562,11 +567,6 @@ class PersonController extends Controller
             } else {
                 Log::info('Logo disabled');
             }
-
-            // Изменяем размер изображения до указанных размеров
-            $targetWidth = $request->input('target_width', 500);
-            $targetHeight = $request->input('target_height', 750);
-            $this->resizeImageToExactSize($imagePath, $targetWidth, $targetHeight);
 
             // Определяем позицию (последняя + 1)
             $nextPosition = $person->images()->max('position') + 1;
