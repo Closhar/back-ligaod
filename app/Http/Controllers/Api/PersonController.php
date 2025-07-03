@@ -250,13 +250,24 @@ class PersonController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Получить список клубов для фильтрации
      */
     public function clubs(): JsonResponse
     {
         try {
-            $clubs = Club::with(['city', 'sport', 'gender'])->orderBy('title')->get();
+            $type = request()->query('type');
+            $searchQuery = request()->query('q');
+            $limit = request()->query('limit', 10);
+
+            $query = Club::with(['city', 'sport', 'gender']);
+
+            // Если это асинхронный запрос, добавляем поиск
+            if ($type === 'async' && $searchQuery) {
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
+            }
+
+            $clubs = $query->orderBy('title')->limit($limit)->get();
 
             // Добавляем поле name для совместимости с фронтендом, используя full_info
             $clubs->each(function ($club) {
@@ -281,7 +292,18 @@ class PersonController extends Controller
     public function sports(): JsonResponse
     {
         try {
-            $sports = Sport::select('id', 'title')->orderBy('title')->get();
+            $type = request()->query('type');
+            $searchQuery = request()->query('q');
+            $limit = request()->query('limit', 10);
+
+            $query = Sport::query();
+
+            // Если это асинхронный запрос, добавляем поиск
+            if ($type === 'async' && $searchQuery) {
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
+            }
+
+            $sports = $query->orderBy('title')->limit($limit)->get();
 
             // Добавляем поле name для совместимости с фронтендом
             $sports->each(function ($sport) {
@@ -306,7 +328,18 @@ class PersonController extends Controller
     public function positions(): JsonResponse
     {
         try {
-            $positions = Position::select('id', 'name')->where('is_active', true)->orderBy('name')->get();
+            $type = request()->query('type');
+            $searchQuery = request()->query('q');
+            $limit = request()->query('limit', 10);
+
+            $query = Position::where('is_active', true);
+
+            // Если это асинхронный запрос, добавляем поиск
+            if ($type === 'async' && $searchQuery) {
+                $query->where('name', 'LIKE', "%{$searchQuery}%");
+            }
+
+            $positions = $query->orderBy('name')->limit($limit)->get();
 
             return response()->json([
                 'success' => true,
@@ -326,7 +359,18 @@ class PersonController extends Controller
     public function ampluas(): JsonResponse
     {
         try {
-            $ampluas = Amplua::select('id', 'name')->where('is_active', true)->orderBy('name')->get();
+            $type = request()->query('type');
+            $searchQuery = request()->query('q');
+            $limit = request()->query('limit', 10);
+
+            $query = Amplua::where('is_active', true);
+
+            // Если это асинхронный запрос, добавляем поиск
+            if ($type === 'async' && $searchQuery) {
+                $query->where('name', 'LIKE', "%{$searchQuery}%");
+            }
+
+            $ampluas = $query->orderBy('name')->limit($limit)->get();
 
             return response()->json([
                 'success' => true,

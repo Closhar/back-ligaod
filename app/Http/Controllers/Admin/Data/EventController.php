@@ -3,19 +3,19 @@
 namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
+use App\Models\AdminPage;
 use App\Models\Event;
 use App\Models\Sport;
+use App\Traits\SeriesCountTrait;
 use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use App\Models\AdminPage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Http\JsonResponse;
-use App\Traits\SeriesCountTrait;
 
 class EventController extends Controller
 {
@@ -866,7 +866,7 @@ class EventController extends Controller
             return response()->json([
                 'success' => true,
                 'image_path' => $path,
-                'full_path' => Storage::disk('public')->url($path),
+                'full_path' => config('app.url') . '/storage/' . $path,
                 'message' => 'Изображение успешно загружено'
             ]);
 

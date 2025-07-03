@@ -75,6 +75,6 @@ class Sport extends Model
      */
     public function getNameAttribute(): string
     {
-        return $this->title;
+        return $this->title ?? '';
     }
 }
