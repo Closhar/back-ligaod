@@ -590,10 +590,10 @@ Route::prefix('people')->group(function () {
     Route::prefix('{person}/images')->group(function () {
         Route::get('/', [PersonController::class, 'getImages']);
         Route::post('/', [PersonController::class, 'uploadImage']);
-        Route::delete('/{imageId}', [PersonController::class, 'deleteImage']);
         Route::post('/delete-multiple', [PersonController::class, 'deleteMultipleImages']);
-        Route::post('/{imageId}/set-main', [PersonController::class, 'setMainImage']);
         Route::post('/update-positions', [PersonController::class, 'updateImagePositions']);
+        Route::post('/{imageId}/set-main', [PersonController::class, 'setMainImage']);
+        Route::delete('/{imageId}', [PersonController::class, 'deleteImage']);
     });
 
     // Маршруты для членства в клубах
