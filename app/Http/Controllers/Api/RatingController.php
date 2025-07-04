@@ -204,8 +204,11 @@ class RatingController extends Controller
     {
         $limit = $request->get('limit', 10);
         $query = $request->get('q', '');
+        $year = $request->get('year', '');
+        $isActive = $request->get('is_active', '');
 
-        $years = RatingYear::orderBy('year', 'desc');
+        $years = RatingYear::orderBy('year', 'desc')
+            ->withCount('achievements');
 
         if ($query) {
             $years->where(function($q) use ($query) {
@@ -215,12 +218,134 @@ class RatingController extends Controller
             });
         }
 
+        if ($year) {
+            $years->where('year', $year);
+        }
+
+        if ($isActive !== '') {
+            $years->where('is_active', $isActive);
+        }
+
         $years = $years->limit($limit)->get();
 
         return response()->json([
             'success' => true,
             'data' => $years
         ]);
+    }
+
+    /**
+     * Создать новый год рейтинга
+     */
+    public function storeYear(Request $request): JsonResponse
+    {
+        $request->validate([
+            'year' => 'required|integer|min:2020|max:2030|unique:rating_years,year',
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'is_active' => 'boolean'
+        ]);
+
+        try {
+            $year = RatingYear::create([
+                'year' => $request->year,
+                'title' => $request->title,
+                'description' => $request->description,
+                'is_active' => $request->get('is_active', true)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Год успешно создан',
+                'data' => $year
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при создании года: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Обновить год рейтинга
+     */
+    public function updateYear(Request $request, int $id): JsonResponse
+    {
+        $year = RatingYear::find($id);
+
+        if (!$year) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Год не найден'
+            ], 404);
+        }
+
+        $request->validate([
+            'year' => 'required|integer|min:2020|max:2030|unique:rating_years,year,' . $id,
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string|max:1000',
+            'is_active' => 'boolean'
+        ]);
+
+        try {
+            $year->update([
+                'year' => $request->year,
+                'title' => $request->title,
+                'description' => $request->description,
+                'is_active' => $request->get('is_active', true)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Год успешно обновлен',
+                'data' => $year
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении года: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Удалить год рейтинга
+     */
+    public function destroyYear(int $id): JsonResponse
+    {
+        $year = RatingYear::find($id);
+
+        if (!$year) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Год не найден'
+            ], 404);
+        }
+
+        // Проверяем, есть ли связанные записи
+        $hasRelatedData = $year->achievements()->exists() || $year->ratings()->exists();
+
+        if ($hasRelatedData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Нельзя удалить год, у которого есть связанные данные (достижения или рейтинги)'
+            ], 400);
+        }
+
+        try {
+            $year->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Год успешно удален'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении года: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

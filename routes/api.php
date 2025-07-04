@@ -116,6 +116,11 @@ Route::group(['prefix' => '/v1'], function () {
         Route::post('/regions', [RatingController::class, 'storeRegion'])->middleware('auth:sanctum');
         Route::put('/regions/{id}', [RatingController::class, 'updateRegion'])->middleware('auth:sanctum');
         Route::delete('/regions/{id}', [RatingController::class, 'destroyRegion'])->middleware('auth:sanctum');
+
+        // CRUD операции для годов рейтинга
+        Route::post('/years', [RatingController::class, 'storeYear'])->middleware('auth:sanctum');
+        Route::put('/years/{id}', [RatingController::class, 'updateYear'])->middleware('auth:sanctum');
+        Route::delete('/years/{id}', [RatingController::class, 'destroyYear'])->middleware('auth:sanctum');
     });
 
     // Маршруты для достижений клубов
