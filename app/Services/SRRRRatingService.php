@@ -1,0 +1,177 @@
+<?php
+
+namespace App\Services;
+
+use App\Models\Club;
+use App\Models\ClubAchievement;
+use App\Models\RatingRegion;
+use App\Models\RegionRating;
+use App\Models\Sport;
+use Illuminate\Support\Facades\DB;
+
+class SRRRRatingService
+{
+    /**
+     * Рассчитать рейтинг для всех регионов за указанный год
+     */
+    public function calculateYearlyRating(int $year): void
+    {
+        $regions = RatingRegion::where('is_active', true)->get();
+        $sports = Sport::all();
+
+        foreach ($regions as $region) {
+            foreach ($sports as $sport) {
+                $this->calculateRegionSportRating($region, $sport, $year);
+            }
+        }
+
+        // Обновить ранги после расчета всех рейтингов
+        $this->updateRanks($year);
+    }
+
+    /**
+     * Рассчитать рейтинг для конкретного региона и вида спорта
+     */
+    public function calculateRegionSportRating(RatingRegion $region, Sport $sport, int $year): void
+    {
+        // Получить или создать запись рейтинга
+        $rating = RegionRating::firstOrCreate([
+            'rating_region_id' => $region->id,
+            'sport_id' => $sport->id,
+            'year' => $year
+        ]);
+
+        // Рассчитать рейтинг
+        $rating->calculate();
+    }
+
+    /**
+     * Обновить ранги всех регионов за год
+     */
+    public function updateRanks(int $year): void
+    {
+        $sports = Sport::all();
+
+        foreach ($sports as $sport) {
+            $rankings = RegionRating::where('sport_id', $sport->id)
+                ->where('year', $year)
+                ->orderBy('total_points', 'desc')
+                ->get();
+
+            $rank = 1;
+            foreach ($rankings as $ranking) {
+                $ranking->update(['rank' => $rank]);
+                $rank++;
+            }
+        }
+    }
+
+    /**
+     * Добавить достижение клуба
+     */
+    public function addClubAchievement(array $data): ClubAchievement
+    {
+        $achievement = ClubAchievement::create($data);
+        $achievement->calculatePoints();
+
+        // Пересчитать рейтинг региона
+        if ($achievement->club->rating_region_id) {
+            $this->calculateRegionSportRating(
+                $achievement->club->ratingRegion,
+                $achievement->competition->sport,
+                $achievement->year
+            );
+        }
+
+        return $achievement;
+    }
+
+    /**
+     * Получить топ рейтинга по виду спорта и году
+     */
+    public function getTopRating(int $sportId, int $year, int $limit = 10): \Illuminate\Database\Eloquent\Collection
+    {
+        return RegionRating::with(['region', 'sport'])
+            ->where('sport_id', $sportId)
+            ->where('year', $year)
+            ->orderBy('total_points', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Получить динамику рейтинга региона
+     */
+    public function getRegionDynamics(int $regionId, int $sportId, int $startYear, int $endYear): array
+    {
+        $ratings = RegionRating::where('rating_region_id', $regionId)
+            ->where('sport_id', $sportId)
+            ->whereBetween('year', [$startYear, $endYear])
+            ->orderBy('year')
+            ->get();
+
+        $dynamics = [];
+        foreach ($ratings as $rating) {
+            $dynamics[] = [
+                'year' => $rating->year,
+                'points' => $rating->total_points,
+                'rank' => $rating->rank
+            ];
+        }
+
+        return $dynamics;
+    }
+
+    /**
+     * Получить общую статистику по регионам
+     */
+    public function getRegionsStatistics(int $year): array
+    {
+        $stats = DB::table('region_ratings')
+            ->join('rating_regions', 'region_ratings.rating_region_id', '=', 'rating_regions.id')
+            ->join('sports', 'region_ratings.sport_id', '=', 'sports.id')
+            ->where('region_ratings.year', $year)
+            ->select(
+                'rating_regions.name as region_name',
+                'sports.title as sport_title',
+                'region_ratings.total_points',
+                'region_ratings.rank'
+            )
+            ->orderBy('sports.title')
+            ->orderBy('region_ratings.total_points', 'desc')
+            ->get();
+
+        return $stats->toArray();
+    }
+
+    /**
+     * Получить детали расчета рейтинга региона
+     */
+    public function getRegionCalculationDetails(int $regionId, int $sportId, int $year): array
+    {
+        $rating = RegionRating::where('rating_region_id', $regionId)
+            ->where('sport_id', $sportId)
+            ->where('year', $year)
+            ->first();
+
+        if (!$rating) {
+            return [];
+        }
+
+        $achievements = ClubAchievement::with(['club', 'competition'])
+            ->whereHas('club', function ($query) use ($regionId) {
+                $query->where('rating_region_id', $regionId);
+            })
+            ->where('year', $year)
+            ->whereHas('competition', function ($query) use ($sportId) {
+                $query->where('sport_id', $sportId);
+            })
+            ->get();
+
+        return [
+            'rating' => $rating,
+            'achievements' => $achievements,
+            'calculation_details' => $rating->details
+        ];
+    }
+}

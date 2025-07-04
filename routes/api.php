@@ -31,6 +31,7 @@ use App\Http\Controllers\Api\ApiParamsController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\ArticleViewController;
+use App\Http\Controllers\Api\ClubAchievementController;
 use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\Api\PersonAmpluaMembershipController;
 use App\Http\Controllers\Api\PersonClubMembershipController;
@@ -41,6 +42,7 @@ use App\Http\Controllers\Api\PersonRoleMembershipController;
 use App\Http\Controllers\Api\PersonSportMembershipController;
 use App\Http\Controllers\Api\PersonSurnameChangeController;
 use App\Http\Controllers\Api\PositionController;
+use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TelegramMessageController;
 use App\Http\Controllers\Api\TelegramParseChannelController;
@@ -97,6 +99,27 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
     Route::get('/page/{id}', [ApiParamsController::class, 'getPage'])->name('params.page');
     Route::get('/apage/{id}', [ApiParamsController::class, 'getAdminPage'])->name('params.apage');
     Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->name('params.amenu');
+
+    // Маршруты для рейтинга SRRR
+    Route::prefix('rating')->group(function () {
+        Route::get('/top', [RatingController::class, 'getTopRating']);
+        Route::get('/region', [RatingController::class, 'getRegionRating']);
+        Route::get('/dynamics', [RatingController::class, 'getRegionDynamics']);
+        Route::get('/statistics', [RatingController::class, 'getRegionsStatistics']);
+        Route::get('/calculation-details', [RatingController::class, 'getCalculationDetails']);
+        Route::get('/regions', [RatingController::class, 'getRegions']);
+        Route::get('/sports', [RatingController::class, 'getSports']);
+        Route::post('/calculate-yearly', [RatingController::class, 'calculateYearlyRating'])->middleware('auth:sanctum');
+    });
+
+    // Маршруты для достижений клубов
+    Route::prefix('achievements')->group(function () {
+        Route::get('/club', [ClubAchievementController::class, 'getClubAchievements']);
+        Route::post('/', [ClubAchievementController::class, 'store'])->middleware('auth:sanctum');
+        Route::put('/{id}', [ClubAchievementController::class, 'update'])->middleware('auth:sanctum');
+        Route::delete('/{id}', [ClubAchievementController::class, 'destroy'])->middleware('auth:sanctum');
+        Route::get('/statistics', [ClubAchievementController::class, 'getAchievementsStatistics']);
+    });
 
     // Маршруты для загрузки изображений в галереи
     // Route::post('/galleries/{id}/upload-image', [ApiGalleryController::class, 'uploadImage']);

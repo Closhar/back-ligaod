@@ -529,8 +529,8 @@ class PersonController extends Controller
                     $this->addLogoToImage(
                         $imagePath,
                         $logoPath,
-                        $request->input('logo_position', 'bottom-right'),
-                        $request->input('logo_size', 15),
+                        $request->input('logo_position', 'bottom-left'),
+                        $request->input('logo_size', 20),
                         $request->input('logo_opacity', 0.8)
                     );
                 }

@@ -50,6 +50,16 @@ class Club extends Model
         return $this->belongsTo(Age::class);
     }
 
+    public function ratingRegion(): BelongsTo
+    {
+        return $this->belongsTo(RatingRegion::class);
+    }
+
+    public function achievements(): HasMany
+    {
+        return $this->hasMany(ClubAchievement::class);
+    }
+
     public function arenas(): MorphToMany
     {
         return $this->morphToMany(Arena::class, 'arenaable');
