@@ -71,7 +71,7 @@ Route::group(['prefix' => '/', 'namespace' => 'Api'], function () {
     Route::post('/gallery/{id}/move', [GalleryAdminController::class, 'move']);
 });
 
-Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
+Route::group(['prefix' => '/v1'], function () {
     Route::get('/genders', [ApiGenderController::class, 'index'])->name('api.genders.index');
     Route::get('/genders/{id}', [ApiGenderController::class, 'show'])->name('api.genders.show');
     Route::get('/ages', [ApiAgeController::class, 'index'])->name('api.ages.index');
