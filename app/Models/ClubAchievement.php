@@ -113,18 +113,15 @@ class ClubAchievement extends Model
             return 1.0;
         }
 
-        // Если фарм-клуб — применяем специальный коэффициент
+        // Если фарм-клуб — применяем коэффициент из настроек турнира
         if ($isFarm == true) {
-            // Если в типе турнира есть поле farm_coefficient — используем его, иначе 0.5
-            $farmCoefficient = property_exists($tournamentType, 'farm_coefficient') && $tournamentType->farm_coefficient
-                ? $tournamentType->farm_coefficient : 0.5;
-
-            Log::info('Применяется коэффициент фарм-клуба', ['coefficient' => $farmCoefficient]);
-            return $farmCoefficient;
-        } else {
-            $coefficient = $tournamentType->coefficient ?? 1.0;
-            Log::info('Применяется обычный коэффициент', ['coefficient' => $coefficient]);
+            $coefficient = $tournamentType->coefficient ?? 0.5;
+            Log::info('Применяется коэффициент фарм-клуба', ['coefficient' => $coefficient]);
             return $coefficient;
+        } else {
+            // Для обычных клубов всегда применяем коэффициент 1.0
+            Log::info('Применяется обычный коэффициент', ['coefficient' => 1.0]);
+            return 1.0;
         }
     }
 
