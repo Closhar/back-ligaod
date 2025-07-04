@@ -7,6 +7,7 @@ use App\Models\ClubAchievement;
 use App\Services\SRRRRatingService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ClubAchievementController extends Controller
 {
@@ -107,6 +108,8 @@ class ClubAchievementController extends Controller
                 'promoted',
                 'is_farm'
             ]);
+
+            Log::info('Данные для создания достижения', $data);
 
             // Автоматически заполняем tournament_type из tournament_type_id
             $tournamentType = \App\Models\TournamentType::find($data['tournament_type_id']);

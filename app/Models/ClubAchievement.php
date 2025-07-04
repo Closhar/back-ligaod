@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Log;
 
 class ClubAchievement extends Model
 {
@@ -93,13 +94,14 @@ class ClubAchievement extends Model
         }
 
         // Если фарм-клуб — применяем специальный коэффициент
-        if ($isFarm) {
+        if ($isFarm === true) {
             // Если в типе турнира есть поле farm_coefficient — используем его, иначе 0.5
             $farmCoefficient = property_exists($tournamentType, 'farm_coefficient') && $tournamentType->farm_coefficient
                 ? $tournamentType->farm_coefficient : 0.5;
             return $farmCoefficient;
         } else {
-            return $tournamentType->coefficient ?? 1.0;
+            $coefficient = $tournamentType->coefficient ?? 1.0;
+            return $coefficient;
         }
     }
 
