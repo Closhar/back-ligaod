@@ -149,8 +149,8 @@ class RatingController extends Controller
      */
     public function getRegions(): JsonResponse
     {
-        $regions = RatingRegion::where('is_active', true)
-            ->orderBy('name')
+        $regions = RatingRegion::orderBy('name')
+            ->withCount('clubs')
             ->get();
 
         return response()->json([
