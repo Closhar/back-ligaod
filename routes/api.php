@@ -84,6 +84,7 @@ Route::group(['prefix' => '/v1'], function () {
     Route::get('/cities/{id}', [ApiCityController::class, 'show'])->name('api.cities.show');
     Route::get('/clubs', [ApiClubController::class, 'index'])->name('api.clubs.index');
     Route::get('/clubs/{id}', [ApiClubController::class, 'show'])->name('api.clubs.show');
+    Route::post('/clubs/{id}/regions', [ApiClubController::class, 'addRegion'])->name('api.clubs.addRegion')->middleware('auth:sanctum');
     Route::get('/arenas', [ApiArenaController::class, 'index'])->name('api.arenas.index');
     Route::get('/arenas/{id}', [ApiArenaController::class, 'show'])->name('api.arenas.show');
     Route::get('/competitions', [ApiCompetitionController::class, 'index'])->name('api.competitions.index');

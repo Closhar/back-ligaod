@@ -254,4 +254,30 @@ class ApiClubController extends Controller
     {
         //
     }
+
+    /**
+     * Добавить регион к клубу
+     */
+    public function addRegion(Request $request, $clubId): \Illuminate\Http\JsonResponse
+    {
+        $request->validate([
+            'region_id' => 'required|integer|exists:rating_regions,id'
+        ]);
+
+        try {
+            $club = Club::findOrFail($clubId);
+            $club->update(['rating_region_id' => $request->region_id]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Регион успешно добавлен к клубу',
+                'data' => $club->load(['ratingRegion'])
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при добавлении региона к клубу: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
