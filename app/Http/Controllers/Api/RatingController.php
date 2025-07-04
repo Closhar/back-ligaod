@@ -195,4 +195,118 @@ class RatingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Создать новый регион рейтинга
+     */
+    public function storeRegion(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:50|unique:rating_regions,code',
+            'description' => 'nullable|string|max:1000',
+            'is_active' => 'boolean'
+        ]);
+
+        try {
+            $region = RatingRegion::create([
+                'name' => $request->name,
+                'code' => $request->code,
+                'description' => $request->description,
+                'is_active' => $request->get('is_active', true)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Регион успешно создан',
+                'data' => $region
+            ], 201);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при создании региона: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Обновить регион рейтинга
+     */
+    public function updateRegion(Request $request, int $id): JsonResponse
+    {
+        $region = RatingRegion::find($id);
+
+        if (!$region) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Регион не найден'
+            ], 404);
+        }
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'code' => 'required|string|max:50|unique:rating_regions,code,' . $id,
+            'description' => 'nullable|string|max:1000',
+            'is_active' => 'boolean'
+        ]);
+
+        try {
+            $region->update([
+                'name' => $request->name,
+                'code' => $request->code,
+                'description' => $request->description,
+                'is_active' => $request->get('is_active', true)
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Регион успешно обновлен',
+                'data' => $region
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при обновлении региона: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Удалить регион рейтинга
+     */
+    public function destroyRegion(int $id): JsonResponse
+    {
+        $region = RatingRegion::find($id);
+
+        if (!$region) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Регион не найден'
+            ], 404);
+        }
+
+        // Проверяем, есть ли связанные записи
+        $hasRelatedData = $region->ratings()->exists() || $region->clubs()->exists();
+
+        if ($hasRelatedData) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Нельзя удалить регион, у которого есть связанные данные (рейтинги или клубы)'
+            ], 400);
+        }
+
+        try {
+            $region->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Регион успешно удален'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при удалении региона: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

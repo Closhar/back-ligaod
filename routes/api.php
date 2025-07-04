@@ -110,6 +110,11 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
         Route::get('/regions', [RatingController::class, 'getRegions']);
         Route::get('/sports', [RatingController::class, 'getSports']);
         Route::post('/calculate-yearly', [RatingController::class, 'calculateYearlyRating'])->middleware('auth:sanctum');
+
+        // CRUD операции для регионов рейтинга
+        Route::post('/regions', [RatingController::class, 'storeRegion'])->middleware('auth:sanctum');
+        Route::put('/regions/{id}', [RatingController::class, 'updateRegion'])->middleware('auth:sanctum');
+        Route::delete('/regions/{id}', [RatingController::class, 'destroyRegion'])->middleware('auth:sanctum');
     });
 
     // Маршруты для достижений клубов
