@@ -23,6 +23,8 @@ class DatabaseSeeder extends Seeder
         // Заполняем годы рейтинга
         $this->call([
             RatingYearSeeder::class,
+            TournamentTypeSeeder::class,
+            AdminPageSeeder::class,
         ]);
     }
 }

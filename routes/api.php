@@ -46,6 +46,7 @@ use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\RoleController;
 use App\Http\Controllers\Api\TelegramMessageController;
 use App\Http\Controllers\Api\TelegramParseChannelController;
+use App\Http\Controllers\Api\TournamentTypeController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\PromptTemplateController;
@@ -135,6 +136,15 @@ Route::group(['prefix' => '/v1'], function () {
         Route::put('/{id}', [ClubAchievementController::class, 'update'])->middleware('auth:sanctum');
         Route::delete('/{id}', [ClubAchievementController::class, 'destroy'])->middleware('auth:sanctum');
         Route::get('/statistics', [ClubAchievementController::class, 'getAchievementsStatistics']);
+    });
+
+    // Маршруты для типов турниров
+    Route::prefix('tournament-types')->group(function () {
+        Route::get('/', [TournamentTypeController::class, 'index']);
+        Route::get('/{id}', [TournamentTypeController::class, 'show']);
+        Route::post('/', [TournamentTypeController::class, 'store'])->middleware('auth:sanctum');
+        Route::put('/{id}', [TournamentTypeController::class, 'update'])->middleware('auth:sanctum');
+        Route::delete('/{id}', [TournamentTypeController::class, 'destroy'])->middleware('auth:sanctum');
     });
 
     // Маршруты для загрузки изображений в галереи

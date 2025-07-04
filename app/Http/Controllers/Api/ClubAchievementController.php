@@ -25,11 +25,12 @@ class ClubAchievementController extends Controller
         $request->validate([
             'club_id' => 'nullable|integer|exists:clubs,id',
             'year' => 'nullable|integer|min:2020|max:2030',
-            'tournament_type' => 'nullable|in:championship,first_league,cup,supercup',
+            'tournament_type' => 'nullable|string',
+            'tournament_type_id' => 'nullable|integer|exists:tournament_types,id',
             'region_id' => 'nullable|integer|exists:rating_regions,id'
         ]);
 
-        $query = ClubAchievement::with(['club.ratingRegion']);
+        $query = ClubAchievement::with(['club.ratingRegion', 'tournamentType']);
 
         // Фильтр по клубу
         if ($request->has('club_id') && $request->club_id) {
@@ -44,6 +45,11 @@ class ClubAchievementController extends Controller
         // Фильтр по типу турнира
         if ($request->has('tournament_type') && $request->tournament_type) {
             $query->where('tournament_type', $request->tournament_type);
+        }
+
+        // Фильтр по ID типа турнира
+        if ($request->has('tournament_type_id') && $request->tournament_type_id) {
+            $query->where('tournament_type_id', $request->tournament_type_id);
         }
 
         // Фильтр по региону
@@ -71,7 +77,8 @@ class ClubAchievementController extends Controller
         $request->validate([
             'club_id' => 'required|integer|exists:clubs,id',
             'year' => 'required|integer|min:2020|max:2030',
-            'tournament_type' => 'required|in:championship,first_league,cup,supercup',
+            'tournament_type' => 'nullable|string',
+            'tournament_type_id' => 'required|integer|exists:tournament_types,id',
             'position' => 'required|integer|min:1',
             'teams_count' => 'required|integer|min:1',
             'promoted' => 'boolean',
@@ -96,6 +103,7 @@ class ClubAchievementController extends Controller
                 'club_id',
                 'year',
                 'tournament_type',
+                'tournament_type_id',
                 'position',
                 'teams_count',
                 'promoted',
@@ -127,7 +135,8 @@ class ClubAchievementController extends Controller
         $request->validate([
             'club_id' => 'integer|exists:clubs,id',
             'year' => 'integer|min:2020|max:2030',
-            'tournament_type' => 'in:championship,first_league,cup,supercup',
+            'tournament_type' => 'nullable|string',
+            'tournament_type_id' => 'integer|exists:tournament_types,id',
             'position' => 'integer|min:1',
             'teams_count' => 'integer|min:1',
             'promoted' => 'boolean',
@@ -154,6 +163,7 @@ class ClubAchievementController extends Controller
                 'club_id',
                 'year',
                 'tournament_type',
+                'tournament_type_id',
                 'position',
                 'teams_count',
                 'promoted',
