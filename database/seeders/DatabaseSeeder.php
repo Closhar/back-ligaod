@@ -19,5 +19,10 @@ class DatabaseSeeder extends Seeder
             'name' => 'Test User',
             'email' => 'test@example.com',
         ]);
+
+        // Заполняем годы рейтинга
+        $this->call([
+            RatingYearSeeder::class,
+        ]);
     }
 }

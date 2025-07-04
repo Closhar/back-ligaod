@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\RatingRegion;
+use App\Models\RatingYear;
 use App\Models\RegionRating;
 use App\Models\Sport;
 use App\Services\SRRRRatingService;
@@ -147,10 +148,13 @@ class RatingController extends Controller
     /**
      * Получить список регионов
      */
-    public function getRegions(): JsonResponse
+    public function getRegions(Request $request): JsonResponse
     {
+        $limit = $request->get('limit', 10);
+
         $regions = RatingRegion::orderBy('name')
             ->withCount('clubs')
+            ->limit($limit)
             ->get();
 
         return response()->json([
@@ -162,13 +166,34 @@ class RatingController extends Controller
     /**
      * Получить список видов спорта для рейтинга
      */
-    public function getSports(): JsonResponse
+    public function getSports(Request $request): JsonResponse
     {
-        $sports = Sport::orderBy('title')->get();
+        $limit = $request->get('limit', 10);
+
+        $sports = Sport::orderBy('title')
+            ->limit($limit)
+            ->get();
 
         return response()->json([
             'success' => true,
             'data' => $sports
+        ]);
+    }
+
+    /**
+     * Получить список годов для рейтинга
+     */
+    public function getYears(Request $request): JsonResponse
+    {
+        $limit = $request->get('limit', 10);
+
+        $years = RatingYear::orderBy('year', 'desc')
+            ->limit($limit)
+            ->get();
+
+        return response()->json([
+            'success' => true,
+            'data' => $years
         ]);
     }
 

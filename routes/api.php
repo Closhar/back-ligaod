@@ -109,6 +109,7 @@ Route::group(['prefix' => '/v1', 'namespace' => 'Api'], function () {
         Route::get('/calculation-details', [RatingController::class, 'getCalculationDetails']);
         Route::get('/regions', [RatingController::class, 'getRegions']);
         Route::get('/sports', [RatingController::class, 'getSports']);
+        Route::get('/years', [RatingController::class, 'getYears']);
         Route::post('/calculate-yearly', [RatingController::class, 'calculateYearlyRating'])->middleware('auth:sanctum');
 
         // CRUD операции для регионов рейтинга
