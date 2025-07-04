@@ -185,8 +185,7 @@ class RatingController extends Controller
         if ($query) {
             $sports->where(function($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('title_short', 'like', "%{$query}%")
-                  ->orWhere('name', 'like', "%{$query}%");
+                  ->orWhere('title_short', 'like', "%{$query}%");
             });
         }
 
