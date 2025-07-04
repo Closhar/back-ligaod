@@ -59,6 +59,11 @@ class ClubAchievement extends Model
         $details = [];
         $coefficient = 1.0;
 
+        Log::info('Начало расчёта очков', [
+            'achievement_id' => $this->id,
+            'is_farm' => $this->is_farm
+        ]);
+
         // Получаем тип турнира
         $tournamentType = $this->tournamentType;
 
@@ -71,6 +76,12 @@ class ClubAchievement extends Model
             // Получаем коэффициент из метода calculatePointsNew
             $coefficient = $this->getCalculatedCoefficient();
         }
+
+        Log::info('Результат расчёта', [
+            'achievement_id' => $this->id,
+            'points' => $points,
+            'coefficient' => $coefficient
+        ]);
 
         $this->update([
             'points_earned' => $points,
@@ -89,18 +100,30 @@ class ClubAchievement extends Model
         $tournamentType = $this->tournamentType;
         $isFarm = $this->is_farm;
 
+        Log::info('Расчёт коэффициента', [
+            'achievement_id' => $this->id,
+            'is_farm' => $isFarm,
+            'is_farm_type' => gettype($isFarm),
+            'is_farm_strict_true' => $isFarm === true,
+            'is_farm_loose_true' => $isFarm == true,
+            'tournament_type' => $tournamentType ? $tournamentType->code : 'null'
+        ]);
+
         if (!$tournamentType) {
             return 1.0;
         }
 
         // Если фарм-клуб — применяем специальный коэффициент
-        if ($isFarm === true) {
+        if ($isFarm == true) {
             // Если в типе турнира есть поле farm_coefficient — используем его, иначе 0.5
             $farmCoefficient = property_exists($tournamentType, 'farm_coefficient') && $tournamentType->farm_coefficient
                 ? $tournamentType->farm_coefficient : 0.5;
+
+            Log::info('Применяется коэффициент фарм-клуба', ['coefficient' => $farmCoefficient]);
             return $farmCoefficient;
         } else {
             $coefficient = $tournamentType->coefficient ?? 1.0;
+            Log::info('Применяется обычный коэффициент', ['coefficient' => $coefficient]);
             return $coefficient;
         }
     }
@@ -164,6 +187,15 @@ class ClubAchievement extends Model
         // Применяем коэффициент
         $coefficient = $this->getCalculatedCoefficient();
         $basePoints = $basePoints * $coefficient;
+
+        // Отладочная информация
+        Log::info('Финальный расчёт очков', [
+            'achievement_id' => $this->id,
+            'is_farm' => $this->is_farm,
+            'coefficient' => $coefficient,
+            'basePoints_before_coefficient' => $basePoints / $coefficient,
+            'finalPoints' => $basePoints
+        ]);
 
         return $basePoints;
     }
