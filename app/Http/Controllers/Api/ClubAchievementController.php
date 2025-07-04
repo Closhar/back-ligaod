@@ -77,7 +77,6 @@ class ClubAchievementController extends Controller
         $request->validate([
             'club_id' => 'required|integer|exists:clubs,id',
             'year' => 'required|integer|min:2020|max:2030',
-            'tournament_type' => 'required|string',
             'tournament_type_id' => 'required|integer|exists:tournament_types,id',
             'position' => 'required|integer|min:1',
             'teams_count' => 'required|integer|min:1',
@@ -102,13 +101,18 @@ class ClubAchievementController extends Controller
             $data = $request->only([
                 'club_id',
                 'year',
-                'tournament_type',
                 'tournament_type_id',
                 'position',
                 'teams_count',
                 'promoted',
                 'coefficient'
             ]);
+
+            // Автоматически заполняем tournament_type из tournament_type_id
+            $tournamentType = \App\Models\TournamentType::find($data['tournament_type_id']);
+            if ($tournamentType) {
+                $data['tournament_type'] = $tournamentType->code;
+            }
 
             $achievement = $this->ratingService->addClubAchievement($data);
 
@@ -161,13 +165,20 @@ class ClubAchievementController extends Controller
             $data = $request->only([
                 'club_id',
                 'year',
-                'tournament_type',
                 'tournament_type_id',
                 'position',
                 'teams_count',
                 'promoted',
                 'coefficient'
             ]);
+
+            // Автоматически заполняем tournament_type из tournament_type_id
+            if (isset($data['tournament_type_id'])) {
+                $tournamentType = \App\Models\TournamentType::find($data['tournament_type_id']);
+                if ($tournamentType) {
+                    $data['tournament_type'] = $tournamentType->code;
+                }
+            }
 
             $achievement->update($data);
             $achievement->calculatePoints();
