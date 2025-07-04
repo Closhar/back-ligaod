@@ -57,12 +57,6 @@ class ClubAchievement extends Model
     {
         $points = 0;
         $details = [];
-        $coefficient = 1.0;
-
-        Log::info('Начало расчёта очков', [
-            'achievement_id' => $this->id,
-            'is_farm' => $this->is_farm
-        ]);
 
         // Получаем тип турнира
         $tournamentType = $this->tournamentType;
@@ -70,18 +64,13 @@ class ClubAchievement extends Model
         if (!$tournamentType) {
             // Fallback к старой системе для обратной совместимости
             $points = $this->calculatePointsLegacy();
+            $coefficient = 1.0;
         } else {
             // Новая система с таблицей
             $points = $this->calculatePointsNew();
             // Получаем коэффициент из метода calculatePointsNew
             $coefficient = $this->getCalculatedCoefficient();
         }
-
-        Log::info('Результат расчёта', [
-            'achievement_id' => $this->id,
-            'points' => $points,
-            'coefficient' => $coefficient
-        ]);
 
         $this->update([
             'points_earned' => $points,
@@ -100,15 +89,6 @@ class ClubAchievement extends Model
         $tournamentType = $this->tournamentType;
         $isFarm = $this->is_farm;
 
-        Log::info('Расчёт коэффициента', [
-            'achievement_id' => $this->id,
-            'is_farm' => $isFarm,
-            'is_farm_type' => gettype($isFarm),
-            'is_farm_strict_true' => $isFarm === true,
-            'is_farm_loose_true' => $isFarm == true,
-            'tournament_type' => $tournamentType ? $tournamentType->code : 'null'
-        ]);
-
         if (!$tournamentType) {
             return 1.0;
         }
@@ -116,11 +96,9 @@ class ClubAchievement extends Model
         // Если фарм-клуб — применяем коэффициент из настроек турнира
         if ($isFarm == true) {
             $coefficient = $tournamentType->coefficient ?? 0.5;
-            Log::info('Применяется коэффициент фарм-клуба', ['coefficient' => $coefficient]);
             return $coefficient;
         } else {
             // Для обычных клубов всегда применяем коэффициент 1.0
-            Log::info('Применяется обычный коэффициент', ['coefficient' => 1.0]);
             return 1.0;
         }
     }
@@ -140,8 +118,12 @@ class ClubAchievement extends Model
         if ($teamsCount < 8 && $tournamentType->code !== 'cup') {
             $maxPositions = floor($teamsCount / 2);
             if ($position > $maxPositions) {
-                // Для первой лиги с повышением — бонус, иначе 0
-                return ($promoted && $tournamentType->code === 'first_league') ? 30 : 0;
+                // Для первой лиги с повышением — бонус из настроек турнира, иначе 0
+                if ($promoted && $tournamentType->code === 'first_league') {
+                    $promotionBonus = $tournamentType->promotion_bonus ?? 30;
+                    return $promotionBonus;
+                }
+                return 0;
             }
         }
 
@@ -176,23 +158,15 @@ class ClubAchievement extends Model
                     $basePoints = $basePoints * $multiplier;
                 }
             } else {
-                // Fallback: добавляем 30 очков за повышение
-                $basePoints += 30;
+                // Используем бонус за повышение из настроек турнира
+                $promotionBonus = $tournamentType->promotion_bonus ?? 30;
+                $basePoints += $promotionBonus;
             }
         }
 
         // Применяем коэффициент
         $coefficient = $this->getCalculatedCoefficient();
         $basePoints = $basePoints * $coefficient;
-
-        // Отладочная информация
-        Log::info('Финальный расчёт очков', [
-            'achievement_id' => $this->id,
-            'is_farm' => $this->is_farm,
-            'coefficient' => $coefficient,
-            'basePoints_before_coefficient' => $basePoints / $coefficient,
-            'finalPoints' => $basePoints
-        ]);
 
         return $basePoints;
     }
@@ -256,7 +230,9 @@ class ClubAchievement extends Model
         if ($n < 8) {
             $maxPositions = floor($n / 2);
             if ($position > $maxPositions) {
-                return $promoted ? 30 : 0;
+                // Используем бонус за повышение из настроек турнира
+                $promotionBonus = $this->tournamentType ? ($this->tournamentType->promotion_bonus ?? 30) : 30;
+                return $promoted ? $promotionBonus : 0;
             }
         }
 
@@ -271,7 +247,9 @@ class ClubAchievement extends Model
             default: $basePoints = 0;
         }
 
-        return $basePoints + ($promoted ? 30 : 0);
+        // Используем бонус за повышение из настроек турнира
+        $promotionBonus = $this->tournamentType ? ($this->tournamentType->promotion_bonus ?? 30) : 30;
+        return $basePoints + ($promoted ? $promotionBonus : 0);
     }
 
     /**
