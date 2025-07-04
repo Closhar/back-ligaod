@@ -21,14 +21,16 @@ class ClubAchievement extends Model
         'promoted',
         'coefficient',
         'points_earned',
-        'calculation_details'
+        'calculation_details',
+        'is_farm'
     ];
 
     protected $casts = [
         'promoted' => 'boolean',
         'points_earned' => 'decimal:2',
         'coefficient' => 'decimal:2',
-        'calculation_details' => 'array'
+        'calculation_details' => 'array',
+        'is_farm' => 'boolean'
     ];
 
     /**
@@ -83,6 +85,7 @@ class ClubAchievement extends Model
         $position = $this->position;
         $teamsCount = $this->teams_count;
         $promoted = $this->promoted;
+        $isFarm = $this->is_farm;
 
         // Ограничение по местам для малых лиг (N < 8) — для всех типов, кроме кубка
         if ($teamsCount < 8 && $tournamentType->code !== 'cup') {
@@ -129,8 +132,15 @@ class ClubAchievement extends Model
             }
         }
 
-        // Применяем коэффициент типа турнира
-        $coefficient = $tournamentType->coefficient ?? 1.0;
+        // Если фарм-клуб — применяем специальный коэффициент
+        if ($isFarm) {
+            // Если в типе турнира есть поле farm_coefficient — используем его, иначе 0.5
+            $farmCoefficient = property_exists($tournamentType, 'farm_coefficient') && $tournamentType->farm_coefficient
+                ? $tournamentType->farm_coefficient : 0.5;
+            $coefficient = $farmCoefficient;
+        } else {
+            $coefficient = $tournamentType->coefficient ?? 1.0;
+        }
         $basePoints = $basePoints * $coefficient;
 
         return $basePoints;
