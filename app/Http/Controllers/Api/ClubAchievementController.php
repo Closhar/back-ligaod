@@ -18,20 +18,39 @@ class ClubAchievementController extends Controller
     }
 
     /**
-     * Получить достижения клуба
+     * Получить достижения клубов
      */
     public function getClubAchievements(Request $request): JsonResponse
     {
         $request->validate([
-            'club_id' => 'required|integer|exists:clubs,id',
-            'year' => 'integer|min:2020|max:2030'
+            'club_id' => 'nullable|integer|exists:clubs,id',
+            'year' => 'nullable|integer|min:2020|max:2030',
+            'tournament_type' => 'nullable|in:championship,first_league,cup,supercup',
+            'region_id' => 'nullable|integer|exists:rating_regions,id'
         ]);
 
-        $query = ClubAchievement::with(['club'])
-            ->where('club_id', $request->club_id);
+        $query = ClubAchievement::with(['club.ratingRegion']);
 
-        if ($request->has('year')) {
+        // Фильтр по клубу
+        if ($request->has('club_id') && $request->club_id) {
+            $query->where('club_id', $request->club_id);
+        }
+
+        // Фильтр по году
+        if ($request->has('year') && $request->year) {
             $query->where('year', $request->year);
+        }
+
+        // Фильтр по типу турнира
+        if ($request->has('tournament_type') && $request->tournament_type) {
+            $query->where('tournament_type', $request->tournament_type);
+        }
+
+        // Фильтр по региону
+        if ($request->has('region_id') && $request->region_id) {
+            $query->whereHas('club', function ($q) use ($request) {
+                $q->where('rating_region_id', $request->region_id);
+            });
         }
 
         $achievements = $query->orderBy('year', 'desc')
@@ -58,6 +77,18 @@ class ClubAchievementController extends Controller
             'promoted' => 'boolean',
             'coefficient' => 'numeric|min:0.1|max:2.0'
         ]);
+
+        // Проверяем, есть ли у клуба регион рейтинга
+        $club = \App\Models\Club::find($request->club_id);
+        if (!$club->rating_region_id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'У выбранного клуба не указан регион рейтинга. Пожалуйста, сначала добавьте регион к клубу в разделе "Клубы".',
+                'errors' => [
+                    'club_id' => ['У клуба не указан регион рейтинга']
+                ]
+            ], 422);
+        }
 
         try {
             $achievement = $this->ratingService->addClubAchievement($request->all());
@@ -91,6 +122,20 @@ class ClubAchievementController extends Controller
             'promoted' => 'boolean',
             'coefficient' => 'numeric|min:0.1|max:2.0'
         ]);
+
+        // Проверяем, есть ли у клуба регион рейтинга (если клуб изменяется)
+        if ($request->has('club_id') && $request->club_id != $achievement->club_id) {
+            $club = \App\Models\Club::find($request->club_id);
+            if (!$club->rating_region_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'У выбранного клуба не указан регион рейтинга. Пожалуйста, сначала добавьте регион к клубу в разделе "Клубы".',
+                    'errors' => [
+                        'club_id' => ['У клуба не указан регион рейтинга']
+                    ]
+                ], 422);
+            }
+        }
 
         try {
             $achievement->update($request->all());

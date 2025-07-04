@@ -158,14 +158,12 @@ class SRRRRatingService
             return [];
         }
 
-        $achievements = ClubAchievement::with(['club', 'competition'])
-            ->whereHas('club', function ($query) use ($regionId) {
-                $query->where('rating_region_id', $regionId);
+        $achievements = ClubAchievement::with(['club'])
+            ->whereHas('club', function ($query) use ($regionId, $sportId) {
+                $query->where('rating_region_id', $regionId)
+                      ->where('sport_id', $sportId);
             })
             ->where('year', $year)
-            ->whereHas('competition', function ($query) use ($sportId) {
-                $query->where('sport_id', $sportId);
-            })
             ->get();
 
         return [

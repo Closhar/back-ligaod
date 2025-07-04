@@ -111,18 +111,6 @@ class AdminPageController extends Controller
             $validationRules = [];
 
             switch ($fieldName) {
-                case 'title':
-                    $validationRules = ['title' => 'required|string|max:255'];
-                    break;
-                case 'slug':
-                    $validationRules = ['slug' => 'required|string|max:255|unique:admin_pages,slug,' . $id];
-                    break;
-                case 'icon':
-                    $validationRules = ['icon' => 'nullable|string|max:255'];
-                    break;
-                case 'description':
-                    $validationRules = ['description' => 'nullable|string'];
-                    break;
                 case 'menu_section_id':
                     $validationRules = ['menu_section_id' => 'nullable|exists:menu_sections,id'];
                     break;

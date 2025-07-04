@@ -14,6 +14,7 @@ class ClubAchievement extends Model
         'club_id',
         'year',
         'tournament_type',
+        'division',
         'position',
         'teams_count',
         'promoted',
@@ -36,8 +37,6 @@ class ClubAchievement extends Model
     {
         return $this->belongsTo(Club::class);
     }
-
-
 
     /**
      * Рассчитать очки по формуле SRRR
