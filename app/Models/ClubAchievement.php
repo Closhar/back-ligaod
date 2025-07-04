@@ -56,6 +56,7 @@ class ClubAchievement extends Model
     {
         $points = 0;
         $details = [];
+        $coefficient = 1.0;
 
         // Получаем тип турнира
         $tournamentType = $this->tournamentType;
@@ -66,14 +67,40 @@ class ClubAchievement extends Model
         } else {
             // Новая система с таблицей
             $points = $this->calculatePointsNew();
+            // Получаем коэффициент из метода calculatePointsNew
+            $coefficient = $this->getCalculatedCoefficient();
         }
 
         $this->update([
             'points_earned' => $points,
+            'coefficient' => $coefficient,
             'calculation_details' => $details
         ]);
 
         return $points;
+    }
+
+    /**
+     * Получить рассчитанный коэффициент
+     */
+    private function getCalculatedCoefficient(): float
+    {
+        $tournamentType = $this->tournamentType;
+        $isFarm = $this->is_farm;
+
+        if (!$tournamentType) {
+            return 1.0;
+        }
+
+        // Если фарм-клуб — применяем специальный коэффициент
+        if ($isFarm) {
+            // Если в типе турнира есть поле farm_coefficient — используем его, иначе 0.5
+            $farmCoefficient = property_exists($tournamentType, 'farm_coefficient') && $tournamentType->farm_coefficient
+                ? $tournamentType->farm_coefficient : 0.5;
+            return $farmCoefficient;
+        } else {
+            return $tournamentType->coefficient ?? 1.0;
+        }
     }
 
     /**
@@ -132,15 +159,8 @@ class ClubAchievement extends Model
             }
         }
 
-        // Если фарм-клуб — применяем специальный коэффициент
-        if ($isFarm) {
-            // Если в типе турнира есть поле farm_coefficient — используем его, иначе 0.5
-            $farmCoefficient = property_exists($tournamentType, 'farm_coefficient') && $tournamentType->farm_coefficient
-                ? $tournamentType->farm_coefficient : 0.5;
-            $coefficient = $farmCoefficient;
-        } else {
-            $coefficient = $tournamentType->coefficient ?? 1.0;
-        }
+        // Применяем коэффициент
+        $coefficient = $this->getCalculatedCoefficient();
         $basePoints = $basePoints * $coefficient;
 
         return $basePoints;
