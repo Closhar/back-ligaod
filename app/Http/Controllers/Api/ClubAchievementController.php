@@ -83,10 +83,10 @@ class ClubAchievementController extends Controller
         if (!$club->rating_region_id) {
             return response()->json([
                 'success' => false,
-                'message' => 'У выбранного клуба не указан регион рейтинга. Пожалуйста, сначала добавьте регион к клубу в разделе "Клубы".',
-                'errors' => [
-                    'club_id' => ['У клуба не указан регион рейтинга']
-                ]
+                'message' => 'У выбранного клуба не указан регион рейтинга.',
+                'code' => 'CLUB_NO_REGION',
+                'club_id' => $club->id,
+                'club_name' => $club->title
             ], 422);
         }
 
