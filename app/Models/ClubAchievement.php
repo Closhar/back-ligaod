@@ -96,6 +96,11 @@ class ClubAchievement extends Model
         // Получаем базовые очки за место
         $basePoints = $tournamentType->getPointsForPosition($position, $teamsCount);
 
+        // Если нет очков за место, но есть очки за участие, используем их
+        if ($basePoints === 0 && $tournamentType->participation_points > 0) {
+            $basePoints = $tournamentType->participation_points;
+        }
+
         // Применяем множитель по количеству команд, если не установлен флаг ignore_teams_multiplier
         if (!$tournamentType->ignore_teams_multiplier) {
             $multiplier = $teamsCount / 10;

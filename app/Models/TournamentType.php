@@ -17,7 +17,8 @@ class TournamentType extends Model
         'is_active',
         'sort_order',
         'ignore_teams_multiplier',
-        'coefficient'
+        'coefficient',
+        'participation_points'
     ];
 
     protected $casts = [
@@ -25,6 +26,7 @@ class TournamentType extends Model
         'sort_order' => 'integer',
         'ignore_teams_multiplier' => 'boolean',
         'coefficient' => 'decimal:2',
+        'participation_points' => 'integer',
     ];
 
     /**
