@@ -64,11 +64,14 @@ class ClubAchievementController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
-                        // Добавляем вычисленные поля для отображения
+        // Добавляем вычисленные поля для отображения
         $achievements->each(function ($achievement) {
             try {
-                // Вычисляем очки за место для отображения
-                $achievement->display_points = $this->calculateDisplayPoints($achievement);
+                // Вычисляем базовые очки за место (без множителей и бонусов)
+                $achievement->base_points = $this->calculateBasePoints($achievement);
+
+                // Вычисляем итоговые очки для отображения
+                $achievement->calculated_points = $this->calculateDisplayPoints($achievement);
 
                 // Вычисляем коэффициент команд для отображения
                 $achievement->teams_multiplier = $this->calculateTeamsMultiplier($achievement);
@@ -77,7 +80,8 @@ class ClubAchievementController extends Controller
                     'achievement_id' => $achievement->id,
                     'error' => $e->getMessage()
                 ]);
-                $achievement->display_points = 0;
+                $achievement->base_points = 0;
+                $achievement->calculated_points = 0;
                 $achievement->teams_multiplier = null;
             }
         });
@@ -90,7 +94,8 @@ class ClubAchievementController extends Controller
                 'club_id' => $firstAchievement->club_id,
                 'club_rating_region' => $firstAchievement->club?->rating_region,
                 'club_rating_region_id' => $firstAchievement->club?->rating_region_id,
-                'display_points' => $firstAchievement->display_points,
+                'base_points' => $firstAchievement->base_points,
+                'calculated_points' => $firstAchievement->calculated_points,
                 'teams_multiplier' => $firstAchievement->teams_multiplier,
                 'tournament_type' => $firstAchievement->tournamentType?->name
             ]);
@@ -240,8 +245,36 @@ class ClubAchievementController extends Controller
         }
     }
 
-        /**
-     * Вычислить очки за место для отображения
+    /**
+     * Вычислить базовые очки за место (без множителей и бонусов)
+     */
+    private function calculateBasePoints(ClubAchievement $achievement): int
+    {
+        if (!$achievement->tournamentType) {
+            return 0;
+        }
+
+        try {
+            // Получаем базовые очки за место
+            $basePoints = $achievement->tournamentType->getPointsForPosition($achievement->position, $achievement->teams_count);
+
+            // Если нет очков за место, но есть очки за участие, используем их
+            if ($basePoints === 0 && $achievement->tournamentType->participation_points > 0) {
+                $basePoints = $achievement->tournamentType->participation_points;
+            }
+
+            return (int) $basePoints;
+        } catch (\Exception $e) {
+            Log::error('Ошибка вычисления базовых очков для достижения', [
+                'achievement_id' => $achievement->id,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+
+    /**
+     * Вычислить итоговые очки для отображения (с множителями и бонусами)
      */
     private function calculateDisplayPoints(ClubAchievement $achievement): int
     {
@@ -282,7 +315,7 @@ class ClubAchievementController extends Controller
 
             return (int) round($basePoints);
         } catch (\Exception $e) {
-            Log::error('Ошибка вычисления очков для достижения', [
+            Log::error('Ошибка вычисления итоговых очков для достижения', [
                 'achievement_id' => $achievement->id,
                 'error' => $e->getMessage()
             ]);
@@ -290,7 +323,7 @@ class ClubAchievementController extends Controller
         }
     }
 
-        /**
+    /**
      * Вычислить коэффициент команд для отображения
      */
     private function calculateTeamsMultiplier(ClubAchievement $achievement): ?float
@@ -343,8 +376,6 @@ class ClubAchievementController extends Controller
             ], 500);
         }
     }
-
-
 
     /**
      * Получить статистику достижений по регионам
