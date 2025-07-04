@@ -267,6 +267,10 @@ class ClubAchievementController extends Controller
             // Для первой лиги добавляем бонус за повышение
             if ($achievement->tournamentType->code === 'first_league' && $achievement->promoted) {
                 $promotionBonus = $achievement->tournamentType->promotion_bonus ?? 30;
+                if (!$achievement->tournamentType->ignore_teams_multiplier) {
+                    $multiplier = $achievement->teams_count / 10;
+                    $promotionBonus = $promotionBonus * $multiplier;
+                }
                 $basePoints += $promotionBonus;
             }
 

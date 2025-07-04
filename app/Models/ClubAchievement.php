@@ -160,6 +160,10 @@ class ClubAchievement extends Model
             } else {
                 // Используем бонус за повышение из настроек турнира
                 $promotionBonus = $tournamentType->promotion_bonus ?? 30;
+                if (!$tournamentType->ignore_teams_multiplier) {
+                    $multiplier = $teamsCount / 10;
+                    $promotionBonus = $promotionBonus * $multiplier;
+                }
                 $basePoints += $promotionBonus;
             }
         }
