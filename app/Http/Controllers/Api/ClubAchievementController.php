@@ -77,7 +77,7 @@ class ClubAchievementController extends Controller
         $request->validate([
             'club_id' => 'required|integer|exists:clubs,id',
             'year' => 'required|integer|min:2020|max:2030',
-            'tournament_type' => 'nullable|string',
+            'tournament_type' => 'required|string',
             'tournament_type_id' => 'required|integer|exists:tournament_types,id',
             'position' => 'required|integer|min:1',
             'teams_count' => 'required|integer|min:1',
@@ -135,7 +135,6 @@ class ClubAchievementController extends Controller
         $request->validate([
             'club_id' => 'integer|exists:clubs,id',
             'year' => 'integer|min:2020|max:2030',
-            'tournament_type' => 'nullable|string',
             'tournament_type_id' => 'integer|exists:tournament_types,id',
             'position' => 'integer|min:1',
             'teams_count' => 'integer|min:1',
