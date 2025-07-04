@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin\Data;
 use App\Http\Controllers\Controller;
 use App\Models\AdminPage;
 use App\Models\MenuSection;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
 class AdminPageController extends Controller
@@ -111,6 +111,18 @@ class AdminPageController extends Controller
             $validationRules = [];
 
             switch ($fieldName) {
+                case 'title':
+                    $validationRules = ['title' => 'required|string|max:255'];
+                    break;
+                case 'slug':
+                    $validationRules = ['slug' => 'required|string|max:255|unique:admin_pages,slug,' . $id];
+                    break;
+                case 'icon':
+                    $validationRules = ['icon' => 'nullable|string|max:255'];
+                    break;
+                case 'description':
+                    $validationRules = ['description' => 'nullable|string'];
+                    break;
                 case 'menu_section_id':
                     $validationRules = ['menu_section_id' => 'nullable|exists:menu_sections,id'];
                     break;
