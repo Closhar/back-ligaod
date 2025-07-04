@@ -145,17 +145,26 @@ class RatingController extends Controller
         ]);
     }
 
-    /**
+        /**
      * Получить список регионов
      */
     public function getRegions(Request $request): JsonResponse
     {
         $limit = $request->get('limit', 10);
+        $query = $request->get('q', '');
 
         $regions = RatingRegion::orderBy('name')
-            ->withCount('clubs')
-            ->limit($limit)
-            ->get();
+            ->withCount('clubs');
+
+        if ($query) {
+            $regions->where(function($q) use ($query) {
+                $q->where('name', 'like', "%{$query}%")
+                  ->orWhere('code', 'like', "%{$query}%")
+                  ->orWhere('description', 'like', "%{$query}%");
+            });
+        }
+
+        $regions = $regions->limit($limit)->get();
 
         return response()->json([
             'success' => true,
@@ -163,16 +172,25 @@ class RatingController extends Controller
         ]);
     }
 
-    /**
+        /**
      * Получить список видов спорта для рейтинга
      */
     public function getSports(Request $request): JsonResponse
     {
         $limit = $request->get('limit', 10);
+        $query = $request->get('q', '');
 
-        $sports = Sport::orderBy('title')
-            ->limit($limit)
-            ->get();
+        $sports = Sport::orderBy('title');
+
+        if ($query) {
+            $sports->where(function($q) use ($query) {
+                $q->where('title', 'like', "%{$query}%")
+                  ->orWhere('title_short', 'like', "%{$query}%")
+                  ->orWhere('name', 'like', "%{$query}%");
+            });
+        }
+
+        $sports = $sports->limit($limit)->get();
 
         return response()->json([
             'success' => true,
@@ -180,16 +198,25 @@ class RatingController extends Controller
         ]);
     }
 
-    /**
+        /**
      * Получить список годов для рейтинга
      */
     public function getYears(Request $request): JsonResponse
     {
         $limit = $request->get('limit', 10);
+        $query = $request->get('q', '');
 
-        $years = RatingYear::orderBy('year', 'desc')
-            ->limit($limit)
-            ->get();
+        $years = RatingYear::orderBy('year', 'desc');
+
+        if ($query) {
+            $years->where(function($q) use ($query) {
+                $q->where('year', 'like', "%{$query}%")
+                  ->orWhere('title', 'like', "%{$query}%")
+                  ->orWhere('description', 'like', "%{$query}%");
+            });
+        }
+
+        $years = $years->limit($limit)->get();
 
         return response()->json([
             'success' => true,
