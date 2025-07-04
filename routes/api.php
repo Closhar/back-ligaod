@@ -100,8 +100,9 @@ Route::group(['prefix' => '/v1'], function () {
     Route::get('/apage/{id}', [ApiParamsController::class, 'getAdminPage'])->name('params.apage');
     Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->name('params.amenu');
 
-    // Маршруты для рейтинга SRRR
+        // Маршруты для рейтинга SRRR
     Route::prefix('rating')->group(function () {
+        // GET маршруты
         Route::get('/top', [RatingController::class, 'getTopRating']);
         Route::get('/region', [RatingController::class, 'getRegionRating']);
         Route::get('/dynamics', [RatingController::class, 'getRegionDynamics']);
@@ -111,16 +112,19 @@ Route::group(['prefix' => '/v1'], function () {
         Route::get('/sports', [RatingController::class, 'getSports']);
         Route::get('/years', [RatingController::class, 'getYears']);
         Route::post('/calculate-yearly', [RatingController::class, 'calculateYearlyRating'])->middleware('auth:sanctum');
+    });
+
+    // CRUD операции для рейтинга (отдельная группа)
+    Route::prefix('rating')->middleware('auth:sanctum')->group(function () {
+        // CRUD операции для годов рейтинга
+        Route::post('/years', [RatingController::class, 'storeYear']);
+        Route::put('/years/{id}', [RatingController::class, 'updateYear']);
+        Route::delete('/years/{id}', [RatingController::class, 'destroyYear']);
 
         // CRUD операции для регионов рейтинга
-        Route::post('/regions', [RatingController::class, 'storeRegion'])->middleware('auth:sanctum');
-        Route::put('/regions/{id}', [RatingController::class, 'updateRegion'])->middleware('auth:sanctum');
-        Route::delete('/regions/{id}', [RatingController::class, 'destroyRegion'])->middleware('auth:sanctum');
-
-        // CRUD операции для годов рейтинга
-        Route::post('/years', [RatingController::class, 'storeYear'])->middleware('auth:sanctum');
-        Route::put('/years/{id}', [RatingController::class, 'updateYear'])->middleware('auth:sanctum');
-        Route::delete('/years/{id}', [RatingController::class, 'destroyYear'])->middleware('auth:sanctum');
+        Route::post('/regions', [RatingController::class, 'storeRegion']);
+        Route::put('/regions/{id}', [RatingController::class, 'updateRegion']);
+        Route::delete('/regions/{id}', [RatingController::class, 'destroyRegion']);
     });
 
     // Маршруты для достижений клубов
