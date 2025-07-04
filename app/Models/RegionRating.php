@@ -48,12 +48,10 @@ class RegionRating extends Model
     public function getClubAchievements(): \Illuminate\Database\Eloquent\Collection
     {
         return ClubAchievement::whereHas('club', function ($query) {
-            $query->where('rating_region_id', $this->rating_region_id);
+            $query->where('rating_region_id', $this->rating_region_id)
+                  ->where('sport_id', $this->sport_id);
         })
         ->where('year', $this->year)
-        ->whereHas('competition', function ($query) {
-            $query->where('sport_id', $this->sport_id);
-        })
         ->get();
     }
 
