@@ -88,12 +88,26 @@ class ClubAchievement extends Model
         $teamsCount = $this->teams_count;
         $promoted = $this->promoted;
 
+        // Ограничение по местам для малых лиг (N < 8) — для всех типов, кроме кубка
+        if ($teamsCount < 8 && $tournamentType->code !== 'cup') {
+            $maxPositions = floor($teamsCount / 2);
+            if ($position > $maxPositions) {
+                // Для первой лиги с повышением — бонус, иначе 0
+                return ($promoted && $tournamentType->code === 'first_league') ? 30 : 0;
+            }
+        }
+
         // Получаем базовые очки за место
         $basePoints = $tournamentType->getPointsForPosition($position, $teamsCount);
 
+        // Применяем множитель по количеству команд, если не установлен флаг ignore_teams_multiplier
+        if (!$tournamentType->ignore_teams_multiplier) {
+            $multiplier = $teamsCount / 10;
+            $basePoints = $basePoints * $multiplier;
+        }
+
         // Для первой лиги добавляем бонус за повышение
         if ($tournamentType->code === 'first_league' && $promoted) {
-            $promotedBonus = $tournamentType->getPointsForPosition($position, $teamsCount);
             // Ищем запись с бонусом за повышение
             $promotedPoint = $tournamentType->points()
                 ->where('position', $position)
@@ -102,18 +116,15 @@ class ClubAchievement extends Model
                 ->first();
 
             if ($promotedPoint) {
+                // Если есть специальная запись с бонусом, используем её
                 $basePoints = $promotedPoint->points;
+                if (!$tournamentType->ignore_teams_multiplier) {
+                    $multiplier = $teamsCount / 10;
+                    $basePoints = $basePoints * $multiplier;
+                }
             } else {
                 // Fallback: добавляем 30 очков за повышение
                 $basePoints += 30;
-            }
-        }
-
-        // Для малых лиг (N < 8) учитываются только первые N/2 мест
-        if ($teamsCount < 8) {
-            $maxPositions = floor($teamsCount / 2);
-            if ($position > $maxPositions) {
-                return $promoted && $tournamentType->code === 'first_league' ? 30 : 0;
             }
         }
 

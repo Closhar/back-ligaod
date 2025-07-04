@@ -13,10 +13,22 @@ class TournamentTypeSeeder extends Seeder
         // Создаем типы турниров
         $tournamentTypes = [
             [
+                'code' => 'premier_league',
+                'name' => 'Высшая лига',
+                'color_class' => 'bg-red-100 text-red-800',
+                'sort_order' => 1,
+                'points' => [
+                    ['position' => 1, 'points' => 150, 'description' => '1 место - 150 очков'],
+                    ['position' => 2, 'points' => 120, 'description' => '2 место - 120 очков'],
+                    ['position' => 3, 'points' => 90, 'description' => '3 место - 90 очков'],
+                    ['position' => 4, 'points' => 30, 'description' => '4 место - 30 очков'],
+                ]
+            ],
+            [
                 'code' => 'championship',
                 'name' => 'Чемпионат',
                 'color_class' => 'bg-blue-100 text-blue-800',
-                'sort_order' => 1,
+                'sort_order' => 2,
                 'points' => [
                     ['position' => 1, 'points' => 100, 'description' => '1 место - 100 очков'],
                     ['position' => 2, 'points' => 80, 'description' => '2 место - 80 очков'],
@@ -28,7 +40,7 @@ class TournamentTypeSeeder extends Seeder
                 'code' => 'first_league',
                 'name' => 'Первая лига',
                 'color_class' => 'bg-green-100 text-green-800',
-                'sort_order' => 2,
+                'sort_order' => 3,
                 'points' => [
                     ['position' => 1, 'points' => 50, 'description' => '1 место - 50 очков'],
                     ['position' => 2, 'points' => 30, 'description' => '2 место - 30 очков'],
@@ -44,7 +56,7 @@ class TournamentTypeSeeder extends Seeder
                 'code' => 'cup',
                 'name' => 'Кубок',
                 'color_class' => 'bg-yellow-100 text-yellow-800',
-                'sort_order' => 3,
+                'sort_order' => 4,
                 'points' => [
                     ['position' => 1, 'points' => 50, 'description' => 'Победа - 50 очков'],
                     ['position' => 2, 'points' => 30, 'description' => 'Финал - 30 очков'],
@@ -56,7 +68,7 @@ class TournamentTypeSeeder extends Seeder
                 'code' => 'supercup',
                 'name' => 'Суперкубок',
                 'color_class' => 'bg-purple-100 text-purple-800',
-                'sort_order' => 4,
+                'sort_order' => 5,
                 'points' => [
                     ['position' => 1, 'points' => 30, 'description' => 'Победа - 30 очков'],
                     ['position' => 2, 'points' => 10, 'description' => 'Участие - 10 очков'],

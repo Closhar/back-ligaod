@@ -15,12 +15,14 @@ class TournamentType extends Model
         'name',
         'color_class',
         'is_active',
-        'sort_order'
+        'sort_order',
+        'ignore_teams_multiplier'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'sort_order' => 'integer'
+        'sort_order' => 'integer',
+        'ignore_teams_multiplier' => 'boolean',
     ];
 
     /**
