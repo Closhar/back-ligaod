@@ -91,7 +91,18 @@ class ClubAchievementController extends Controller
         }
 
         try {
-            $achievement = $this->ratingService->addClubAchievement($request->all());
+            // Фильтруем только нужные поля
+            $data = $request->only([
+                'club_id',
+                'year',
+                'tournament_type',
+                'position',
+                'teams_count',
+                'promoted',
+                'coefficient'
+            ]);
+
+            $achievement = $this->ratingService->addClubAchievement($data);
 
             return response()->json([
                 'success' => true,
@@ -138,7 +149,18 @@ class ClubAchievementController extends Controller
         }
 
         try {
-            $achievement->update($request->all());
+            // Фильтруем только нужные поля
+            $data = $request->only([
+                'club_id',
+                'year',
+                'tournament_type',
+                'position',
+                'teams_count',
+                'promoted',
+                'coefficient'
+            ]);
+
+            $achievement->update($data);
             $achievement->calculatePoints();
 
             // Пересчитать рейтинг региона

@@ -19,6 +19,7 @@ class ClubAchievement extends Model
         'teams_count',
         'promoted',
         'coefficient',
+        'points_earned',
         'calculation_details'
     ];
 
@@ -60,12 +61,16 @@ class ClubAchievement extends Model
                 break;
         }
 
+        // Применяем коэффициент
+        $coefficient = $this->coefficient ?? 1.0;
+        $finalPoints = $points * $coefficient;
+
         $this->update([
-            'points_earned' => $points,
+            'points_earned' => $finalPoints,
             'calculation_details' => $details
         ]);
 
-        return $points;
+        return $finalPoints;
     }
 
     /**
