@@ -52,7 +52,7 @@ class Club extends Model
 
     public function ratingRegion(): BelongsTo
     {
-        return $this->belongsTo(RatingRegion::class);
+        return $this->belongsTo(RatingRegion::class, 'rating_region_id');
     }
 
     public function achievements(): HasMany

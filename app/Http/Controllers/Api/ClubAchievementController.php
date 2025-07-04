@@ -31,7 +31,7 @@ class ClubAchievementController extends Controller
             'region_id' => 'nullable|integer|exists:rating_regions,id'
         ]);
 
-        $query = ClubAchievement::with(['club.ratingRegion', 'tournamentType']);
+        $query = ClubAchievement::with(['club.ratingRegion', 'tournamentType.points']);
 
         // Фильтр по клубу
         if ($request->has('club_id') && $request->club_id) {
@@ -63,6 +63,38 @@ class ClubAchievementController extends Controller
         $achievements = $query->orderBy('year', 'desc')
             ->orderBy('created_at', 'desc')
             ->get();
+
+                        // Добавляем вычисленные поля для отображения
+        $achievements->each(function ($achievement) {
+            try {
+                // Вычисляем очки за место для отображения
+                $achievement->display_points = $this->calculateDisplayPoints($achievement);
+
+                // Вычисляем коэффициент команд для отображения
+                $achievement->teams_multiplier = $this->calculateTeamsMultiplier($achievement);
+            } catch (\Exception $e) {
+                Log::error('Ошибка обработки достижения', [
+                    'achievement_id' => $achievement->id,
+                    'error' => $e->getMessage()
+                ]);
+                $achievement->display_points = 0;
+                $achievement->teams_multiplier = null;
+            }
+        });
+
+        // Отладочная информация
+        if ($achievements->count() > 0) {
+            $firstAchievement = $achievements->first();
+            Log::info('Пример достижения из API:', [
+                'id' => $firstAchievement->id,
+                'club_id' => $firstAchievement->club_id,
+                'club_rating_region' => $firstAchievement->club?->rating_region,
+                'club_rating_region_id' => $firstAchievement->club?->rating_region_id,
+                'display_points' => $firstAchievement->display_points,
+                'teams_multiplier' => $firstAchievement->teams_multiplier,
+                'tournament_type' => $firstAchievement->tournamentType?->name
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -205,6 +237,72 @@ class ClubAchievementController extends Controller
                 'success' => false,
                 'message' => 'Ошибка при обновлении достижения: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+        /**
+     * Вычислить очки за место для отображения
+     */
+    private function calculateDisplayPoints(ClubAchievement $achievement): int
+    {
+        if (!$achievement->tournamentType) {
+            return 0;
+        }
+
+        try {
+            // Получаем базовые очки за место
+            $basePoints = $achievement->tournamentType->getPointsForPosition($achievement->position, $achievement->teams_count);
+
+            // Если нет очков за место, но есть очки за участие, используем их
+            if ($basePoints === 0 && $achievement->tournamentType->participation_points > 0) {
+                $basePoints = $achievement->tournamentType->participation_points;
+            }
+
+            // Применяем множитель по количеству команд, если не установлен флаг ignore_teams_multiplier
+            if (!$achievement->tournamentType->ignore_teams_multiplier) {
+                $multiplier = $achievement->teams_count / 10;
+                $basePoints = $basePoints * $multiplier;
+            }
+
+            // Для первой лиги добавляем бонус за повышение
+            if ($achievement->tournamentType->code === 'first_league' && $achievement->promoted) {
+                $promotionBonus = $achievement->tournamentType->promotion_bonus ?? 30;
+                $basePoints += $promotionBonus;
+            }
+
+            // Применяем коэффициент
+            $coefficient = $achievement->is_farm
+                ? ($achievement->tournamentType->coefficient ?? 0.5)
+                : 1.0;
+            $basePoints = $basePoints * $coefficient;
+
+            return (int) round($basePoints);
+        } catch (\Exception $e) {
+            Log::error('Ошибка вычисления очков для достижения', [
+                'achievement_id' => $achievement->id,
+                'error' => $e->getMessage()
+            ]);
+            return 0;
+        }
+    }
+
+        /**
+     * Вычислить коэффициент команд для отображения
+     */
+    private function calculateTeamsMultiplier(ClubAchievement $achievement): ?float
+    {
+        try {
+            if (!$achievement->tournamentType || $achievement->tournamentType->ignore_teams_multiplier) {
+                return null;
+            }
+
+            return round($achievement->teams_count / 10, 1);
+        } catch (\Exception $e) {
+            Log::error('Ошибка вычисления коэффициента команд для достижения', [
+                'achievement_id' => $achievement->id,
+                'error' => $e->getMessage()
+            ]);
+            return null;
         }
     }
 
