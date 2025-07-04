@@ -12,10 +12,8 @@ class ClubAchievement extends Model
 
     protected $fillable = [
         'club_id',
-        'competition_id',
         'year',
         'tournament_type',
-        'division',
         'position',
         'teams_count',
         'promoted',
@@ -39,13 +37,7 @@ class ClubAchievement extends Model
         return $this->belongsTo(Club::class);
     }
 
-    /**
-     * Соревнование
-     */
-    public function competition(): BelongsTo
-    {
-        return $this->belongsTo(Competition::class);
-    }
+
 
     /**
      * Рассчитать очки по формуле SRRR

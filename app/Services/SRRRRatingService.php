@@ -75,10 +75,10 @@ class SRRRRatingService
         $achievement->calculatePoints();
 
         // Пересчитать рейтинг региона
-        if ($achievement->club->rating_region_id) {
+        if ($achievement->club->rating_region_id && $achievement->club->sport_id) {
             $this->calculateRegionSportRating(
                 $achievement->club->ratingRegion,
-                $achievement->competition->sport,
+                $achievement->club->sport,
                 $achievement->year
             );
         }

@@ -27,7 +27,7 @@ class ClubAchievementController extends Controller
             'year' => 'integer|min:2020|max:2030'
         ]);
 
-        $query = ClubAchievement::with(['club', 'competition'])
+        $query = ClubAchievement::with(['club'])
             ->where('club_id', $request->club_id);
 
         if ($request->has('year')) {
@@ -51,10 +51,8 @@ class ClubAchievementController extends Controller
     {
         $request->validate([
             'club_id' => 'required|integer|exists:clubs,id',
-            'competition_id' => 'required|integer|exists:competitions,id',
             'year' => 'required|integer|min:2020|max:2030',
             'tournament_type' => 'required|in:championship,first_league,cup,supercup',
-            'division' => 'nullable|in:premier,first',
             'position' => 'required|integer|min:1',
             'teams_count' => 'required|integer|min:1',
             'promoted' => 'boolean',
@@ -67,7 +65,7 @@ class ClubAchievementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Достижение успешно добавлено',
-                'data' => $achievement->load(['club', 'competition'])
+                'data' => $achievement->load(['club'])
             ], 201);
         } catch (\Exception $e) {
             return response()->json([
@@ -86,10 +84,8 @@ class ClubAchievementController extends Controller
 
         $request->validate([
             'club_id' => 'integer|exists:clubs,id',
-            'competition_id' => 'integer|exists:competitions,id',
             'year' => 'integer|min:2020|max:2030',
             'tournament_type' => 'in:championship,first_league,cup,supercup',
-            'division' => 'nullable|in:premier,first',
             'position' => 'integer|min:1',
             'teams_count' => 'integer|min:1',
             'promoted' => 'boolean',
@@ -101,10 +97,10 @@ class ClubAchievementController extends Controller
             $achievement->calculatePoints();
 
             // Пересчитать рейтинг региона
-            if ($achievement->club->rating_region_id) {
+            if ($achievement->club->rating_region_id && $achievement->club->sport_id) {
                 $this->ratingService->calculateRegionSportRating(
                     $achievement->club->ratingRegion,
-                    $achievement->competition->sport,
+                    $achievement->club->sport,
                     $achievement->year
                 );
             }
@@ -112,7 +108,7 @@ class ClubAchievementController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Достижение успешно обновлено',
-                'data' => $achievement->load(['club', 'competition'])
+                'data' => $achievement->load(['club'])
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -131,16 +127,15 @@ class ClubAchievementController extends Controller
 
         try {
             $club = $achievement->club;
-            $competition = $achievement->competition;
             $year = $achievement->year;
 
             $achievement->delete();
 
             // Пересчитать рейтинг региона
-            if ($club->rating_region_id) {
+            if ($club->rating_region_id && $club->sport_id) {
                 $this->ratingService->calculateRegionSportRating(
                     $club->ratingRegion,
-                    $competition->sport,
+                    $club->sport,
                     $year
                 );
             }
@@ -157,6 +152,8 @@ class ClubAchievementController extends Controller
         }
     }
 
+
+
     /**
      * Получить статистику достижений по регионам
      */
@@ -167,7 +164,7 @@ class ClubAchievementController extends Controller
             'tournament_type' => 'nullable|in:championship,first_league,cup,supercup'
         ]);
 
-        $query = ClubAchievement::with(['club.ratingRegion', 'competition.sport'])
+        $query = ClubAchievement::with(['club.ratingRegion', 'club.sport'])
             ->where('year', $request->year);
 
         if ($request->has('tournament_type')) {
