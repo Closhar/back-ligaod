@@ -10,6 +10,7 @@ use App\Models\Gender;
 use App\Models\Sport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ApiClubController extends Controller
 {
@@ -266,7 +267,23 @@ class ApiClubController extends Controller
 
         try {
             $club = Club::findOrFail($clubId);
+
+            // Отладочная информация
+            Log::info('Добавление региона к клубу', [
+                'club_id' => $clubId,
+                'club_title' => $club->title,
+                'old_rating_region_id' => $club->rating_region_id,
+                'new_region_id' => $request->region_id
+            ]);
+
             $club->update(['rating_region_id' => $request->region_id]);
+
+            // Проверяем, что обновление прошло успешно
+            $club->refresh();
+            Log::info('Регион добавлен к клубу', [
+                'club_id' => $clubId,
+                'new_rating_region_id' => $club->rating_region_id
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -274,6 +291,12 @@ class ApiClubController extends Controller
                 'data' => $club->load(['ratingRegion'])
             ]);
         } catch (\Exception $e) {
+            Log::error('Ошибка при добавлении региона к клубу', [
+                'club_id' => $clubId,
+                'region_id' => $request->region_id,
+                'error' => $e->getMessage()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка при добавлении региона к клубу: ' . $e->getMessage()

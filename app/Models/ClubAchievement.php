@@ -18,7 +18,6 @@ class ClubAchievement extends Model
         'position',
         'teams_count',
         'promoted',
-        'points_earned',
         'coefficient',
         'calculation_details'
     ];

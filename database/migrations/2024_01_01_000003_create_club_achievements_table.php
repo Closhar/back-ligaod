@@ -17,7 +17,7 @@ return new class extends Migration
             $table->integer('position'); // Место в турнире
             $table->integer('teams_count'); // Количество команд в турнире
             $table->boolean('promoted')->default(false); // Вышел в высшую лигу
-            $table->decimal('points_earned', 10, 2); // Заработанные очки
+            $table->decimal('points_earned', 10, 2)->default(0); // Заработанные очки
             $table->decimal('coefficient', 3, 2)->default(1.0); // Коэффициент (0.5 для фарм-клубов)
             $table->json('calculation_details')->nullable(); // Детали расчета
             $table->timestamps();

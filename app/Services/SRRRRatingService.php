@@ -8,6 +8,7 @@ use App\Models\RatingRegion;
 use App\Models\RegionRating;
 use App\Models\Sport;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SRRRRatingService
 {
@@ -71,8 +72,13 @@ class SRRRRatingService
      */
     public function addClubAchievement(array $data): ClubAchievement
     {
+        Log::info('Создание достижения клуба', $data);
+
         $achievement = ClubAchievement::create($data);
+        Log::info('Достижение создано', ['id' => $achievement->id, 'points_earned' => $achievement->points_earned]);
+
         $achievement->calculatePoints();
+        Log::info('Очки рассчитаны', ['id' => $achievement->id, 'points_earned' => $achievement->points_earned]);
 
         // Пересчитать рейтинг региона
         if ($achievement->club->rating_region_id && $achievement->club->sport_id) {
