@@ -11,8 +11,8 @@ use App\Models\Gender;
 use App\Models\Sport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
 
 class ClubController extends Controller
@@ -59,6 +59,7 @@ class ClubController extends Controller
                     'clubs.gender_id',
                     'clubs.age_id',
                     'clubs.region_id',
+                    'clubs.rating_region_id',
                     'clubs.is_alien',
                     'clubs.image',
                     'clubs.image_bg',
@@ -70,10 +71,12 @@ class ClubController extends Controller
                 ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
                 ->join('cities as city', 'clubs.city_id', '=', 'city.id')
                 ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id')
+                ->leftJoin('rating_regions as rating_region', 'clubs.rating_region_id', '=', 'rating_region.id')
                 ->with('city')
                 ->with('gender')
                 ->with('sport')
                 ->with('region')
+                ->with('ratingRegion')
                 ->with('arenas')
                 ->with('gallery')
                 ->withCount('arenas')
@@ -96,7 +99,7 @@ class ClubController extends Controller
                 // Проверка, является ли поле допустимым для избежания SQL-инъекций
                 $allowedFields = [
                     'id', 'title', 'title_short', 'about', 'address', 'slug',
-                    'city_id', 'sport_id', 'gender_id', 'age_id', 'is_alien',
+                    'city_id', 'sport_id', 'gender_id', 'age_id', 'region_id', 'rating_region_id', 'is_alien',
                     'club_info', 'tlgs_to_parse'
                 ];
 
@@ -134,6 +137,10 @@ class ClubController extends Controller
 
             if ($request->has('region_id') && $request->input('region_id') !== null) {
                 $query->where('clubs.region_id', $request->input('region_id'));
+            }
+
+            if ($request->has('rating_region_id') && $request->input('rating_region_id') !== null) {
+                $query->where('clubs.rating_region_id', $request->input('rating_region_id'));
             }
 
             if ($request->has('id') && $request->input('id') !== null) {
@@ -230,7 +237,8 @@ class ClubController extends Controller
                 'is_alien' => 'boolean',
                 'image' => 'nullable|string|max:255',
                 'image_bg' => 'nullable|string|max:255',
-                'region_id' => 'nullable|exists:regions,id'
+                'region_id' => 'nullable|exists:regions,id',
+                'rating_region_id' => 'nullable|exists:rating_regions,id'
             ]);
 
             // Обработка city_title
@@ -266,6 +274,7 @@ class ClubController extends Controller
     {
         try {
             $item = Club::with('arenas')
+                ->with('ratingRegion')
                 ->withCount('arenas')
                 ->findOrFail($id);
             return response()->json($item);
@@ -303,7 +312,8 @@ class ClubController extends Controller
                 'is_alien' => 'boolean',
                 'image' => 'nullable|string|max:255',
                 'image_bg' => 'nullable|string|max:255',
-                'region_id' => 'nullable|exists:regions,id'
+                'region_id' => 'nullable|exists:regions,id',
+                'rating_region_id' => 'nullable|exists:rating_regions,id'
             ]);
 
             $item = Club::findOrFail($id);
@@ -386,7 +396,7 @@ class ClubController extends Controller
             return response()->json([
                 'success' => true,
                 'image_path' => $path,
-                'full_path' => Storage::disk('public')->url($path),
+                'full_path' => config('app.url') . '/storage/' . $path,
                 'message' => 'Изображение успешно загружено'
             ]);
 
