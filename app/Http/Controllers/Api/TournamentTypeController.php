@@ -58,6 +58,8 @@ class TournamentTypeController extends Controller
             'color_class' => 'nullable|string|max:255',
             'is_active' => 'boolean',
             'sort_order' => 'integer|min:0',
+            'ignore_teams_multiplier' => 'boolean',
+            'coefficient' => 'numeric|min:0.1|max:2.0',
             'points' => 'array',
             'points.*.position' => 'required|integer|min:1',
             'points.*.points' => 'required|integer|min:0',
@@ -68,7 +70,7 @@ class TournamentTypeController extends Controller
 
         try {
             $tournamentType = TournamentType::create($request->only([
-                'code', 'name', 'color_class', 'is_active', 'sort_order'
+                'code', 'name', 'color_class', 'is_active', 'sort_order', 'ignore_teams_multiplier', 'coefficient'
             ]));
 
             // Создаем точки для турнира
@@ -104,6 +106,8 @@ class TournamentTypeController extends Controller
             'color_class' => 'nullable|string|max:255',
             'is_active' => 'boolean',
             'sort_order' => 'integer|min:0',
+            'ignore_teams_multiplier' => 'boolean',
+            'coefficient' => 'numeric|min:0.1|max:2.0',
             'points' => 'array',
             'points.*.position' => 'required|integer|min:1',
             'points.*.points' => 'required|integer|min:0',
@@ -114,7 +118,7 @@ class TournamentTypeController extends Controller
 
         try {
             $tournamentType->update($request->only([
-                'code', 'name', 'color_class', 'is_active', 'sort_order'
+                'code', 'name', 'color_class', 'is_active', 'sort_order', 'ignore_teams_multiplier', 'coefficient'
             ]));
 
             // Обновляем точки для турнира

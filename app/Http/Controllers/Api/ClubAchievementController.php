@@ -80,8 +80,7 @@ class ClubAchievementController extends Controller
             'tournament_type_id' => 'required|integer|exists:tournament_types,id',
             'position' => 'required|integer|min:1',
             'teams_count' => 'required|integer|min:1',
-            'promoted' => 'boolean',
-            'coefficient' => 'numeric|min:0.1|max:2.0'
+            'promoted' => 'boolean'
         ]);
 
         // Проверяем, есть ли у клуба регион рейтинга
@@ -104,8 +103,7 @@ class ClubAchievementController extends Controller
                 'tournament_type_id',
                 'position',
                 'teams_count',
-                'promoted',
-                'coefficient'
+                'promoted'
             ]);
 
             // Автоматически заполняем tournament_type из tournament_type_id
@@ -142,8 +140,7 @@ class ClubAchievementController extends Controller
             'tournament_type_id' => 'integer|exists:tournament_types,id',
             'position' => 'integer|min:1',
             'teams_count' => 'integer|min:1',
-            'promoted' => 'boolean',
-            'coefficient' => 'numeric|min:0.1|max:2.0'
+            'promoted' => 'boolean'
         ]);
 
         // Проверяем, есть ли у клуба регион рейтинга (если клуб изменяется)
@@ -168,8 +165,7 @@ class ClubAchievementController extends Controller
                 'tournament_type_id',
                 'position',
                 'teams_count',
-                'promoted',
-                'coefficient'
+                'promoted'
             ]);
 
             // Автоматически заполняем tournament_type из tournament_type_id

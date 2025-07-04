@@ -66,16 +66,12 @@ class ClubAchievement extends Model
             $points = $this->calculatePointsNew();
         }
 
-        // Применяем коэффициент
-        $coefficient = $this->coefficient ?? 1.0;
-        $finalPoints = $points * $coefficient;
-
         $this->update([
-            'points_earned' => $finalPoints,
+            'points_earned' => $points,
             'calculation_details' => $details
         ]);
 
-        return $finalPoints;
+        return $points;
     }
 
     /**
@@ -127,6 +123,10 @@ class ClubAchievement extends Model
                 $basePoints += 30;
             }
         }
+
+        // Применяем коэффициент типа турнира
+        $coefficient = $tournamentType->coefficient ?? 1.0;
+        $basePoints = $basePoints * $coefficient;
 
         return $basePoints;
     }
