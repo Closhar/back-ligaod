@@ -16,7 +16,7 @@ class Club extends Model
     protected $guarded = [];
 
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
-    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name', 'logo_url'];
+    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name', 'logo_url', 'full_image_path'];
 
     protected static function booted(): void
     {
@@ -89,6 +89,14 @@ class Club extends Model
     {
         return config('app.url') . '/storage/' . $this->image;
 
+    }
+
+    public function getFullImagePathAttribute()
+    {
+        if ($this->image) {
+            return config('app.url') . '/storage/' . $this->image;
+        }
+        return null;
     }
 
     public function getBgClubImagePathAttribute()
