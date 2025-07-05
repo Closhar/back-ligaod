@@ -41,7 +41,7 @@ class ApiClubController extends Controller
                     'clubs.id',
                     'clubs.title',
                     'clubs.slug',
-                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path'),
+                    DB::raw('CASE WHEN clubs.image IS NOT NULL AND clubs.image != "" THEN CONCAT("' . config('app.url') . '", "/storage/", clubs.image) ELSE NULL END AS full_image_path'),
                     'city_id',
                     'sport_id',
                     'gender_id',
@@ -62,7 +62,7 @@ class ApiClubController extends Controller
                     'clubs.id',
                     'clubs.title',
                     'clubs.slug',
-                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path'),
+                    DB::raw('CASE WHEN clubs.image IS NOT NULL AND clubs.image != "" THEN CONCAT("' . config('app.url') . '", "/storage/", clubs.image) ELSE NULL END AS full_image_path'),
                     'clubs.city_id',
                     'clubs.sport_id',
                     'clubs.gender_id',
@@ -174,7 +174,7 @@ class ApiClubController extends Controller
     {
         return Club::select(
             '*',
-            DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path')
+            DB::raw('CASE WHEN image IS NOT NULL AND image != "" THEN CONCAT("' . config('app.url') . '", "/storage/", image) ELSE NULL END AS full_image_path')
         )
             ->where('id', $slug)
             ->orWhere('slug', $slug)

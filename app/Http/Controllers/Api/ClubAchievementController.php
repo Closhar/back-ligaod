@@ -94,8 +94,6 @@ class ClubAchievementController extends Controller
                 'club_id' => $firstAchievement->club_id,
                 'club_rating_region' => $firstAchievement->club?->rating_region,
                 'club_rating_region_id' => $firstAchievement->club?->rating_region_id,
-                'club_full_image_path' => $firstAchievement->club?->full_image_path,
-                'club_image' => $firstAchievement->club?->image,
                 'base_points' => $firstAchievement->base_points,
                 'calculated_points' => $firstAchievement->calculated_points,
                 'teams_multiplier' => $firstAchievement->teams_multiplier,
