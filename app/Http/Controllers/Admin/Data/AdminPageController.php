@@ -103,71 +103,41 @@ class AdminPageController extends Controller
     {
         $page = AdminPage::findOrFail($id);
 
-        // Если обновляется только одно поле, используем упрощенную валидацию
-        if (count($request->all()) === 1) {
-            $fieldName = array_keys($request->all())[0];
-            $fieldValue = $request->all()[$fieldName];
+        // Список разрешённых к обновлению полей
+        $fields = ['title', 'slug', 'icon', 'description', 'menu', 'menu_section_id', 'sort_order'];
+        $data = $request->only($fields);
 
-            $validationRules = [];
-
-            switch ($fieldName) {
-                case 'menu_section_id':
-                    $validationRules = ['menu_section_id' => 'nullable|exists:menu_sections,id'];
-                    break;
-                case 'sort_order':
-                    $validationRules = ['sort_order' => 'nullable|integer|min:0'];
-                    break;
-                case 'menu':
-                    $validationRules = ['menu' => 'boolean'];
-                    break;
-                default:
-                    // Для неизвестных полей используем полную валидацию
-                    break;
-            }
-
-            if (!empty($validationRules)) {
-                $validator = Validator::make($request->all(), $validationRules);
-
-                if ($validator->fails()) {
-                    return response()->json(['errors' => $validator->errors()], 422);
-                }
-
-                // Обрабатываем специально поле sort_order
-                $updateData = $request->all();
-                if ($fieldName === 'sort_order') {
-                    // Если значение пустое, null или пустая строка, устанавливаем 0
-                    if (empty($fieldValue) && $fieldValue !== 0) {
-                        $updateData['sort_order'] = 0;
-                    }
-                }
-
-                $page->update($updateData);
-                $page->load(['menuSection' => function ($query) {
-                    $query->select('id', 'name');
-                }]);
-
-                return response()->json($page);
-            }
+        // Валидация только реально пришедших полей
+        $rules = [];
+        if (array_key_exists('title', $data)) {
+            $rules['title'] = 'required|string|max:255';
+        }
+        if (array_key_exists('slug', $data)) {
+            $rules['slug'] = 'required|string|max:255|unique:admin_pages,slug,' . $id;
+        }
+        if (array_key_exists('icon', $data)) {
+            $rules['icon'] = 'nullable|string|max:255';
+        }
+        if (array_key_exists('description', $data)) {
+            $rules['description'] = 'nullable|string';
+        }
+        if (array_key_exists('menu', $data)) {
+            $rules['menu'] = 'boolean';
+        }
+        if (array_key_exists('menu_section_id', $data)) {
+            $rules['menu_section_id'] = 'nullable|exists:menu_sections,id';
+        }
+        if (array_key_exists('sort_order', $data)) {
+            $rules['sort_order'] = 'nullable|integer|min:0';
         }
 
-        // Полная валидация для обновления всех полей
-        $validator = Validator::make($request->all(), [
-            'title' => 'sometimes|required|string|max:255',
-            'slug' => 'sometimes|required|string|max:255|unique:admin_pages,slug,' . $id,
-            'icon' => 'nullable|string|max:255',
-            'description' => 'nullable|string',
-            'menu' => 'boolean',
-            'menu_section_id' => 'nullable|exists:menu_sections,id',
-            'sort_order' => 'nullable|integer|min:0'
-        ]);
-
+        $validator = Validator::make($data, $rules);
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Устанавливаем значение по умолчанию для sort_order если не передано или пустое
-        $data = $request->all();
-        if (!isset($data['sort_order']) || $data['sort_order'] === null || $data['sort_order'] === '' || (empty($data['sort_order']) && $data['sort_order'] !== 0)) {
+        // Для sort_order: если поле пришло, но пустое, ставим 0
+        if (array_key_exists('sort_order', $data) && ($data['sort_order'] === null || $data['sort_order'] === '' || (empty($data['sort_order']) && $data['sort_order'] !== 0))) {
             $data['sort_order'] = 0;
         }
 
