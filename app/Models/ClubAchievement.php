@@ -113,6 +113,16 @@ class ClubAchievement extends Model
         foreach ($byRegion as $regionId => $regionAchievements) {
             // Сортируем по points_earned (по убыванию)
             $sorted = $regionAchievements->sortByDesc('points_earned')->values();
+            // Логируем параметры группы
+            Log::info('Пересчёт группы по лимиту', [
+                'year' => $year,
+                'division' => $division,
+                'tournament_type_id' => $tournamentTypeId,
+                'regionId' => $regionId,
+                'count' => $sorted->count(),
+                'maxPerRegion' => $maxPerRegion,
+                'ids' => $sorted->pluck('id')->toArray(),
+            ]);
             // Если команд меньше или равно лимиту — никому не обнулять очки
             if ($sorted->count() <= $maxPerRegion) {
                 continue;
@@ -124,6 +134,12 @@ class ClubAchievement extends Model
                 } else {
                     // Обнуляем очки, если не обнулены
                     if ($achievement->points_earned != 0) {
+                        Log::info('Обнуляем очки', [
+                            'achievement_id' => $achievement->id,
+                            'club_id' => $achievement->club_id,
+                            'region_id' => $regionId,
+                            'points_before' => $achievement->points_earned
+                        ]);
                         $achievement->update(['points_earned' => 0]);
                     }
                 }
