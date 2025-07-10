@@ -63,10 +63,10 @@ class ClubAchievementController extends Controller
 
         $achievements = $query->orderBy('year', 'desc')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(50); // Пагинация по 50 записей
 
         // Добавляем вычисленные поля для отображения
-        $achievements->each(function ($achievement) {
+        $achievements->getCollection()->transform(function ($achievement) {
             try {
                 // Вычисляем базовые очки за место (без множителей и бонусов)
                 $achievement->base_points = $this->calculateBasePoints($achievement);
@@ -85,6 +85,7 @@ class ClubAchievementController extends Controller
                 $achievement->calculated_points = 0;
                 $achievement->teams_multiplier = null;
             }
+            return $achievement;
         });
 
         // Отладочная информация
