@@ -34,6 +34,10 @@ class ClubAchievement extends Model
         'is_farm' => 'boolean'
     ];
 
+    protected $appends = [
+        'zeroed_by_limit'
+    ];
+
     /**
      * Клуб
      */
@@ -321,5 +325,25 @@ class ClubAchievement extends Model
             case 2: return 10; // Участие
             default: return 0;
         }
+    }
+
+    /**
+     * Было ли обнуление очков из-за лимита max_participants_per_region
+     */
+    public function getZeroedByLimitAttribute(): bool
+    {
+        $tournamentType = $this->tournamentType;
+        if (!$tournamentType) return false;
+        $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
+        if ($maxPerRegion === 0) return false;
+        // Если очки не обнулены — не отмечаем
+        if ($this->points_earned != 0) return false;
+        // Проверяем, мог бы ли участник получить очки (например, не последнее место)
+        // Для простоты: если место <= maxPerRegion*2 (условно), считаем, что мог бы
+        if ($this->position && $this->position <= $maxPerRegion * 2) return true;
+        // Или если у него были бы очки по таблице турнира
+        $basePoints = $tournamentType->getPointsForPosition($this->position, $this->teams_count);
+        if ($basePoints > 0) return true;
+        return false;
     }
 }
