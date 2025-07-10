@@ -165,7 +165,8 @@ class ClubAchievement extends Model
             return implode('_', [
                 $ach->club ? $ach->club->rating_region_id : 'null',
                 $ach->tournament_type_id,
-                $ach->year
+                $ach->year,
+                $ach->club ? $ach->club->gender_id : 'null'
             ]);
         });
 
