@@ -32,8 +32,8 @@ class SRRRRatingService
         // Обновить итоговые рейтинги регионов по годам
         $this->updateRegionYearTotalRatings($year);
 
-        // После пересчёта выставить статус "актуален"
-        \App\Http\Controllers\Api\RatingController::setRatingActual($year);
+        // После пересчёта выставить статус "актуален" для всех годов
+        \App\Http\Controllers\Api\RatingController::setRatingActual();
     }
 
     /**

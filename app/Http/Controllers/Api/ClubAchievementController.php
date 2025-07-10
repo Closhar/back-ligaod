@@ -157,7 +157,7 @@ class ClubAchievementController extends Controller
 
             $achievement = $this->ratingService->addClubAchievement($data);
             // Сбросить актуальность рейтинга для года
-            RatingController::setRatingNotActual($achievement->year);
+            RatingController::setRatingNotActual();
 
             return response()->json([
                 'success' => true,
@@ -226,7 +226,7 @@ class ClubAchievementController extends Controller
             $achievement->update($data);
             $achievement->calculatePoints();
             // Сбросить актуальность рейтинга для года
-            RatingController::setRatingNotActual($achievement->year);
+            RatingController::setRatingNotActual();
 
             // Пересчитать рейтинг региона
             if ($achievement->club->rating_region_id && $achievement->club->sport_id) {
@@ -361,7 +361,7 @@ class ClubAchievementController extends Controller
 
             $achievement->delete();
             // Сбросить актуальность рейтинга для года
-            RatingController::setRatingNotActual($year);
+            RatingController::setRatingNotActual();
 
             // Пересчитать рейтинг региона
             if ($club->rating_region_id && $club->sport_id) {

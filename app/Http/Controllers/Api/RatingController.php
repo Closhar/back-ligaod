@@ -355,11 +355,15 @@ class RatingController extends Controller
     public function calculateYearlyRating(Request $request): JsonResponse
     {
         try {
-            $this->ratingService->calculateAllYearsRatings();
-
+            $year = $request->input('year');
+            if ($year) {
+                $this->ratingService->calculateYearlyRating($year);
+            } else {
+                $this->ratingService->calculateAllYearsRatings();
+            }
             return response()->json([
                 'success' => true,
-                'message' => 'Рейтинги за все годы успешно пересчитаны'
+                'message' => 'Рейтинги успешно пересчитаны'
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -593,17 +597,12 @@ class RatingController extends Controller
     }
 
     /**
-     * Получить статус актуальности рейтинга по году
+     * Получить статус актуальности рейтинга (глобально)
      */
     public function getRatingActualityStatus(Request $request): \Illuminate\Http\JsonResponse
     {
-        $year = $request->get('year');
-        if (!$year) {
-            return response()->json(['error' => 'year required'], 400);
-        }
-        $status = RatingActualityStatus::where('year', $year)->first();
+        $status = RatingActualityStatus::first();
         return response()->json([
-            'year' => $year,
             'is_actual' => $status ? (bool)$status->is_actual : true
         ]);
     }
@@ -611,10 +610,10 @@ class RatingController extends Controller
     /**
      * Сбросить статус актуальности рейтинга (использовать при изменении достижений)
      */
-    public static function setRatingNotActual($year)
+    public static function setRatingNotActual()
     {
         RatingActualityStatus::updateOrCreate(
-            ['year' => $year],
+            ['id' => 1],
             ['is_actual' => false]
         );
     }
@@ -622,10 +621,10 @@ class RatingController extends Controller
     /**
      * Установить статус актуальности рейтинга (использовать после пересчёта)
      */
-    public static function setRatingActual($year)
+    public static function setRatingActual()
     {
         RatingActualityStatus::updateOrCreate(
-            ['year' => $year],
+            ['id' => 1],
             ['is_actual' => true]
         );
     }

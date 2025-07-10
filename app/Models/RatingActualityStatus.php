@@ -10,7 +10,6 @@ class RatingActualityStatus extends Model
     use HasFactory;
 
     protected $fillable = [
-        'year',
         'is_actual',
     ];
 }

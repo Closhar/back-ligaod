@@ -9,7 +9,6 @@ return new class extends Migration {
     {
         Schema::create('rating_actuality_statuses', function (Blueprint $table) {
             $table->id();
-            $table->integer('year')->index();
             $table->boolean('is_actual')->default(true);
             $table->timestamps();
         });
