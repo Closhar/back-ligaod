@@ -549,34 +549,40 @@ class RatingController extends Controller
      */
     public function getRegionYearTotalRatingsHistory(Request $request): \Illuminate\Http\JsonResponse
     {
-        $years = \App\Models\RatingYear::orderByDesc('year')->limit(4)->get();
-        $regions = \App\Models\RatingRegion::all();
-        $result = [];
-        foreach ($regions as $region) {
-            $row = [
-                'region' => $region->name,
-                'region_id' => $region->id,
-                'ratings' => []
-            ];
-            foreach ($years as $year) {
-                $rating = \App\Models\RegionYearTotalRating::where('rating_region_id', $region->id)
-                    ->where('rating_year_id', $year->id)
-                    ->first();
-                $place = null;
-                if ($rating) {
-                    // Определяем место региона в этом году
-                    $place = \App\Models\RegionYearTotalRating::where('rating_year_id', $year->id)
-                        ->where('rating', '>=', $rating->rating)
-                        ->count();
-                }
-                $row['ratings'][] = [
-                    'year' => $year->year,
-                    'rating' => $rating ? $rating->rating : 0,
-                    'place' => $place
+        try {
+            \Log::info('getRegionYearTotalRatingsHistory: start');
+            $years = \App\Models\RatingYear::orderByDesc('year')->limit(4)->get();
+            $regions = \App\Models\RatingRegion::all();
+            $result = [];
+            foreach ($regions as $region) {
+                $row = [
+                    'region' => $region->name,
+                    'region_id' => $region->id,
+                    'ratings' => []
                 ];
+                foreach ($years as $year) {
+                    $rating = \App\Models\RegionYearTotalRating::where('rating_region_id', $region->id)
+                        ->where('rating_year_id', $year->id)
+                        ->first();
+                    $place = null;
+                    if ($rating) {
+                        $place = \App\Models\RegionYearTotalRating::where('rating_year_id', $year->id)
+                            ->where('rating', '>=', $rating->rating)
+                            ->count();
+                    }
+                    $row['ratings'][] = [
+                        'year' => $year->year,
+                        'rating' => $rating ? $rating->rating : 0,
+                        'place' => $place
+                    ];
+                }
+                $result[] = $row;
             }
-            $result[] = $row;
+            \Log::info('getRegionYearTotalRatingsHistory: result', ['result' => $result]);
+            return response()->json($result);
+        } catch (\Throwable $e) {
+            \Log::error('getRegionYearTotalRatingsHistory error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([], 500);
         }
-        return response()->json($result);
     }
 }
