@@ -500,7 +500,7 @@ class RatingController extends Controller
                 ->where('rating_year_id', $ratingYear->id)
                 ->first();
             // Список команд, принёсших очки в этом году
-            $teams = \App\Models\ClubAchievement::with('club')
+            $teams = \App\Models\ClubAchievement::with(['club', 'tournamentType'])
                 ->whereHas('club', function ($q) use ($region) {
                     $q->where('rating_region_id', $region->id);
                 })
@@ -511,7 +511,9 @@ class RatingController extends Controller
                         'club_id' => $ach->club_id,
                         'club_name' => $ach->club ? $ach->club->name : null,
                         'points' => $ach->points_earned,
-                        'logo_url' => $ach->club ? $ach->club->logo_url : null
+                        'logo_url' => $ach->club ? $ach->club->logo_url : null,
+                        'tournament_type' => $ach->tournamentType ? $ach->tournamentType->name : $ach->tournament_type,
+                        'position' => $ach->position
                     ];
                 });
             // Значения рейтинга за предыдущие 3 года
