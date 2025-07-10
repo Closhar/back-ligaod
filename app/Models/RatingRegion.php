@@ -57,4 +57,9 @@ class RatingRegion extends Model
             ->where('year', $year)
             ->sum('total_points');
     }
+
+    public function totalYearRatings()
+    {
+        return $this->hasMany(RegionYearTotalRating::class, 'rating_region_id');
+    }
 }

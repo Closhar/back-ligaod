@@ -71,4 +71,9 @@ class RatingYear extends Model
             ])
         );
     }
+
+    public function totalRegionRatings()
+    {
+        return $this->hasMany(RegionYearTotalRating::class, 'rating_year_id');
+    }
 }

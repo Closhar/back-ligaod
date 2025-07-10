@@ -485,4 +485,57 @@ class RatingController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Получить итоговые рейтинги регионов за выбранный год
+     */
+    public function getRegionYearTotalRatings(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $year = $request->get('year');
+        $ratingYear = \App\Models\RatingYear::where('year', $year)->first();
+        if (!$ratingYear) {
+            return response()->json([]);
+        }
+        $ratings = \App\Models\RegionYearTotalRating::with('region')
+            ->where('rating_year_id', $ratingYear->id)
+            ->orderByDesc('rating')
+            ->get();
+        return response()->json($ratings);
+    }
+
+    /**
+     * Получить историю итоговых рейтингов регионов за последние 4 года
+     */
+    public function getRegionYearTotalRatingsHistory(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $years = \App\Models\RatingYear::orderByDesc('year')->limit(4)->get();
+        $regions = \App\Models\RatingRegion::all();
+        $result = [];
+        foreach ($regions as $region) {
+            $row = [
+                'region' => $region->name,
+                'region_id' => $region->id,
+                'ratings' => []
+            ];
+            foreach ($years as $year) {
+                $rating = \App\Models\RegionYearTotalRating::where('rating_region_id', $region->id)
+                    ->where('rating_year_id', $year->id)
+                    ->first();
+                $place = null;
+                if ($rating) {
+                    // Определяем место региона в этом году
+                    $place = \App\Models\RegionYearTotalRating::where('rating_year_id', $year->id)
+                        ->where('rating', '>=', $rating->rating)
+                        ->count();
+                }
+                $row['ratings'][] = [
+                    'year' => $year->year,
+                    'rating' => $rating ? $rating->rating : 0,
+                    'place' => $place
+                ];
+            }
+            $result[] = $row;
+        }
+        return response()->json($result);
+    }
 }

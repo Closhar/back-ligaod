@@ -28,6 +28,9 @@ class SRRRRatingService
 
         // Обновить ранги после расчета всех рейтингов
         $this->updateRanks($year);
+
+        // Обновить итоговые рейтинги регионов по годам
+        $this->updateRegionYearTotalRatings($year);
     }
 
     /**
@@ -64,6 +67,42 @@ class SRRRRatingService
                 $ranking->update(['rank' => $rank]);
                 $rank++;
             }
+        }
+    }
+
+    /**
+     * Обновить/создать итоговые рейтинги регионов по годам
+     */
+    public function updateRegionYearTotalRatings(int $year): void
+    {
+        $regions = RatingRegion::where('is_active', true)->get();
+        $ratingYear = \App\Models\RatingYear::where('year', $year)->first();
+        if (!$ratingYear) return;
+
+        foreach ($regions as $region) {
+            // Получаем рейтинги за текущий и три предыдущих года
+            $years = [$year-3, $year-2, $year-1, $year];
+            $ratingYears = \App\Models\RatingYear::whereIn('year', $years)->pluck('id', 'year');
+            $total = 0;
+            foreach ($years as $y) {
+                $yearId = $ratingYears[$y] ?? null;
+                if ($yearId) {
+                    $sum = \App\Models\RegionRating::where('rating_region_id', $region->id)
+                        ->where('year', $y)
+                        ->sum('total_points');
+                    $total += $sum;
+                }
+            }
+            // Обновляем или создаём запись
+            \App\Models\RegionYearTotalRating::updateOrCreate(
+                [
+                    'rating_region_id' => $region->id,
+                    'rating_year_id' => $ratingYear->id,
+                ],
+                [
+                    'rating' => $total
+                ]
+            );
         }
     }
 

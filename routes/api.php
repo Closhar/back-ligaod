@@ -760,3 +760,6 @@ Route::get('/storage/{path}', function ($path) {
         'Cache-Control' => 'public, max-age=31536000'
     ]);
 })->where('path', '.*');
+
+Route::get('/region-year-total-ratings', [RatingController::class, 'getRegionYearTotalRatings']);
+Route::get('/region-year-total-ratings-history', [RatingController::class, 'getRegionYearTotalRatingsHistory']);
