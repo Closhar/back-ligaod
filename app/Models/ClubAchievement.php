@@ -164,8 +164,8 @@ class ClubAchievement extends Model
         $grouped = $achievements->groupBy(function($ach) {
             return implode('_', [
                 $ach->club ? $ach->club->rating_region_id : 'null',
-                $ach->tournament_type_id,
                 $ach->year,
+                $ach->tournament_type_id,
                 $ach->club ? $ach->club->gender_id : 'null'
             ]);
         });
