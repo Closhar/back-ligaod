@@ -113,6 +113,10 @@ class ClubAchievement extends Model
         foreach ($byRegion as $regionId => $regionAchievements) {
             // Сортируем по points_earned (по убыванию)
             $sorted = $regionAchievements->sortByDesc('points_earned')->values();
+            // Если команд меньше или равно лимиту — никому не обнулять очки
+            if ($sorted->count() <= $maxPerRegion) {
+                continue;
+            }
             foreach ($sorted as $idx => $achievement) {
                 if ($idx < $maxPerRegion) {
                     // Оставляем points_earned как есть
