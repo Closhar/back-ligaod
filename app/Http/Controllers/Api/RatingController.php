@@ -524,12 +524,14 @@ class RatingController extends Controller
                         ->first();
                     $prev_years[] = [
                         'year' => $year - $i,
-                        'rating' => $prevRating ? $prevRating->rating : 0
+                        'rating' => $prevRating ? $prevRating->rating : 0,
+                        'yearly_rating' => $prevRating ? $prevRating->yearly_rating : 0
                     ];
                 } else {
                     $prev_years[] = [
                         'year' => $year - $i,
-                        'rating' => 0
+                        'rating' => 0,
+                        'yearly_rating' => 0
                     ];
                 }
             }
