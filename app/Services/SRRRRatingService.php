@@ -118,9 +118,41 @@ class SRRRRatingService
         foreach ($regions as $region) {
             foreach ($years as $year) {
                 // Пересчитать очки для всех достижений этого региона и года
-                $achievements = \App\Models\ClubAchievement::whereHas('club', function ($q) use ($region) {
-                    $q->where('rating_region_id', $region->id);
-                })->where('year', $year)->get();
+                $achievements = \App\Models\ClubAchievement::with(['tournamentType', 'club'])
+                    ->whereHas('club', function ($q) use ($region) {
+                        $q->where('rating_region_id', $region->id);
+                    })
+                    ->where('year', $year)
+                    ->get();
+
+                // Группируем по типу турнира
+                $byTournamentType = $achievements->groupBy('tournament_type_id');
+                foreach ($byTournamentType as $tournamentTypeId => $groupedAchievements) {
+                    $tournamentType = $groupedAchievements->first()->tournamentType;
+                    if (!$tournamentType) continue;
+                    $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
+                    if ($maxPerRegion > 0) {
+                        // Группируем по турниру (division) и региону (club->rating_region_id)
+                        $byDivision = $groupedAchievements->groupBy('division');
+                        foreach ($byDivision as $division => $divisionAchievements) {
+                            // Сортируем по points_earned (по убыванию)
+                            $sorted = $divisionAchievements->sortByDesc('points_earned')->values();
+                            // Первым N оставляем points_earned, остальным присваиваем 0
+                            foreach ($sorted as $idx => $achievement) {
+                                if ($idx < $maxPerRegion) {
+                                    // Оставляем points_earned как есть
+                                    continue;
+                                } else {
+                                    // Обнуляем очки
+                                    if ($achievement->points_earned != 0) {
+                                        $achievement->update(['points_earned' => 0]);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                // После применения лимитов — обычный пересчёт очков
                 foreach ($achievements as $ach) {
                     $ach->calculatePoints();
                 }

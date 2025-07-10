@@ -124,15 +124,9 @@ class TournamentTypeController extends Controller
         ]);
 
         try {
-            // Логируем значение до обновления
-            Log::info('Перед обновлением', ['max_participants_per_region' => $request->max_participants_per_region]);
-
             $tournamentType->update($request->only([
                 'code', 'name', 'color_class', 'is_active', 'sort_order', 'ignore_teams_multiplier', 'coefficient', 'participation_points', 'promotion_bonus', 'max_participants_per_region'
             ]));
-
-            // Логируем значение после обновления
-            Log::info('После обновления', ['max_participants_per_region' => $tournamentType->max_participants_per_region]);
 
             // Обновляем точки для турнира
             if ($request->has('points')) {

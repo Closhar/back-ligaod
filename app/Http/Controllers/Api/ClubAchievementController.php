@@ -364,6 +364,11 @@ class ClubAchievementController extends Controller
             // Сбросить актуальность рейтинга для года
             RatingController::setRatingNotActual();
 
+            // Пересчитать очки для группы после удаления
+            if (method_exists($achievement, 'recalculateGroupPoints')) {
+                $achievement->recalculateGroupPoints();
+            }
+
             // Пересчитать рейтинг региона
             if ($club->rating_region_id && $club->sport_id) {
                 $this->ratingService->calculateRegionSportRating(

@@ -78,7 +78,49 @@ class ClubAchievement extends Model
             'calculation_details' => $details
         ]);
 
+        // После обновления очков — пересчёт группы, если требуется
+        $this->recalculateGroupPoints();
+
         return $points;
+    }
+
+    /**
+     * Пересчитать очки для группы достижений с учетом max_participants_per_region
+     */
+    private function recalculateGroupPoints(): void
+    {
+        $tournamentType = $this->tournamentType;
+        if (!$tournamentType) return;
+        $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
+        if ($maxPerRegion === 0) return;
+        $club = $this->club;
+        if (!$club) return;
+        $regionId = $club->rating_region_id;
+        $year = $this->year;
+        $division = $this->division;
+        $tournamentTypeId = $this->tournament_type_id;
+        // Находим все достижения этой группы
+        $groupAchievements = self::with(['tournamentType', 'club'])
+            ->whereHas('club', function ($q) use ($regionId) {
+                $q->where('rating_region_id', $regionId);
+            })
+            ->where('year', $year)
+            ->where('division', $division)
+            ->where('tournament_type_id', $tournamentTypeId)
+            ->get();
+        // Сортируем по points_earned (по убыванию)
+        $sorted = $groupAchievements->sortByDesc('points_earned')->values();
+        foreach ($sorted as $idx => $achievement) {
+            if ($idx < $maxPerRegion) {
+                // Оставляем points_earned как есть
+                continue;
+            } else {
+                // Обнуляем очки, если не обнулены
+                if ($achievement->points_earned != 0) {
+                    $achievement->update(['points_earned' => 0]);
+                }
+            }
+        }
     }
 
     /**
