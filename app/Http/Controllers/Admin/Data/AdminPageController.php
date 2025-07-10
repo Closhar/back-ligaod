@@ -152,8 +152,8 @@ class AdminPageController extends Controller
 
         // Полная валидация для обновления всех полей
         $validator = Validator::make($request->all(), [
-            'title' => 'required|string|max:255',
-            'slug' => 'required|string|max:255|unique:admin_pages,slug,' . $id,
+            'title' => 'sometimes|required|string|max:255',
+            'slug' => 'sometimes|required|string|max:255|unique:admin_pages,slug,' . $id,
             'icon' => 'nullable|string|max:255',
             'description' => 'nullable|string',
             'menu' => 'boolean',
