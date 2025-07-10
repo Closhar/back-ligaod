@@ -107,13 +107,55 @@ class SRRRRatingService
     }
 
     /**
-     * Пересчитать рейтинги для всех лет
+     * Пересчитать рейтинги для всех регионов за последние 4 года по новой логике
      */
     public function calculateAllYearsRatings(): void
     {
-        $years = \App\Models\RatingYear::orderBy('year')->pluck('year');
-        foreach ($years as $year) {
-            $this->calculateYearlyRating($year);
+        $regions = \App\Models\RatingRegion::where('is_active', true)->get();
+        $years = \App\Models\RatingYear::orderByDesc('year')->limit(4)->pluck('year')->toArray();
+        // 1. Сначала обновляем значения рейтинга за каждый год отдельно (по достижениям)
+        foreach ($regions as $region) {
+            foreach ($years as $year) {
+                // Сумма очков за год по достижениям
+                $points = \App\Models\ClubAchievement::whereHas('club', function ($q) use ($region) {
+                    $q->where('rating_region_id', $region->id);
+                })->where('year', $year)->sum('points_earned');
+                // Обновляем/создаём запись за год (rating = $points)
+                $ratingYear = \App\Models\RatingYear::where('year', $year)->first();
+                if ($ratingYear) {
+                    \App\Models\RegionYearTotalRating::updateOrCreate(
+                        [
+                            'rating_region_id' => $region->id,
+                            'rating_year_id' => $ratingYear->id,
+                        ],
+                        [
+                            'rating' => $points
+                        ]
+                    );
+                }
+            }
+        }
+        // 2. Затем обновляем итоговые рейтинги за 4 года для каждого региона и года
+        foreach ($regions as $region) {
+            foreach ($years as $year) {
+                $ratingYear = \App\Models\RatingYear::where('year', $year)->first();
+                if (!$ratingYear) continue;
+                $sum = 0;
+                for ($i = 0; $i < 4; $i++) {
+                    $y = $year - $i;
+                    $prevRatingYear = \App\Models\RatingYear::where('year', $y)->first();
+                    if ($prevRatingYear) {
+                        $prev = \App\Models\RegionYearTotalRating::where('rating_region_id', $region->id)
+                            ->where('rating_year_id', $prevRatingYear->id)
+                            ->first();
+                        $sum += $prev ? $prev->rating : 0;
+                    }
+                }
+                // Обновляем запись за год итоговой суммой (rating = $sum)
+                \App\Models\RegionYearTotalRating::where('rating_region_id', $region->id)
+                    ->where('rating_year_id', $ratingYear->id)
+                    ->update(['rating' => $sum]);
+            }
         }
     }
 

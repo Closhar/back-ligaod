@@ -483,7 +483,7 @@ class RatingController extends Controller
     }
 
     /**
-     * Получить итоговые рейтинги регионов за выбранный год
+     * Получить итоговые рейтинги регионов за выбранный год с деталями по командам и предыдущим годам
      */
     public function getRegionYearTotalRatings(Request $request): \Illuminate\Http\JsonResponse
     {
@@ -492,11 +492,56 @@ class RatingController extends Controller
         if (!$ratingYear) {
             return response()->json([]);
         }
-        $ratings = \App\Models\RegionYearTotalRating::with('region')
-            ->where('rating_year_id', $ratingYear->id)
-            ->orderByDesc('rating')
-            ->get();
-        return response()->json($ratings);
+        $regions = \App\Models\RatingRegion::all();
+        $result = [];
+        foreach ($regions as $region) {
+            $rating = \App\Models\RegionYearTotalRating::with('region')
+                ->where('rating_region_id', $region->id)
+                ->where('rating_year_id', $ratingYear->id)
+                ->first();
+            // Список команд, принёсших очки в этом году
+            $teams = \App\Models\ClubAchievement::with('club')
+                ->whereHas('club', function ($q) use ($region) {
+                    $q->where('rating_region_id', $region->id);
+                })
+                ->where('year', $year)
+                ->get()
+                ->map(function($ach) {
+                    return [
+                        'club_id' => $ach->club_id,
+                        'club_name' => $ach->club ? $ach->club->name : null,
+                        'points' => $ach->points_earned
+                    ];
+                });
+            // Значения рейтинга за предыдущие 3 года
+            $prev_years = [];
+            for ($i = 1; $i <= 3; $i++) {
+                $prevYear = \App\Models\RatingYear::where('year', $year - $i)->first();
+                if ($prevYear) {
+                    $prevRating = \App\Models\RegionYearTotalRating::where('rating_region_id', $region->id)
+                        ->where('rating_year_id', $prevYear->id)
+                        ->first();
+                    $prev_years[] = [
+                        'year' => $year - $i,
+                        'rating' => $prevRating ? $prevRating->rating : 0
+                    ];
+                } else {
+                    $prev_years[] = [
+                        'year' => $year - $i,
+                        'rating' => 0
+                    ];
+                }
+            }
+            $result[] = [
+                'region' => $region->name,
+                'region_id' => $region->id,
+                'year' => $year,
+                'rating' => $rating ? $rating->rating : 0,
+                'teams' => $teams,
+                'prev_years' => $prev_years
+            ];
+        }
+        return response()->json($result);
     }
 
     /**
