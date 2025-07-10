@@ -550,7 +550,6 @@ class RatingController extends Controller
     public function getRegionYearTotalRatingsHistory(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
-            \Log::info('getRegionYearTotalRatingsHistory: start');
             $years = \App\Models\RatingYear::orderByDesc('year')->limit(4)->get();
             $regions = \App\Models\RatingRegion::all();
             $result = [];
@@ -578,7 +577,6 @@ class RatingController extends Controller
                 }
                 $result[] = $row;
             }
-            \Log::info('getRegionYearTotalRatingsHistory: result', ['result' => $result]);
             return response()->json($result);
         } catch (\Throwable $e) {
             \Log::error('getRegionYearTotalRatingsHistory error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
