@@ -182,7 +182,9 @@ class ClubAchievement extends Model
                 ]);
                 continue;
             }
-            $sorted = $group->sortByDesc('points_earned')->sortBy('id')->values();
+            $sorted = $group->sortBy(function($ach) {
+                return [$ach->position ?? 9999, $ach->id];
+            })->values();
             foreach ($sorted as $idx => $achievement) {
                 if ($idx < $maxPerRegion) continue;
                 if ($achievement->points_earned != 0) {
