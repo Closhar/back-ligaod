@@ -151,7 +151,6 @@ class RatingController extends Controller
      */
     public function getRegions(Request $request): JsonResponse
     {
-        $limit = $request->get('limit', 10);
         $query = $request->get('q', '');
 
         $regions = RatingRegion::orderBy('name')
@@ -165,7 +164,7 @@ class RatingController extends Controller
             });
         }
 
-        $regions = $regions->limit($limit)->get();
+        $regions = $regions->get();
 
         return response()->json([
             'success' => true,
