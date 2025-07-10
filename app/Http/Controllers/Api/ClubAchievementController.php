@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Controller;
 use App\Models\ClubAchievement;
 use App\Services\SRRRRatingService;
@@ -155,6 +156,8 @@ class ClubAchievementController extends Controller
             }
 
             $achievement = $this->ratingService->addClubAchievement($data);
+            // Сбросить актуальность рейтинга для года
+            RatingController::setRatingNotActual($achievement->year);
 
             return response()->json([
                 'success' => true,
@@ -222,6 +225,8 @@ class ClubAchievementController extends Controller
 
             $achievement->update($data);
             $achievement->calculatePoints();
+            // Сбросить актуальность рейтинга для года
+            RatingController::setRatingNotActual($achievement->year);
 
             // Пересчитать рейтинг региона
             if ($achievement->club->rating_region_id && $achievement->club->sport_id) {
@@ -355,6 +360,8 @@ class ClubAchievementController extends Controller
             $year = $achievement->year;
 
             $achievement->delete();
+            // Сбросить актуальность рейтинга для года
+            RatingController::setRatingNotActual($year);
 
             // Пересчитать рейтинг региона
             if ($club->rating_region_id && $club->sport_id) {

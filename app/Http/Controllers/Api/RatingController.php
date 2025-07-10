@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\RatingActualityStatus;
 use App\Models\RatingRegion;
 use App\Models\RatingYear;
 use App\Models\RegionRating;
@@ -589,5 +590,43 @@ class RatingController extends Controller
             \Log::error('getRegionYearTotalRatingsHistory error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
             return response()->json([], 500);
         }
+    }
+
+    /**
+     * Получить статус актуальности рейтинга по году
+     */
+    public function getRatingActualityStatus(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $year = $request->get('year');
+        if (!$year) {
+            return response()->json(['error' => 'year required'], 400);
+        }
+        $status = RatingActualityStatus::where('year', $year)->first();
+        return response()->json([
+            'year' => $year,
+            'is_actual' => $status ? (bool)$status->is_actual : true
+        ]);
+    }
+
+    /**
+     * Сбросить статус актуальности рейтинга (использовать при изменении достижений)
+     */
+    public static function setRatingNotActual($year)
+    {
+        RatingActualityStatus::updateOrCreate(
+            ['year' => $year],
+            ['is_actual' => false]
+        );
+    }
+
+    /**
+     * Установить статус актуальности рейтинга (использовать после пересчёта)
+     */
+    public static function setRatingActual($year)
+    {
+        RatingActualityStatus::updateOrCreate(
+            ['year' => $year],
+            ['is_actual' => true]
+        );
     }
 }

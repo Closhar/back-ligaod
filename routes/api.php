@@ -768,4 +768,6 @@ Route::get('/storage/{path}', function ($path) {
     ]);
 })->where('path', '.*');
 
+Route::get('/rating/actuality-status', [\App\Http\Controllers\Api\RatingController::class, 'getRatingActualityStatus']);
+
 
