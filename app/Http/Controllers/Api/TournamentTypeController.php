@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TournamentType;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class TournamentTypeController extends Controller
 {
@@ -62,6 +63,7 @@ class TournamentTypeController extends Controller
             'coefficient' => 'numeric|min:0.1|max:2.0',
             'participation_points' => 'integer|min:0',
             'promotion_bonus' => 'integer|min:0',
+            'max_participants_per_region' => 'integer|min:0',
             'points' => 'array',
             'points.*.position' => 'required|integer|min:1',
             'points.*.points' => 'required|integer|min:0',
@@ -72,7 +74,7 @@ class TournamentTypeController extends Controller
 
         try {
             $tournamentType = TournamentType::create($request->only([
-                'code', 'name', 'color_class', 'is_active', 'sort_order', 'ignore_teams_multiplier', 'coefficient', 'participation_points', 'promotion_bonus'
+                'code', 'name', 'color_class', 'is_active', 'sort_order', 'ignore_teams_multiplier', 'coefficient', 'participation_points', 'promotion_bonus', 'max_participants_per_region'
             ]));
 
             // Создаем точки для турнира
@@ -112,6 +114,7 @@ class TournamentTypeController extends Controller
             'coefficient' => 'numeric|min:0.1|max:2.0',
             'participation_points' => 'integer|min:0',
             'promotion_bonus' => 'integer|min:0',
+            'max_participants_per_region' => 'integer|min:0',
             'points' => 'array',
             'points.*.position' => 'required|integer|min:1',
             'points.*.points' => 'required|integer|min:0',
@@ -121,9 +124,15 @@ class TournamentTypeController extends Controller
         ]);
 
         try {
+            // Логируем значение до обновления
+            Log::info('Перед обновлением', ['max_participants_per_region' => $request->max_participants_per_region]);
+
             $tournamentType->update($request->only([
-                'code', 'name', 'color_class', 'is_active', 'sort_order', 'ignore_teams_multiplier', 'coefficient', 'participation_points', 'promotion_bonus'
+                'code', 'name', 'color_class', 'is_active', 'sort_order', 'ignore_teams_multiplier', 'coefficient', 'participation_points', 'promotion_bonus', 'max_participants_per_region'
             ]));
+
+            // Логируем значение после обновления
+            Log::info('После обновления', ['max_participants_per_region' => $tournamentType->max_participants_per_region]);
 
             // Обновляем точки для турнира
             if ($request->has('points')) {

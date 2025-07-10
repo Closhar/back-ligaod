@@ -19,7 +19,8 @@ class TournamentType extends Model
         'ignore_teams_multiplier',
         'coefficient',
         'participation_points',
-        'promotion_bonus'
+        'promotion_bonus',
+        'max_participants_per_region'
     ];
 
     protected $casts = [
@@ -28,7 +29,8 @@ class TournamentType extends Model
         'ignore_teams_multiplier' => 'boolean',
         'coefficient' => 'decimal:2',
         'participation_points' => 'integer',
-        'promotion_bonus' => 'integer'
+        'promotion_bonus' => 'integer',
+        'max_participants_per_region' => 'integer'
     ];
 
     /**
