@@ -165,8 +165,7 @@ class ClubAchievement extends Model
             return implode('_', [
                 $ach->club ? $ach->club->rating_region_id : 'null',
                 $ach->tournament_type_id,
-                $ach->year,
-                $ach->division
+                $ach->year
             ]);
         });
 
@@ -182,9 +181,7 @@ class ClubAchievement extends Model
                 ]);
                 continue;
             }
-            $sorted = $group->sortBy(function($ach) {
-                return [$ach->position ?? 9999, $ach->id];
-            })->values();
+            $sorted = $group->sortByDesc('points_earned')->sortBy('id')->values();
             foreach ($sorted as $idx => $achievement) {
                 if ($idx < $maxPerRegion) continue;
                 if ($achievement->points_earned != 0) {
