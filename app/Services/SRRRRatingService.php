@@ -134,9 +134,11 @@ class SRRRRatingService
                 }
             }
         }
-        // 2. Затем обновляем итоговые рейтинги за 4 года для каждого региона и года
+        // Получаем все года, отсортированные по возрастанию
+        $allYears = \App\Models\RatingYear::orderBy('year')->pluck('year')->toArray();
+        // 2. Затем обновляем итоговые рейтинги для каждого региона и каждого года
         foreach ($regions as $region) {
-            foreach ($years as $year) {
+            foreach ($allYears as $year) {
                 $ratingYear = \App\Models\RatingYear::where('year', $year)->first();
                 if (!$ratingYear) continue;
                 $sum = 0;
