@@ -136,6 +136,8 @@ Route::group(['prefix' => '/v1'], function () {
         Route::put('/{id}', [ClubAchievementController::class, 'update'])->middleware('auth:sanctum');
         Route::delete('/{id}', [ClubAchievementController::class, 'destroy'])->middleware('auth:sanctum');
         Route::get('/statistics', [ClubAchievementController::class, 'getAchievementsStatistics']);
+        // Новый маршрут для массового пересчёта очков
+        Route::post('/recalculate-points', [ClubAchievementController::class, 'recalculatePoints'])->middleware('auth:sanctum');
     });
 
     // Маршруты для типов турниров

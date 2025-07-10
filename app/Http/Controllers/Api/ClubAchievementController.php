@@ -419,4 +419,40 @@ class ClubAchievementController extends Controller
             'data' => $statistics
         ]);
     }
+
+    /**
+     * Массовый пересчёт очков для всех достижений клубов
+     */
+    public function recalculatePoints(Request $request): JsonResponse
+    {
+        // Можно добавить проверку прав, если нужно
+        $count = 0;
+        $errors = [];
+        try {
+            $achievements = ClubAchievement::with(['tournamentType'])->get();
+            foreach ($achievements as $achievement) {
+                try {
+                    $achievement->calculatePoints();
+                    $count++;
+                } catch (\Throwable $e) {
+                    $errors[] = [
+                        'id' => $achievement->id,
+                        'error' => $e->getMessage()
+                    ];
+                }
+            }
+            // После пересчёта можно сбросить актуальность рейтинга, если требуется
+            RatingController::setRatingNotActual();
+            return response()->json([
+                'success' => true,
+                'message' => "Пересчитано достижений: $count",
+                'errors' => $errors
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при массовом пересчёте очков: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
