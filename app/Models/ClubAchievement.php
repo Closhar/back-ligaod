@@ -174,28 +174,26 @@ class ClubAchievement extends Model
             $tournamentType = $group->first()->tournamentType;
             $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
             if ($group->count() <= $maxPerRegion) {
-                Log::info('Лимит: группа без обнуления', [
-                    'group' => $groupKey,
-                    'count' => $group->count(),
-                    'maxPerRegion' => $maxPerRegion,
-                    'ids' => $group->pluck('id')->toArray(),
-                ]);
                 continue;
             }
             $sorted = $group->sortByDesc('points_earned')->sortBy('id')->values();
+            $kept = [];
+            $zeroed = [];
             foreach ($sorted as $idx => $achievement) {
-                if ($idx < $maxPerRegion) continue;
+                if ($idx < $maxPerRegion) {
+                    $kept[] = ['id' => $achievement->id, 'points' => $achievement->points_earned];
+                    continue;
+                }
                 if ($achievement->points_earned != 0) {
-                    Log::info('Лимит: обнуляем очки', [
-                        'achievement_id' => $achievement->id,
-                        'club_id' => $achievement->club_id,
-                        'region_id' => $achievement->club ? $achievement->club->rating_region_id : null,
-                        'points_before' => $achievement->points_earned,
-                        'group' => $groupKey
-                    ]);
+                    $zeroed[] = ['id' => $achievement->id, 'points' => $achievement->points_earned];
                     $achievement->update(['points_earned' => 0]);
                 }
             }
+            Log::info('Лимит-группа', [
+                'group' => $groupKey,
+                'kept' => $kept,
+                'zeroed' => $zeroed
+            ]);
         }
     }
 
