@@ -138,7 +138,10 @@ class ClubAchievement extends Model
                             'achievement_id' => $achievement->id,
                             'club_id' => $achievement->club_id,
                             'region_id' => $regionId,
-                            'points_before' => $achievement->points_earned
+                            'points_before' => $achievement->points_earned,
+                            'year' => $year,
+                            'tournament_type_id' => $tournamentTypeId,
+                            'division' => $division
                         ]);
                         $achievement->update(['points_earned' => 0]);
                     }
