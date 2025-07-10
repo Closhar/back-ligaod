@@ -114,6 +114,13 @@ class SRRRRatingService
         // 1. Сначала обновляем значения рейтинга за каждый год отдельно (по достижениям)
         foreach ($regions as $region) {
             foreach ($years as $year) {
+                // Пересчитать очки для всех достижений этого региона и года
+                $achievements = \App\Models\ClubAchievement::whereHas('club', function ($q) use ($region) {
+                    $q->where('rating_region_id', $region->id);
+                })->where('year', $year)->get();
+                foreach ($achievements as $ach) {
+                    $ach->calculatePoints();
+                }
                 // Сумма очков за год по достижениям
                 $points = \App\Models\ClubAchievement::whereHas('club', function ($q) use ($region) {
                     $q->where('rating_region_id', $region->id);
