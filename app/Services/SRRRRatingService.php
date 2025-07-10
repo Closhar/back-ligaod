@@ -93,16 +93,13 @@ class SRRRRatingService
                     $total += $sum;
                 }
             }
-            // Обновляем или создаём запись
-            \App\Models\RegionYearTotalRating::updateOrCreate(
-                [
-                    'rating_region_id' => $region->id,
-                    'rating_year_id' => $ratingYear->id,
-                ],
-                [
-                    'rating' => $total
-                ]
-            );
+            // Обновляем только поле rating, не трогаем yearly_rating
+            \App\Models\RegionYearTotalRating::where([
+                'rating_region_id' => $region->id,
+                'rating_year_id' => $ratingYear->id,
+            ])->update([
+                'rating' => $total
+            ]);
         }
     }
 
@@ -120,7 +117,7 @@ class SRRRRatingService
                 $points = \App\Models\ClubAchievement::whereHas('club', function ($q) use ($region) {
                     $q->where('rating_region_id', $region->id);
                 })->where('year', $year)->sum('points_earned');
-                // Обновляем/создаём запись за год (rating = $points)
+                // Обновляем/создаём запись за год (yearly_rating = $points, rating пока = 0)
                 $ratingYear = \App\Models\RatingYear::where('year', $year)->first();
                 if ($ratingYear) {
                     \App\Models\RegionYearTotalRating::updateOrCreate(
@@ -129,7 +126,8 @@ class SRRRRatingService
                             'rating_year_id' => $ratingYear->id,
                         ],
                         [
-                            'rating' => $points
+                            'yearly_rating' => $points,
+                            'rating' => 0
                         ]
                     );
                 }
@@ -148,7 +146,7 @@ class SRRRRatingService
                         $prev = \App\Models\RegionYearTotalRating::where('rating_region_id', $region->id)
                             ->where('rating_year_id', $prevRatingYear->id)
                             ->first();
-                        $sum += $prev ? $prev->rating : 0;
+                        $sum += $prev ? $prev->yearly_rating : 0;
                     }
                 }
                 // Обновляем запись за год итоговой суммой (rating = $sum)

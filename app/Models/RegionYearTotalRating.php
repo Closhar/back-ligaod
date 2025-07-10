@@ -13,6 +13,7 @@ class RegionYearTotalRating extends Model
         'rating_region_id',
         'rating_year_id',
         'rating',
+        'yearly_rating',
     ];
 
     public function region()

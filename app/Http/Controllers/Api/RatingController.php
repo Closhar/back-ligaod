@@ -510,7 +510,8 @@ class RatingController extends Controller
                     return [
                         'club_id' => $ach->club_id,
                         'club_name' => $ach->club ? $ach->club->name : null,
-                        'points' => $ach->points_earned
+                        'points' => $ach->points_earned,
+                        'logo_url' => $ach->club ? $ach->club->logo_url : null
                     ];
                 });
             // Значения рейтинга за предыдущие 3 года
@@ -537,6 +538,7 @@ class RatingController extends Controller
                 'region_id' => $region->id,
                 'year' => $year,
                 'rating' => $rating ? $rating->rating : 0,
+                'yearly_rating' => $rating ? $rating->yearly_rating : 0,
                 'teams' => $teams,
                 'prev_years' => $prev_years
             ];
@@ -572,6 +574,7 @@ class RatingController extends Controller
                     $row['ratings'][] = [
                         'year' => $year->year,
                         'rating' => $rating ? $rating->rating : 0,
+                        'yearly_rating' => $rating ? $rating->yearly_rating : 0,
                         'place' => $place
                     ];
                 }
