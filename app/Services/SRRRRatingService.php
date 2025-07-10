@@ -169,6 +169,8 @@ class SRRRRatingService
                     ->update(['rating' => $sum]);
             }
         }
+        // После пересчёта выставить статус "актуален"
+        \App\Http\Controllers\Api\RatingController::setRatingActual();
     }
 
     /**
