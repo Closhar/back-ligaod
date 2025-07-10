@@ -151,6 +151,55 @@ class ClubAchievement extends Model
     }
 
     /**
+     * Массовый пересчёт лимита max_participants_per_region для всех достижений
+     */
+    public static function recalculateRegionLimit(): void
+    {
+        $achievements = self::with(['tournamentType', 'club'])
+            ->whereHas('tournamentType', function($q) {
+                $q->where('max_participants_per_region', '>', 0);
+            })
+            ->get();
+
+        $grouped = $achievements->groupBy(function($ach) {
+            return implode('_', [
+                $ach->club ? $ach->club->rating_region_id : 'null',
+                $ach->tournament_type_id,
+                $ach->year,
+                $ach->division
+            ]);
+        });
+
+        foreach ($grouped as $groupKey => $group) {
+            $tournamentType = $group->first()->tournamentType;
+            $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
+            if ($group->count() <= $maxPerRegion) {
+                Log::info('Лимит: группа без обнуления', [
+                    'group' => $groupKey,
+                    'count' => $group->count(),
+                    'maxPerRegion' => $maxPerRegion,
+                    'ids' => $group->pluck('id')->toArray(),
+                ]);
+                continue;
+            }
+            $sorted = $group->sortByDesc('points_earned')->sortBy('id')->values();
+            foreach ($sorted as $idx => $achievement) {
+                if ($idx < $maxPerRegion) continue;
+                if ($achievement->points_earned != 0) {
+                    Log::info('Лимит: обнуляем очки', [
+                        'achievement_id' => $achievement->id,
+                        'club_id' => $achievement->club_id,
+                        'region_id' => $achievement->club ? $achievement->club->rating_region_id : null,
+                        'points_before' => $achievement->points_earned,
+                        'group' => $groupKey
+                    ]);
+                    $achievement->update(['points_earned' => 0]);
+                }
+            }
+        }
+    }
+
+    /**
      * Получить рассчитанный коэффициент
      */
     private function getCalculatedCoefficient(): float
