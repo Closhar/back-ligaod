@@ -140,6 +140,7 @@ class SRRRRatingService
                 $ratingYear = \App\Models\RatingYear::where('year', $year)->first();
                 if (!$ratingYear) continue;
                 $sum = 0;
+                // Берём сумму за этот и три предыдущих года
                 for ($i = 0; $i < 4; $i++) {
                     $y = $year - $i;
                     $prevRatingYear = \App\Models\RatingYear::where('year', $y)->first();
