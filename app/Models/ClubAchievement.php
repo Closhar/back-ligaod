@@ -173,6 +173,8 @@ class ClubAchievement extends Model
         foreach ($grouped as $groupKey => $group) {
             $tournamentType = $group->first()->tournamentType;
             $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
+            $firstClub = $group->first()->club;
+            $genderId = $firstClub ? $firstClub->gender_id : null;
             if ($group->count() <= $maxPerRegion) {
                 continue;
             }
@@ -191,6 +193,10 @@ class ClubAchievement extends Model
             }
             Log::info('Лимит-группа', [
                 'group' => $groupKey,
+                'region_id' => $firstClub ? $firstClub->rating_region_id : null,
+                'year' => $group->first()->year,
+                'tournament_type_id' => $group->first()->tournament_type_id,
+                'gender_id' => $genderId,
                 'kept' => $kept,
                 'zeroed' => $zeroed
             ]);
