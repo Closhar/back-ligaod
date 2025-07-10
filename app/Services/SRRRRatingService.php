@@ -109,7 +109,8 @@ class SRRRRatingService
     public function calculateAllYearsRatings(): void
     {
         $regions = \App\Models\RatingRegion::where('is_active', true)->get();
-        $years = \App\Models\RatingYear::orderByDesc('year')->limit(4)->pluck('year')->toArray();
+        // Берём последние 4 года в прямом порядке (от старого к новому)
+        $years = \App\Models\RatingYear::orderBy('year')->limit(4)->pluck('year')->toArray();
         // 1. Сначала обновляем значения рейтинга за каждый год отдельно (по достижениям)
         foreach ($regions as $region) {
             foreach ($years as $year) {
