@@ -129,50 +129,49 @@ class ClubAchievement extends Model
 
         // Получаем базовые очки за место
         $basePoints = $tournamentType->getPointsForPosition($position, $teamsCount);
+        $promotionBonus = 0;
 
         // Если нет очков за место, но есть очки за участие, используем их
         if ($basePoints === 0 && $tournamentType->participation_points > 0) {
             $basePoints = $tournamentType->participation_points;
         }
 
-        // Применяем множитель по количеству команд, если не установлен флаг ignore_teams_multiplier
-        if (!$tournamentType->ignore_teams_multiplier) {
-            $multiplier = $teamsCount / 10;
-            $basePoints = $basePoints * $multiplier;
-        }
-
-        // Для первой лиги добавляем бонус за повышение
+        // Для первой лиги с повышением ищем специальную запись с бонусом
         if ($tournamentType->code === 'first_league' && $promoted) {
-            // Ищем запись с бонусом за повышение
             $promotedPoint = $tournamentType->points()
                 ->where('position', $position)
                 ->where('is_active', true)
                 ->where('description', 'like', '%с бонусом за повышение%')
                 ->first();
-
             if ($promotedPoint) {
-                // Если есть специальная запись с бонусом, используем её
-                $basePoints = $promotedPoint->points;
-                if (!$tournamentType->ignore_teams_multiplier) {
-                    $multiplier = $teamsCount / 10;
-                    $basePoints = $basePoints * $multiplier;
+                // Если есть запись с бонусом, вычисляем базу и бонус
+                // Ожидается описание вида '50+30 очков' или '20+30 очков'
+                if (preg_match('/(\d+)\s*\+\s*(\d+)/u', $promotedPoint->description, $matches)) {
+                    $basePoints = (int)$matches[1];
+                    $promotionBonus = (int)$matches[2];
+                } else {
+                    // fallback: всё в базу, бонус 0
+                    $basePoints = $promotedPoint->points;
+                    $promotionBonus = 0;
                 }
             } else {
-                // Используем бонус за повышение из настроек турнира
+                // Если нет спец. записи, бонус из настроек турнира
                 $promotionBonus = $tournamentType->promotion_bonus ?? 30;
-                if (!$tournamentType->ignore_teams_multiplier) {
-                    $multiplier = $teamsCount / 10;
-                    $promotionBonus = $promotionBonus * $multiplier;
-                }
-                $basePoints += $promotionBonus;
             }
+        }
+
+        // Применяем множитель только к базовым очкам
+        if (!$tournamentType->ignore_teams_multiplier) {
+            $multiplier = $teamsCount / 10;
+            $basePoints = $basePoints * $multiplier;
         }
 
         // Применяем коэффициент
         $coefficient = $this->getCalculatedCoefficient();
         $basePoints = $basePoints * $coefficient;
 
-        return $basePoints;
+        // Итог: базовые очки (с множителем и коэффициентом) + бонус (без множителя)
+        return $basePoints + $promotionBonus;
     }
 
     /**
