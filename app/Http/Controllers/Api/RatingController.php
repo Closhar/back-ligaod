@@ -349,20 +349,16 @@ class RatingController extends Controller
     }
 
     /**
-     * Рассчитать рейтинг за год (только для админов)
+     * Пересчитать рейтинги для всех лет (только для админов)
      */
     public function calculateYearlyRating(Request $request): JsonResponse
     {
-        $request->validate([
-            'year' => 'required|integer|min:2020|max:2030'
-        ]);
-
         try {
-            $this->ratingService->calculateYearlyRating($request->year);
+            $this->ratingService->calculateAllYearsRatings();
 
             return response()->json([
                 'success' => true,
-                'message' => "Рейтинг за {$request->year} год успешно рассчитан"
+                'message' => 'Рейтинги за все годы успешно пересчитаны'
             ]);
         } catch (\Exception $e) {
             return response()->json([

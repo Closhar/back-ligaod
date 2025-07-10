@@ -107,6 +107,17 @@ class SRRRRatingService
     }
 
     /**
+     * Пересчитать рейтинги для всех лет
+     */
+    public function calculateAllYearsRatings(): void
+    {
+        $years = \App\Models\RatingYear::orderBy('year')->pluck('year');
+        foreach ($years as $year) {
+            $this->calculateYearlyRating($year);
+        }
+    }
+
+    /**
      * Добавить достижение клуба
      */
     public function addClubAchievement(array $data): ClubAchievement
