@@ -111,7 +111,12 @@ class ClubAchievement extends Model
             })
             ->get();
         // Сортируем по points_earned (desc), затем id (asc)
-        $sorted = $groupAchievements->sortByDesc('points_earned')->sortBy('id')->values();
+        $sorted = $groupAchievements->sort(function($a, $b) {
+            if ($a->points_earned == $b->points_earned) {
+                return $a->id <=> $b->id;
+            }
+            return $b->points_earned <=> $a->points_earned;
+        })->values();
         // Логируем параметры группы
         Log::info('Пересчёт группы по лимиту (fixed)', [
             'year' => $year,
