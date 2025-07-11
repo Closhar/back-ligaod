@@ -328,8 +328,8 @@ class ArenaController extends Controller
             $arena = Arena::findOrFail($id);
 
             $validated = $request->validate([
-                'title' => 'string|max:255',
-                'slug' => 'string|max:255|unique:arenas,slug,' . $id,
+                'title' => 'sometimes|string|max:255',
+                'slug' => 'sometimes|string|max:255|unique:arenas,slug,' . $id,
                 'region_id' => 'integer|exists:regions,id',
                 'city_id' => 'integer|exists:cities,id',
                 'about' => 'nullable|string',
@@ -429,7 +429,7 @@ class ArenaController extends Controller
             return response()->json([
                 'success' => true,
                 'image_path' => $path,
-                'full_path' => Storage::disk('public')->url($path),
+                'full_path' => asset('storage/' . $path),
                 'message' => 'Изображение успешно загружено'
             ]);
 
