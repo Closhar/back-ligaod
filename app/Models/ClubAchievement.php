@@ -115,16 +115,6 @@ class ClubAchievement extends Model
             ['points_earned', 'desc'],
             ['id', 'asc'],
         ])->values();
-        // Логируем параметры группы
-        Log::info('Пересчёт группы по лимиту (fixed)', [
-            'year' => $year,
-            'tournament_type_id' => $tournamentTypeId,
-            'regionId' => $regionId,
-            'genderId' => $genderId,
-            'count' => $sorted->count(),
-            'maxPerRegion' => $maxPerRegion,
-            'ids' => $sorted->pluck('id')->toArray(),
-        ]);
         // Если команд меньше или равно лимиту — никому не обнулять очки
         if ($sorted->count() <= $maxPerRegion) {
             return;
@@ -136,15 +126,6 @@ class ClubAchievement extends Model
             } else {
                 // Обнуляем очки, если не обнулены
                 if ($achievement->points_earned != 0) {
-                    Log::info('Обнуляем очки (fixed)', [
-                        'achievement_id' => $achievement->id,
-                        'club_id' => $achievement->club_id,
-                        'region_id' => $regionId,
-                        'gender_id' => $genderId,
-                        'points_before' => $achievement->points_earned,
-                        'year' => $year,
-                        'tournament_type_id' => $tournamentTypeId
-                    ]);
                     $achievement->update(['points_earned' => 0]);
                 }
             }
@@ -156,7 +137,6 @@ class ClubAchievement extends Model
      */
     public static function recalculateRegionLimit(): void
     {
-        Log::info('=== ВЫЗВАН recalculateRegionLimit (новая версия) ===');
         $achievements = self::with(['tournamentType', 'club'])
             ->whereHas('tournamentType', function($q) {
                 $q->where('max_participants_per_region', '>', 0);
@@ -176,16 +156,6 @@ class ClubAchievement extends Model
             $tournamentType = $group->first()->tournamentType;
             $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
             if ($maxPerRegion === 0 || $group->count() <= $maxPerRegion) {
-                Log::info('Лимит-группа (без обнуления)', [
-                    'group' => $groupKey,
-                    'region_id' => $group->first()->club ? $group->first()->club->rating_region_id : null,
-                    'year' => $group->first()->year,
-                    'tournament_type_id' => $group->first()->tournament_type_id,
-                    'gender_id' => $group->first()->club ? $group->first()->club->gender_id : null,
-                    'count' => $group->count(),
-                    'maxPerRegion' => $maxPerRegion,
-                    'ids' => $group->pluck('id')->toArray(),
-                ]);
                 continue;
             }
             $sorted = $group->sortBy([
@@ -204,15 +174,6 @@ class ClubAchievement extends Model
                     $achievement->update(['points_earned' => 0]);
                 }
             }
-            Log::info('Лимит-группа (обнуление)', [
-                'group' => $groupKey,
-                'region_id' => $group->first()->club ? $group->first()->club->rating_region_id : null,
-                'year' => $group->first()->year,
-                'tournament_type_id' => $group->first()->tournament_type_id,
-                'gender_id' => $group->first()->club ? $group->first()->club->gender_id : null,
-                'kept' => $kept,
-                'zeroed' => $zeroed
-            ]);
         }
     }
 
