@@ -426,6 +426,49 @@ class ApiEventController extends Controller
     }
 
     /**
+     * Возвращает события на сегодня с аренами и координатами для карты
+     */
+    public function eventsTodayMap(Request $request)
+    {
+        $today = now()->toDateString();
+        $events = Event::query()
+            ->whereDate('date_from', $today)
+            ->where('is_active', 1)
+            ->with(['arena' => function ($query) {
+                $query->select([
+                    'id',
+                    'title',
+                    'address',
+                    'image',
+                    'latitude',
+                    'longitude',
+                    'slug',
+                    'city_id',
+                ]);
+            }])
+            ->get();
+
+        // Формируем массив для карты
+        $result = $events->map(function ($event) {
+            return [
+                'event_id' => $event->id,
+                'event_title' => $event->title,
+                'arena_id' => $event->arena?->id,
+                'arena_title' => $event->arena?->title,
+                'arena_address' => strip_tags($event->arena?->address),
+                'arena_image_path' => $event->arena?->image ? (config('app.url') . '/storage/' . $event->arena->image) : null,
+                'latitude' => $event->arena?->latitude,
+                'longitude' => $event->arena?->longitude,
+            ];
+        })->filter(function ($item) {
+            // Только если есть координаты
+            return $item['latitude'] && $item['longitude'];
+        })->values();
+
+        return response()->json(['data' => $result]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
