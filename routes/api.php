@@ -265,6 +265,10 @@ Route::prefix('telegram')->group(function () {
 });
 
 
+Route::get('/events-today-map', [ApiEventController::class, 'eventsTodayMap']);
+
+
+
 Route::prefix('v1/article_count')->group(function () {
     // Записать просмотр статьи (с защитой от дублирования)
     Route::get('{slug}/record', function ($slug) {
