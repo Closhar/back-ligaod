@@ -8,12 +8,12 @@ use App\Models\Age;
 use App\Models\Arena;
 use App\Models\Gender;
 use App\Models\Sport;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
-use Illuminate\Http\JsonResponse;
 
 class ArenaController extends Controller
 {
@@ -36,7 +36,7 @@ class ArenaController extends Controller
         $query = Arena::query()
             ->select('id', 'region_id', 'title', 'slug', 'city_id', 'about', 'sites', 'vks', 'youtubes',
                 'emails', 'phones', 'telegrams', 'instagrams', 'facebooks', 'xs', 'address',
-                'dop_info', 'map', 'image', 'gallery_id')
+                'dop_info', 'map', 'image', 'gallery_id', 'latitude', 'longitude')
             ->with([
                 'gallery',
                 'region' => function ($query) {
@@ -109,6 +109,8 @@ class ArenaController extends Controller
                 'map' => $arena->map,
                 'image' => $arena->image,
                 'gallery_id' => $arena->gallery_id,
+                'latitude' => $arena->latitude,
+                'longitude' => $arena->longitude,
                 'gallery' => $arena->gallery ? [
                     'id' => $arena->gallery->id,
                     'title' => $arena->gallery->title,
@@ -196,6 +198,8 @@ class ArenaController extends Controller
                 'dop_info' => 'nullable|string',
                 'map' => 'nullable|string',
                 'gallery_id' => 'nullable|integer|exists:galleries,id',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
             ]);
 
             if (isset($validated['city_title'])) {
@@ -276,6 +280,8 @@ class ArenaController extends Controller
                 'map' => $item->map,
                 'image' => $item->image,
                 'gallery_id' => $item->gallery_id,
+                'latitude' => $item->latitude,
+                'longitude' => $item->longitude,
                 'region' => $item->region,
                 'city' => $item->city,
                 'image_path' => $item->image ? config('app.url') . '/storage/' . $item->image : null,
@@ -340,6 +346,8 @@ class ArenaController extends Controller
                 'dop_info' => 'nullable|string',
                 'map' => 'nullable|string',
                 'gallery_id' => 'nullable|integer|exists:galleries,id',
+                'latitude' => 'nullable|numeric|between:-90,90',
+                'longitude' => 'nullable|numeric|between:-180,180',
             ]);
 
             $arena->update($validated);
