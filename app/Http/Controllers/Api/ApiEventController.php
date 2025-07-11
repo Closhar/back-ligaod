@@ -459,6 +459,8 @@ class ApiEventController extends Controller
                 'arena_image_path' => $event->arena?->image ? (config('app.url') . '/storage/' . $event->arena->image) : null,
                 'latitude' => $event->arena?->latitude,
                 'longitude' => $event->arena?->longitude,
+                'date_formatted' => \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.'),
+                'time' => \Carbon\Carbon::parse($event->date_from)->format('H:i'),
             ];
         })->filter(function ($item) {
             // Только если есть координаты
