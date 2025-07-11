@@ -32,7 +32,9 @@ class ApiArenaController extends Controller
                 'slug',
                 'region_id',
                 DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
-                'city_id'
+                'city_id',
+                'latitude',
+                'longitude'
             )
             ->with([
                 'city' => function ($cityQuery) {
