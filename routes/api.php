@@ -574,6 +574,8 @@ Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
 Route::delete('clubs/{id}/image', [ClubController::class, 'destroyImage']);
 Route::post('clubs/{id}/delete-image', [ClubController::class, 'deleteImage']);
 
+Route::post('/arenas/update-contacts', [ApiArenaController::class, 'updateContacts']);
+
 Route::get('/sanctum/csrf-cookie', function (Request $request) {
     return response()->noContent();
 })->middleware('web'); // Важно использовать web middleware

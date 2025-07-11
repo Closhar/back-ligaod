@@ -190,6 +190,26 @@ class ApiArenaController extends Controller
     }
 
     /**
+     * Обновление контактов (emails, phones) для арены
+     */
+    public function updateContacts(Request $request)
+    {
+        $arena = Arena::find($request->input('id'));
+        if (!$arena) {
+            return response()->json(['error' => 'Арена не найдена'], 404);
+        }
+        $emails = $request->input('emails');
+        $phones = $request->input('phones');
+        if ($emails !== null) $arena->emails = $emails;
+        if ($phones !== null) $arena->phones = $phones;
+        $arena->save();
+        return response()->json([
+            'success' => true,
+            'arena' => $arena->only(['id', 'emails', 'phones'])
+        ]);
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Gender $gender)
