@@ -98,53 +98,51 @@ class ClubAchievement extends Model
         $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
         if ($maxPerRegion === 0) return;
         $year = $this->year;
-        $division = $this->division;
         $tournamentTypeId = $this->tournament_type_id;
-        // Находим все достижения этой группы (по году, турниру, дивизиону)
+        $genderId = $this->club ? $this->club->gender_id : null;
+        $regionId = $this->club ? $this->club->rating_region_id : null;
+        // Находим все достижения этой группы (по году, турниру, полу, региону)
         $groupAchievements = self::with(['tournamentType', 'club'])
             ->where('year', $year)
-            ->where('division', $division)
             ->where('tournament_type_id', $tournamentTypeId)
+            ->whereHas('club', function($q) use ($regionId, $genderId) {
+                $q->where('rating_region_id', $regionId)
+                  ->where('gender_id', $genderId);
+            })
             ->get();
-        // Группируем по региону
-        $byRegion = $groupAchievements->groupBy(function($ach) {
-            return $ach->club ? $ach->club->rating_region_id : null;
-        });
-        foreach ($byRegion as $regionId => $regionAchievements) {
-            // Сортируем по points_earned (по убыванию)
-            $sorted = $regionAchievements->sortByDesc('points_earned')->values();
-            // Логируем параметры группы
-            Log::info('Пересчёт группы по лимиту', [
-                'year' => $year,
-                'division' => $division,
-                'tournament_type_id' => $tournamentTypeId,
-                'regionId' => $regionId,
-                'count' => $sorted->count(),
-                'maxPerRegion' => $maxPerRegion,
-                'ids' => $sorted->pluck('id')->toArray(),
-            ]);
-            // Если команд меньше или равно лимиту — никому не обнулять очки
-            if ($sorted->count() <= $maxPerRegion) {
+        // Сортируем по points_earned (desc), затем id (asc)
+        $sorted = $groupAchievements->sortByDesc('points_earned')->sortBy('id')->values();
+        // Логируем параметры группы
+        Log::info('Пересчёт группы по лимиту (fixed)', [
+            'year' => $year,
+            'tournament_type_id' => $tournamentTypeId,
+            'regionId' => $regionId,
+            'genderId' => $genderId,
+            'count' => $sorted->count(),
+            'maxPerRegion' => $maxPerRegion,
+            'ids' => $sorted->pluck('id')->toArray(),
+        ]);
+        // Если команд меньше или равно лимиту — никому не обнулять очки
+        if ($sorted->count() <= $maxPerRegion) {
+            return;
+        }
+        foreach ($sorted as $idx => $achievement) {
+            if ($idx < $maxPerRegion) {
+                // Оставляем points_earned как есть
                 continue;
-            }
-            foreach ($sorted as $idx => $achievement) {
-                if ($idx < $maxPerRegion) {
-                    // Оставляем points_earned как есть
-                    continue;
-                } else {
-                    // Обнуляем очки, если не обнулены
-                    if ($achievement->points_earned != 0) {
-                        Log::info('Обнуляем очки', [
-                            'achievement_id' => $achievement->id,
-                            'club_id' => $achievement->club_id,
-                            'region_id' => $regionId,
-                            'points_before' => $achievement->points_earned,
-                            'year' => $year,
-                            'tournament_type_id' => $tournamentTypeId,
-                            'division' => $division
-                        ]);
-                        $achievement->update(['points_earned' => 0]);
-                    }
+            } else {
+                // Обнуляем очки, если не обнулены
+                if ($achievement->points_earned != 0) {
+                    Log::info('Обнуляем очки (fixed)', [
+                        'achievement_id' => $achievement->id,
+                        'club_id' => $achievement->club_id,
+                        'region_id' => $regionId,
+                        'gender_id' => $genderId,
+                        'points_before' => $achievement->points_earned,
+                        'year' => $year,
+                        'tournament_type_id' => $tournamentTypeId
+                    ]);
+                    $achievement->update(['points_earned' => 0]);
                 }
             }
         }
