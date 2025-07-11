@@ -449,6 +449,8 @@ class ClubAchievementController extends Controller
             }
             // После пересчёта можно сбросить актуальность рейтинга, если требуется
             RatingController::setRatingNotActual();
+            // Применяем лимит по региону/полу
+            \App\Models\ClubAchievement::recalculateRegionLimit();
             return response()->json([
                 'success' => true,
                 'message' => "Пересчитано достижений: $count",

@@ -155,6 +155,7 @@ class ClubAchievement extends Model
      */
     public static function recalculateRegionLimit(): void
     {
+        Log::info('=== ВЫЗВАН recalculateRegionLimit ===');
         $achievements = self::with(['tournamentType', 'club'])
             ->whereHas('tournamentType', function($q) {
                 $q->where('max_participants_per_region', '>', 0);
