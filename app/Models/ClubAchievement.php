@@ -155,7 +155,7 @@ class ClubAchievement extends Model
      */
     public static function recalculateRegionLimit(): void
     {
-        Log::info('=== ВЫЗВАН recalculateRegionLimit ===');
+        Log::info('=== ВЫЗВАН recalculateRegionLimit (новая версия) ===');
         $achievements = self::with(['tournamentType', 'club'])
             ->whereHas('tournamentType', function($q) {
                 $q->where('max_participants_per_region', '>', 0);
@@ -174,9 +174,17 @@ class ClubAchievement extends Model
         foreach ($grouped as $groupKey => $group) {
             $tournamentType = $group->first()->tournamentType;
             $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
-            $firstClub = $group->first()->club;
-            $genderId = $firstClub ? $firstClub->gender_id : null;
-            if ($group->count() <= $maxPerRegion) {
+            if ($maxPerRegion === 0 || $group->count() <= $maxPerRegion) {
+                Log::info('Лимит-группа (без обнуления)', [
+                    'group' => $groupKey,
+                    'region_id' => $group->first()->club ? $group->first()->club->rating_region_id : null,
+                    'year' => $group->first()->year,
+                    'tournament_type_id' => $group->first()->tournament_type_id,
+                    'gender_id' => $group->first()->club ? $group->first()->club->gender_id : null,
+                    'count' => $group->count(),
+                    'maxPerRegion' => $maxPerRegion,
+                    'ids' => $group->pluck('id')->toArray(),
+                ]);
                 continue;
             }
             $sorted = $group->sortByDesc('points_earned')->sortBy('id')->values();
@@ -192,12 +200,12 @@ class ClubAchievement extends Model
                     $achievement->update(['points_earned' => 0]);
                 }
             }
-            Log::info('Лимит-группа', [
+            Log::info('Лимит-группа (обнуление)', [
                 'group' => $groupKey,
-                'region_id' => $firstClub ? $firstClub->rating_region_id : null,
+                'region_id' => $group->first()->club ? $group->first()->club->rating_region_id : null,
                 'year' => $group->first()->year,
                 'tournament_type_id' => $group->first()->tournament_type_id,
-                'gender_id' => $genderId,
+                'gender_id' => $group->first()->club ? $group->first()->club->gender_id : null,
                 'kept' => $kept,
                 'zeroed' => $zeroed
             ]);
