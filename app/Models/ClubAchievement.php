@@ -178,6 +178,48 @@ class ClubAchievement extends Model
     }
 
     /**
+     * Пересчитать лимит max_participants_per_region только для одной группы (регион, год, турнир, пол)
+     */
+    public static function recalculateRegionLimitForGroup($regionId, $year, $tournamentTypeId, $genderId): void
+    {
+        $achievements = self::with(['tournamentType', 'club'])
+            ->whereHas('tournamentType', function($q) {
+                $q->where('max_participants_per_region', '>', 0);
+            })
+            ->whereHas('club', function($q) use ($regionId, $genderId) {
+                $q->where('rating_region_id', $regionId)
+                  ->where('gender_id', $genderId);
+            })
+            ->where('year', $year)
+            ->where('tournament_type_id', $tournamentTypeId)
+            ->get();
+
+        if ($achievements->isEmpty()) {
+            return;
+        }
+
+        $tournamentType = $achievements->first()->tournamentType;
+        $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
+        if ($maxPerRegion === 0 || $achievements->count() <= $maxPerRegion) {
+            return;
+        }
+
+        $sorted = $achievements->sortBy([
+            ['points_earned', 'desc'],
+            ['id', 'asc'],
+        ])->values();
+
+        foreach ($sorted as $idx => $achievement) {
+            if ($idx < $maxPerRegion) {
+                continue;
+            }
+            if ($achievement->points_earned != 0) {
+                $achievement->update(['points_earned' => 0]);
+            }
+        }
+    }
+
+    /**
      * Получить рассчитанный коэффициент
      */
     private function getCalculatedCoefficient(): float

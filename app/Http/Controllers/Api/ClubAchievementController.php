@@ -364,9 +364,12 @@ class ClubAchievementController extends Controller
             // Сбросить актуальность рейтинга для года
             RatingController::setRatingNotActual();
 
-            // Пересчитать очки для группы после удаления
-            if (method_exists($achievement, 'recalculateGroupPoints')) {
-                $achievement->recalculateGroupPoints();
+            // Пересчитать лимит только для затронутой группы
+            $regionId = $club->rating_region_id ?? null;
+            $genderId = $club->gender_id ?? null;
+            $tournamentTypeId = $achievement->tournament_type_id;
+            if ($regionId && $year && $tournamentTypeId && $genderId) {
+                \App\Models\ClubAchievement::recalculateRegionLimitForGroup($regionId, $year, $tournamentTypeId, $genderId);
             }
 
             // Пересчитать рейтинг региона
