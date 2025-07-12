@@ -182,11 +182,10 @@ class ApiClubController extends Controller
         ])
             ->where('club_id', $club->id)
             ->whereNull('left_at')
-            ->get()
-            ->toArray();
+            ->get(); // убрано ->toArray()
 
         $clubArr = $club->toArray();
-        $clubArr['active_memberships'] = $activeMemberships;
+        $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
         return $clubArr;
     }
 
