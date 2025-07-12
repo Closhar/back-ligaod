@@ -178,6 +178,7 @@ class ApiClubController extends Controller
         $activeMemberships = \App\Models\PersonClubMembership::with([
             'person.activeAmpluaMemberships.amplua',
             'person.mainImage',
+            'person.positionMemberships.position', // добавлено для сотрудников
         ])
             ->where('club_id', $club->id)
             ->whereNull('left_at')
