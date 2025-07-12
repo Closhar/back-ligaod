@@ -145,7 +145,8 @@ class PersonController extends Controller
             'clubMemberships.club',
             'sportMemberships.sport',
             'positionMemberships.position',
-            'ampluaMemberships.amplua'
+            'ampluaMemberships.amplua',
+            'activeClubMemberships', // <--- добавлено для фронта
         ]);
 
         return response()->json([
