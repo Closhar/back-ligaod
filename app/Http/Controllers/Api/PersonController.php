@@ -764,9 +764,22 @@ class PersonController extends Controller
      */
     public function search(Request $request): JsonResponse
     {
+        $lastName = $request->get('last_name');
+        $firstName = $request->get('first_name');
+        $middleName = $request->get('middle_name');
         $query = $request->get('query', '');
+
         $people = Person::query()
-            ->when($query, function ($q) use ($query) {
+            ->when($lastName, function ($q) use ($lastName) {
+                $q->where('last_name', 'like', "%$lastName%");
+            })
+            ->when($firstName, function ($q) use ($firstName) {
+                $q->where('first_name', 'like', "%$firstName%");
+            })
+            ->when($middleName, function ($q) use ($middleName) {
+                $q->where('middle_name', 'like', "%$middleName%");
+            })
+            ->when(!$lastName && !$firstName && !$middleName && $query, function ($q) use ($query) {
                 $q->where(function ($sub) use ($query) {
                     $sub->where('last_name', 'like', "%$query%")
                         ->orWhere('first_name', 'like', "%$query%")
