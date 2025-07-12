@@ -172,7 +172,15 @@ class ApiClubController extends Controller
      */
     public function show(Club $gender, $slug): array
     {
-        return Club::select(
+        $club = Club::where('id', $slug)->orWhere('slug', $slug)->firstOrFail();
+
+        // Получаем активные членства (игроки этого клуба, у которых left_at = null)
+        $activeMemberships = \App\Models\PersonClubMembership::with(['person.activeAmpluaMemberships.amplua', 'person.mainImage'])
+            ->where('club_id', $club->id)
+            ->whereNull('left_at')
+            ->get();
+
+        $clubData = Club::select(
             '*',
             DB::raw('CASE WHEN image IS NOT NULL AND image != "" THEN CONCAT("' . config('app.url') . '", "/storage/", image) ELSE NULL END AS full_image_path')
         )
@@ -181,7 +189,7 @@ class ApiClubController extends Controller
             ->with([
                 'articles' => function ($query) {
                     $query->select([
-                        'articles.id', // Явно указываем таблицу
+                        'articles.id',
                         'articles.title',
                         'articles.slug'
                     ]);
@@ -211,7 +219,7 @@ class ApiClubController extends Controller
                 },
                 'arenas' => function ($query) {
                     $query->select([
-                        'arenas.id', // Явно указываем таблицу
+                        'arenas.id',
                         'arenas.title',
                         'arenas.address',
                         'arenas.city_id',
@@ -236,8 +244,12 @@ class ApiClubController extends Controller
                     $genderQuery->select(['id', 'title', 'icon']);
                 },
             ])
-            ->get()
-            ->toArray();
+            ->first();
+
+        // Преобразуем в массив для объединения
+        $clubArr = $clubData ? $clubData->toArray() : [];
+        $clubArr['active_memberships'] = $activeMemberships;
+        return $clubArr;
     }
 
     /**
