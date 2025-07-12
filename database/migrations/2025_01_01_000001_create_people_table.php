@@ -15,7 +15,7 @@ return new class extends Migration {
             $table->string('first_name');
             $table->string('last_name');
             $table->string('middle_name')->nullable();
-            $table->date('birth_date');
+            $table->date('birth_date')->nullable();
             $table->string('passport_series', 4)->nullable();
             $table->string('passport_number', 6)->nullable();
             $table->text('address')->nullable();

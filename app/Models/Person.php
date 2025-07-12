@@ -19,10 +19,13 @@ class Person extends Model
         'passport_series',
         'passport_number',
         'address',
+        'player_number',
+        'gender',
     ];
 
     protected $casts = [
         'birth_date' => 'date',
+        'player_number' => 'integer',
     ];
 
     protected $appends = [

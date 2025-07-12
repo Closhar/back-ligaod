@@ -151,7 +151,10 @@ class PersonController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $person
+            'data' => array_merge(
+                $person->toArray(),
+                ['activeClubMemberships' => $person->activeClubMemberships->toArray()]
+            )
         ]);
     }
 
@@ -168,6 +171,8 @@ class PersonController extends Controller
             'passport_series' => 'nullable|string|size:4',
             'passport_number' => 'nullable|string|size:6',
             'address' => 'nullable|string',
+            'player_number' => 'nullable|integer|min:0',
+            'gender' => 'required|string|in:m,f',
         ]);
 
         if ($validator->fails()) {
@@ -179,6 +184,9 @@ class PersonController extends Controller
 
         // Проверка уникальности по ФИО и дате рождения
         $data = $validator->validated();
+        if (!isset($data['gender']) || !$data['gender']) {
+            $data['gender'] = 'm';
+        }
         $exists = \App\Models\Person::where('first_name', $data['first_name'])
             ->where('last_name', $data['last_name'])
             ->where('middle_name', $data['middle_name'] ?? null)
@@ -215,6 +223,8 @@ class PersonController extends Controller
             'passport_series' => 'nullable|string|size:4',
             'passport_number' => 'nullable|string|size:6',
             'address' => 'nullable|string',
+            'player_number' => 'nullable|integer|min:0',
+            'gender' => 'required|string|in:m,f',
         ]);
 
         if ($validator->fails()) {
