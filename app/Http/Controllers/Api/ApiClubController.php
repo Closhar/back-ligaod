@@ -172,6 +172,8 @@ class ApiClubController extends Controller
      */
     public function show(Club $gender, $slug): array
     {
+        Log::info('ApiClubController@show вызван');
+
         $club = Club::where('id', $slug)->orWhere('slug', $slug)->firstOrFail();
 
         // Получаем активные членства (игроки этого клуба, у которых left_at = null)
@@ -184,9 +186,14 @@ class ApiClubController extends Controller
             ->whereNull('left_at')
             ->get();
 
-        // Временный вывод в лог для отладки
+        Log::info('Количество memberships', ['count' => $activeMemberships->count()]);
+
         foreach ($activeMemberships as $membership) {
-            \Log::info('Person', [
+            if (!$membership->person) {
+                Log::info('Нет связи person', ['membership_id' => $membership->id]);
+                continue;
+            }
+            Log::info('Person', [
                 'id' => $membership->person->id,
                 'full_name' => $membership->person->full_name,
                 'position_memberships' => $membership->person->positionMemberships
