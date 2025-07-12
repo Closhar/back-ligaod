@@ -767,6 +767,7 @@ class PersonController extends Controller
         $lastName = $request->get('last_name');
         $firstName = $request->get('first_name');
         $middleName = $request->get('middle_name');
+        $birthDate = $request->get('birth_date');
         $query = $request->get('query', '');
 
         $people = Person::query()
@@ -778,6 +779,9 @@ class PersonController extends Controller
             })
             ->when($middleName, function ($q) use ($middleName) {
                 $q->where('middle_name', 'like', "%$middleName%");
+            })
+            ->when($birthDate, function ($q) use ($birthDate) {
+                $q->whereDate('birth_date', $birthDate);
             })
             ->when(!$lastName && !$firstName && !$middleName && $query, function ($q) use ($query) {
                 $q->where(function ($sub) use ($query) {
