@@ -83,11 +83,37 @@ class ClubPlayerController extends Controller
      */
     public function players(Request $request, Club $club): JsonResponse
     {
-        $memberships = PersonClubMembership::with(['person', 'amplua'])
+        $memberships = PersonClubMembership::with(['person'])
             ->where('club_id', $club->id)
             ->whereNull('left_at')
             ->get();
 
-        return response()->json($memberships);
+        // Для каждого игрока подгружаем ВСЕ амплуа
+        $result = $memberships->map(function ($membership) {
+            $person = $membership->person;
+            $ampluas = $person ? $person->ampluaMemberships()->with('amplua')->get()->map(function($ampluaMembership) {
+                return [
+                    'id' => $ampluaMembership->amplua?->id,
+                    'name' => $ampluaMembership->amplua?->name,
+                    'started_at' => $ampluaMembership->started_at,
+                    'ended_at' => $ampluaMembership->ended_at,
+                ];
+            }) : collect();
+            return [
+                'id' => $membership->id,
+                'person_id' => $membership->person_id,
+                'club_id' => $membership->club_id,
+                'joined_at' => $membership->joined_at,
+                'left_at' => $membership->left_at,
+                'position' => $membership->position,
+                'notes' => $membership->notes,
+                'created_at' => $membership->created_at,
+                'updated_at' => $membership->updated_at,
+                'person' => $person,
+                'ampluas' => $ampluas,
+            ];
+        });
+
+        return response()->json($result);
     }
 }
