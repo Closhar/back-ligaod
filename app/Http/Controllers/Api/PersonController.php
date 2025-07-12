@@ -176,7 +176,23 @@ class PersonController extends Controller
             ], 422);
         }
 
-        $person = Person::create($validator->validated());
+        // Проверка уникальности по ФИО и дате рождения
+        $data = $validator->validated();
+        $exists = \App\Models\Person::where('first_name', $data['first_name'])
+            ->where('last_name', $data['last_name'])
+            ->where('middle_name', $data['middle_name'] ?? null)
+            ->where('birth_date', $data['birth_date'] ?? null)
+            ->exists();
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'errors' => [
+                    'unique' => ['Персона с такими ФИО и датой рождения уже существует.']
+                ]
+            ], 422);
+        }
+
+        $person = Person::create($data);
 
         return response()->json([
             'success' => true,
