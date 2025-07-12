@@ -175,79 +175,16 @@ class ApiClubController extends Controller
         $club = Club::where('id', $slug)->orWhere('slug', $slug)->firstOrFail();
 
         // Получаем активные членства (игроки этого клуба, у которых left_at = null)
-        $activeMemberships = \App\Models\PersonClubMembership::with(['person.activeAmpluaMemberships.amplua', 'person.mainImage'])
+        $activeMemberships = \App\Models\PersonClubMembership::with([
+            'person.activeAmpluaMemberships.amplua',
+            'person.mainImage',
+        ])
             ->where('club_id', $club->id)
             ->whereNull('left_at')
-            ->get();
+            ->get()
+            ->toArray();
 
-        $clubData = Club::select(
-            '*',
-            DB::raw('CASE WHEN image IS NOT NULL AND image != "" THEN CONCAT("' . config('app.url') . '", "/storage/", image) ELSE NULL END AS full_image_path')
-        )
-            ->where('id', $slug)
-            ->orWhere('slug', $slug)
-            ->with([
-                'articles' => function ($query) {
-                    $query->select([
-                        'articles.id',
-                        'articles.title',
-                        'articles.slug'
-                    ]);
-                },
-                'gallery' => function ($galleryQuery) {
-                    $galleryQuery->select([
-                        'galleries.id',
-                        'galleries.title',
-                        'galleries.image_id'
-                    ])
-                        ->with([
-                            'images' => function ($q) {
-                                $q->select([
-                                    'images.id',
-                                    'images.title',
-                                    'images.image',
-                                    'images.gallery_id'
-                                ]);
-                            },
-                            'main_image' => function ($q) {
-                                $q->select([
-                                    'images.id',
-                                    'images.title'
-                                ]);
-                            }
-                        ]);
-                },
-                'arenas' => function ($query) {
-                    $query->select([
-                        'arenas.id',
-                        'arenas.title',
-                        'arenas.address',
-                        'arenas.city_id',
-                        'arenas.slug',
-                        'arenas.image'
-                    ])->with([
-                        'city' => function ($cityQuery) {
-                            $cityQuery->select(['id', 'title']);
-                        }
-                    ]);
-                },
-                'city' => function ($cityQuery) {
-                    $cityQuery->select(['id', 'title']);
-                },
-                'sport' => function ($sportQuery) {
-                    $sportQuery->select(['id', 'title', 'icon', 'slug']);
-                },
-                'age' => function ($ageQuery) {
-                    $ageQuery->select(['id', 'title_short']);
-                },
-                'gender' => function ($genderQuery) {
-                    $genderQuery->select(['id', 'title', 'icon']);
-                },
-            ])
-            ->first();
-
-        // Преобразуем в массив для объединения
-        $clubArr = $clubData ? $clubData->toArray() : [];
+        $clubArr = $club->toArray();
         $clubArr['active_memberships'] = $activeMemberships;
         return $clubArr;
     }
