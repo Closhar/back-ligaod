@@ -277,7 +277,20 @@ class ClubController extends Controller
                 ->with('ratingRegion')
                 ->withCount('arenas')
                 ->findOrFail($id);
-            return response()->json($item);
+
+            // Получаем активные членства (игроки этого клуба, у которых left_at = null)
+            $activeMemberships = \App\Models\PersonClubMembership::with([
+                'person.activeAmpluaMemberships.amplua',
+                'person.mainImage',
+            ])
+                ->where('club_id', $item->id)
+                ->whereNull('left_at')
+                ->get()
+                ->toArray();
+
+            $itemArr = $item->toArray();
+            $itemArr['active_memberships'] = $activeMemberships;
+            return response()->json($itemArr);
 
         } catch (\Exception $e) {
             return response()->json(['message' => 'Not Found'], 404);
