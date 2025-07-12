@@ -645,6 +645,8 @@ Route::get('test-telegram', [TelegramParseChannelController::class, 'testMessage
 Route::prefix('people')->group(function () {
     Route::get('/', [PersonController::class, 'index']);
     Route::post('/', [PersonController::class, 'store']);
+
+    Route::get('/search', [PersonController::class, 'search']);
     Route::get('/statistics', [PersonController::class, 'statistics']);
     Route::get('/clubs', [PersonController::class, 'clubs']);
     Route::get('/sports', [PersonController::class, 'sports']);
@@ -653,8 +655,6 @@ Route::prefix('people')->group(function () {
     Route::get('/{person}', [PersonController::class, 'show']);
     Route::put('/{person}', [PersonController::class, 'update']);
     Route::delete('/{person}', [PersonController::class, 'destroy']);
-
-    Route::get('/search', [PersonController::class, 'search']);
 
     // Маршруты для изображений персон
     Route::prefix('{person}/images')->group(function () {
