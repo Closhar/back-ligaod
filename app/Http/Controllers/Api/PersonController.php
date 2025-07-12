@@ -744,6 +744,41 @@ class PersonController extends Controller
     }
 
     /**
+     * Поиск персон по ФИО и дате рождения (для автокомплита)
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $query = $request->get('query', '');
+        $people = Person::query()
+            ->when($query, function ($q) use ($query) {
+                $q->where(function ($sub) use ($query) {
+                    $sub->where('last_name', 'like', "%$query%")
+                        ->orWhere('first_name', 'like', "%$query%")
+                        ->orWhere('middle_name', 'like', "%$query%")
+                        ->orWhereRaw("CONCAT(last_name, ' ', first_name, ' ', middle_name) like ?", ["%$query%"]);
+                });
+            })
+            ->orderBy('last_name')
+            ->limit(20)
+            ->get();
+
+        $result = $people->map(function ($person) {
+            $label = $person->full_name;
+            if ($person->birth_date) {
+                $label .= ' (' . $person->birth_date->format('d.m.Y') . ')';
+            }
+            return [
+                'id' => $person->id,
+                'full_name' => $person->full_name,
+                'birth_date' => $person->birth_date ? $person->birth_date->format('Y-m-d') : null,
+                'label' => $label,
+            ];
+        });
+
+        return response()->json($result);
+    }
+
+    /**
      * Изменить размер изображения до точных размеров с обрезкой
      */
     private function resizeImageToExactSize($imagePath, $targetWidth, $targetHeight)

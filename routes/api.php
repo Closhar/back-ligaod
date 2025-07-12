@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\ArticleViewController;
 use App\Http\Controllers\Api\ClubAchievementController;
+use App\Http\Controllers\Api\ClubPlayerController;
 use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\Api\PersonAmpluaMembershipController;
 use App\Http\Controllers\Api\PersonClubMembershipController;
@@ -573,6 +574,7 @@ Route::apiResource('clubs', ClubController::class);
 Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
 Route::delete('clubs/{id}/image', [ClubController::class, 'destroyImage']);
 Route::post('clubs/{id}/delete-image', [ClubController::class, 'deleteImage']);
+Route::post('/clubs/{club}/add-player-with-amplua', [ClubPlayerController::class, 'addWithAmplua']);
 
 Route::post('/arenas/update-contacts', [ApiArenaController::class, 'updateContacts']);
 
@@ -650,6 +652,7 @@ Route::prefix('people')->group(function () {
     Route::get('/{person}', [PersonController::class, 'show']);
     Route::put('/{person}', [PersonController::class, 'update']);
     Route::delete('/{person}', [PersonController::class, 'destroy']);
+    Route::get('/search', [PersonController::class, 'search']);
 
     // Маршруты для изображений персон
     Route::prefix('{person}/images')->group(function () {
