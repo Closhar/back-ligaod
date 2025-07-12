@@ -224,7 +224,7 @@ class PersonController extends Controller
             'passport_number' => 'nullable|string|size:6',
             'address' => 'nullable|string',
             'player_number' => 'nullable|integer|min:0',
-            'gender' => 'required|string|in:m,f',
+            'gender' => 'nullable|string|in:m,f',
         ]);
 
         if ($validator->fails()) {
