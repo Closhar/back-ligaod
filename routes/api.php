@@ -653,6 +653,7 @@ Route::prefix('people')->group(function () {
     Route::get('/{person}', [PersonController::class, 'show']);
     Route::put('/{person}', [PersonController::class, 'update']);
     Route::delete('/{person}', [PersonController::class, 'destroy']);
+
     Route::get('/search', [PersonController::class, 'search']);
 
     // Маршруты для изображений персон
