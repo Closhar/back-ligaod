@@ -172,35 +172,17 @@ class ApiClubController extends Controller
      */
     public function show(Club $gender, $slug): array
     {
-        Log::info('ApiClubController@show вызван');
-
-        $club = Club::where('id', $slug)->orWhere('slug', $slug)->firstOrFail();
-
         // Получаем активные членства (игроки этого клуба, у которых left_at = null)
         $activeMemberships = \App\Models\PersonClubMembership::with([
             'person.activeAmpluaMemberships.amplua',
             'person.mainImage',
             'person.positionMemberships.position',
         ])
-            ->where('club_id', $club->id)
+            ->where('club_id', $gender->id)
             ->whereNull('left_at')
             ->get();
 
-        Log::info('Количество memberships', ['count' => $activeMemberships->count()]);
-
-        foreach ($activeMemberships as $membership) {
-            if (!$membership->person) {
-                Log::info('Нет связи person', ['membership_id' => $membership->id]);
-                continue;
-            }
-            Log::info('Person', [
-                'id' => $membership->person->id,
-                'full_name' => $membership->person->full_name,
-                'position_memberships' => $membership->person->positionMemberships
-            ]);
-        }
-
-        $clubArr = $club->toArray();
+        $clubArr = $gender->toArray();
         $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
         return $clubArr;
     }

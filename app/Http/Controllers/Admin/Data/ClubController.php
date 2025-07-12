@@ -11,6 +11,7 @@ use App\Models\Gender;
 use App\Models\Sport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -282,11 +283,22 @@ class ClubController extends Controller
             $activeMemberships = \App\Models\PersonClubMembership::with([
                 'person.activeAmpluaMemberships.amplua',
                 'person.mainImage',
+                'person.positionMemberships.position', // добавлено для сотрудников
             ])
                 ->where('club_id', $item->id)
                 ->whereNull('left_at')
-                ->get()
-                ->toArray();
+                ->get();
+
+            // Удаляю Log::info и заменяю на error_log
+            error_log('Количество memberships: ' . $activeMemberships->count());
+
+            foreach ($activeMemberships as $membership) {
+                if (!$membership->person) {
+                    error_log('Нет связи person, membership_id: ' . $membership->id);
+                    continue;
+                }
+                error_log('Person: id=' . $membership->person->id . ', full_name=' . $membership->person->full_name . ', position_memberships=' . json_encode($membership->person->positionMemberships));
+            }
 
             $itemArr = $item->toArray();
             $itemArr['active_memberships'] = $activeMemberships;
