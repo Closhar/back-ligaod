@@ -178,11 +178,20 @@ class ApiClubController extends Controller
         $activeMemberships = \App\Models\PersonClubMembership::with([
             'person.activeAmpluaMemberships.amplua',
             'person.mainImage',
-            'person.positionMemberships.position', // добавлено для сотрудников
+            'person.positionMemberships.position',
         ])
             ->where('club_id', $club->id)
             ->whereNull('left_at')
-            ->get(); // убрано ->toArray()
+            ->get();
+
+        // Временный вывод в лог для отладки
+        foreach ($activeMemberships as $membership) {
+            \Log::info('Person', [
+                'id' => $membership->person->id,
+                'full_name' => $membership->person->full_name,
+                'position_memberships' => $membership->person->positionMemberships
+            ]);
+        }
 
         $clubArr = $club->toArray();
         $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
