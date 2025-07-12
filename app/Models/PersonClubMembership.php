@@ -41,6 +41,14 @@ class PersonClubMembership extends Model
     }
 
     /**
+     * Отношение к амплуа
+     */
+    public function amplua(): BelongsTo
+    {
+        return $this->belongsTo(Amplua::class, 'amplua_id');
+    }
+
+    /**
      * Проверить, является ли членство активным
      */
     public function isActive(): bool
