@@ -77,4 +77,17 @@ class ClubPlayerController extends Controller
             ]
         ], 201);
     }
+
+    /**
+     * Получить список игроков клуба с амплуа и персональными данными
+     */
+    public function players(Request $request, Club $club): JsonResponse
+    {
+        $memberships = PersonClubMembership::with(['person', 'amplua'])
+            ->where('club_id', $club->id)
+            ->whereNull('left_at')
+            ->get();
+
+        return response()->json($memberships);
+    }
 }

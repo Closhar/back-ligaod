@@ -575,6 +575,7 @@ Route::post('clubs/{id}/upload-image', [ClubController::class, 'uploadImage']);
 Route::delete('clubs/{id}/image', [ClubController::class, 'destroyImage']);
 Route::post('clubs/{id}/delete-image', [ClubController::class, 'deleteImage']);
 Route::post('/clubs/{club}/add-player-with-amplua', [ClubPlayerController::class, 'addWithAmplua']);
+Route::get('/clubs/{club}/players', [ClubPlayerController::class, 'players']);
 
 Route::post('/arenas/update-contacts', [ApiArenaController::class, 'updateContacts']);
 
