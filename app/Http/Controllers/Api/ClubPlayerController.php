@@ -20,7 +20,7 @@ class ClubPlayerController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'person_id' => 'required|exists:people,id',
-            'amplua_id' => 'required|exists:ampluas,id',
+            'amplua_id' => 'nullable|exists:ampluas,id',
             'joined_at' => 'nullable|date_format:Y-m-d|before_or_equal:today',
         ]);
 
@@ -53,15 +53,30 @@ class ClubPlayerController extends Controller
             'joined_at' => $data['joined_at'] ?? null,
         ]);
 
+        // Логика выбора амплуа
+        $ampluaId = $data['amplua_id'] ?? null;
+        if (!$ampluaId) {
+            // Если не передан amplua_id, ищем активное амплуа у игрока
+            $activeAmplua = $person->activeAmpluaMemberships()->first();
+            if ($activeAmplua) {
+                $ampluaId = $activeAmplua->amplua_id;
+            }
+        }
+        if (!$ampluaId) {
+            return response()->json([
+                'success' => false,
+                'errors' => ['amplua_id' => ['У игрока не найдено амплуа, выберите амплуа вручную.']]
+            ], 422);
+        }
         // Проверяем, есть ли уже активное амплуа у игрока
         $existingAmplua = $person->activeAmpluaMemberships()
-            ->where('amplua_id', $data['amplua_id'])
+            ->where('amplua_id', $ampluaId)
             ->first();
         if (!$existingAmplua) {
             // Создаем амплуа
             $ampluaMembership = PersonAmpluaMembership::create([
                 'person_id' => $person->id,
-                'amplua_id' => $data['amplua_id'],
+                'amplua_id' => $ampluaId,
                 'started_at' => now(),
             ]);
         } else {
