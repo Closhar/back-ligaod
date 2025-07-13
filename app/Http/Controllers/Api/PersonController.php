@@ -844,50 +844,58 @@ class PersonController extends Controller
      */
     public function import(Request $request): JsonResponse
     {
-        $rows = $request->input('data', []);
-        $results = [];
+        $rows = $request->input('people', []); // теперь people, а не data
+        $sportId = $request->input('sport_id');
+        $clubId = $request->input('club_id');
+        $imported = 0;
+        $updated = 0;
+        $failed = [];
 
         foreach ($rows as $idx => $row) {
             try {
+                // Проверка обязательных полей
+                if (empty($row['surname']) || empty($row['name'])) {
+                    $failed[] = [
+                        'row' => $row['_row'] ?? ($idx + 1),
+                        'reason' => 'Не указаны фамилия или имя',
+                    ];
+                    continue;
+                }
                 // 1. Поиск/создание амплуа
                 $ampluaId = null;
                 if (!empty($row['amplua'])) {
-                    $amplua = \App\Models\Amplua::whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($row['amplua']))])->first();
+                    $amplua = Amplua::whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($row['amplua']))])->first();
                     if (!$amplua) {
-                        $amplua = \App\Models\Amplua::create(['name' => trim($row['amplua'])]);
+                        $amplua = Amplua::create(['name' => trim($row['amplua'])]);
                     }
                     $ampluaId = $amplua->id;
                 }
-
                 // 2. Поиск/создание должности
                 $positionId = null;
                 if (!empty($row['position'])) {
-                    $position = \App\Models\Position::whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($row['position']))])->first();
+                    $position = Position::whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($row['position']))])->first();
                     if (!$position) {
-                        $position = \App\Models\Position::create(['name' => trim($row['position'])]);
+                        $position = Position::create(['name' => trim($row['position'])]);
                     }
                     $positionId = $position->id;
                 }
-
                 // 3. Поиск/создание персоны
-                $person = \App\Models\Person::where('first_name', $row['name'])
+                $person = Person::where('first_name', $row['name'])
                     ->where('last_name', $row['surname'])
                     ->where('birth_date', $row['birth_date'] ?? null)
                     ->first();
-
                 if (!$person) {
-                    $person = \App\Models\Person::create([
+                    $person = Person::create([
                         'first_name' => $row['name'],
                         'last_name' => $row['surname'],
                         'middle_name' => $row['patronymic'] ?? null,
                         'birth_date' => $row['birth_date'] ?? null,
                         'gender' => $row['gender'] ?? 'm',
                     ]);
-                    $created = true;
+                    $imported++;
                 } else {
-                    $created = false;
+                    $updated++;
                 }
-
                 // 4. Привязка амплуа/должности
                 if ($ampluaId) {
                     $person->ampluaMemberships()->firstOrCreate(['amplua_id' => $ampluaId]);
@@ -895,24 +903,25 @@ class PersonController extends Controller
                 if ($positionId) {
                     $person->positionMemberships()->firstOrCreate(['position_id' => $positionId]);
                 }
-
-                $results[] = [
-                    'row' => $idx + 1,
-                    'status' => $created ? 'created' : 'exists',
-                    'person_id' => $person->id,
-                ];
+                // 5. Привязка к спорту
+                if ($sportId) {
+                    $person->sportMemberships()->firstOrCreate(['sport_id' => $sportId]);
+                }
+                // 6. Привязка к клубу
+                if ($clubId) {
+                    $person->clubMemberships()->firstOrCreate(['club_id' => $clubId]);
+                }
             } catch (\Throwable $e) {
-                $results[] = [
-                    'row' => $idx + 1,
-                    'status' => 'error',
-                    'error' => $e->getMessage(),
+                $failed[] = [
+                    'row' => $row['_row'] ?? ($idx + 1),
+                    'reason' => $e->getMessage(),
                 ];
             }
         }
-
         return response()->json([
-            'success' => true,
-            'results' => $results,
+            'imported' => $imported,
+            'updated' => $updated,
+            'failed' => $failed,
         ]);
     }
 
