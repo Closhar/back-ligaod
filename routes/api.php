@@ -733,6 +733,8 @@ Route::prefix('people')->group(function () {
     });
 });
 
+Route::post('/people/import', [PersonController::class, 'import']);
+
 // Маршруты для управления ролями
 Route::prefix('roles')->group(function () {
     Route::get('/', [RoleController::class, 'index']);
