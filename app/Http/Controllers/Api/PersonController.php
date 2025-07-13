@@ -146,14 +146,25 @@ class PersonController extends Controller
             'sportMemberships.sport',
             'positionMemberships.position',
             'ampluaMemberships.amplua',
-            'activeClubMemberships', // <--- добавлено для фронта
+            'activeClubMemberships',
+            'activeSportMemberships',
+            'activePositionMemberships',
+            'activeAmpluaMemberships',
         ]);
 
         return response()->json([
             'success' => true,
             'data' => array_merge(
                 $person->toArray(),
-                ['activeClubMemberships' => $person->activeClubMemberships->toArray()]
+                [
+                    'activeClubMemberships' => $person->activeClubMemberships->toArray(),
+                    'activeSportMemberships' => $person->activeSportMemberships->toArray(),
+                    'activePositionMemberships' => $person->activePositionMemberships->toArray(),
+                    'activeAmpluaMemberships' => $person->activeAmpluaMemberships->toArray(),
+                    'positionMemberships' => $person->positionMemberships->toArray(),
+                    'sportMemberships' => $person->sportMemberships->toArray(),
+                    'ampluaMemberships' => $person->ampluaMemberships->toArray(),
+                ]
             )
         ]);
     }
