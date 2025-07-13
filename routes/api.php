@@ -576,6 +576,8 @@ Route::delete('clubs/{id}/image', [ClubController::class, 'destroyImage']);
 Route::post('clubs/{id}/delete-image', [ClubController::class, 'deleteImage']);
 Route::post('/clubs/{club}/add-player-with-amplua', [ClubPlayerController::class, 'addWithAmplua']);
 Route::get('/clubs/{club}/players', [ClubPlayerController::class, 'players']);
+// Добавление сотрудника с должностью (атомарно)
+Route::post('/clubs/{club}/add-staff-with-position', [ClubPlayerController::class, 'addWithPosition']);
 
 Route::post('/arenas/update-contacts', [ApiArenaController::class, 'updateContacts']);
 

@@ -40,10 +40,40 @@ class ClubPlayerController extends Controller
             ->whereNull('left_at')
             ->first();
         if ($existingMembership) {
+            // Уже есть членство — просто добавляем амплуа, если его нет
+            $ampluaId = $data['amplua_id'] ?? null;
+            if (!$ampluaId) {
+                $activeAmplua = $person->activeAmpluaMemberships()->first();
+                if ($activeAmplua) {
+                    $ampluaId = $activeAmplua->amplua_id;
+                }
+            }
+            if (!$ampluaId) {
+                return response()->json([
+                    'success' => false,
+                    'errors' => ['amplua_id' => ['У игрока не найдено амплуа, выберите амплуа вручную.']]
+                ], 422);
+            }
+            $existingAmplua = $person->activeAmpluaMemberships()
+                ->where('amplua_id', $ampluaId)
+                ->first();
+            if (!$existingAmplua) {
+                $ampluaMembership = PersonAmpluaMembership::create([
+                    'person_id' => $person->id,
+                    'amplua_id' => $ampluaId,
+                    'started_at' => now(),
+                ]);
+            } else {
+                $ampluaMembership = $existingAmplua;
+            }
             return response()->json([
-                'success' => false,
-                'message' => 'Персона уже является членом этого клуба'
-            ], 422);
+                'success' => true,
+                'message' => 'Амплуа добавлено существующему члену клуба',
+                'data' => [
+                    'membership' => $existingMembership,
+                    'amplua_membership' => $ampluaMembership,
+                ]
+            ], 200);
         }
 
         // Создаем членство в клубе
@@ -91,6 +121,65 @@ class ClubPlayerController extends Controller
                 'amplua_membership' => $ampluaMembership,
             ]
         ], 201);
+    }
+
+    /**
+     * Добавить сотрудника в клуб с должностью
+     */
+    public function addWithPosition(Request $request, Club $club): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'person_id' => 'required|exists:people,id',
+            'position_id' => 'required|exists:positions,id',
+            'joined_at' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+            'started_at' => 'nullable|date_format:Y-m-d|before_or_equal:today',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $data = $validator->validated();
+        $person = Person::findOrFail($data['person_id']);
+
+        // Проверяем, есть ли уже активное членство в клубе
+        $existingMembership = $person->clubMemberships()
+            ->where('club_id', $club->id)
+            ->whereNull('left_at')
+            ->first();
+        if (!$existingMembership) {
+            // Создаём членство в клубе
+            $existingMembership = PersonClubMembership::create([
+                'person_id' => $person->id,
+                'club_id' => $club->id,
+                'joined_at' => $data['joined_at'] ?? null,
+            ]);
+        }
+
+        // Проверяем, есть ли уже активная должность у персоны
+        $existingPosition = $person->activePositionMemberships()
+            ->where('position_id', $data['position_id'])
+            ->first();
+        if (!$existingPosition) {
+            $positionMembership = $person->positionMemberships()->create([
+                'position_id' => $data['position_id'],
+                'started_at' => $data['started_at'] ?? now(),
+            ]);
+        } else {
+            $positionMembership = $existingPosition;
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Сотрудник успешно добавлен в клуб с должностью',
+            'data' => [
+                'membership' => $existingMembership,
+                'position_membership' => $positionMembership,
+            ]
+        ], 200);
     }
 
     /**
