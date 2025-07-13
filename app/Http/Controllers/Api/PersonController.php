@@ -895,10 +895,16 @@ class PersonController extends Controller
                         'middle_name' => $row['patronymic'] ?? null,
                         'birth_date' => $row['birth_date'] ?? null,
                         'gender' => $row['gender'] ?? 'm',
+                        'about' => $row['about'] ?? null, // <--- добавлено сохранение about
                     ]);
                     $imported++;
                 } else {
                     $updated++;
+                    // Обновляем about, если оно есть в импорте
+                    if (isset($row['about'])) {
+                        $person->about = $row['about'];
+                        $person->save();
+                    }
                 }
                 // 4. Привязка амплуа/должности
                 if ($ampluaId) {
