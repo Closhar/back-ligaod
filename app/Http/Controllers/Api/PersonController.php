@@ -137,15 +137,6 @@ class PersonController extends Controller
      */
     public function show(Person $person): JsonResponse
     {
-        Log::info('Person show', [
-            'id' => $person->id,
-            'positionMemberships' => $person->positionMemberships->toArray(),
-            'sportMemberships' => $person->sportMemberships->toArray(),
-            'ampluaMemberships' => $person->ampluaMemberships->toArray(),
-            'activePositionMemberships' => $person->activePositionMemberships->toArray(),
-            'activeSportMemberships' => $person->activeSportMemberships->toArray(),
-            'activeAmpluaMemberships' => $person->activeAmpluaMemberships->toArray(),
-        ]);
         $person->load([
             'clubs',
             'sports',
@@ -155,25 +146,14 @@ class PersonController extends Controller
             'sportMemberships.sport',
             'positionMemberships.position',
             'ampluaMemberships.amplua',
-            'activeClubMemberships',
-            'activeSportMemberships',
-            'activePositionMemberships',
-            'activeAmpluaMemberships',
+            'activeClubMemberships', // <--- добавлено для фронта
         ]);
 
         return response()->json([
             'success' => true,
             'data' => array_merge(
                 $person->toArray(),
-                [
-                    'activeClubMemberships' => $person->activeClubMemberships->toArray(),
-                    'activeSportMemberships' => $person->activeSportMemberships->toArray(),
-                    'activePositionMemberships' => $person->activePositionMemberships->toArray(),
-                    'activeAmpluaMemberships' => $person->activeAmpluaMemberships->toArray(),
-                    'positionMemberships' => $person->positionMemberships->toArray(),
-                    'sportMemberships' => $person->sportMemberships->toArray(),
-                    'ampluaMemberships' => $person->ampluaMemberships->toArray(),
-                ]
+                ['activeClubMemberships' => $person->activeClubMemberships->toArray()]
             )
         ]);
     }
