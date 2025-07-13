@@ -840,6 +840,83 @@ class PersonController extends Controller
     }
 
     /**
+     * Массовый импорт персон с автоматическим поиском/созданием амплуа и должностей
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $rows = $request->input('data', []);
+        $results = [];
+
+        foreach ($rows as $idx => $row) {
+            try {
+                // 1. Поиск/создание амплуа
+                $ampluaId = null;
+                if (!empty($row['amplua'])) {
+                    $amplua = \App\Models\Amplua::whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($row['amplua']))])->first();
+                    if (!$amplua) {
+                        $amplua = \App\Models\Amplua::create(['name' => trim($row['amplua'])]);
+                    }
+                    $ampluaId = $amplua->id;
+                }
+
+                // 2. Поиск/создание должности
+                $positionId = null;
+                if (!empty($row['position'])) {
+                    $position = \App\Models\Position::whereRaw('LOWER(TRIM(name)) = ?', [mb_strtolower(trim($row['position']))])->first();
+                    if (!$position) {
+                        $position = \App\Models\Position::create(['name' => trim($row['position'])]);
+                    }
+                    $positionId = $position->id;
+                }
+
+                // 3. Поиск/создание персоны
+                $person = \App\Models\Person::where('first_name', $row['name'])
+                    ->where('last_name', $row['surname'])
+                    ->where('birth_date', $row['birth_date'] ?? null)
+                    ->first();
+
+                if (!$person) {
+                    $person = \App\Models\Person::create([
+                        'first_name' => $row['name'],
+                        'last_name' => $row['surname'],
+                        'middle_name' => $row['patronymic'] ?? null,
+                        'birth_date' => $row['birth_date'] ?? null,
+                        'gender' => $row['gender'] ?? 'm',
+                    ]);
+                    $created = true;
+                } else {
+                    $created = false;
+                }
+
+                // 4. Привязка амплуа/должности
+                if ($ampluaId) {
+                    $person->ampluaMemberships()->firstOrCreate(['amplua_id' => $ampluaId]);
+                }
+                if ($positionId) {
+                    $person->positionMemberships()->firstOrCreate(['position_id' => $positionId]);
+                }
+
+                $results[] = [
+                    'row' => $idx + 1,
+                    'status' => $created ? 'created' : 'exists',
+                    'person_id' => $person->id,
+                ];
+            } catch (\Throwable $e) {
+                $results[] = [
+                    'row' => $idx + 1,
+                    'status' => 'error',
+                    'error' => $e->getMessage(),
+                ];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'results' => $results,
+        ]);
+    }
+
+    /**
      * Изменить размер изображения до точных размеров с обрезкой
      */
     private function resizeImageToExactSize($imagePath, $targetWidth, $targetHeight)
