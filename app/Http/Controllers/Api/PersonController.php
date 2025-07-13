@@ -137,6 +137,15 @@ class PersonController extends Controller
      */
     public function show(Person $person): JsonResponse
     {
+        Log::info('Person show', [
+            'id' => $person->id,
+            'positionMemberships' => $person->positionMemberships->toArray(),
+            'sportMemberships' => $person->sportMemberships->toArray(),
+            'ampluaMemberships' => $person->ampluaMemberships->toArray(),
+            'activePositionMemberships' => $person->activePositionMemberships->toArray(),
+            'activeSportMemberships' => $person->activeSportMemberships->toArray(),
+            'activeAmpluaMemberships' => $person->activeAmpluaMemberships->toArray(),
+        ]);
         $person->load([
             'clubs',
             'sports',
