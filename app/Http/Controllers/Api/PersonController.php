@@ -190,6 +190,8 @@ class PersonController extends Controller
             'address' => 'nullable|string',
             'player_number' => 'nullable|integer|min:0',
             'gender' => 'required|string|in:m,f',
+            'is_active' => 'sometimes|boolean', // добавлено
+            'about' => 'nullable|string',        // добавлено
         ]);
 
         if ($validator->fails()) {
@@ -242,6 +244,8 @@ class PersonController extends Controller
             'address' => 'nullable|string',
             'player_number' => 'nullable|integer|min:0',
             'gender' => 'nullable|string|in:m,f',
+            'is_active' => 'sometimes|boolean', // добавлено
+            'about' => 'nullable|string',        // добавлено
         ]);
 
         if ($validator->fails()) {

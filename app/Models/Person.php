@@ -21,11 +21,14 @@ class Person extends Model
         'address',
         'player_number',
         'gender',
+        'is_active',
+        'about',
     ];
 
     protected $casts = [
         'birth_date' => 'date',
         'player_number' => 'integer',
+        'is_active' => 'boolean',
     ];
 
     protected $appends = [
