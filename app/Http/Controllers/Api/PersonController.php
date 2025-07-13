@@ -68,6 +68,23 @@ class PersonController extends Controller
                 }
             }
 
+            // Фильтрация по имени, фамилии, дате рождения
+            if ($request->has('first_name') && $request->first_name) {
+                $query->where('first_name', $request->first_name);
+            }
+            if ($request->has('last_name') && $request->last_name) {
+                $query->where('last_name', $request->last_name);
+            }
+            if ($request->has('birth_date') && $request->birth_date) {
+                // Преобразуем дату, если она в формате дд.мм.гггг
+                $birthDate = $request->birth_date;
+                if (preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $birthDate)) {
+                    $parts = explode('.', $birthDate);
+                    $birthDate = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+                }
+                $query->whereDate('birth_date', $birthDate);
+            }
+
             // Фильтрация по должности
             if ($request->has('position_id') && !empty($request->position_id)) {
                 $query->whereHas('positionMemberships', function ($q) use ($request) {
