@@ -650,14 +650,13 @@ class ApiEventController extends Controller
      */
     public function update(Request $request, Event $event)
     {
-        $data = $request->all();
-        if (array_key_exists('show_numbers_club1', $data)) {
-            $data['show_numbers_club1'] = $data['show_numbers_club1'] ? 1 : 0;
-        }
-        if (array_key_exists('show_numbers_club2', $data)) {
-            $data['show_numbers_club2'] = $data['show_numbers_club2'] ? 1 : 0;
-        }
-        $event->update($data);
+        $validated = $request->validate([
+            'show_numbers_club1' => 'nullable|boolean',
+            'show_numbers_club2' => 'nullable|boolean',
+            // ... другие поля, если нужно
+        ]);
+
+        $event->update($validated);
 
         if ($event->series_id) {
             $this->calculateSeriesCount($event);
