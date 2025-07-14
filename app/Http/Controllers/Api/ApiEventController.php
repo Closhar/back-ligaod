@@ -652,10 +652,10 @@ class ApiEventController extends Controller
     {
         $data = $request->all();
         if (array_key_exists('show_numbers_club1', $data)) {
-            $data['show_numbers_club1'] = filter_var($data['show_numbers_club1'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $data['show_numbers_club1'] = $data['show_numbers_club1'] ? 1 : 0;
         }
         if (array_key_exists('show_numbers_club2', $data)) {
-            $data['show_numbers_club2'] = filter_var($data['show_numbers_club2'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+            $data['show_numbers_club2'] = $data['show_numbers_club2'] ? 1 : 0;
         }
         $event->update($data);
 
@@ -663,7 +663,7 @@ class ApiEventController extends Controller
             $this->calculateSeriesCount($event);
         }
 
-        return response()->json($event);
+        return response()->json(['success' => true, 'data' => $event]);
     }
 
     /**
