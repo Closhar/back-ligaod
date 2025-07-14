@@ -85,6 +85,16 @@ class Club extends Model
         return $this->belongsTo(Gallery::class);
     }
 
+    public function eventLineups()
+    {
+        return $this->hasMany(EventLineup::class);
+    }
+
+    public function eventActions()
+    {
+        return $this->hasMany(EventAction::class);
+    }
+
     public function getClubImagePathAttribute()
     {
         return config('app.url') . '/storage/' . $this->image;

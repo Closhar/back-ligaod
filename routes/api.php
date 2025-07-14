@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\ActionTypeController;
 use App\Http\Controllers\Admin\Data\AdminPageController;
 use App\Http\Controllers\Admin\Data\ArenaController;
 use App\Http\Controllers\Admin\Data\ArticleController;
@@ -49,6 +50,8 @@ use App\Http\Controllers\Api\TelegramMessageController;
 use App\Http\Controllers\Api\TelegramParseChannelController;
 use App\Http\Controllers\Api\TournamentTypeController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\EventActionController;
+use App\Http\Controllers\EventLineupController;
 use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\PromptTemplateController;
 use App\Http\Controllers\TelegramController;
@@ -785,6 +788,20 @@ Route::get('/storage/{path}', function ($path) {
         'Cache-Control' => 'public, max-age=31536000'
     ]);
 })->where('path', '.*');
+
+Route::prefix('events/{event}/lineups')->group(function () {
+    Route::get('/', [EventLineupController::class, 'index']);
+    Route::post('/', [EventLineupController::class, 'store']);
+});
+Route::apiResource('event-lineups', EventLineupController::class)->except(['index', 'store', 'show']);
+
+Route::prefix('events/{event}/actions')->group(function () {
+    Route::get('/', [EventActionController::class, 'index']);
+    Route::post('/', [EventActionController::class, 'store']);
+});
+Route::apiResource('event-actions', EventActionController::class)->except(['index', 'store', 'show']);
+
+Route::apiResource('action-types', ActionTypeController::class)->except(['show']);
 
 
 

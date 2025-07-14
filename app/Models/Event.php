@@ -6,8 +6,8 @@ use App\Traits\KTranslateTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Event extends Model
 {
@@ -88,6 +88,16 @@ class Event extends Model
     public function streams(): HasMany
     {
         return $this->hasMany(Stream::class);
+    }
+
+    public function lineups()
+    {
+        return $this->hasMany(EventLineup::class);
+    }
+
+    public function actions()
+    {
+        return $this->hasMany(EventAction::class);
     }
 
     public function getDateFormattedAttribute()

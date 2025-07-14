@@ -270,4 +270,14 @@ class Person extends Model
               ->orWhereHas('activeAmpluaMemberships');
         });
     }
+
+    public function eventLineups()
+    {
+        return $this->hasMany(EventLineup::class);
+    }
+
+    public function eventActions()
+    {
+        return $this->hasMany(EventAction::class);
+    }
 }
