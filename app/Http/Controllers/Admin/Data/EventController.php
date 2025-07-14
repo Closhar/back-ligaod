@@ -867,6 +867,10 @@ class EventController extends Controller
                 'tickets' => 'string|max:50000|nullable',
                 'report' => 'string|max:50000|nullable',
                 'free_tickets' => 'boolean|nullable',
+                // --- добавлено для поддержки переключателей составов ---
+                'show_numbers_club1' => 'nullable|boolean',
+                'show_numbers_club2' => 'nullable|boolean',
+                'display_lineups_mode' => 'nullable|string',
             ]);
 
             // Обработка даты (прежняя логика)
