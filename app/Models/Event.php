@@ -44,6 +44,8 @@ class Event extends Model
         'report',
         'display_lineups_mode',
         'display_actions_mode',
+        'show_numbers_club1',
+        'show_numbers_club2',
     ];
 
     public function competition(): BelongsTo
