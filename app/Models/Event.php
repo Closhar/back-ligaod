@@ -21,6 +21,11 @@ class Event extends Model
     protected $withCount = ['streams'];
     protected $dates = ['date_from'];
 
+    protected $casts = [
+        'show_numbers_club1' => 'boolean',
+        'show_numbers_club2' => 'boolean',
+    ];
+
     protected $fillable = [
         'title',
         'date_from',
