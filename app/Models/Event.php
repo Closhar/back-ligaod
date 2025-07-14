@@ -41,7 +41,9 @@ class Event extends Model
         'about',
         'tickets',
         'free_tickets',
-        'report'
+        'report',
+        'display_lineups_mode',
+        'display_actions_mode',
     ];
 
     public function competition(): BelongsTo
