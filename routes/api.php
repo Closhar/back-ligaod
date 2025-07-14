@@ -96,6 +96,8 @@ Route::group(['prefix' => '/v1'], function () {
     Route::get('/competitions/{id}', [ApiCompetitionController::class, 'show'])->name('api.competitions.show');
     Route::get('/events', [ApiEventController::class, 'index'])->name('api.events.index');
     Route::get('/events/{id}', [ApiEventController::class, 'show'])->name('api.events.show');
+    Route::patch('/events/{event}', [\App\Http\Controllers\Api\ApiEventController::class, 'update']);
+    Route::put('/events/{event}', [\App\Http\Controllers\Api\ApiEventController::class, 'update']);
     Route::get('/articles', [ApiArticleController::class, 'index'])->name('api.articles.index');
     Route::get('/articles/{id}', [ApiArticleController::class, 'show'])->name('api.articles.show');
     Route::get('/galleries', [ApiGalleryController::class, 'index'])->name('api.galleries.index');
