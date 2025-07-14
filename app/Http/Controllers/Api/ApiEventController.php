@@ -650,7 +650,14 @@ class ApiEventController extends Controller
      */
     public function update(Request $request, Event $event)
     {
-        $event->update($request->all());
+        $data = $request->all();
+        if (array_key_exists('show_numbers_club1', $data)) {
+            $data['show_numbers_club1'] = filter_var($data['show_numbers_club1'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        }
+        if (array_key_exists('show_numbers_club2', $data)) {
+            $data['show_numbers_club2'] = filter_var($data['show_numbers_club2'], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+        }
+        $event->update($data);
 
         if ($event->series_id) {
             $this->calculateSeriesCount($event);
