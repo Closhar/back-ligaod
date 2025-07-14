@@ -858,10 +858,10 @@ class PersonController extends Controller
         foreach ($rows as $idx => $row) {
             try {
                 // Проверка обязательных полей
-                if (empty($row['surname']) || empty($row['name'])) {
+                if (empty($row['surname'])) {
                     $failed[] = [
                         'row' => $row['_row'] ?? ($idx + 1),
-                        'reason' => 'Не указаны фамилия или имя',
+                        'reason' => 'Не указана фамилия',
                     ];
                     continue;
                 }
@@ -884,25 +884,34 @@ class PersonController extends Controller
                     $positionId = $position->id;
                 }
                 // 3. Поиск/создание персоны
-                $person = Person::where('first_name', $row['name'])
+                $person = Person::where('first_name', $row['name'] ?? null)
                     ->where('last_name', $row['surname'])
                     ->where('birth_date', $row['birth_date'] ?? null)
                     ->first();
                 if (!$person) {
                     $person = Person::create([
-                        'first_name' => $row['name'],
+                        'first_name' => $row['name'] ?? null,
                         'last_name' => $row['surname'],
                         'middle_name' => $row['patronymic'] ?? null,
                         'birth_date' => $row['birth_date'] ?? null,
                         'gender' => $row['gender'] ?? 'm',
-                        'about' => $row['about'] ?? null, // <--- добавлено сохранение about
+                        'about' => $row['about'] ?? null,
+                        'player_number' => isset($row['player_number']) && $row['player_number'] !== '' ? (int)$row['player_number'] : null,
                     ]);
                     $imported++;
                 } else {
                     $updated++;
-                    // Обновляем about, если оно есть в импорте
+                    // Обновляем about и player_number, если они есть в импорте
+                    $changed = false;
                     if (isset($row['about'])) {
                         $person->about = $row['about'];
+                        $changed = true;
+                    }
+                    if (isset($row['player_number'])) {
+                        $person->player_number = $row['player_number'] !== '' ? (int)$row['player_number'] : null;
+                        $changed = true;
+                    }
+                    if ($changed) {
                         $person->save();
                     }
                 }
