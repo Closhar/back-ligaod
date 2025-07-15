@@ -31,6 +31,11 @@ class EventActionController extends Controller
             'sort_order' => 'nullable|integer',
             'score' => 'nullable|string',
         ]);
+        // Если sort_order не передан, выставляем максимальный+1 среди событий этого event_id
+        if (!isset($data['sort_order']) || $data['sort_order'] === null) {
+            $maxSort = EventAction::where('event_id', $data['event_id'])->max('sort_order');
+            $data['sort_order'] = is_null($maxSort) ? 0 : $maxSort + 1;
+        }
         return EventAction::create($data);
     }
 
