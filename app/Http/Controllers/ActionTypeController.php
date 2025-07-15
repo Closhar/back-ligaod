@@ -18,6 +18,7 @@ class ActionTypeController extends Controller
             'icon' => 'nullable|string',
             'color' => 'nullable|string',
             'group' => 'nullable|string',
+            'short_name' => 'nullable|string',
         ]);
         return ActionType::create($data);
     }
@@ -29,6 +30,7 @@ class ActionTypeController extends Controller
             'icon' => 'nullable|string',
             'color' => 'nullable|string',
             'group' => 'nullable|string',
+            'short_name' => 'nullable|string',
         ]);
         $actionType->update($data);
         return $actionType;

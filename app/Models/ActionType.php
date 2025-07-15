@@ -10,6 +10,7 @@ class ActionType extends Model
         'icon',
         'color',
         'group',
+        'short_name',
     ];
 
     public function actions()
