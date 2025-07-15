@@ -11,6 +11,7 @@ class ActionType extends Model
         'color',
         'group',
         'short_name',
+        'points',
     ];
 
     public function actions()
