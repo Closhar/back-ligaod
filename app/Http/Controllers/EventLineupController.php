@@ -26,6 +26,7 @@ class EventLineupController extends Controller
             'minute_in' => 'nullable|integer',
             'minute_out' => 'nullable|integer',
             'sort_order' => 'nullable|integer',
+            'is_captain' => 'nullable|boolean',
         ]);
         return EventLineup::create($data);
     }
@@ -41,6 +42,7 @@ class EventLineupController extends Controller
             'minute_in' => 'nullable|integer',
             'minute_out' => 'nullable|integer',
             'sort_order' => 'nullable|integer',
+            'is_captain' => 'nullable|boolean',
         ]);
         $eventLineup->update($data);
         return $eventLineup;

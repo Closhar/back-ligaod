@@ -15,6 +15,11 @@ class EventLineup extends Model
         'minute_in',
         'minute_out',
         'sort_order',
+        'is_captain',
+    ];
+
+    protected $casts = [
+        'is_captain' => 'boolean',
     ];
 
     public function event()
