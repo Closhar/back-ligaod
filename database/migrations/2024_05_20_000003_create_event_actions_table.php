@@ -14,7 +14,7 @@ return new class extends Migration
             $table->unsignedBigInteger('person_id')->nullable();
             $table->string('player_name')->nullable();
             $table->unsignedBigInteger('action_type_id');
-            $table->integer('minute');
+            $table->integer('minute')->nullable();
             $table->integer('value')->nullable();
             $table->unsignedBigInteger('related_action_id')->nullable();
             $table->string('extra_info')->nullable();
