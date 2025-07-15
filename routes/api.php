@@ -52,8 +52,10 @@ use App\Http\Controllers\Api\TournamentTypeController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\EventActionController;
 use App\Http\Controllers\EventLineupController;
+use App\Http\Controllers\EventTeamActionController;
 use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\PromptTemplateController;
+use App\Http\Controllers\TeamActionTypeController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\UserController;
 use Illuminate\Http\Request;
@@ -805,6 +807,8 @@ Route::prefix('events/{event}/actions')->group(function () {
 Route::apiResource('event-actions', EventActionController::class)->except(['index', 'store', 'show']);
 
 Route::apiResource('action-types', ActionTypeController::class)->except(['show']);
+Route::apiResource('team-action-types', TeamActionTypeController::class);
+Route::apiResource('event-team-actions', EventTeamActionController::class);
 
 
 

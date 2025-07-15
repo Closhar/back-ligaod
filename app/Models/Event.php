@@ -2,6 +2,8 @@
 
 namespace App\Models;
 
+use App\Models\EventAction;
+use App\Models\EventTeamAction;
 use App\Traits\KTranslateTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -107,6 +109,11 @@ class Event extends Model
     public function actions()
     {
         return $this->hasMany(EventAction::class);
+    }
+
+    public function eventTeamActions()
+    {
+        return $this->hasMany(EventTeamAction::class);
     }
 
     public function getDateFormattedAttribute()
