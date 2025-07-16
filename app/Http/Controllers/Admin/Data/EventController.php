@@ -876,17 +876,16 @@ class EventController extends Controller
             // --- ДОБАВЛЯЮ обработку загрузки главного изображения ---
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
-                if (!\Storage::exists('public/events')) {
-                    \Storage::makeDirectory('public/events');
+                if (!Storage::exists('public/events')) {
+                    Storage::makeDirectory('public/events');
                 }
                 $path = $file->store('events', 'public');
                 // Удаляем старое изображение, если есть
                 if ($event->image) {
-                    \Storage::disk('public')->delete($event->image);
+                    Storage::disk('public')->delete($event->image);
                 }
-                $validated['image'] = $path;
+                $event->image = $path; // <-- обязательно присваиваем!
             }
-            // --- КОНЕЦ блока загрузки изображения ---
 
             // Обработка даты (прежняя логика)
             if (isset($validated['date_from'])) {
@@ -921,6 +920,7 @@ class EventController extends Controller
             }
 
             $event->update($validated);
+            $event->save(); // <-- обязательно сохраняем после всех изменений
 
             // Вычисляем series_count если есть series_id
             if ($event->series_id) {
@@ -929,7 +929,7 @@ class EventController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $event,
+                'data' => $event->fresh(), // <-- возвращаем актуальную модель
                 'message' => 'Updated successfully'
             ]);
 
