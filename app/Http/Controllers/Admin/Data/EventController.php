@@ -919,8 +919,9 @@ class EventController extends Controller
                 }
             }
 
-            $event->update($validated);
-            $event->save(); // <-- обязательно сохраняем после всех изменений
+            // Вместо $event->update($validated); $event->save();
+            $event->fill($validated);
+            $event->save();
 
             // Вычисляем series_count если есть series_id
             if ($event->series_id) {
