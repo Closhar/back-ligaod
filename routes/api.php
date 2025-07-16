@@ -188,6 +188,33 @@ Route::group(['prefix' => '/v1'], function () {
         Route::get('/actuality-status', [RatingController::class, 'getRatingActualityStatus']);
     });
 
+    // --- CRUD для изображений событий ---
+    Route::prefix('event-images')->group(function () {
+        Route::get('/', [\App\Http\Controllers\EventImageController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\EventImageController::class, 'store']);
+        Route::get('/{eventImage}', [\App\Http\Controllers\EventImageController::class, 'show']);
+        Route::put('/{eventImage}', [\App\Http\Controllers\EventImageController::class, 'update']);
+        Route::patch('/{eventImage}', [\App\Http\Controllers\EventImageController::class, 'update']);
+        Route::delete('/{eventImage}', [\App\Http\Controllers\EventImageController::class, 'destroy']);
+    });
+    // --- CRUD для шаблонов изображений ---
+    Route::prefix('image-templates')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ImageTemplateController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\ImageTemplateController::class, 'store']);
+        Route::get('/{imageTemplate}', [\App\Http\Controllers\ImageTemplateController::class, 'show']);
+        Route::put('/{imageTemplate}', [\App\Http\Controllers\ImageTemplateController::class, 'update']);
+        Route::patch('/{imageTemplate}', [\App\Http\Controllers\ImageTemplateController::class, 'update']);
+        Route::delete('/{imageTemplate}', [\App\Http\Controllers\ImageTemplateController::class, 'destroy']);
+    });
+    // --- CRUD для настроек шаблонов ---
+    Route::prefix('image-template-settings')->group(function () {
+        Route::get('/', [\App\Http\Controllers\ImageTemplateSettingController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\ImageTemplateSettingController::class, 'store']);
+        Route::get('/{imageTemplateSetting}', [\App\Http\Controllers\ImageTemplateSettingController::class, 'show']);
+        Route::put('/{imageTemplateSetting}', [\App\Http\Controllers\ImageTemplateSettingController::class, 'update']);
+        Route::patch('/{imageTemplateSetting}', [\App\Http\Controllers\ImageTemplateSettingController::class, 'update']);
+        Route::delete('/{imageTemplateSetting}', [\App\Http\Controllers\ImageTemplateSettingController::class, 'destroy']);
+    });
 });
 
 // Аутентификация
