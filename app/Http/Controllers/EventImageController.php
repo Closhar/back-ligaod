@@ -21,11 +21,25 @@ class EventImageController extends Controller
     {
         $data = $request->validate([
             'event_id' => 'required|exists:events,id',
-            'path' => 'required|string',
             'type' => 'nullable|string',
-            'preview_path' => 'nullable|string',
             'position' => 'nullable|integer',
         ]);
+
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $path = $file->store('public/event-images');
+            $data['path'] = str_replace('public/', '/storage/', $path);
+        } else if ($request->has('path')) {
+            // На случай, если путь передан напрямую (например, url)
+            $data['path'] = $request->input('path');
+        } else {
+            return response()->json(['error' => 'Файл изображения не передан'], 422);
+        }
+
+        if ($request->has('preview_path')) {
+            $data['preview_path'] = $request->input('preview_path');
+        }
+
         $image = EventImage::create($data);
         return response()->json($image, 201);
     }
