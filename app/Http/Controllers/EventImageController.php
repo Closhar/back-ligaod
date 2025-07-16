@@ -27,7 +27,7 @@ class EventImageController extends Controller
 
         if ($request->hasFile('image')) {
             $file = $request->file('image');
-            $path = $file->store('public/event-images');
+            $path = $file->store('public/events');
             $data['path'] = str_replace('public/', '/storage/', $path);
         } else if ($request->has('path')) {
             // На случай, если путь передан напрямую (например, url)
