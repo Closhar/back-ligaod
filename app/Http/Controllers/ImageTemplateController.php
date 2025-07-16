@@ -22,11 +22,21 @@ class ImageTemplateController extends Controller
         $data = $request->validate([
             'name' => 'required|string',
             'type' => 'required|string',
-            'path' => 'required|string',
-            'preview_path' => 'nullable|string',
             'width' => 'nullable|integer',
             'height' => 'nullable|integer',
+            'image' => 'required|file|image|max:8192', // до 8 МБ
         ]);
+
+        // Сохраняем файл
+        if ($request->hasFile('image')) {
+            $file = $request->file('image');
+            $path = $file->store('public/image-templates');
+            $data['path'] = str_replace('public/', '/storage/', $path);
+            $data['preview_path'] = $data['path'];
+        } else {
+            return response()->json(['error' => 'Файл не загружен'], 422);
+        }
+
         $template = ImageTemplate::create($data);
         return response()->json($template, 201);
     }
