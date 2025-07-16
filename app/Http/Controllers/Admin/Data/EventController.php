@@ -873,6 +873,21 @@ class EventController extends Controller
                 'display_lineups_mode' => 'nullable|string',
             ]);
 
+            // --- ДОБАВЛЯЮ обработку загрузки главного изображения ---
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                if (!\Storage::exists('public/events')) {
+                    \Storage::makeDirectory('public/events');
+                }
+                $path = $file->store('events', 'public');
+                // Удаляем старое изображение, если есть
+                if ($event->image) {
+                    \Storage::disk('public')->delete($event->image);
+                }
+                $validated['image'] = $path;
+            }
+            // --- КОНЕЦ блока загрузки изображения ---
+
             // Обработка даты (прежняя логика)
             if (isset($validated['date_from'])) {
                 $input = trim($validated['date_from']);

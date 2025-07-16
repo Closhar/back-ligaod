@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\EventImage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class EventImageController extends Controller
 {
@@ -26,9 +27,14 @@ class EventImageController extends Controller
         ]);
 
         if ($request->hasFile('image')) {
+            $eventId = $data['event_id'];
             $file = $request->file('image');
-            $path = $file->store('public/events');
-            $data['path'] = str_replace('public/', '/storage/', $path);
+            $dir = 'event-images/' . $eventId;
+            if (!Storage::exists('public/' . $dir)) {
+                Storage::makeDirectory('public/' . $dir);
+            }
+            $path = $file->store($dir, 'public');
+            $data['path'] = '/storage/' . $path;
         } else if ($request->has('path')) {
             // На случай, если путь передан напрямую (например, url)
             $data['path'] = $request->input('path');
