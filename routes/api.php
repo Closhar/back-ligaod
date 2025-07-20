@@ -34,7 +34,11 @@ use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\ArticleViewController;
 use App\Http\Controllers\Api\ClubAchievementController;
 use App\Http\Controllers\Api\ClubPlayerController;
+use App\Http\Controllers\Api\EventImageController;
 use App\Http\Controllers\Api\GalleryAdminController;
+use App\Http\Controllers\Api\ImageEditorTemplateController;
+use App\Http\Controllers\Api\ImageTemplateController;
+use App\Http\Controllers\Api\ImageTemplateSettingController;
 use App\Http\Controllers\Api\PersonAmpluaMembershipController;
 use App\Http\Controllers\Api\PersonClubMembershipController;
 use App\Http\Controllers\Api\PersonController;
@@ -836,6 +840,14 @@ Route::apiResource('event-actions', EventActionController::class)->except(['inde
 Route::apiResource('action-types', ActionTypeController::class)->except(['show']);
 Route::apiResource('team-action-types', TeamActionTypeController::class);
 Route::apiResource('event-team-actions', EventTeamActionController::class);
+
+// Маршруты для шаблонов изображений
+Route::apiResource('image-templates', ImageTemplateController::class);
+Route::apiResource('image-template-settings', ImageTemplateSettingController::class);
+Route::apiResource('image-editor-templates', ImageEditorTemplateController::class);
+
+// Маршруты для изображений событий
+Route::post('/event-images/tmp', [EventImageController::class, 'tmpUpload']);
 
 
 
