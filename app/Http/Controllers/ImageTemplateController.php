@@ -4,17 +4,32 @@ namespace App\Http\Controllers;
 
 use App\Models\ImageTemplate;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class ImageTemplateController extends Controller
 {
     public function index(Request $request)
     {
-        $type = $request->get('type');
-        $query = ImageTemplate::query();
-        if ($type) {
-            $query->where('type', $type);
+                try {
+            Log::info('ImageTemplateController@index called');
+            $type = $request->get('type');
+            Log::info('Type parameter: ' . $type);
+
+            $query = ImageTemplate::query();
+            if ($type) {
+                $query->where('type', $type);
+            }
+
+            $results = $query->orderBy('id', 'desc')->get();
+            Log::info('Found templates count: ' . $results->count());
+            Log::info('Templates data: ' . $results->toJson());
+
+            return response()->json($results);
+        } catch (\Exception $e) {
+            Log::error('Error in ImageTemplateController@index: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
+            return response()->json(['error' => $e->getMessage()], 500);
         }
-        return response()->json($query->orderBy('id', 'desc')->get());
     }
 
     public function store(Request $request)
@@ -38,6 +53,9 @@ class ImageTemplateController extends Controller
         }
 
         $template = ImageTemplate::create($data);
+        Log::info('Template created with ID: ' . $template->id);
+        Log::info('Template data: ' . $template->toJson());
+
         return response()->json($template, 201);
     }
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ImageTemplate;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -15,9 +16,8 @@ class ImageTemplateController extends Controller
     public function index()
     {
         try {
-            // Временная реализация - возвращаем пустой массив
-            // В будущем здесь будет работа с базой данных
-            return response()->json([]);
+            $templates = ImageTemplate::orderBy('created_at', 'desc')->get();
+            return response()->json($templates);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -44,10 +44,7 @@ class ImageTemplateController extends Controller
             $file = $request->file('image');
             $path = $file->store('image-templates', 'public');
 
-            // Временная реализация - возвращаем данные файла
-            // В будущем здесь будет сохранение в базу данных
-            return response()->json([
-                'id' => uniqid(),
+            $template = ImageTemplate::create([
                 'name' => $request->name,
                 'type' => $request->type,
                 'width' => $request->width,
@@ -55,6 +52,84 @@ class ImageTemplateController extends Controller
                 'path' => Storage::url($path),
                 'preview_path' => Storage::url($path),
             ]);
+
+            return response()->json($template, 201);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Показать конкретный шаблон изображения
+     */
+    public function show(ImageTemplate $imageTemplate)
+    {
+        try {
+            return response()->json($imageTemplate);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Обновить шаблон изображения
+     */
+    public function update(Request $request, ImageTemplate $imageTemplate)
+    {
+        try {
+            $validator = Validator::make($request->all(), [
+                'name' => 'sometimes|string|max:255',
+                'type' => 'sometimes|string|in:horizontal,vertical,square',
+                'width' => 'sometimes|integer|min:1',
+                'height' => 'sometimes|integer|min:1',
+                'image' => 'sometimes|image|max:10240', // 10MB max
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json(['errors' => $validator->errors()], 422);
+            }
+
+            // Обновляем основные поля
+            $updateData = $request->only(['name', 'type', 'width', 'height']);
+
+            // Если загружено новое изображение
+            if ($request->hasFile('image')) {
+                // Удаляем старое изображение
+                if ($imageTemplate->path) {
+                    $oldPath = str_replace('/storage/', '', $imageTemplate->path);
+                    Storage::disk('public')->delete($oldPath);
+                }
+
+                // Загружаем новое
+                $file = $request->file('image');
+                $path = $file->store('image-templates', 'public');
+                $updateData['path'] = Storage::url($path);
+                $updateData['preview_path'] = Storage::url($path);
+            }
+
+            $imageTemplate->update($updateData);
+
+            return response()->json($imageTemplate);
+        } catch (\Exception $e) {
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Удалить шаблон изображения
+     */
+    public function destroy(ImageTemplate $imageTemplate)
+    {
+        try {
+            // Удаляем файл изображения
+            if ($imageTemplate->path) {
+                $path = str_replace('/storage/', '', $imageTemplate->path);
+                Storage::disk('public')->delete($path);
+            }
+
+            $imageTemplate->delete();
+
+            return response()->json(['message' => 'Шаблон изображения успешно удален']);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
