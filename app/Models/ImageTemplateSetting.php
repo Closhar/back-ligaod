@@ -9,5 +9,16 @@ class ImageTemplateSetting extends Model
 {
     use HasFactory;
 
-    protected $guarded = [];
+    protected $fillable = [
+        'description',
+        'type',
+        'width',
+        'height',
+        'icon',
+    ];
+
+    protected $casts = [
+        'width' => 'integer',
+        'height' => 'integer',
+    ];
 }

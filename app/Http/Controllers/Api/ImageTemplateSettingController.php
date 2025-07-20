@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\ImageTemplateSetting;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -14,30 +15,8 @@ class ImageTemplateSettingController extends Controller
     public function index()
     {
         try {
-            // Временная реализация - возвращаем базовые форматы
-            return response()->json([
-                [
-                    'id' => 1,
-                    'name' => 'Горизонтальный',
-                    'type' => 'horizontal',
-                    'width' => 1200,
-                    'height' => 630,
-                ],
-                [
-                    'id' => 2,
-                    'name' => 'Вертикальный',
-                    'type' => 'vertical',
-                    'width' => 630,
-                    'height' => 1200,
-                ],
-                [
-                    'id' => 3,
-                    'name' => 'Квадратный',
-                    'type' => 'square',
-                    'width' => 800,
-                    'height' => 800,
-                ],
-            ]);
+            $settings = ImageTemplateSetting::all();
+            return response()->json($settings);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -50,25 +29,19 @@ class ImageTemplateSettingController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
+                'description' => 'required|string|max:255',
                 'type' => 'required|string|in:horizontal,vertical,square',
                 'width' => 'required|integer|min:1',
                 'height' => 'required|integer|min:1',
+                'icon' => 'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            // Временная реализация - возвращаем данные
-            // В будущем здесь будет сохранение в базу данных
-            return response()->json([
-                'id' => uniqid(),
-                'name' => $request->name,
-                'type' => $request->type,
-                'width' => $request->width,
-                'height' => $request->height,
-            ]);
+            $setting = ImageTemplateSetting::create($request->all());
+            return response()->json($setting, 201);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -81,25 +54,20 @@ class ImageTemplateSettingController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'name' => 'required|string|max:255',
+                'description' => 'required|string|max:255',
                 'type' => 'required|string|in:horizontal,vertical,square',
                 'width' => 'required|integer|min:1',
                 'height' => 'required|integer|min:1',
+                'icon' => 'nullable|string|max:255',
             ]);
 
             if ($validator->fails()) {
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
-            // Временная реализация - возвращаем обновленные данные
-            // В будущем здесь будет обновление в базе данных
-            return response()->json([
-                'id' => $id,
-                'name' => $request->name,
-                'type' => $request->type,
-                'width' => $request->width,
-                'height' => $request->height,
-            ]);
+            $setting = ImageTemplateSetting::findOrFail($id);
+            $setting->update($request->all());
+            return response()->json($setting);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -111,8 +79,8 @@ class ImageTemplateSettingController extends Controller
     public function destroy($id)
     {
         try {
-            // Временная реализация - возвращаем успех
-            // В будущем здесь будет удаление из базы данных
+            $setting = ImageTemplateSetting::findOrFail($id);
+            $setting->delete();
             return response()->json(['success' => true]);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
