@@ -29,13 +29,13 @@ class ImageEditorTemplateController extends Controller
     {
         try {
             $validator = Validator::make($request->all(), [
-                'format' => 'required|string',
-                'bgSource' => 'required|string',
+                'format' => 'required|string|in:horizontal,vertical,square',
+                'bgSource' => 'required|string|in:event,upload,color',
                 'bgPreview' => 'nullable|string',
                 'maskId' => 'nullable|integer',
                 'textLayers' => 'required|array',
                 'imageLayers' => 'required|array',
-                'maskType' => 'nullable|string',
+                'maskType' => 'nullable|string|in:horizontal,vertical,square',
                 // Дополнительные поля для шаблонов
                 'name' => 'nullable|string|max:255',
                 'description' => 'nullable|string|max:1000',
