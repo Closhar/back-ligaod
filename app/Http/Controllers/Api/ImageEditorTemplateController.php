@@ -17,18 +17,14 @@ class ImageEditorTemplateController extends Controller
             // Временная реализация - возвращаем шаблоны из файла
             $path = storage_path('app/image_editor_templates.json');
 
-            if (!file_exists($path)) {
-                return response()->json(['debug' => 'File does not exist: ' . $path]);
+                        if (!file_exists($path)) {
+                return response()->json([]);
             }
 
             $content = file_get_contents($path);
-            if ($content === false) {
-                return response()->json(['debug' => 'Failed to read file: ' . $path]);
-            }
-
             $templates = json_decode($content, true) ?: [];
 
-            return response()->json(['debug' => 'File exists, content length: ' . strlen($content), 'templates' => $templates]);
+            return response()->json($templates);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
@@ -106,15 +102,8 @@ class ImageEditorTemplateController extends Controller
                 return response()->json(['error' => 'Failed to save template file', 'path' => $path], 500);
             }
 
-            // Возвращаем сохраненный шаблон с отладочной информацией
-            return response()->json([
-                'template' => $newTemplate,
-                'debug' => [
-                    'file_path' => $path,
-                    'file_size' => $result,
-                    'templates_count' => count($templates)
-                ]
-            ]);
+            // Возвращаем сохраненный шаблон
+            return response()->json($newTemplate);
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);
         }
