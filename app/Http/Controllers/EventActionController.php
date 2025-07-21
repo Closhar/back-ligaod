@@ -19,13 +19,6 @@ class EventActionController extends Controller
             $query->where('club_id', $request->club_id);
         }
 
-        // Фильтруем по type, если параметр передан
-        if ($request->has('type')) {
-            $query->whereHas('actionType', function($q) use ($request) {
-                $q->where('type', $request->type);
-            });
-        }
-
         return $query->get();
     }
 
