@@ -36,6 +36,12 @@ class ImageEditorTemplateController extends Controller
                 'textLayers' => 'required|array',
                 'imageLayers' => 'required|array',
                 'maskType' => 'nullable|string',
+                // Дополнительные поля для шаблонов
+                'name' => 'nullable|string|max:255',
+                'description' => 'nullable|string|max:1000',
+                'preview' => 'nullable|string',
+                'formatSettings' => 'nullable|array',
+                'bgFileData' => 'nullable|array',
             ]);
 
             if ($validator->fails()) {
@@ -53,6 +59,12 @@ class ImageEditorTemplateController extends Controller
                 'textLayers' => $request->textLayers,
                 'imageLayers' => $request->imageLayers,
                 'maskType' => $request->maskType,
+                // Дополнительные поля
+                'name' => $request->name,
+                'description' => $request->description,
+                'preview' => $request->preview,
+                'formatSettings' => $request->formatSettings,
+                'bgFileData' => $request->bgFileData,
                 'created_at' => now(),
             ]);
         } catch (\Exception $e) {

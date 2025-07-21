@@ -839,14 +839,14 @@ class EventController extends Controller
             ->findOrFail($id);
 
             // Добавляем дополнительные поля для редактора изображений
-            $item = $item->toArray();
-            $item['time_formatted'] = $item['date_from'] ? \Carbon\Carbon::parse($item['date_from'])->format('H:i') : null;
-            $item['club1_title'] = $item['club1']['title'] ?? null;
-            $item['club2_title'] = $item['club2']['title'] ?? null;
-            $item['club1_city'] = $item['club1']['city']['title'] ?? null;
-            $item['club2_city'] = $item['club2']['city']['title'] ?? null;
+            $itemArray = $item->toArray();
+            $itemArray['time_formatted'] = $item->date_from ? \Carbon\Carbon::parse($item->date_from)->format('H:i') : null;
+            $itemArray['club1_title'] = $item->club1?->title ?? null;
+            $itemArray['club2_title'] = $item->club2?->title ?? null;
+            $itemArray['club1_city'] = $item->club1?->city?->title ?? null;
+            $itemArray['club2_city'] = $item->club2?->city?->title ?? null;
 
-            return response()->json($item);
+            return response()->json($itemArray);
 
         } catch (\Exception $e) {
             return response()->json(['message' => 'Not Found'], 404);
