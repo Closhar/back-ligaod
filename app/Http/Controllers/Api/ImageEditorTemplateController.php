@@ -33,8 +33,8 @@ class ImageEditorTemplateController extends Controller
                 'bgSource' => 'required|string|in:event,upload,color',
                 'bgPreview' => 'nullable|string',
                 'maskId' => 'nullable|integer',
-                'textLayers' => 'required|array',
-                'imageLayers' => 'required|array',
+                'textLayers' => 'array',
+                'imageLayers' => 'array',
                 'maskType' => 'nullable|string|in:horizontal,vertical,square',
                 // Дополнительные поля для шаблонов
                 'name' => 'nullable|string|max:255',
@@ -48,6 +48,13 @@ class ImageEditorTemplateController extends Controller
                 return response()->json(['errors' => $validator->errors()], 422);
             }
 
+            // Обеспечиваем, что массивы существуют
+            $textLayers = $request->input('textLayers', []);
+            $imageLayers = $request->input('imageLayers', []);
+
+            if (!is_array($textLayers)) $textLayers = [];
+            if (!is_array($imageLayers)) $imageLayers = [];
+
             // Временная реализация - возвращаем данные шаблона
             // В будущем здесь будет сохранение в базу данных
             return response()->json([
@@ -56,8 +63,8 @@ class ImageEditorTemplateController extends Controller
                 'bgSource' => $request->bgSource,
                 'bgPreview' => $request->bgPreview,
                 'maskId' => $request->maskId,
-                'textLayers' => $request->textLayers,
-                'imageLayers' => $request->imageLayers,
+                'textLayers' => $textLayers,
+                'imageLayers' => $imageLayers,
                 'maskType' => $request->maskType,
                 // Дополнительные поля
                 'name' => $request->name,
