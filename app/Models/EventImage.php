@@ -11,6 +11,14 @@ class EventImage extends Model
 
     protected $guarded = [];
 
+    protected $fillable = [
+        'event_id',
+        'path',
+        'type',
+        'preview_path',
+        'position'
+    ];
+
     public function event()
     {
         return $this->belongsTo(Event::class);

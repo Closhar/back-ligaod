@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\EventImage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class EventImageController extends Controller
@@ -18,7 +20,7 @@ class EventImageController extends Controller
         return response()->json($query->orderBy('position')->get());
     }
 
-    public function store(Request $request)
+        public function store(Request $request)
     {
         $data = $request->validate([
             'event_id' => 'required|exists:events,id',
@@ -30,11 +32,37 @@ class EventImageController extends Controller
             $eventId = $data['event_id'];
             $file = $request->file('image');
             $dir = 'event-images/' . $eventId;
-            if (!Storage::exists('public/' . $dir)) {
-                Storage::makeDirectory('public/' . $dir);
+
+            // Создаем директорию если она не существует
+            if (!Storage::disk('public')->exists($dir)) {
+                Storage::disk('public')->makeDirectory($dir);
             }
-            $path = $file->store($dir, 'public');
+
+            // Создаем символическую ссылку на storage если её нет
+            if (!file_exists(public_path('storage'))) {
+                Artisan::call('storage:link');
+            }
+
+            // Генерируем уникальное имя файла
+            $extension = $file->getClientOriginalExtension();
+            $filename = 'event-' . $eventId . '-' . time() . '.' . $extension;
+
+            // Сохраняем файл
+            $path = $file->storeAs($dir, $filename, 'public');
             $data['path'] = '/storage/' . $path;
+
+            // Создаем превью (thumbnail)
+            try {
+                $thumbnailPath = $dir . '/thmb_' . $filename;
+                \Spatie\Image\Image::useImageDriver(\Spatie\Image\Enums\ImageDriver::Gd)
+                    ->loadFile($file)
+                    ->fit(\Spatie\Image\Enums\Fit::Crop, 400, 225)
+                    ->save(public_path('storage/' . $thumbnailPath));
+                $data['preview_path'] = '/storage/' . $thumbnailPath;
+            } catch (\Exception $e) {
+                // Если не удалось создать превью, продолжаем без него
+                Log::warning('Failed to create thumbnail for event image: ' . $e->getMessage());
+            }
         } else if ($request->has('path')) {
             // На случай, если путь передан напрямую (например, url)
             $data['path'] = $request->input('path');
