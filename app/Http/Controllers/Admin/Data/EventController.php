@@ -172,7 +172,9 @@ class EventController extends Controller
                         'map',
                         'phones',
                         'sites',
-                        'vks'
+                        'vks',
+                        'latitude',
+                        'longitude'
                     ])->with([
                         'city' => function ($cityQuery) {
                             $cityQuery->select(['id', 'title']);
@@ -828,6 +830,8 @@ class EventController extends Controller
                         'arenas.address',
                         'arenas.map',
                         'arenas.image',
+                        'arenas.latitude',
+                        'arenas.longitude',
                         DB::raw("CONCAT('" . config('app.url') . "', '/storage/', arenas.image) AS arena_image_path"),
                     ])->with([
                         'city' => function ($cityQuery) {

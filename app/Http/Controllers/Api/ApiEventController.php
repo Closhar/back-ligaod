@@ -147,6 +147,8 @@ class ApiEventController extends Controller
                         'sites',
                         'phones',
                         'vks',
+                        'latitude',
+                        'longitude',
                         'arena_image' => function ($query) {
                             $query->select(DB::raw("CONCAT('" . config('app.url') . "', '/storage/', arenas.image) AS full_image_path"));
                         },
@@ -605,6 +607,8 @@ class ApiEventController extends Controller
                     'arenas.address',
                     'arenas.map',
                     'arenas.image',
+                    'arenas.latitude',
+                    'arenas.longitude',
                     DB::raw("CONCAT('" . config('app.url') . "', '/storage/', arenas.image) AS arena_image_path"),
                 ])->with([
                     'city' => function ($cityQuery) {
