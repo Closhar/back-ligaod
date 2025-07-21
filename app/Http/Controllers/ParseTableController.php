@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\ParseTable;
 use App\Models\ParseTableContent;
+use DOMDocument;
+use DOMXPath;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use DOMDocument;
-use DOMXPath;
 
 class ParseTableController extends Controller
 {
@@ -639,6 +639,9 @@ class ParseTableController extends Controller
                 $tableModel->url = $request->has('url') ? ($request->url ?: null) : $tableModel->url;
                 $tableModel->table_no = $request->has('table_no') ? ($request->table_no ?: null) : $tableModel->table_no;
                 $tableModel->last_parse_data = now();
+
+                // При репарсинге НЕ обновляем заголовки столбцов
+                // Заголовки остаются такими, как были настроены пользователем
             } else {
                 $tableModel = new ParseTable();
                 $tableModel->title = 'Импортированная таблица ' . date('Y-m-d H:i:s');
@@ -646,18 +649,18 @@ class ParseTableController extends Controller
                 $tableModel->url = $request->input('url');
                 $tableModel->table_no = $request->input('table_no');
                 $tableModel->last_parse_data = now();
-            }
 
-            // Заполняем заголовки полей
-            foreach ($headers as $index => $header) {
-                $fieldName = 'field' . ($index + 1);
-                $tableModel->$fieldName = $header;
-            }
+                // При создании новой таблицы заполняем заголовки полей
+                foreach ($headers as $index => $header) {
+                    $fieldName = 'field' . ($index + 1);
+                    $tableModel->$fieldName = $header;
+                }
 
-            // Заполняем оставшиеся поля null
-            for ($i = count($headers); $i < 20; $i++) {
-                $fieldName = 'field' . ($i + 1);
-                $tableModel->$fieldName = null;
+                // Заполняем оставшиеся поля null
+                for ($i = count($headers); $i < 20; $i++) {
+                    $fieldName = 'field' . ($i + 1);
+                    $tableModel->$fieldName = null;
+                }
             }
 
             $tableModel->save();
