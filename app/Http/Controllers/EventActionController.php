@@ -6,14 +6,27 @@ use Illuminate\Http\Request;
 
 class EventActionController extends Controller
 {
-    public function index($eventId)
+    public function index($eventId, Request $request)
     {
-        return EventAction::where('event_id', $eventId)
+        $query = EventAction::where('event_id', $eventId)
             ->with(['club', 'person', 'actionType', 'relatedAction'])
             ->orderBy('minute')
             ->orderBy('sort_order')
-            ->orderBy('id')
-            ->get();
+            ->orderBy('id');
+
+        // Фильтруем по club_id, если параметр передан
+        if ($request->has('club_id')) {
+            $query->where('club_id', $request->club_id);
+        }
+
+        // Фильтруем по type, если параметр передан
+        if ($request->has('type')) {
+            $query->whereHas('actionType', function($q) use ($request) {
+                $q->where('type', $request->type);
+            });
+        }
+
+        return $query->get();
     }
 
     public function store(Request $request)

@@ -6,12 +6,18 @@ use Illuminate\Http\Request;
 
 class EventLineupController extends Controller
 {
-    public function index($eventId)
+    public function index($eventId, Request $request)
     {
-        return EventLineup::where('event_id', $eventId)
+        $query = EventLineup::where('event_id', $eventId)
             ->with(['club', 'person', 'substitutions'])
-            ->orderBy('sort_order')
-            ->get();
+            ->orderBy('sort_order');
+
+        // Фильтруем по club_id, если параметр передан
+        if ($request->has('club_id')) {
+            $query->where('club_id', $request->club_id);
+        }
+
+        return $query->get();
     }
 
     public function store(Request $request)
