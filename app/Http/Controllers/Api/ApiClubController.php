@@ -189,6 +189,15 @@ class ApiClubController extends Controller
                     ->orderBy('position')
                     ->get();
                 $membership->person->setRelation('images', $images);
+
+                // Отладка после установки отношения
+                Log::info('After setRelation', [
+                    'person_id' => $membership->person->id,
+                    'person_name' => $membership->person->full_name,
+                    'images_count' => $images->count(),
+                    'has_images_relation' => $membership->person->images ? 'yes' : 'no',
+                    'images_relation_count' => $membership->person->images ? $membership->person->images->count() : 0
+                ]);
             }
         }
 
@@ -221,11 +230,16 @@ class ApiClubController extends Controller
         $clubArr['debug_images'] = [];
         foreach ($activeMemberships as $membership) {
             if ($membership->person) {
+                // Прямой запрос к базе данных
+                $directImages = \App\Models\PersonImage::where('person_id', $membership->person->id)->get();
+
                 $clubArr['debug_images'][] = [
                     'person_id' => $membership->person->id,
                     'person_name' => $membership->person->full_name,
                     'images_count' => $membership->person->images ? $membership->person->images->count() : 0,
-                    'images_data' => $membership->person->images ? $membership->person->images->toArray() : []
+                    'direct_images_count' => $directImages->count(),
+                    'images_data' => $membership->person->images ? $membership->person->images->toArray() : [],
+                    'direct_images_data' => $directImages->toArray()
                 ];
             }
         }
