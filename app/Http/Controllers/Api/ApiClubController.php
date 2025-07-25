@@ -176,12 +176,21 @@ class ApiClubController extends Controller
         $activeMemberships = \App\Models\PersonClubMembership::with([
             'person.activeAmpluaMemberships.amplua',
             'person.mainImage',
-            'person.images',
             'person.positionMemberships.position',
         ])
             ->where('club_id', $gender->id)
             ->whereNull('left_at')
             ->get();
+
+        // Загружаем изображения отдельно для каждого игрока
+        foreach ($activeMemberships as $membership) {
+            if ($membership->person) {
+                $images = \App\Models\PersonImage::where('person_id', $membership->person->id)
+                    ->orderBy('position')
+                    ->get();
+                $membership->person->setRelation('images', $images);
+            }
+        }
 
         // Отладочная информация
         foreach ($activeMemberships as $membership) {
@@ -203,15 +212,24 @@ class ApiClubController extends Controller
             }
         }
 
-        // Попробуем загрузить изображения отдельно
-        foreach ($activeMemberships as $membership) {
-            if ($membership->person) {
-                $membership->person->load('images');
-            }
-        }
+
 
         $clubArr = $gender->toArray();
         $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
+
+        // Временная отладочная информация
+        $clubArr['debug_images'] = [];
+        foreach ($activeMemberships as $membership) {
+            if ($membership->person) {
+                $clubArr['debug_images'][] = [
+                    'person_id' => $membership->person->id,
+                    'person_name' => $membership->person->full_name,
+                    'images_count' => $membership->person->images ? $membership->person->images->count() : 0,
+                    'images_data' => $membership->person->images ? $membership->person->images->toArray() : []
+                ];
+            }
+        }
+
         return $clubArr;
     }
 
