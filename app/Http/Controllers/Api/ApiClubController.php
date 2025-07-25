@@ -183,6 +183,33 @@ class ApiClubController extends Controller
             ->whereNull('left_at')
             ->get();
 
+        // Отладочная информация
+        foreach ($activeMemberships as $membership) {
+            if ($membership->person) {
+                // Прямой запрос к базе данных для проверки изображений
+                $directImages = \App\Models\PersonImage::where('person_id', $membership->person->id)->get();
+
+                Log::info('Person debug', [
+                    'person_id' => $membership->person->id,
+                    'person_name' => $membership->person->full_name,
+                    'has_main_image' => $membership->person->mainImage ? 'yes' : 'no',
+                    'main_image_count' => $membership->person->mainImage ? $membership->person->mainImage->count() : 0,
+                    'has_images' => $membership->person->images ? 'yes' : 'no',
+                    'images_count' => $membership->person->images ? $membership->person->images->count() : 0,
+                    'direct_images_count' => $directImages->count(),
+                    'direct_images_data' => $directImages->toArray(),
+                    'images_data' => $membership->person->images ? $membership->person->images->toArray() : 'no images'
+                ]);
+            }
+        }
+
+        // Попробуем загрузить изображения отдельно
+        foreach ($activeMemberships as $membership) {
+            if ($membership->person) {
+                $membership->person->load('images');
+            }
+        }
+
         $clubArr = $gender->toArray();
         $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
         return $clubArr;
