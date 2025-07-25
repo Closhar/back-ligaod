@@ -242,6 +242,7 @@ class ApiClubController extends Controller
         $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
         $clubArr['debug_test'] = 'API CONTROLLER UPDATED - ' . date('Y-m-d H:i:s');
         $clubArr['debug_info'] = $debugInfo;
+        $clubArr['simple_test'] = 'SIMPLE TEST - ' . time();
 
         // Временная отладочная информация
         $clubArr['debug_images'] = [];

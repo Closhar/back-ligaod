@@ -287,7 +287,7 @@ class ClubController extends Controller
                 $item = $query->where('slug', $id)->firstOrFail();
             }
 
-            // Получаем активные членства (игроки этого клуба, у которых left_at = null)
+                        // Получаем активные членства (игроки этого клуба, у которых left_at = null)
             $activeMemberships = \App\Models\PersonClubMembership::with([
                 'person.activeAmpluaMemberships.amplua',
                 'person.mainImage',
@@ -297,19 +297,19 @@ class ClubController extends Controller
                 ->whereNull('left_at')
                 ->get();
 
-            // Удаляю Log::info и заменяю на error_log
-            error_log('Количество memberships: ' . $activeMemberships->count());
-
+            // Загружаем изображения отдельно для каждого игрока
             foreach ($activeMemberships as $membership) {
-                if (!$membership->person) {
-                    error_log('Нет связи person, membership_id: ' . $membership->id);
-                    continue;
+                if ($membership->person) {
+                    $images = \App\Models\PersonImage::where('person_id', $membership->person->id)
+                        ->orderBy('position')
+                        ->get();
+                    $membership->person->setRelation('images', $images);
                 }
-                error_log('Person: id=' . $membership->person->id . ', full_name=' . $membership->person->full_name . ', position_memberships=' . json_encode($membership->person->positionMemberships));
             }
 
             $itemArr = $item->toArray();
             $itemArr['active_memberships'] = $activeMemberships;
+            $itemArr['debug_test'] = 'CLUB CONTROLLER UPDATED - ' . date('Y-m-d H:i:s');
             return response()->json($itemArr);
 
         } catch (\Exception $e) {
