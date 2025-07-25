@@ -176,6 +176,7 @@ class ApiClubController extends Controller
         $activeMemberships = \App\Models\PersonClubMembership::with([
             'person.activeAmpluaMemberships.amplua',
             'person.mainImage',
+            'person.images',
             'person.positionMemberships.position',
         ])
             ->where('club_id', $gender->id)
