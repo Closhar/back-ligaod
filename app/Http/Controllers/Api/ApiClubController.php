@@ -233,6 +233,7 @@ class ApiClubController extends Controller
 
         $clubArr = $gender->toArray();
         $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
+        $clubArr['debug_test'] = 'API CONTROLLER UPDATED - ' . date('Y-m-d H:i:s');
 
         // Временная отладочная информация
         $clubArr['debug_images'] = [];
