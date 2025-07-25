@@ -182,13 +182,21 @@ class ApiClubController extends Controller
             ->whereNull('left_at')
             ->get();
 
-        // Загружаем изображения отдельно для каждого игрока
+                // Загружаем изображения отдельно для каждого игрока
         foreach ($activeMemberships as $membership) {
             if ($membership->person) {
                 $images = \App\Models\PersonImage::where('person_id', $membership->person->id)
                     ->orderBy('position')
                     ->get();
                 $membership->person->setRelation('images', $images);
+
+                // Добавляем отладочную информацию прямо в данные игрока
+                $membership->person->debug_info = [
+                    'images_count' => $images->count(),
+                    'has_images_relation' => $membership->person->images ? 'yes' : 'no',
+                    'images_relation_count' => $membership->person->images ? $membership->person->images->count() : 0,
+                    'images_data' => $images->toArray()
+                ];
 
                 // Отладка после установки отношения
                 Log::info('After setRelation', [
