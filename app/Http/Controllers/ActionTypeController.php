@@ -19,7 +19,7 @@ class ActionTypeController extends Controller
             'color' => 'nullable|string',
             'group' => 'nullable|string',
             'short_name' => 'nullable|string',
-            'points' => 'nullable|integer',
+            'points' => 'nullable|numeric',
         ]);
         return ActionType::create($data);
     }
@@ -32,7 +32,7 @@ class ActionTypeController extends Controller
             'color' => 'nullable|string',
             'group' => 'nullable|string',
             'short_name' => 'nullable|string',
-            'points' => 'nullable|integer',
+            'points' => 'nullable|numeric',
         ]);
         $actionType->update($data);
         return $actionType;

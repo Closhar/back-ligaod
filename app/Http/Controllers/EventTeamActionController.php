@@ -21,8 +21,8 @@ class EventTeamActionController extends Controller
         $data = $request->validate([
             'event_id' => 'required|integer|exists:events,id',
             'team_action_type_id' => 'required|integer|exists:team_action_types,id',
-            'value_home' => 'required|integer',
-            'value_away' => 'required|integer',
+            'value_home' => 'required|numeric',
+            'value_away' => 'required|numeric',
         ]);
         return EventTeamAction::create($data);
     }
@@ -31,8 +31,8 @@ class EventTeamActionController extends Controller
     {
         $data = $request->validate([
             'team_action_type_id' => 'sometimes|integer|exists:team_action_types,id',
-            'value_home' => 'sometimes|integer',
-            'value_away' => 'sometimes|integer',
+            'value_home' => 'sometimes|numeric',
+            'value_away' => 'sometimes|numeric',
         ]);
         $eventTeamAction->update($data);
         return $eventTeamAction;
