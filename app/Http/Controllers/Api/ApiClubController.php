@@ -172,6 +172,13 @@ class ApiClubController extends Controller
      */
     public function show(Club $gender, $slug): array
     {
+        // Простая отладка в начале метода
+        $debugInfo = [
+            'method_called' => 'ApiClubController::show',
+            'timestamp' => date('Y-m-d H:i:s'),
+            'club_id' => $gender->id,
+            'club_slug' => $slug
+        ];
         // Получаем активные членства (игроки этого клуба, у которых left_at = null)
         $activeMemberships = \App\Models\PersonClubMembership::with([
             'person.activeAmpluaMemberships.amplua',
@@ -234,6 +241,7 @@ class ApiClubController extends Controller
         $clubArr = $gender->toArray();
         $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
         $clubArr['debug_test'] = 'API CONTROLLER UPDATED - ' . date('Y-m-d H:i:s');
+        $clubArr['debug_info'] = $debugInfo;
 
         // Временная отладочная информация
         $clubArr['debug_images'] = [];
