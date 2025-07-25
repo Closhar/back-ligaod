@@ -274,10 +274,18 @@ class ClubController extends Controller
     public function show($id)
     {
         try {
-            $item = Club::with('arenas')
+            // Определяем, является ли параметр числовым ID или строковым slug
+            $isNumeric = is_numeric($id);
+
+            $query = Club::with('arenas')
                 ->with('ratingRegion')
-                ->withCount('arenas')
-                ->findOrFail($id);
+                ->withCount('arenas');
+
+            if ($isNumeric) {
+                $item = $query->findOrFail($id);
+            } else {
+                $item = $query->where('slug', $id)->firstOrFail();
+            }
 
             // Получаем активные членства (игроки этого клуба, у которых left_at = null)
             $activeMemberships = \App\Models\PersonClubMembership::with([
