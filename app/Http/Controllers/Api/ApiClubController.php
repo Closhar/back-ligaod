@@ -172,13 +172,6 @@ class ApiClubController extends Controller
      */
     public function show(Club $gender, $slug): array
     {
-        // Простая отладка в начале метода
-        $debugInfo = [
-            'method_called' => 'ApiClubController::show',
-            'timestamp' => date('Y-m-d H:i:s'),
-            'club_id' => $gender->id,
-            'club_slug' => $slug
-        ];
         // Получаем активные членства (игроки этого клуба, у которых left_at = null)
         $activeMemberships = \App\Models\PersonClubMembership::with([
             'person.activeAmpluaMemberships.amplua',
@@ -189,79 +182,18 @@ class ApiClubController extends Controller
             ->whereNull('left_at')
             ->get();
 
-                // Загружаем изображения отдельно для каждого игрока
+        // Загружаем изображения отдельно для каждого игрока
         foreach ($activeMemberships as $membership) {
             if ($membership->person) {
                 $images = \App\Models\PersonImage::where('person_id', $membership->person->id)
                     ->orderBy('position')
                     ->get();
                 $membership->person->setRelation('images', $images);
-
-                // Добавляем отладочную информацию прямо в данные игрока
-                $membership->person->debug_info = [
-                    'images_count' => $images->count(),
-                    'has_images_relation' => $membership->person->images ? 'yes' : 'no',
-                    'images_relation_count' => $membership->person->images ? $membership->person->images->count() : 0,
-                    'images_data' => $images->toArray()
-                ];
-
-                // Отладка после установки отношения
-                Log::info('After setRelation', [
-                    'person_id' => $membership->person->id,
-                    'person_name' => $membership->person->full_name,
-                    'images_count' => $images->count(),
-                    'has_images_relation' => $membership->person->images ? 'yes' : 'no',
-                    'images_relation_count' => $membership->person->images ? $membership->person->images->count() : 0
-                ]);
             }
         }
-
-        // Отладочная информация
-        foreach ($activeMemberships as $membership) {
-            if ($membership->person) {
-                // Прямой запрос к базе данных для проверки изображений
-                $directImages = \App\Models\PersonImage::where('person_id', $membership->person->id)->get();
-
-                Log::info('Person debug', [
-                    'person_id' => $membership->person->id,
-                    'person_name' => $membership->person->full_name,
-                    'has_main_image' => $membership->person->mainImage ? 'yes' : 'no',
-                    'main_image_count' => $membership->person->mainImage ? $membership->person->mainImage->count() : 0,
-                    'has_images' => $membership->person->images ? 'yes' : 'no',
-                    'images_count' => $membership->person->images ? $membership->person->images->count() : 0,
-                    'direct_images_count' => $directImages->count(),
-                    'direct_images_data' => $directImages->toArray(),
-                    'images_data' => $membership->person->images ? $membership->person->images->toArray() : 'no images'
-                ]);
-            }
-        }
-
-
 
         $clubArr = $gender->toArray();
-        $clubArr['active_memberships'] = $activeMemberships; // теперь коллекция
-        $clubArr['debug_test'] = 'API CONTROLLER UPDATED - ' . date('Y-m-d H:i:s');
-        $clubArr['debug_info'] = $debugInfo;
-        $clubArr['simple_test'] = 'SIMPLE TEST - ' . time();
-
-        // Временная отладочная информация
-        $clubArr['debug_images'] = [];
-        foreach ($activeMemberships as $membership) {
-            if ($membership->person) {
-                // Прямой запрос к базе данных
-                $directImages = \App\Models\PersonImage::where('person_id', $membership->person->id)->get();
-
-                $clubArr['debug_images'][] = [
-                    'person_id' => $membership->person->id,
-                    'person_name' => $membership->person->full_name,
-                    'images_count' => $membership->person->images ? $membership->person->images->count() : 0,
-                    'direct_images_count' => $directImages->count(),
-                    'images_data' => $membership->person->images ? $membership->person->images->toArray() : [],
-                    'direct_images_data' => $directImages->toArray()
-                ];
-            }
-        }
-
+        $clubArr['active_memberships'] = $activeMemberships->toArray();
         return $clubArr;
     }
 

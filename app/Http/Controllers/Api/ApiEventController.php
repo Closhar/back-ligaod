@@ -477,7 +477,43 @@ class ApiEventController extends Controller
      */
     public function store(Request $request)
     {
-        $event = Event::create($request->all());
+        // Обработка boolean полей перед созданием
+        $input = $request->all();
+
+        // Преобразуем значения "on" в true для boolean полей
+        if (isset($input['free_tickets'])) {
+            if ($input['free_tickets'] === 'on' || $input['free_tickets'] === '1' || $input['free_tickets'] === true) {
+                $input['free_tickets'] = true;
+            } elseif ($input['free_tickets'] === 'off' || $input['free_tickets'] === '0' || $input['free_tickets'] === false) {
+                $input['free_tickets'] = false;
+            }
+        }
+
+        if (isset($input['is_active'])) {
+            if ($input['is_active'] === 'on' || $input['is_active'] === '1' || $input['is_active'] === true) {
+                $input['is_active'] = true;
+            } elseif ($input['is_active'] === 'off' || $input['is_active'] === '0' || $input['is_active'] === false) {
+                $input['is_active'] = false;
+            }
+        }
+
+        if (isset($input['show_numbers_club1'])) {
+            if ($input['show_numbers_club1'] === 'on' || $input['show_numbers_club1'] === '1' || $input['show_numbers_club1'] === true) {
+                $input['show_numbers_club1'] = true;
+            } elseif ($input['show_numbers_club1'] === 'off' || $input['show_numbers_club1'] === '0' || $input['show_numbers_club1'] === false) {
+                $input['show_numbers_club1'] = false;
+            }
+        }
+
+        if (isset($input['show_numbers_club2'])) {
+            if ($input['show_numbers_club2'] === 'on' || $input['show_numbers_club2'] === '1' || $input['show_numbers_club2'] === true) {
+                $input['show_numbers_club2'] = true;
+            } elseif ($input['show_numbers_club2'] === 'off' || $input['show_numbers_club2'] === '0' || $input['show_numbers_club2'] === false) {
+                $input['show_numbers_club2'] = false;
+            }
+        }
+
+        $event = Event::create($input);
 
         if ($event->series_id) {
             $this->calculateSeriesCount($event);
@@ -654,9 +690,50 @@ class ApiEventController extends Controller
      */
     public function update(Request $request, Event $event)
     {
+        // Обработка boolean полей перед валидацией
+        $input = $request->all();
+
+        // Преобразуем значения "on" в true для boolean полей
+        if (isset($input['free_tickets'])) {
+            if ($input['free_tickets'] === 'on' || $input['free_tickets'] === '1' || $input['free_tickets'] === true) {
+                $input['free_tickets'] = true;
+            } elseif ($input['free_tickets'] === 'off' || $input['free_tickets'] === '0' || $input['free_tickets'] === false) {
+                $input['free_tickets'] = false;
+            }
+        }
+
+        if (isset($input['is_active'])) {
+            if ($input['is_active'] === 'on' || $input['is_active'] === '1' || $input['is_active'] === true) {
+                $input['is_active'] = true;
+            } elseif ($input['is_active'] === 'off' || $input['is_active'] === '0' || $input['is_active'] === false) {
+                $input['is_active'] = false;
+            }
+        }
+
+        if (isset($input['show_numbers_club1'])) {
+            if ($input['show_numbers_club1'] === 'on' || $input['show_numbers_club1'] === '1' || $input['show_numbers_club1'] === true) {
+                $input['show_numbers_club1'] = true;
+            } elseif ($input['show_numbers_club1'] === 'off' || $input['show_numbers_club1'] === '0' || $input['show_numbers_club1'] === false) {
+                $input['show_numbers_club1'] = false;
+            }
+        }
+
+        if (isset($input['show_numbers_club2'])) {
+            if ($input['show_numbers_club2'] === 'on' || $input['show_numbers_club2'] === '1' || $input['show_numbers_club2'] === true) {
+                $input['show_numbers_club2'] = true;
+            } elseif ($input['show_numbers_club2'] === 'off' || $input['show_numbers_club2'] === '0' || $input['show_numbers_club2'] === false) {
+                $input['show_numbers_club2'] = false;
+            }
+        }
+
+        // Создаем новый Request с обработанными данными
+        $request->merge($input);
+
         $validated = $request->validate([
             'show_numbers_club1' => 'nullable|boolean',
             'show_numbers_club2' => 'nullable|boolean',
+            'free_tickets' => 'nullable|boolean',
+            'is_active' => 'nullable|boolean',
             // ... другие поля, если нужно
         ]);
 

@@ -308,8 +308,7 @@ class ClubController extends Controller
             }
 
             $itemArr = $item->toArray();
-            $itemArr['active_memberships'] = $activeMemberships;
-            $itemArr['debug_test'] = 'CLUB CONTROLLER UPDATED - ' . date('Y-m-d H:i:s');
+            $itemArr['active_memberships'] = $activeMemberships->toArray();
             return response()->json($itemArr);
 
         } catch (\Exception $e) {
