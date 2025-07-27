@@ -75,15 +75,14 @@ class PlayerStatisticsController extends Controller
 
             // Если соревнования не найдены через события, попробуем получить их из сезонов
             if ($uniqueCompetitions->isEmpty() && $uniqueSeasons->isNotEmpty()) {
-                Log::info('Соревнования не найдены через события, получаем из сезонов');
                 $competitionsFromSeasons = collect();
 
                 foreach ($uniqueSeasons as $season) {
                     if ($season->competition_id && !$season->is_virtual) {
                         $competition = \App\Models\Competition::find($season->competition_id);
                         if ($competition) {
-                            $competitionsFromSeasons->put($competition->id, $competition);
-                            Log::info('Добавлено соревнование из сезона: ' . $competition->title);
+                            // Используем union вместо put, чтобы избежать дублирования
+                            $competitionsFromSeasons = $competitionsFromSeasons->union([$competition->id => $competition]);
                         }
                     }
                 }
@@ -717,7 +716,8 @@ class PlayerStatisticsController extends Controller
                     $eventSeasons = $event->competition->seasons()
                         ->with('competition:id,title,title_short')
                         ->get();
-                    $seasons = $seasons->merge($eventSeasons);
+                    // Используем union вместо merge, чтобы избежать дублирования
+                    $seasons = $seasons->union($eventSeasons->keyBy('id'));
                 }
             }
 
