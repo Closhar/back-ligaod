@@ -704,31 +704,41 @@ class PlayerStatisticsController extends Controller
                             $subQuery->where('person_id', $personId);
                         });
                 })
-                ->with(['competition.competitionSeasons.season'])
                 ->get();
 
             Log::info("Найдено событий для игрока {$personId}: " . $events->count());
 
-            // Собираем уникальные сезоны из событий игрока
+            // Собираем уникальные соревнования игрока
+            $playerCompetitions = collect();
+            foreach ($events as $event) {
+                if ($event->competition_id) {
+                    $playerCompetitions->put($event->competition_id, $event->competition_id);
+                }
+            }
+
+            Log::info("Уникальных соревнований игрока: " . $playerCompetitions->count());
+
+            // Получаем сезоны, связанные с соревнованиями игрока
             $playerSeasons = collect();
             $competitions = collect();
 
-            foreach ($events as $event) {
-                if ($event->competition) {
-                    // Добавляем соревнование
-                    $competitions->put($event->competition->id, $event->competition);
+            foreach ($playerCompetitions as $competitionId) {
+                // Получаем соревнование
+                $competition = Competition::find($competitionId);
+                if ($competition) {
+                    $competitions->put($competition->id, $competition);
+                }
 
-                    // Получаем сезоны этого соревнования через pivot таблицу
-                    $competitionSeasons = DB::table('competition_season')
-                        ->where('competition_id', $event->competition->id)
-                        ->get();
+                // Получаем сезоны этого соревнования через pivot таблицу
+                $competitionSeasons = DB::table('competition_season')
+                    ->where('competition_id', $competitionId)
+                    ->get();
 
-                    foreach ($competitionSeasons as $cs) {
-                        if ($cs->season_id) {
-                            $season = Season::find($cs->season_id);
-                            if ($season) {
-                                $playerSeasons->put($season->id, $season);
-                            }
+                foreach ($competitionSeasons as $cs) {
+                    if ($cs->season_id) {
+                        $season = Season::find($cs->season_id);
+                        if ($season) {
+                            $playerSeasons->put($season->id, $season);
                         }
                     }
                 }
