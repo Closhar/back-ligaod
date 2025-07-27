@@ -12,6 +12,7 @@ class EventAction extends Model
         'player_name',
         'action_type_id',
         'minute',
+        'is_overtime',
         'value',
         'related_action_id',
         'extra_info',
