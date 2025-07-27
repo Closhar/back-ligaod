@@ -713,6 +713,7 @@ class PlayerStatisticsController extends Controller
             foreach ($events as $event) {
                 if ($event->competition_id) {
                     $playerCompetitions->put($event->competition_id, $event->competition_id);
+                    Log::info("Добавлено соревнование: {$event->competition_id}");
                 }
             }
 
@@ -723,10 +724,13 @@ class PlayerStatisticsController extends Controller
             $competitions = collect();
 
             foreach ($playerCompetitions as $competitionId) {
+                Log::info("Обрабатываем соревнование: {$competitionId}");
+
                 // Получаем соревнование
                 $competition = Competition::find($competitionId);
                 if ($competition) {
                     $competitions->put($competition->id, $competition);
+                    Log::info("Найдено соревнование: {$competition->title}");
                 }
 
                 // Получаем сезоны этого соревнования через pivot таблицу
@@ -734,12 +738,21 @@ class PlayerStatisticsController extends Controller
                     ->where('competition_id', $competitionId)
                     ->get();
 
+                Log::info("Найдено записей в competition_season для соревнования {$competitionId}: " . $competitionSeasons->count());
+
                 foreach ($competitionSeasons as $cs) {
+                    Log::info("Обрабатываем запись competition_season: ID={$cs->id}, season_id={$cs->season_id}");
+
                     if ($cs->season_id) {
                         $season = Season::find($cs->season_id);
                         if ($season) {
                             $playerSeasons->put($season->id, $season);
+                            Log::info("Добавлен сезон: {$season->title} (ID: {$season->id})");
+                        } else {
+                            Log::error("Сезон с ID {$cs->season_id} не найден!");
                         }
+                    } else {
+                        Log::warning("Запись competition_season ID={$cs->id} не имеет season_id");
                     }
                 }
             }
@@ -750,6 +763,9 @@ class PlayerStatisticsController extends Controller
             // Сортируем сезоны по дате (новые сначала)
             $sortedSeasons = $playerSeasons->sortByDesc('date_from')->values();
             $sortedCompetitions = $competitions->sortBy('title')->values();
+
+            Log::info("Итоговое количество сезонов: " . $sortedSeasons->count());
+            Log::info("Итоговое количество соревнований: " . $sortedCompetitions->count());
 
             return response()->json([
                 'success' => true,
