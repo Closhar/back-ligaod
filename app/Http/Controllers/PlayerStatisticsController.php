@@ -873,12 +873,12 @@ class PlayerStatisticsController extends Controller
                         $playerStats[$actionType]++;
                     }
 
-                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    // Дополнительно группируем головы (group=1) в общее поле "Голы всего"
                     if ($action->actionType->group == 1) {
-                        if (!isset($playerStats['ГОЛЫ'])) {
-                            $playerStats['ГОЛЫ'] = 0;
+                        if (!isset($playerStats['Голы всего'])) {
+                            $playerStats['Голы всего'] = 0;
                         }
-                        $playerStats['ГОЛЫ'] += $action->value ?? 1;
+                        $playerStats['Голы всего'] += $action->value ?? 1;
                     }
                 }
             }
@@ -886,11 +886,11 @@ class PlayerStatisticsController extends Controller
             // Собрать информацию о типах действий
             $actionTypesInfo = [];
             foreach ($playerStats as $actionName => $count) {
-                // Специальная обработка для поля "ГОЛЫ"
-                if ($actionName === 'ГОЛЫ') {
+                // Специальная обработка для поля "Голы всего"
+                if ($actionName === 'Голы всего') {
                     $actionTypesInfo[$actionName] = [
-                        'short_name' => 'ГОЛЫ',
-                        'short_name_table' => 'ГОЛЫ',
+                        'short_name' => 'Голы всего',
+                        'short_name_table' => 'Голы всего',
                         'icon' => 'heroicons:fire',
                         'color' => 'text-red-500',
                         'full_name' => 'голы всего'
@@ -1003,12 +1003,12 @@ class PlayerStatisticsController extends Controller
                         $playerStats[$actionType]++;
                     }
 
-                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    // Дополнительно группируем головы (group=1) в общее поле "Голы всего"
                     if ($action->actionType->group == 1) {
-                        if (!isset($playerStats['ГОЛЫ'])) {
-                            $playerStats['ГОЛЫ'] = 0;
+                        if (!isset($playerStats['Голы всего'])) {
+                            $playerStats['Голы всего'] = 0;
                         }
-                        $playerStats['ГОЛЫ'] += $action->value ?? 1;
+                        $playerStats['Голы всего'] += $action->value ?? 1;
                     }
                 }
             }
@@ -1016,11 +1016,11 @@ class PlayerStatisticsController extends Controller
             // Собрать информацию о типах действий
             $actionTypesInfo = [];
             foreach ($playerStats as $actionName => $count) {
-                // Специальная обработка для поля "ГОЛЫ"
-                if ($actionName === 'ГОЛЫ') {
+                // Специальная обработка для поля "Голы всего"
+                if ($actionName === 'Голы всего') {
                     $actionTypesInfo[$actionName] = [
-                        'short_name' => 'ГОЛЫ',
-                        'short_name_table' => 'ГОЛЫ',
+                        'short_name' => 'Голы всего',
+                        'short_name_table' => 'Голы всего',
                         'icon' => 'heroicons:fire',
                         'color' => 'text-red-500',
                         'full_name' => 'голы всего'
@@ -1136,12 +1136,12 @@ class PlayerStatisticsController extends Controller
                         $playerStats[$actionType]++;
                     }
 
-                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    // Дополнительно группируем головы (group=1) в общее поле "Голы всего"
                     if ($action->actionType->group == 1) {
-                        if (!isset($playerStats['ГОЛЫ'])) {
-                            $playerStats['ГОЛЫ'] = 0;
+                        if (!isset($playerStats['Голы всего'])) {
+                            $playerStats['Голы всего'] = 0;
                         }
-                        $playerStats['ГОЛЫ'] += $action->value ?? 1;
+                        $playerStats['Голы всего'] += $action->value ?? 1;
                     }
                 }
             }
@@ -1149,11 +1149,11 @@ class PlayerStatisticsController extends Controller
             // Собрать информацию о типах действий
             $actionTypesInfo = [];
             foreach ($playerStats as $actionName => $count) {
-                // Специальная обработка для поля "ГОЛЫ"
-                if ($actionName === 'ГОЛЫ') {
+                // Специальная обработка для поля "Голы всего"
+                if ($actionName === 'Голы всего') {
                     $actionTypesInfo[$actionName] = [
-                        'short_name' => 'ГОЛЫ',
-                        'short_name_table' => 'ГОЛЫ',
+                        'short_name' => 'Голы всего',
+                        'short_name_table' => 'Голы всего',
                         'icon' => 'heroicons:fire',
                         'color' => 'text-red-500',
                         'full_name' => 'голы всего'
@@ -1295,12 +1295,12 @@ class PlayerStatisticsController extends Controller
                         $playerStats[$actionType]++;
                     }
 
-                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    // Дополнительно группируем головы (group=1) в общее поле "Голы всего"
                     if ($action->actionType->group == 1) {
-                        if (!isset($playerStats['ГОЛЫ'])) {
-                            $playerStats['ГОЛЫ'] = 0;
+                        if (!isset($playerStats['Голы всего'])) {
+                            $playerStats['Голы всего'] = 0;
                         }
-                        $playerStats['ГОЛЫ'] += $action->value ?? 1;
+                        $playerStats['Голы всего'] += $action->value ?? 1;
                     }
                 }
             }
@@ -1308,11 +1308,11 @@ class PlayerStatisticsController extends Controller
             // Собрать информацию о типах действий
             $actionTypesInfo = [];
             foreach ($playerStats as $actionName => $count) {
-                // Специальная обработка для поля "ГОЛЫ"
-                if ($actionName === 'ГОЛЫ') {
+                // Специальная обработка для поля "Голы всего"
+                if ($actionName === 'Голы всего') {
                     $actionTypesInfo[$actionName] = [
-                        'short_name' => 'ГОЛЫ',
-                        'short_name_table' => 'ГОЛЫ',
+                        'short_name' => 'Голы всего',
+                        'short_name_table' => 'Голы всего',
                         'icon' => 'heroicons:fire',
                         'color' => 'text-red-500',
                         'full_name' => 'голы всего'
