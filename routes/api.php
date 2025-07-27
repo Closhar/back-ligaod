@@ -877,6 +877,7 @@ Route::prefix('people/{person}/statistics')->group(function () {
     Route::get('/seasons', [PlayerStatisticsController::class, 'getPersonSeasons']);
     Route::get('/overall', [PlayerStatisticsController::class, 'getPersonStatsOverall']);
     Route::get('/season/{season}', [PlayerStatisticsController::class, 'getPersonStatsBySeason']);
+    Route::get('/season-title/{seasonTitle}', [PlayerStatisticsController::class, 'getPersonStatsBySeasonTitle']);
     Route::get('/competition/{competition}', [PlayerStatisticsController::class, 'getPersonStatsByCompetition']);
     Route::get('/season/{season}/competition/{competition}', [PlayerStatisticsController::class, 'getPersonStatsBySeasonAndCompetition']);
 });

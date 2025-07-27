@@ -1521,4 +1521,134 @@ class PlayerStatisticsController extends Controller
             ], 500);
         }
     }
+
+    public function getPersonStatsBySeasonTitle($personId, $seasonTitle): JsonResponse
+    {
+        try {
+            // Найти все сезоны с таким названием
+            $seasons = \App\Models\CompetitionSeason::where('title', $seasonTitle)->get();
+
+            if ($seasons->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Сезон не найден'
+                ], 404);
+            }
+
+            // Получить все события игрока из всех соревнований с этим сезоном
+            $events = Event::where(function($query) use ($personId, $seasons) {
+                    $query->whereHas('actions', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        })
+                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        });
+                })
+                ->whereIn('competition_id', $seasons->pluck('competition_id'))
+                ->with([
+                    'actions' => function($query) use ($personId) {
+                        $query->where('person_id', $personId)
+                              ->with(['actionType', 'club.city']);
+                    },
+                    'lineups' => function($query) use ($personId) {
+                        $query->where('person_id', $personId);
+                    }
+                ])
+                ->get();
+
+            // Остальная логика такая же как в других методах
+            $playerStats = [];
+            $actionTypesInfo = [];
+            $playerStatsByClub = [];
+            $totalMatches = 0;
+            $totalSeasons = 0;
+            $totalCompetitions = 0;
+
+            foreach ($events as $event) {
+                // Подсчитываем матчи только если игрок был в составе
+                if ($event->lineups->count() > 0) {
+                    $totalMatches++;
+                }
+
+                foreach ($event->actions as $action) {
+                    $actionType = $action->actionType;
+                    if (!$actionType) continue;
+
+                    $actionName = $actionType->name;
+
+                    // Переименовываем "ГОЛЫ" в "Голы всего"
+                    if ($actionName === 'ГОЛЫ') {
+                        $actionName = 'Голы всего';
+                    }
+
+                    // Инициализируем статистику
+                    if (!isset($playerStats[$actionName])) {
+                        $playerStats[$actionName] = 0;
+                        $actionTypesInfo[$actionName] = [
+                            'name' => $actionType->name,
+                            'short_name' => $actionType->short_name,
+                            'icon' => $actionType->icon,
+                            'color' => $actionType->color,
+                            'full_name' => $actionType->full_name
+                        ];
+                    }
+
+                    // Подсчитываем статистику
+                    if ($actionType->group === 2) {
+                        $playerStats[$actionName] += $action->value;
+                    } else {
+                        $playerStats[$actionName]++;
+                    }
+
+                    // Статистика по клубам
+                    if ($action->club) {
+                        $clubKey = $action->club->id;
+                        if (!isset($playerStatsByClub[$actionName])) {
+                            $playerStatsByClub[$actionName] = [];
+                        }
+                        if (!isset($playerStatsByClub[$actionName][$clubKey])) {
+                            $playerStatsByClub[$actionName][$clubKey] = [
+                                'count' => 0,
+                                'club' => [
+                                    'id' => $action->club->id,
+                                    'title' => $action->club->title,
+                                    'image_path' => $action->club->club_image_path,
+                                    'city' => $action->club->city ? $action->club->city->title : null
+                                ]
+                            ];
+                        }
+
+                        if ($actionType->group === 2) {
+                            $playerStatsByClub[$actionName][$clubKey]['count'] += $action->value;
+                        } else {
+                            $playerStatsByClub[$actionName][$clubKey]['count']++;
+                        }
+                    }
+                }
+            }
+
+            // Подсчитываем общие метрики
+            $totalSeasons = $seasons->unique('competition_id')->count();
+            $totalCompetitions = $seasons->pluck('competition_id')->unique()->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'statistics' => $playerStats,
+                    'action_types' => $actionTypesInfo,
+                    'statistics_by_club' => $playerStatsByClub,
+                    'total_matches' => $totalMatches,
+                    'total_seasons' => $totalSeasons,
+                    'total_competitions' => $totalCompetitions
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения статистики игрока по названию сезона: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка получения статистики'
+            ], 500);
+        }
+    }
 }
