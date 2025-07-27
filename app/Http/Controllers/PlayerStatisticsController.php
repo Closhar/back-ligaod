@@ -718,10 +718,17 @@ class PlayerStatisticsController extends Controller
                     // Добавляем соревнование
                     $competitions->put($event->competition->id, $event->competition);
 
-                    // Получаем сезоны этого соревнования
-                    foreach ($event->competition->competitionSeasons as $competitionSeason) {
-                        if ($competitionSeason->season) {
-                            $playerSeasons->put($competitionSeason->season->id, $competitionSeason->season);
+                    // Получаем сезоны этого соревнования через pivot таблицу
+                    $competitionSeasons = DB::table('competition_season')
+                        ->where('competition_id', $event->competition->id)
+                        ->get();
+
+                    foreach ($competitionSeasons as $cs) {
+                        if ($cs->season_id) {
+                            $season = Season::find($cs->season_id);
+                            if ($season) {
+                                $playerSeasons->put($season->id, $season);
+                            }
                         }
                     }
                 }
@@ -961,8 +968,9 @@ class PlayerStatisticsController extends Controller
                 ], 404);
             }
 
-            // Получаем события для всех соревнований этого сезона
-            $events = Event::where(function($query) use ($personId) {
+            // Получаем события игрока в соревнованиях этого сезона
+            $events = Event::whereIn('competition_id', $competitionIds)
+                ->where(function($query) use ($personId) {
                     $query->whereHas('actions', function($subQuery) use ($personId) {
                             $subQuery->where('person_id', $personId);
                         })
@@ -970,7 +978,6 @@ class PlayerStatisticsController extends Controller
                             $subQuery->where('person_id', $personId);
                         });
                 })
-                ->whereIn('competition_id', $competitionIds)
                 ->with([
                     'actions.actionType',
                     'actions.club.city',

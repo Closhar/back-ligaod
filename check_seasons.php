@@ -73,8 +73,27 @@ try {
 
             echo "Событий игрока: " . $playerEvents->count() . "\n";
 
+            $playerCompetitions = collect();
             foreach ($playerEvents as $event) {
                 echo "- Event ID: {$event->id}, Competition: {$event->competition_id}\n";
+                $playerCompetitions->put($event->competition_id, $event->competition_id);
+            }
+
+            echo "\nУникальных соревнований игрока: " . $playerCompetitions->count() . "\n";
+
+            // Проверяем связи соревнований с сезонами
+            echo "\n=== СВЯЗИ СОРЕВНОВАНИЙ С СЕЗОНАМИ ===\n";
+            foreach ($playerCompetitions as $competitionId) {
+                echo "Соревнование ID: {$competitionId}\n";
+
+                $competitionSeasons = CompetitionSeason::where('competition_id', $competitionId)->get();
+                echo "  Записей в competition_seasons: " . $competitionSeasons->count() . "\n";
+
+                foreach ($competitionSeasons as $cs) {
+                    $season = Season::find($cs->season_id);
+                    echo "  - CompetitionSeason ID: {$cs->id}, Season ID: {$cs->season_id}, Season Title: " . ($season ? $season->title : 'НЕ НАЙДЕН') . "\n";
+                }
+                echo "\n";
             }
         } else {
             echo "Игрок с ID {$personId} не найден\n";
