@@ -29,17 +29,28 @@ class PlayerStatisticsController extends Controller
             // Собрать уникальные сезоны
             $seasons = collect();
             foreach ($events as $event) {
-                if ($event->competition && $event->date_from) {
-                    $eventSeasons = $event->competition->seasons()
-                        ->where('date_from', '<=', $event->date_from)
-                        ->where('date_to', '>=', $event->date_from)
-                        ->get();
+                if ($event->competition) {
+                    // Получаем все сезоны соревнования, а не только те, что попадают в диапазон дат
+                    $eventSeasons = $event->competition->seasons()->get();
                     $seasons = $seasons->merge($eventSeasons);
                 }
             }
 
             // Убрать дубликаты и отсортировать
             $uniqueSeasons = $seasons->unique('id')->sortByDesc('date_from')->values();
+
+            // Если нет сезонов, создаем виртуальный сезон "Все время"
+            if ($uniqueSeasons->isEmpty()) {
+                $virtualSeason = (object) [
+                    'id' => 'all',
+                    'name' => 'Все время',
+                    'date_from' => null,
+                    'date_to' => null,
+                    'competition_id' => null,
+                    'is_virtual' => true
+                ];
+                $uniqueSeasons = collect([$virtualSeason]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -58,17 +69,29 @@ class PlayerStatisticsController extends Controller
     /**
      * Получить статистику игроков по конкретному сезону
      */
-    public function getPlayerStatsBySeason(Club $club, CompetitionSeason $season): JsonResponse
+    public function getPlayerStatsBySeason(Club $club, $seasonId): JsonResponse
     {
         try {
-            // Получить события клуба в рамках сезона
+            // Если это виртуальный сезон "Все время"
+            if ($seasonId === 'all') {
+                return $this->getPlayerStatsOverall($club);
+            }
+
+            // Получаем сезон
+            $season = CompetitionSeason::find($seasonId);
+            if (!$season) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Сезон не найден'
+                ], 404);
+            }
+
+            // Получить события клуба для данного соревнования (без ограничения по датам сезона)
             $events = Event::where(function($query) use ($club) {
                     $query->where('club1_id', $club->id)
                           ->orWhere('club2_id', $club->id);
                 })
                 ->where('competition_id', $season->competition_id)
-                ->where('date_from', '>=', $season->date_from)
-                ->where('date_from', '<=', $season->date_to)
                 ->with(['actions' => function($query) use ($club) {
                     $query->where('club_id', $club->id)
                           ->with(['person.activeAmpluaMemberships.amplua', 'actionType']);
