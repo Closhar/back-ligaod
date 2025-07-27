@@ -108,8 +108,8 @@ class PlayerStatisticsController extends Controller
             $response = [
                 'success' => true,
                 'data' => [
-                    'seasons' => $uniqueSeasons,
-                    'competitions' => $uniqueCompetitions
+                    'seasons' => $uniqueSeasons->values(),
+                    'competitions' => $uniqueCompetitions->values()
                 ],
                 'message' => 'Данные успешно получены'
             ];
