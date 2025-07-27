@@ -300,16 +300,26 @@ class PlayerStatisticsController extends Controller
                     }
 
                     $actionType = $action->actionType->name;
-                    if (!isset($playerStats[$playerId]['actions'][$actionType])) {
-                        $playerStats[$playerId]['actions'][$actionType] = 0;
-                    }
 
-                    // Для типов действий с group=2 суммируем значение поля value
-                    // Для остальных считаем количество событий
-                    if ($action->actionType->group == 2) {
-                        $playerStats[$playerId]['actions'][$actionType] += $action->value ?? 0;
+                    // Группируем головы (group=1) в общее поле "ГОЛЫ"
+                    if ($action->actionType->group == 1) {
+                        if (!isset($playerStats[$playerId]['actions']['ГОЛЫ'])) {
+                            $playerStats[$playerId]['actions']['ГОЛЫ'] = 0;
+                        }
+                        $playerStats[$playerId]['actions']['ГОЛЫ'] += $action->value ?? 1;
                     } else {
-                        $playerStats[$playerId]['actions'][$actionType]++;
+                        // Для остальных типов действий
+                        if (!isset($playerStats[$playerId]['actions'][$actionType])) {
+                            $playerStats[$playerId]['actions'][$actionType] = 0;
+                        }
+
+                        // Для типов действий с group=2 суммируем значение поля value
+                        // Для остальных считаем количество событий
+                        if ($action->actionType->group == 2) {
+                            $playerStats[$playerId]['actions'][$actionType] += $action->value ?? 0;
+                        } else {
+                            $playerStats[$playerId]['actions'][$actionType]++;
+                        }
                     }
                 }
             }
@@ -331,24 +341,35 @@ class PlayerStatisticsController extends Controller
             foreach ($result as $player) {
                 foreach ($player['actions'] as $actionName => $count) {
                     if (!isset($actionTypesInfo[$actionName])) {
-                        // Найти тип действия в базе
-                        $actionType = \App\Models\ActionType::where('name', $actionName)->first();
-                        if ($actionType) {
+                        // Специальная обработка для поля "ГОЛЫ"
+                        if ($actionName === 'ГОЛЫ') {
                             $actionTypesInfo[$actionName] = [
-                                'short_name' => $actionType->short_name ?: $actionType->name,
-                                'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
-                                'icon' => $actionType->icon,
-                                'color' => $actionType->color,
-                                'full_name' => $actionType->name
+                                'short_name' => 'ГОЛЫ',
+                                'short_name_table' => 'ГОЛЫ',
+                                'icon' => 'heroicons:fire',
+                                'color' => 'text-red-500',
+                                'full_name' => 'Голы (сумма всех типов голов)'
                             ];
                         } else {
-                            $actionTypesInfo[$actionName] = [
-                                'short_name' => $actionName,
-                                'short_name_table' => $actionName,
-                                'icon' => null,
-                                'color' => null,
-                                'full_name' => $actionName
-                            ];
+                            // Найти тип действия в базе
+                            $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                            if ($actionType) {
+                                $actionTypesInfo[$actionName] = [
+                                    'short_name' => $actionType->short_name ?: $actionType->name,
+                                    'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                                    'icon' => $actionType->icon,
+                                    'color' => $actionType->color,
+                                    'full_name' => $actionType->name
+                                ];
+                            } else {
+                                $actionTypesInfo[$actionName] = [
+                                    'short_name' => $actionName,
+                                    'short_name_table' => $actionName,
+                                    'icon' => null,
+                                    'color' => null,
+                                    'full_name' => $actionName
+                                ];
+                            }
                         }
                     }
                 }
