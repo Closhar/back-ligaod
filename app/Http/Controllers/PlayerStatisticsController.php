@@ -1029,8 +1029,10 @@ class PlayerStatisticsController extends Controller
 
                     // Подсчитываем статистику в зависимости от группы
                     if ($actionType->group === 2) {
+                        // Для группы 2 - суммируем очки
                         $playerStats[$actionName] += $action->value ?? 0;
                     } else {
+                        // Для остальных групп - считаем количество
                         $playerStats[$actionName]++;
                     }
 
