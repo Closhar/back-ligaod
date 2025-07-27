@@ -166,6 +166,32 @@ class PlayerStatisticsController extends Controller
                 return $b['total_matches'] - $a['total_matches'];
             });
 
+            // Собрать информацию о типах действий
+            $actionTypesInfo = [];
+            foreach ($result as $player) {
+                foreach ($player['actions'] as $actionName => $count) {
+                    if (!isset($actionTypesInfo[$actionName])) {
+                        // Найти тип действия в базе
+                        $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                        if ($actionType) {
+                            $actionTypesInfo[$actionName] = [
+                                'short_name' => $actionType->short_name ?: $actionType->name,
+                                'icon' => $actionType->icon,
+                                'color' => $actionType->color,
+                                'full_name' => $actionType->name
+                            ];
+                        } else {
+                            $actionTypesInfo[$actionName] = [
+                                'short_name' => $actionName,
+                                'icon' => null,
+                                'color' => null,
+                                'full_name' => $actionName
+                            ];
+                        }
+                    }
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -180,6 +206,7 @@ class PlayerStatisticsController extends Controller
                         ]
                     ],
                     'players' => $result,
+                    'action_types' => $actionTypesInfo,
                     'total_events' => $events->count()
                 ],
                 'message' => 'Статистика игроков успешно получена'
@@ -299,10 +326,39 @@ class PlayerStatisticsController extends Controller
                 return $b['total_matches'] - $a['total_matches'];
             });
 
+            // Собрать информацию о типах действий
+            $actionTypesInfo = [];
+            foreach ($result as $player) {
+                foreach ($player['actions'] as $actionName => $count) {
+                    if (!isset($actionTypesInfo[$actionName])) {
+                        // Найти тип действия в базе
+                        $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                        if ($actionType) {
+                            $actionTypesInfo[$actionName] = [
+                                'short_name' => $actionType->short_name ?: $actionType->name,
+                                'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                                'icon' => $actionType->icon,
+                                'color' => $actionType->color,
+                                'full_name' => $actionType->name
+                            ];
+                        } else {
+                            $actionTypesInfo[$actionName] = [
+                                'short_name' => $actionName,
+                                'short_name_table' => $actionName,
+                                'icon' => null,
+                                'color' => null,
+                                'full_name' => $actionName
+                            ];
+                        }
+                    }
+                }
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'players' => $result,
+                    'action_types' => $actionTypesInfo,
                     'total_events' => $events->count()
                 ],
                 'message' => 'Общая статистика игроков успешно получена'

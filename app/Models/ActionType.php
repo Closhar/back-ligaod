@@ -11,6 +11,7 @@ class ActionType extends Model
         'color',
         'group',
         'short_name',
+        'short_name_table',
         'points',
     ];
 
