@@ -9,6 +9,7 @@ use App\Models\EventAction;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class PlayerStatisticsController extends Controller
 {
@@ -26,12 +27,18 @@ class PlayerStatisticsController extends Controller
                 }])
                 ->get();
 
+                        Log::info('Клуб ID: ' . $club->id);
+            Log::info('Найдено событий: ' . $events->count());
+
             // Собрать уникальные сезоны и соревнования
             $seasons = collect();
             $competitions = collect();
 
             foreach ($events as $event) {
+                Log::info('Обрабатываем событие ID: ' . $event->id . ', competition_id: ' . $event->competition_id);
+
                 if ($event->competition) {
+                    Log::info('Добавляем соревнование ID: ' . $event->competition->id . ', title: ' . $event->competition->title);
                     // Добавляем соревнование
                     $competitions->put($event->competition->id, $event->competition);
 
@@ -39,7 +46,10 @@ class PlayerStatisticsController extends Controller
                     $eventSeasons = $event->competition->seasons()
                         ->with('competition:id,title,title_short')
                         ->get();
+                    Log::info('Найдено сезонов для соревнования ' . $event->competition->id . ': ' . $eventSeasons->count());
                     $seasons = $seasons->merge($eventSeasons);
+                } else {
+                    Log::info('У события ' . $event->id . ' нет соревнования');
                 }
             }
 
@@ -48,6 +58,28 @@ class PlayerStatisticsController extends Controller
 
             // Убрать дубликаты соревнований и отсортировать
             $uniqueCompetitions = $competitions->values()->sortBy('title');
+
+            // Если соревнования не найдены через события, попробуем получить их из сезонов
+            if ($uniqueCompetitions->isEmpty() && $uniqueSeasons->isNotEmpty()) {
+                Log::info('Соревнования не найдены через события, получаем из сезонов');
+                $competitionsFromSeasons = collect();
+
+                foreach ($uniqueSeasons as $season) {
+                    if ($season->competition_id && !$season->is_virtual) {
+                        $competition = \App\Models\Competition::find($season->competition_id);
+                        if ($competition) {
+                            $competitionsFromSeasons->put($competition->id, $competition);
+                            Log::info('Добавлено соревнование из сезона: ' . $competition->title);
+                        }
+                    }
+                }
+
+                $uniqueCompetitions = $competitionsFromSeasons->values()->sortBy('title');
+            }
+
+            Log::info('Итоговое количество сезонов: ' . $uniqueSeasons->count());
+            Log::info('Итоговое количество соревнований: ' . $uniqueCompetitions->count());
+            Log::info('Соревнования: ' . $uniqueCompetitions->pluck('id', 'title')->toJson());
 
             // Если нет сезонов, создаем виртуальный сезон "Все время"
             if ($uniqueSeasons->isEmpty()) {
