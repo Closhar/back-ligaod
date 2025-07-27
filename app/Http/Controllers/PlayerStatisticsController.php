@@ -998,13 +998,15 @@ class PlayerStatisticsController extends Controller
             }
 
             // Получить события игрока для данного сезона
-            $events = Event::whereHas('actions', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
+            $events = Event::where('competition_id', $season->competition_id)
+                ->where(function($query) use ($personId) {
+                    $query->whereHas('actions', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        })
+                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        });
                 })
-                ->orWhereHas('lineups', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
-                })
-                ->where('competition_id', $season->competition_id)
                 ->with([
                     'actions' => function($query) use ($personId) {
                         $query->where('person_id', $personId)
@@ -1168,13 +1170,15 @@ class PlayerStatisticsController extends Controller
             }
 
             // Получить события игрока для данного соревнования
-            $events = Event::whereHas('actions', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
+            $events = Event::where('competition_id', $competition->id)
+                ->where(function($query) use ($personId) {
+                    $query->whereHas('actions', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        })
+                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        });
                 })
-                ->orWhereHas('lineups', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
-                })
-                ->where('competition_id', $competition->id)
                 ->with([
                     'actions' => function($query) use ($personId) {
                         $query->where('person_id', $personId)
@@ -1362,13 +1366,15 @@ class PlayerStatisticsController extends Controller
             }
 
             // Получить события игрока для данного сезона и соревнования
-            $events = Event::whereHas('actions', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
+            $events = Event::where('competition_id', $competition->id)
+                ->where(function($query) use ($personId) {
+                    $query->whereHas('actions', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        })
+                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        });
                 })
-                ->orWhereHas('lineups', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
-                })
-                ->where('competition_id', $competition->id)
                 ->with([
                     'actions' => function($query) use ($personId) {
                         $query->where('person_id', $personId)
