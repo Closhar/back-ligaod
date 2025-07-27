@@ -38,8 +38,8 @@ try {
         echo "\n";
     }
 
-    echo "=== ПРОВЕРКА СОСТАВОВ ===\n";
-    $lineups = DB::table('lineups')->where('person_id', $personId)->get();
+        echo "=== ПРОВЕРКА СОСТАВОВ ===\n";
+    $lineups = DB::table('event_lineups')->where('person_id', $personId)->get();
     echo "Записей в составе: " . $lineups->count() . "\n";
 
     foreach ($lineups as $lineup) {
