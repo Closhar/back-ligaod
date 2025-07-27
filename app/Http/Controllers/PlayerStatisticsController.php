@@ -1593,10 +1593,12 @@ class PlayerStatisticsController extends Controller
                         ];
                     }
 
-                    // Подсчитываем статистику
+                    // Подсчитываем статистику в зависимости от группы
                     if ($actionType->group === 2) {
-                        $playerStats[$actionName] += $action->value;
+                        // Для группы 2 - суммируем очки
+                        $playerStats[$actionName] += $action->value ?? 0;
                     } else {
+                        // Для остальных групп - считаем количество
                         $playerStats[$actionName]++;
                     }
 
@@ -1618,8 +1620,9 @@ class PlayerStatisticsController extends Controller
                             ];
                         }
 
+                        // Подсчитываем статистику по клубам в зависимости от группы
                         if ($actionType->group === 2) {
-                            $playerStatsByClub[$actionName][$clubKey]['count'] += $action->value;
+                            $playerStatsByClub[$actionName][$clubKey]['count'] += $action->value ?? 0;
                         } else {
                             $playerStatsByClub[$actionName][$clubKey]['count']++;
                         }
