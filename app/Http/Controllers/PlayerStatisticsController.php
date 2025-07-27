@@ -693,17 +693,52 @@ class PlayerStatisticsController extends Controller
     public function getPersonSeasons($personId): JsonResponse
     {
         try {
-            // Получаем все сезоны из новой таблицы seasons
-            $seasons = Season::orderBy('date_from', 'desc')->get();
+            Log::info("Получение сезонов для игрока {$personId}");
 
-            // Получаем все соревнования
-            $competitions = Competition::orderBy('title')->get();
+            // Получаем все события игрока
+            $events = Event::where(function($query) use ($personId) {
+                    $query->whereHas('actions', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        })
+                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        });
+                })
+                ->with(['competition.competitionSeasons.season'])
+                ->get();
+
+            Log::info("Найдено событий для игрока {$personId}: " . $events->count());
+
+            // Собираем уникальные сезоны из событий игрока
+            $playerSeasons = collect();
+            $competitions = collect();
+
+            foreach ($events as $event) {
+                if ($event->competition) {
+                    // Добавляем соревнование
+                    $competitions->put($event->competition->id, $event->competition);
+
+                    // Получаем сезоны этого соревнования
+                    foreach ($event->competition->competitionSeasons as $competitionSeason) {
+                        if ($competitionSeason->season) {
+                            $playerSeasons->put($competitionSeason->season->id, $competitionSeason->season);
+                        }
+                    }
+                }
+            }
+
+            Log::info("Найдено уникальных сезонов для игрока {$personId}: " . $playerSeasons->count());
+            Log::info("Найдено уникальных соревнований для игрока {$personId}: " . $competitions->count());
+
+            // Сортируем сезоны по дате (новые сначала)
+            $sortedSeasons = $playerSeasons->sortByDesc('date_from')->values();
+            $sortedCompetitions = $competitions->sortBy('title')->values();
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'seasons' => $seasons,
-                    'competitions' => $competitions
+                    'seasons' => $sortedSeasons,
+                    'competitions' => $sortedCompetitions
                 ]
             ]);
         } catch (\Exception $e) {
@@ -896,21 +931,30 @@ class PlayerStatisticsController extends Controller
     public function getPersonStatsBySeason($personId, $seasonId): JsonResponse
     {
         try {
+            Log::info("Получение статистики для игрока {$personId} по сезону {$seasonId}");
+
             // Находим сезон по ID
             $season = Season::find($seasonId);
             if (!$season) {
+                Log::error("Сезон {$seasonId} не найден");
                 return response()->json([
                     'success' => false,
                     'error' => 'Сезон не найден'
                 ], 404);
             }
 
+            Log::info("Найден сезон: {$season->title}");
+
             // Получаем все соревнования, связанные с этим сезоном через pivot таблицу
             $competitionIds = DB::table('competition_season')
                 ->where('season_id', $season->id)
                 ->pluck('competition_id');
 
+            Log::info("Найдено соревнований для сезона {$season->id}: " . $competitionIds->count());
+            Log::info("ID соревнований: " . $competitionIds->toJson());
+
             if ($competitionIds->isEmpty()) {
+                Log::error("Соревнования для сезона {$season->id} не найдены");
                 return response()->json([
                     'success' => false,
                     'error' => 'Соревнования для данного сезона не найдены'
@@ -934,6 +978,8 @@ class PlayerStatisticsController extends Controller
                     'competition'
                 ])
                 ->get();
+
+            Log::info("Найдено событий для игрока {$personId} в сезоне {$season->id}: " . $events->count());
 
             // Инициализируем массивы для статистики
             $playerStats = [];
@@ -1006,6 +1052,8 @@ class PlayerStatisticsController extends Controller
                     }
                 }
             }
+
+            Log::info("Итоговая статистика для игрока {$personId} в сезоне {$season->id}: " . json_encode($playerStats));
 
             return response()->json([
                 'success' => true,

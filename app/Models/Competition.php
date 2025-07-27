@@ -53,6 +53,11 @@ class Competition extends Model
         return $this->hasMany(CompetitionSeason::class);
     }
 
+    public function competitionSeasons(): HasMany
+    {
+        return $this->hasMany(CompetitionSeason::class);
+    }
+
     public function newSeasons()
     {
         return $this->belongsToMany(Season::class, 'competition_season')
