@@ -220,6 +220,14 @@ class PlayerStatisticsController extends Controller
                     } else {
                         $playerStats[$playerId]['actions'][$actionType]++;
                     }
+
+                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    if ($action->actionType->group == 1) {
+                        if (!isset($playerStats[$playerId]['actions']['ГОЛЫ'])) {
+                            $playerStats[$playerId]['actions']['ГОЛЫ'] = 0;
+                        }
+                        $playerStats[$playerId]['actions']['ГОЛЫ'] += $action->value ?? 1;
+                    }
                 }
             }
 
@@ -239,24 +247,35 @@ class PlayerStatisticsController extends Controller
             foreach ($result as $player) {
                 foreach ($player['actions'] as $actionName => $count) {
                     if (!isset($actionTypesInfo[$actionName])) {
-                        // Найти тип действия в базе
-                        $actionType = \App\Models\ActionType::where('name', $actionName)->first();
-                        if ($actionType) {
+                        // Специальная обработка для поля "ГОЛЫ"
+                        if ($actionName === 'ГОЛЫ') {
                             $actionTypesInfo[$actionName] = [
-                                'short_name' => $actionType->short_name ?: $actionType->name,
-                                'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
-                                'icon' => $actionType->icon,
-                                'color' => $actionType->color,
-                                'full_name' => $actionType->name
+                                'short_name' => 'ГОЛЫ',
+                                'short_name_table' => 'ГОЛЫ',
+                                'icon' => 'heroicons:fire',
+                                'color' => 'text-red-500',
+                                'full_name' => 'голы всего'
                             ];
                         } else {
-                            $actionTypesInfo[$actionName] = [
-                                'short_name' => $actionName,
-                                'short_name_table' => $actionName,
-                                'icon' => null,
-                                'color' => null,
-                                'full_name' => $actionName
-                            ];
+                            // Найти тип действия в базе
+                            $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                            if ($actionType) {
+                                $actionTypesInfo[$actionName] = [
+                                    'short_name' => $actionType->short_name ?: $actionType->name,
+                                    'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                                    'icon' => $actionType->icon,
+                                    'color' => $actionType->color,
+                                    'full_name' => $actionType->name
+                                ];
+                            } else {
+                                $actionTypesInfo[$actionName] = [
+                                    'short_name' => $actionName,
+                                    'short_name_table' => $actionName,
+                                    'icon' => null,
+                                    'color' => null,
+                                    'full_name' => $actionName
+                                ];
+                            }
                         }
                     }
                 }
@@ -376,6 +395,14 @@ class PlayerStatisticsController extends Controller
                     } else {
                         $playerStats[$playerId]['actions'][$actionType]++;
                     }
+
+                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    if ($action->actionType->group == 1) {
+                        if (!isset($playerStats[$playerId]['actions']['ГОЛЫ'])) {
+                            $playerStats[$playerId]['actions']['ГОЛЫ'] = 0;
+                        }
+                        $playerStats[$playerId]['actions']['ГОЛЫ'] += $action->value ?? 1;
+                    }
                 }
             }
 
@@ -395,24 +422,35 @@ class PlayerStatisticsController extends Controller
             foreach ($result as $player) {
                 foreach ($player['actions'] as $actionName => $count) {
                     if (!isset($actionTypesInfo[$actionName])) {
-                        // Найти тип действия в базе
-                        $actionType = \App\Models\ActionType::where('name', $actionName)->first();
-                        if ($actionType) {
+                        // Специальная обработка для поля "ГОЛЫ"
+                        if ($actionName === 'ГОЛЫ') {
                             $actionTypesInfo[$actionName] = [
-                                'short_name' => $actionType->short_name ?: $actionType->name,
-                                'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
-                                'icon' => $actionType->icon,
-                                'color' => $actionType->color,
-                                'full_name' => $actionType->name
+                                'short_name' => 'ГОЛЫ',
+                                'short_name_table' => 'ГОЛЫ',
+                                'icon' => 'heroicons:fire',
+                                'color' => 'text-red-500',
+                                'full_name' => 'голы всего'
                             ];
                         } else {
-                            $actionTypesInfo[$actionName] = [
-                                'short_name' => $actionName,
-                                'short_name_table' => $actionName,
-                                'icon' => null,
-                                'color' => null,
-                                'full_name' => $actionName
-                            ];
+                            // Найти тип действия в базе
+                            $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                            if ($actionType) {
+                                $actionTypesInfo[$actionName] = [
+                                    'short_name' => $actionType->short_name ?: $actionType->name,
+                                    'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                                    'icon' => $actionType->icon,
+                                    'color' => $actionType->color,
+                                    'full_name' => $actionType->name
+                                ];
+                            } else {
+                                $actionTypesInfo[$actionName] = [
+                                    'short_name' => $actionName,
+                                    'short_name_table' => $actionName,
+                                    'icon' => null,
+                                    'color' => null,
+                                    'full_name' => $actionName
+                                ];
+                            }
                         }
                     }
                 }
