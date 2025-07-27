@@ -1036,6 +1036,14 @@ class PlayerStatisticsController extends Controller
                         $playerStats[$actionName]++;
                     }
 
+                    // Голы всего (общая статистика)
+                    if ($actionType->group == 1) {
+                        if (!isset($playerStats['Голы всего'])) {
+                            $playerStats['Голы всего'] = 0;
+                        }
+                        $playerStats['Голы всего'] += $action->value ?? 1;
+                    }
+
                     // Статистика по клубам
                     if ($action->club) {
                         $clubKey = $action->club->id;
@@ -1059,6 +1067,29 @@ class PlayerStatisticsController extends Controller
                             $playerStatsByClub[$actionName][$clubKey]['count'] += $action->value ?? 0;
                         } else {
                             $playerStatsByClub[$actionName][$clubKey]['count']++;
+                        }
+
+                        // Голы всего (по клубам)
+                        if ($actionType->group == 1) {
+                            if (!isset($playerStats['Голы всего'])) {
+                                $playerStats['Голы всего'] = 0;
+                            }
+                            $playerStats['Голы всего'] += $action->value ?? 1;
+                            if (!isset($playerStatsByClub['Голы всего'])) {
+                                $playerStatsByClub['Голы всего'] = [];
+                            }
+                            if (!isset($playerStatsByClub['Голы всего'][$clubKey])) {
+                                $playerStatsByClub['Голы всего'][$clubKey] = [
+                                    'count' => 0,
+                                    'club' => [
+                                        'id' => $action->club->id,
+                                        'title' => $action->club->title,
+                                        'image_path' => $action->club->club_image_path,
+                                        'city' => $action->club->city ? $action->club->city->title : null
+                                    ]
+                                ];
+                            }
+                            $playerStatsByClub['Голы всего'][$clubKey]['count'] += $action->value ?? 1;
                         }
                     }
                 }
