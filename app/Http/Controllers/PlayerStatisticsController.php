@@ -244,6 +244,7 @@ class PlayerStatisticsController extends Controller
                         if ($actionType) {
                             $actionTypesInfo[$actionName] = [
                                 'short_name' => $actionType->short_name ?: $actionType->name,
+                                'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
                                 'icon' => $actionType->icon,
                                 'color' => $actionType->color,
                                 'full_name' => $actionType->name
@@ -251,6 +252,7 @@ class PlayerStatisticsController extends Controller
                         } else {
                             $actionTypesInfo[$actionName] = [
                                 'short_name' => $actionName,
+                                'short_name_table' => $actionName,
                                 'icon' => null,
                                 'color' => null,
                                 'full_name' => $actionName
@@ -398,6 +400,7 @@ class PlayerStatisticsController extends Controller
                         if ($actionType) {
                             $actionTypesInfo[$actionName] = [
                                 'short_name' => $actionType->short_name ?: $actionType->name,
+                                'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
                                 'icon' => $actionType->icon,
                                 'color' => $actionType->color,
                                 'full_name' => $actionType->name
@@ -405,6 +408,7 @@ class PlayerStatisticsController extends Controller
                         } else {
                             $actionTypesInfo[$actionName] = [
                                 'short_name' => $actionName,
+                                'short_name_table' => $actionName,
                                 'icon' => null,
                                 'color' => null,
                                 'full_name' => $actionName
