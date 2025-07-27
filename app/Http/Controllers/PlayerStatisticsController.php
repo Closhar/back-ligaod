@@ -81,6 +81,16 @@ class PlayerStatisticsController extends Controller
             Log::info('Итоговое количество соревнований: ' . $uniqueCompetitions->count());
             Log::info('Соревнования: ' . $uniqueCompetitions->pluck('id', 'title')->toJson());
 
+            // Дополнительная отладка
+            Log::info('Коллекция competitions до обработки: ' . $competitions->count());
+            Log::info('Коллекция competitions после values(): ' . $competitions->values()->count());
+            Log::info('Коллекция competitions после sortBy(): ' . $uniqueCompetitions->count());
+
+            // Проверяем каждое соревнование
+            foreach ($uniqueCompetitions as $comp) {
+                Log::info('Соревнование в итоговом результате: ID=' . $comp->id . ', title=' . $comp->title);
+            }
+
             // Если нет сезонов, создаем виртуальный сезон "Все время"
             if ($uniqueSeasons->isEmpty()) {
                 $virtualSeason = (object) [
@@ -95,14 +105,19 @@ class PlayerStatisticsController extends Controller
                 $uniqueSeasons = collect([$virtualSeason]);
             }
 
-            return response()->json([
+            $response = [
                 'success' => true,
                 'data' => [
                     'seasons' => $uniqueSeasons,
                     'competitions' => $uniqueCompetitions
                 ],
                 'message' => 'Данные успешно получены'
-            ]);
+            ];
+
+            Log::info('Отправляем ответ с ' . $uniqueSeasons->count() . ' сезонами и ' . $uniqueCompetitions->count() . ' соревнованиями');
+            Log::info('Структура ответа: ' . json_encode($response, JSON_UNESCAPED_UNICODE));
+
+            return response()->json($response);
 
         } catch (\Exception $e) {
             return response()->json([
