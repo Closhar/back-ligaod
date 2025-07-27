@@ -17,7 +17,7 @@ class CompetitionSeasonController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = CompetitionSeason::with(['competition:id,title,title_short']);
+            $query = CompetitionSeason::with(['competition:id,title,title_short', 'season:id,title']);
 
             // Фильтр по соревнованию
             if ($request->has('competition_id')) {
@@ -53,6 +53,7 @@ class CompetitionSeasonController extends Controller
         try {
             $validated = $request->validate([
                 'competition_id' => 'required|exists:competitions,id',
+                'season_id' => 'nullable|exists:seasons,id',
                 'title' => 'required|string|max:255',
                 'date_from' => 'nullable|date',
                 'date_to' => 'nullable|date|after_or_equal:date_from',
@@ -72,7 +73,7 @@ class CompetitionSeasonController extends Controller
             }
 
             $season = CompetitionSeason::create($validated);
-            $season->load('competition:id,title,title_short');
+            $season->load(['competition:id,title,title_short', 'season:id,title']);
 
             return response()->json($season, 201);
         } catch (\Exception $e) {
@@ -89,7 +90,7 @@ class CompetitionSeasonController extends Controller
     public function show(string $id): JsonResponse
     {
         try {
-            $season = CompetitionSeason::with(['competition:id,title,title_short'])->findOrFail($id);
+            $season = CompetitionSeason::with(['competition:id,title,title_short', 'season:id,title'])->findOrFail($id);
             return response()->json($season);
         } catch (\Exception $e) {
             return response()->json([
@@ -109,6 +110,7 @@ class CompetitionSeasonController extends Controller
 
             $validated = $request->validate([
                 'competition_id' => 'sometimes|required|exists:competitions,id',
+                'season_id' => 'nullable|exists:seasons,id',
                 'title' => 'sometimes|required|string|max:255',
                 'date_from' => 'nullable|date',
                 'date_to' => 'nullable|date|after_or_equal:date_from',
@@ -126,7 +128,7 @@ class CompetitionSeasonController extends Controller
             }
 
             $season->update($validated);
-            $season->load('competition:id,title,title_short');
+            $season->load(['competition:id,title,title_short', 'season:id,title']);
 
             return response()->json($season);
         } catch (\Exception $e) {
