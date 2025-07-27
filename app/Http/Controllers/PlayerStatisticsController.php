@@ -92,20 +92,26 @@ class PlayerStatisticsController extends Controller
                           ->orWhere('club2_id', $club->id);
                 })
                 ->where('competition_id', $season->competition_id)
-                ->with(['actions' => function($query) use ($club) {
-                    $query->where('club_id', $club->id)
-                          ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
-                }])
+                ->with([
+                    'actions' => function($query) use ($club) {
+                        $query->where('club_id', $club->id)
+                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
+                    },
+                    'lineups' => function($query) use ($club) {
+                        $query->where('club_id', $club->id)
+                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
+                    }
+                ])
                 ->get();
 
-            // Собрать статистику игроков
+                        // Собрать статистику игроков
             $playerStats = [];
             $playerMatches = [];
 
+            // Сначала подсчитаем матчи для каждого игрока из состава
             foreach ($events as $event) {
-                // Подсчитать матчи для каждого игрока
-                foreach ($event->actions as $action) {
-                    $playerId = $action->person_id;
+                foreach ($event->lineups as $lineup) {
+                    $playerId = $lineup->person_id;
                     if (!isset($playerMatches[$playerId])) {
                         $playerMatches[$playerId] = [];
                     }
@@ -113,8 +119,10 @@ class PlayerStatisticsController extends Controller
                         $playerMatches[$playerId][] = $event->id;
                     }
                 }
+            }
 
-                // Подсчитать действия
+            // Теперь подсчитаем действия и создадим статистику
+            foreach ($events as $event) {
                 foreach ($event->actions as $action) {
                     $playerId = $action->person_id;
 
@@ -147,7 +155,7 @@ class PlayerStatisticsController extends Controller
                 }
             }
 
-            // Добавить количество матчей
+            // Добавить количество матчей из состава
             foreach ($playerStats as $playerId => &$stats) {
                 $stats['total_matches'] = count($playerMatches[$playerId] ?? []);
             }
@@ -191,19 +199,40 @@ class PlayerStatisticsController extends Controller
     public function getPlayerStatsOverall(Club $club): JsonResponse
     {
         try {
-            // Получить все события клуба с действиями
+            // Получить все события клуба с действиями и составом
             $events = Event::where('club1_id', $club->id)
                 ->orWhere('club2_id', $club->id)
-                ->with(['actions' => function($query) use ($club) {
-                    $query->where('club_id', $club->id)
-                          ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
-                }, 'competition.seasons'])
+                ->with([
+                    'actions' => function($query) use ($club) {
+                        $query->where('club_id', $club->id)
+                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
+                    },
+                    'lineups' => function($query) use ($club) {
+                        $query->where('club_id', $club->id)
+                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
+                    },
+                    'competition.seasons'
+                ])
                 ->get();
 
             $playerStats = [];
             $playerMatches = [];
             $playerSeasons = [];
 
+                        // Сначала подсчитаем матчи для каждого игрока из состава
+            foreach ($events as $event) {
+                foreach ($event->lineups as $lineup) {
+                    $playerId = $lineup->person_id;
+                    if (!isset($playerMatches[$playerId])) {
+                        $playerMatches[$playerId] = [];
+                    }
+                    if (!in_array($event->id, $playerMatches[$playerId])) {
+                        $playerMatches[$playerId][] = $event->id;
+                    }
+                }
+            }
+
+            // Теперь подсчитаем действия и создадим статистику
             foreach ($events as $event) {
                 // Определить сезон для события
                 $eventSeason = null;
@@ -217,14 +246,6 @@ class PlayerStatisticsController extends Controller
                 foreach ($event->actions as $action) {
                     $playerId = $action->person_id;
 
-                    // Подсчитать матчи
-                    if (!isset($playerMatches[$playerId])) {
-                        $playerMatches[$playerId] = [];
-                    }
-                    if (!in_array($event->id, $playerMatches[$playerId])) {
-                        $playerMatches[$playerId][] = $event->id;
-                    }
-
                     // Подсчитать сезоны
                     if ($eventSeason) {
                         if (!isset($playerSeasons[$playerId])) {
@@ -236,20 +257,20 @@ class PlayerStatisticsController extends Controller
                     }
 
                     // Подсчитать действия
-                                            if (!isset($playerStats[$playerId])) {
-                            $playerStats[$playerId] = [
-                                'player' => [
-                                    'id' => $action->person->id,
-                                    'full_name' => $action->person->full_name,
-                                    'player_number' => $action->person->player_number,
-                                    'amplua' => $action->person->activeAmpluaMemberships->first()?->amplua?->name ?? 'Не указано',
-                                    'main_image' => $action->person->mainImage
-                                ],
-                                'actions' => [],
-                                'total_matches' => 0,
-                                'total_seasons' => 0
-                            ];
-                        }
+                    if (!isset($playerStats[$playerId])) {
+                        $playerStats[$playerId] = [
+                            'player' => [
+                                'id' => $action->person->id,
+                                'full_name' => $action->person->full_name,
+                                'player_number' => $action->person->player_number,
+                                'amplua' => $action->person->activeAmpluaMemberships->first()?->amplua?->name ?? 'Не указано',
+                                'main_image' => $action->person->mainImage
+                            ],
+                            'actions' => [],
+                            'total_matches' => 0,
+                            'total_seasons' => 0
+                        ];
+                    }
 
                     $actionType = $action->actionType->name;
                     if (!isset($playerStats[$playerId]['actions'][$actionType])) {
