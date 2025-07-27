@@ -924,6 +924,7 @@ class PlayerStatisticsController extends Controller
                 'success' => true,
                 'data' => [
                     'statistics' => $playerStats,
+                    'statistics_by_club' => [], // Placeholder, will be populated later
                     'action_types' => $actionTypesInfo,
                     'total_matches' => count($playerMatches),
                     'total_seasons' => count($playerSeasons),
@@ -1066,6 +1067,7 @@ class PlayerStatisticsController extends Controller
                         ]
                     ],
                     'statistics' => $playerStats,
+                    'statistics_by_club' => [], // Placeholder, will be populated later
                     'action_types' => $actionTypesInfo,
                     'total_matches' => count($playerMatches),
                     'total_events' => $events->count()
@@ -1201,6 +1203,7 @@ class PlayerStatisticsController extends Controller
                         ]
                     ],
                     'statistics' => $playerStats,
+                    'statistics_by_club' => [], // Placeholder, will be populated later
                     'action_types' => $actionTypesInfo,
                     'total_matches' => count($playerMatches),
                     'total_events' => $events->count()
@@ -1277,7 +1280,7 @@ class PlayerStatisticsController extends Controller
             Log::info("Found " . $events->count() . " events for person $personId in competition $competitionId");
 
             $playerStats = [];
-            $playerMatches = [];
+            $playerStatsByClub = [];
 
             // Подсчитать матчи только если игрок был в составе
             foreach ($events as $event) {
@@ -1290,25 +1293,54 @@ class PlayerStatisticsController extends Controller
                 // Подсчитать действия
                 foreach ($event->actions as $action) {
                     $actionType = $action->actionType->name;
-
+                    $club = $action->club;
+                    $clubKey = $club ? $club->id : 0;
+                    $clubInfo = $club ? [
+                        'id' => $club->id,
+                        'title' => $club->title,
+                        'image_path' => $club->club_image_path,
+                        'city' => $club->city ? $club->city->title : null
+                    ] : null;
+                    // Общая статистика
                     if (!isset($playerStats[$actionType])) {
                         $playerStats[$actionType] = 0;
                     }
-
-                    // Для типов действий с group=2 суммируем значение поля value
-                    // Для остальных считаем количество событий
                     if ($action->actionType->group == 2) {
                         $playerStats[$actionType] += $action->value ?? 0;
                     } else {
                         $playerStats[$actionType]++;
                     }
-
-                    // Дополнительно группируем головы (group=1) в общее поле "Голы всего"
+                    // Статистика по клубам
+                    if (!isset($playerStatsByClub[$actionType])) {
+                        $playerStatsByClub[$actionType] = [];
+                    }
+                    if (!isset($playerStatsByClub[$actionType][$clubKey])) {
+                        $playerStatsByClub[$actionType][$clubKey] = [
+                            'count' => 0,
+                            'club' => $clubInfo
+                        ];
+                    }
+                    if ($action->actionType->group == 2) {
+                        $playerStatsByClub[$actionType][$clubKey]['count'] += $action->value ?? 0;
+                    } else {
+                        $playerStatsByClub[$actionType][$clubKey]['count']++;
+                    }
+                    // Голы всего (по клубам)
                     if ($action->actionType->group == 1) {
                         if (!isset($playerStats['Голы всего'])) {
                             $playerStats['Голы всего'] = 0;
                         }
                         $playerStats['Голы всего'] += $action->value ?? 1;
+                        if (!isset($playerStatsByClub['Голы всего'])) {
+                            $playerStatsByClub['Голы всего'] = [];
+                        }
+                        if (!isset($playerStatsByClub['Голы всего'][$clubKey])) {
+                            $playerStatsByClub['Голы всего'][$clubKey] = [
+                                'count' => 0,
+                                'club' => $clubInfo
+                            ];
+                        }
+                        $playerStatsByClub['Голы всего'][$clubKey]['count'] += $action->value ?? 1;
                     }
                 }
             }
@@ -1364,6 +1396,7 @@ class PlayerStatisticsController extends Controller
                         ]
                     ],
                     'statistics' => $playerStats,
+                    'statistics_by_club' => $playerStatsByClub,
                     'action_types' => $actionTypesInfo,
                     'total_matches' => count($playerMatches),
                     'total_events' => $events->count()
