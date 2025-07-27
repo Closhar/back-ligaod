@@ -26,10 +26,9 @@ class ApiClubController extends Controller
         $isAlien = $request->query('is_alien');
         $regionId = $request->query('region_id', 1);
 
-        // Если region_id передан как строка (subdomain), преобразуем его в id
-        if (is_string($regionId) && !is_numeric($regionId)) {
-            $region = \App\Models\Region::where('subdomain', $regionId)->first();
-            $regionId = $region ? $region->id : 1;
+        // Преобразуем region_id в числовое значение
+        if (is_string($regionId)) {
+            $regionId = is_numeric($regionId) ? (int)$regionId : 1;
         }
         $perPage = $request->query('per_page', 10); // Количество элементов на странице (по умолчанию 10)
         $page = $request->query('page', 1); // Номер страницы (по умолчанию 1)
