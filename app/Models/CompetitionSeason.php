@@ -30,6 +30,14 @@ class CompetitionSeason extends Model
     }
 
     /**
+     * Отношение к сезону
+     */
+    public function season(): BelongsTo
+    {
+        return $this->belongsTo(Season::class);
+    }
+
+    /**
      * Scope для активных сезонов
      */
     public function scopeActive(Builder $query): Builder
