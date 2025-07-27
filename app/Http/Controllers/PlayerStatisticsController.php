@@ -172,79 +172,112 @@ class PlayerStatisticsController extends Controller
                 ]);
             }
 
-            // Собираем статистику игроков
+            // Собрать статистику игроков
             $playerStats = [];
-            $actionTypes = [];
-            $playerSeasons = [];
+            $playerMatches = [];
 
+            // Сначала подсчитаем матчи для каждого игрока из состава
             foreach ($events as $event) {
-                // Обрабатываем действия игроков
-                foreach ($event->actions as $action) {
-                    $playerId = $action->person_id;
-                    $actionType = $action->actionType->name ?? 'Неизвестное действие';
-
-                    if (!isset($playerStats[$playerId])) {
-                        $playerStats[$playerId] = [
-                            'player' => $action->person,
-                            'actions' => [],
-                            'total_matches' => 0
-                        ];
-                    }
-
-                    if (!isset($playerStats[$playerId]['actions'][$actionType])) {
-                        $playerStats[$playerId]['actions'][$actionType] = 0;
-                    }
-                    $playerStats[$playerId]['actions'][$actionType]++;
-
-                    // Собираем информацию о типах действий
-                    if (!isset($actionTypes[$actionType])) {
-                        $actionTypes[$actionType] = [
-                            'name' => $actionType,
-                            'icon' => $action->actionType->icon ?? null,
-                            'color' => $action->actionType->color ?? null,
-                            'short_name' => $action->actionType->short_name ?? $actionType,
-                            'short_name_table' => $action->actionType->short_name_table ?? $actionType,
-                            'full_name' => $action->actionType->full_name ?? $actionType
-                        ];
-                    }
-                }
-
-                // Обрабатываем составы для подсчета матчей
                 foreach ($event->lineups as $lineup) {
                     $playerId = $lineup->person_id;
-
-                    if (!isset($playerStats[$playerId])) {
-                        $playerStats[$playerId] = [
-                            'player' => $lineup->person,
-                            'actions' => [],
-                            'total_matches' => 0
-                        ];
+                    if (!isset($playerMatches[$playerId])) {
+                        $playerMatches[$playerId] = [];
                     }
-
-                    $playerStats[$playerId]['total_matches']++;
+                    if (!in_array($event->id, $playerMatches[$playerId])) {
+                        $playerMatches[$playerId][] = $event->id;
+                    }
                 }
             }
 
-            // Преобразуем в массив и добавляем общую статистику
-            $result = [];
-            foreach ($playerStats as $playerId => $stats) {
-                $stats['total_seasons'] = 0;
-                $result[] = $stats;
+            // Теперь подсчитаем действия и создадим статистику
+            foreach ($events as $event) {
+                foreach ($event->actions as $action) {
+                    $playerId = $action->person_id;
+
+                    if (!isset($playerStats[$playerId])) {
+                        $playerStats[$playerId] = [
+                            'player' => [
+                                'id' => $action->person->id,
+                                'full_name' => $action->person->full_name,
+                                'player_number' => $action->person->player_number,
+                                'amplua' => $action->person->activeAmpluaMemberships->first()?->amplua?->name ?? 'Не указано',
+                                'main_image' => $action->person->mainImage
+                            ],
+                            'actions' => [],
+                            'total_matches' => 0
+                        ];
+                    }
+
+                    $actionType = $action->actionType->name;
+                    if (!isset($playerStats[$playerId]['actions'][$actionType])) {
+                        $playerStats[$playerId]['actions'][$actionType] = 0;
+                    }
+
+                    // Для типов действий с group=2 суммируем значение поля value
+                    // Для остальных считаем количество событий
+                    if ($action->actionType->group == 2) {
+                        $playerStats[$playerId]['actions'][$actionType] += $action->value ?? 0;
+                    } else {
+                        $playerStats[$playerId]['actions'][$actionType]++;
+                    }
+                }
+            }
+
+            // Добавить количество матчей из состава
+            foreach ($playerStats as $playerId => &$stats) {
+                $stats['total_matches'] = count($playerMatches[$playerId] ?? []);
+            }
+
+            // Преобразовать в массив и отсортировать по количеству матчей
+            $result = array_values($playerStats);
+            usort($result, function($a, $b) {
+                return $b['total_matches'] - $a['total_matches'];
+            });
+
+            // Собрать информацию о типах действий
+            $actionTypesInfo = [];
+            foreach ($result as $player) {
+                foreach ($player['actions'] as $actionName => $count) {
+                    if (!isset($actionTypesInfo[$actionName])) {
+                        // Найти тип действия в базе
+                        $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                        if ($actionType) {
+                            $actionTypesInfo[$actionName] = [
+                                'short_name' => $actionType->short_name ?: $actionType->name,
+                                'icon' => $actionType->icon,
+                                'color' => $actionType->color,
+                                'full_name' => $actionType->name
+                            ];
+                        } else {
+                            $actionTypesInfo[$actionName] = [
+                                'short_name' => $actionName,
+                                'icon' => null,
+                                'color' => null,
+                                'full_name' => $actionName
+                            ];
+                        }
+                    }
+                }
             }
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'players' => $result,
-                    'action_types' => $actionTypes,
                     'season' => [
-                        'competition' => $competition,
-                        'date_from' => $competition->date_from,
-                        'date_to' => $competition->date_to,
-                        'total_events' => $events->count()
-                    ]
+                        'id' => null,
+                        'name' => null,
+                        'date_from' => null,
+                        'date_to' => null,
+                        'competition' => [
+                            'id' => $competition->id,
+                            'title' => $competition->title
+                        ]
+                    ],
+                    'players' => $result,
+                    'action_types' => $actionTypesInfo,
+                    'total_events' => $events->count()
                 ],
-                'message' => 'Статистика успешно загружена'
+                'message' => 'Статистика игроков успешно получена'
             ]);
 
         } catch (\Exception $e) {
