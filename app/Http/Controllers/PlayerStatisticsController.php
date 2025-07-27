@@ -135,7 +135,14 @@ class PlayerStatisticsController extends Controller
                     if (!isset($playerStats[$playerId]['actions'][$actionType])) {
                         $playerStats[$playerId]['actions'][$actionType] = 0;
                     }
-                    $playerStats[$playerId]['actions'][$actionType]++;
+
+                    // Для типов действий с group=2 суммируем значение поля value
+                    // Для остальных считаем количество событий
+                    if ($action->actionType->group == 2) {
+                        $playerStats[$playerId]['actions'][$actionType] += $action->value ?? 0;
+                    } else {
+                        $playerStats[$playerId]['actions'][$actionType]++;
+                    }
                 }
             }
 
@@ -246,7 +253,14 @@ class PlayerStatisticsController extends Controller
                     if (!isset($playerStats[$playerId]['actions'][$actionType])) {
                         $playerStats[$playerId]['actions'][$actionType] = 0;
                     }
-                    $playerStats[$playerId]['actions'][$actionType]++;
+
+                    // Для типов действий с group=2 суммируем значение поля value
+                    // Для остальных считаем количество событий
+                    if ($action->actionType->group == 2) {
+                        $playerStats[$playerId]['actions'][$actionType] += $action->value ?? 0;
+                    } else {
+                        $playerStats[$playerId]['actions'][$actionType]++;
+                    }
                 }
             }
 
