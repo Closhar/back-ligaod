@@ -58,6 +58,7 @@ use App\Http\Controllers\EventActionController;
 use App\Http\Controllers\EventLineupController;
 use App\Http\Controllers\EventTeamActionController;
 use App\Http\Controllers\ParseTableController;
+use App\Http\Controllers\PlayerStatisticsController;
 use App\Http\Controllers\PromptTemplateController;
 use App\Http\Controllers\TeamActionTypeController;
 use App\Http\Controllers\TelegramController;
@@ -862,6 +863,13 @@ Route::apiResource('image-editor-templates', ImageEditorTemplateController::clas
 
 // Маршруты для изображений событий
 Route::post('/event-images/tmp', [EventImageController::class, 'tmpUpload']);
+
+// Маршруты для статистики игроков
+Route::prefix('clubs/{club}/statistics')->group(function () {
+    Route::get('/seasons', [PlayerStatisticsController::class, 'getClubSeasons']);
+    Route::get('/players', [PlayerStatisticsController::class, 'getPlayerStatsOverall']);
+    Route::get('/players/{season}', [PlayerStatisticsController::class, 'getPlayerStatsBySeason']);
+});
 
 
 
