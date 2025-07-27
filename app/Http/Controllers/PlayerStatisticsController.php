@@ -684,4 +684,529 @@ class PlayerStatisticsController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Получить все сезоны и соревнования для конкретного игрока
+     */
+    public function getPersonSeasons($personId): JsonResponse
+    {
+        try {
+            // Получить все события игрока с соревнованиями и сезонами
+            $events = Event::whereHas('actions', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->orWhereHas('lineups', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->with(['competition.seasons' => function($query) {
+                    $query->orderBy('date_from', 'desc');
+                }])
+                ->get();
+
+            // Собрать уникальные сезоны и соревнования
+            $seasons = collect();
+            $competitions = collect();
+
+            foreach ($events as $event) {
+                if ($event->competition) {
+                    // Добавляем соревнование
+                    $competitions->put($event->competition->id, $event->competition);
+
+                    // Получаем все сезоны соревнования
+                    $eventSeasons = $event->competition->seasons()
+                        ->with('competition:id,title,title_short')
+                        ->get();
+                    $seasons = $seasons->merge($eventSeasons);
+                }
+            }
+
+            // Убрать дубликаты сезонов и отсортировать
+            $uniqueSeasons = $seasons->unique('id')->sortByDesc('date_from')->values();
+
+            // Убрать дубликаты соревнований и отсортировать
+            $uniqueCompetitions = $competitions->values()->sortBy('title');
+
+            // Добавить информацию о сезонах для каждого соревнования
+            foreach ($uniqueCompetitions as $competition) {
+                $competitionSeasons = $uniqueSeasons->where('competition_id', $competition->id);
+                $competition->seasons_info = $competitionSeasons->map(function($season) {
+                    return [
+                        'id' => $season->id,
+                        'name' => $season->name,
+                        'title' => $season->title,
+                        'date_from' => $season->date_from,
+                        'date_to' => $season->date_to
+                    ];
+                })->values();
+            }
+
+            // Если соревнования не найдены через события, попробуем получить их из сезонов
+            if ($uniqueCompetitions->isEmpty() && $uniqueSeasons->isNotEmpty()) {
+                $competitionsFromSeasons = collect();
+
+                foreach ($uniqueSeasons as $season) {
+                    if ($season->competition_id && !$season->is_virtual) {
+                        $competition = \App\Models\Competition::find($season->competition_id);
+                        if ($competition) {
+                            $competitionsFromSeasons->put($competition->id, $competition);
+                        }
+                    }
+                }
+
+                $uniqueCompetitions = $competitionsFromSeasons->values()->sortBy('title');
+
+                // Добавить информацию о сезонах для каждого соревнования
+                foreach ($uniqueCompetitions as $competition) {
+                    $competitionSeasons = $uniqueSeasons->where('competition_id', $competition->id);
+                    $competition->seasons_info = $competitionSeasons->map(function($season) {
+                        return [
+                            'id' => $season->id,
+                            'name' => $season->name,
+                            'title' => $season->title,
+                            'date_from' => $season->date_from,
+                            'date_to' => $season->date_to
+                        ];
+                    })->values();
+                }
+            }
+
+            // Если нет сезонов, создаем виртуальный сезон "Все время"
+            if ($uniqueSeasons->isEmpty()) {
+                $virtualSeason = (object) [
+                    'id' => 'all',
+                    'title' => 'Все время',
+                    'display_name' => 'Все время',
+                    'date_from' => null,
+                    'date_to' => null,
+                    'competition_id' => null,
+                    'is_virtual' => true
+                ];
+                $uniqueSeasons = collect([$virtualSeason]);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'seasons' => $uniqueSeasons->values(),
+                    'competitions' => $uniqueCompetitions->values()
+                ],
+                'message' => 'Данные успешно получены'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении данных: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить общую статистику конкретного игрока
+     */
+    public function getPersonStatsOverall($personId): JsonResponse
+    {
+        try {
+            // Получить все события игрока с действиями
+            $events = Event::whereHas('actions', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->orWhereHas('lineups', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->with([
+                    'actions' => function($query) use ($personId) {
+                        $query->where('person_id', $personId)
+                              ->with(['actionType']);
+                    },
+                    'lineups' => function($query) use ($personId) {
+                        $query->where('person_id', $personId);
+                    },
+                    'competition.seasons'
+                ])
+                ->get();
+
+            $playerStats = [];
+            $playerMatches = [];
+            $playerSeasons = [];
+            $playerCompetitions = [];
+
+            // Подсчитать матчи, сезоны и соревнования
+            foreach ($events as $event) {
+                // Определить сезон для события
+                $eventSeason = null;
+                if ($event->competition && $event->date_from) {
+                    $eventSeason = $event->competition->seasons()
+                        ->where('date_from', '<=', $event->date_from)
+                        ->where('date_to', '>=', $event->date_from)
+                        ->first();
+                }
+
+                // Подсчитать матчи
+                if (!in_array($event->id, $playerMatches)) {
+                    $playerMatches[] = $event->id;
+                }
+
+                // Подсчитать сезоны
+                if ($eventSeason && !in_array($eventSeason->id, $playerSeasons)) {
+                    $playerSeasons[] = $eventSeason->id;
+                }
+
+                // Подсчитать соревнования
+                if ($event->competition && !in_array($event->competition->id, $playerCompetitions)) {
+                    $playerCompetitions[] = $event->competition->id;
+                }
+
+                // Подсчитать действия
+                foreach ($event->actions as $action) {
+                    $actionType = $action->actionType->name;
+
+                    if (!isset($playerStats[$actionType])) {
+                        $playerStats[$actionType] = 0;
+                    }
+
+                    // Для типов действий с group=2 суммируем значение поля value
+                    // Для остальных считаем количество событий
+                    if ($action->actionType->group == 2) {
+                        $playerStats[$actionType] += $action->value ?? 0;
+                    } else {
+                        $playerStats[$actionType]++;
+                    }
+
+                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    if ($action->actionType->group == 1) {
+                        if (!isset($playerStats['ГОЛЫ'])) {
+                            $playerStats['ГОЛЫ'] = 0;
+                        }
+                        $playerStats['ГОЛЫ'] += $action->value ?? 1;
+                    }
+                }
+            }
+
+            // Собрать информацию о типах действий
+            $actionTypesInfo = [];
+            foreach ($playerStats as $actionName => $count) {
+                // Специальная обработка для поля "ГОЛЫ"
+                if ($actionName === 'ГОЛЫ') {
+                    $actionTypesInfo[$actionName] = [
+                        'short_name' => 'ГОЛЫ',
+                        'short_name_table' => 'ГОЛЫ',
+                        'icon' => 'heroicons:fire',
+                        'color' => 'text-red-500',
+                        'full_name' => 'голы всего'
+                    ];
+                } else {
+                    // Найти тип действия в базе
+                    $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                    if ($actionType) {
+                        $actionTypesInfo[$actionName] = [
+                            'short_name' => $actionType->short_name ?: $actionType->name,
+                            'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                            'icon' => $actionType->icon,
+                            'color' => $actionType->color,
+                            'full_name' => $actionType->name
+                        ];
+                    } else {
+                        $actionTypesInfo[$actionName] = [
+                            'short_name' => $actionName,
+                            'short_name_table' => $actionName,
+                            'icon' => null,
+                            'color' => null,
+                            'full_name' => $actionName
+                        ];
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'statistics' => $playerStats,
+                    'action_types' => $actionTypesInfo,
+                    'total_matches' => count($playerMatches),
+                    'total_seasons' => count($playerSeasons),
+                    'total_competitions' => count($playerCompetitions),
+                    'total_events' => $events->count()
+                ],
+                'message' => 'Общая статистика игрока успешно получена'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении общей статистики: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить статистику конкретного игрока по сезону
+     */
+    public function getPersonStatsBySeason($personId, $seasonId): JsonResponse
+    {
+        try {
+            // Если это виртуальный сезон "Все время"
+            if ($seasonId === 'all') {
+                return $this->getPersonStatsOverall($personId);
+            }
+
+            // Получаем сезон
+            $season = CompetitionSeason::find($seasonId);
+            if (!$season) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Сезон не найден'
+                ], 404);
+            }
+
+            // Получить события игрока для данного сезона
+            $events = Event::whereHas('actions', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->orWhereHas('lineups', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->where('competition_id', $season->competition_id)
+                ->with([
+                    'actions' => function($query) use ($personId) {
+                        $query->where('person_id', $personId)
+                              ->with(['actionType']);
+                    },
+                    'lineups' => function($query) use ($personId) {
+                        $query->where('person_id', $personId);
+                    }
+                ])
+                ->get();
+
+            $playerStats = [];
+            $playerMatches = [];
+
+            // Подсчитать матчи
+            foreach ($events as $event) {
+                if (!in_array($event->id, $playerMatches)) {
+                    $playerMatches[] = $event->id;
+                }
+
+                // Подсчитать действия
+                foreach ($event->actions as $action) {
+                    $actionType = $action->actionType->name;
+
+                    if (!isset($playerStats[$actionType])) {
+                        $playerStats[$actionType] = 0;
+                    }
+
+                    // Для типов действий с group=2 суммируем значение поля value
+                    // Для остальных считаем количество событий
+                    if ($action->actionType->group == 2) {
+                        $playerStats[$actionType] += $action->value ?? 0;
+                    } else {
+                        $playerStats[$actionType]++;
+                    }
+
+                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    if ($action->actionType->group == 1) {
+                        if (!isset($playerStats['ГОЛЫ'])) {
+                            $playerStats['ГОЛЫ'] = 0;
+                        }
+                        $playerStats['ГОЛЫ'] += $action->value ?? 1;
+                    }
+                }
+            }
+
+            // Собрать информацию о типах действий
+            $actionTypesInfo = [];
+            foreach ($playerStats as $actionName => $count) {
+                // Специальная обработка для поля "ГОЛЫ"
+                if ($actionName === 'ГОЛЫ') {
+                    $actionTypesInfo[$actionName] = [
+                        'short_name' => 'ГОЛЫ',
+                        'short_name_table' => 'ГОЛЫ',
+                        'icon' => 'heroicons:fire',
+                        'color' => 'text-red-500',
+                        'full_name' => 'голы всего'
+                    ];
+                } else {
+                    // Найти тип действия в базе
+                    $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                    if ($actionType) {
+                        $actionTypesInfo[$actionName] = [
+                            'short_name' => $actionType->short_name ?: $actionType->name,
+                            'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                            'icon' => $actionType->icon,
+                            'color' => $actionType->color,
+                            'full_name' => $actionType->name
+                        ];
+                    } else {
+                        $actionTypesInfo[$actionName] = [
+                            'short_name' => $actionName,
+                            'short_name_table' => $actionName,
+                            'icon' => null,
+                            'color' => null,
+                            'full_name' => $actionName
+                        ];
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'season' => [
+                        'id' => $season->id,
+                        'name' => $season->name,
+                        'date_from' => $season->date_from,
+                        'date_to' => $season->date_to,
+                        'competition' => [
+                            'id' => $season->competition->id,
+                            'title' => $season->competition->title
+                        ]
+                    ],
+                    'statistics' => $playerStats,
+                    'action_types' => $actionTypesInfo,
+                    'total_matches' => count($playerMatches),
+                    'total_events' => $events->count()
+                ],
+                'message' => 'Статистика игрока по сезону успешно получена'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении статистики: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить статистику конкретного игрока по соревнованию
+     */
+    public function getPersonStatsByCompetition($personId, $competitionId): JsonResponse
+    {
+        try {
+            // Получаем соревнование
+            $competition = \App\Models\Competition::find($competitionId);
+            if (!$competition) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Соревнование не найдено'
+                ], 404);
+            }
+
+            // Получить события игрока для данного соревнования
+            $events = Event::whereHas('actions', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->orWhereHas('lineups', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->where('competition_id', $competition->id)
+                ->with([
+                    'actions' => function($query) use ($personId) {
+                        $query->where('person_id', $personId)
+                              ->with(['actionType']);
+                    },
+                    'lineups' => function($query) use ($personId) {
+                        $query->where('person_id', $personId);
+                    }
+                ])
+                ->get();
+
+            $playerStats = [];
+            $playerMatches = [];
+
+            // Подсчитать матчи
+            foreach ($events as $event) {
+                if (!in_array($event->id, $playerMatches)) {
+                    $playerMatches[] = $event->id;
+                }
+
+                // Подсчитать действия
+                foreach ($event->actions as $action) {
+                    $actionType = $action->actionType->name;
+
+                    if (!isset($playerStats[$actionType])) {
+                        $playerStats[$actionType] = 0;
+                    }
+
+                    // Для типов действий с group=2 суммируем значение поля value
+                    // Для остальных считаем количество событий
+                    if ($action->actionType->group == 2) {
+                        $playerStats[$actionType] += $action->value ?? 0;
+                    } else {
+                        $playerStats[$actionType]++;
+                    }
+
+                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    if ($action->actionType->group == 1) {
+                        if (!isset($playerStats['ГОЛЫ'])) {
+                            $playerStats['ГОЛЫ'] = 0;
+                        }
+                        $playerStats['ГОЛЫ'] += $action->value ?? 1;
+                    }
+                }
+            }
+
+            // Собрать информацию о типах действий
+            $actionTypesInfo = [];
+            foreach ($playerStats as $actionName => $count) {
+                // Специальная обработка для поля "ГОЛЫ"
+                if ($actionName === 'ГОЛЫ') {
+                    $actionTypesInfo[$actionName] = [
+                        'short_name' => 'ГОЛЫ',
+                        'short_name_table' => 'ГОЛЫ',
+                        'icon' => 'heroicons:fire',
+                        'color' => 'text-red-500',
+                        'full_name' => 'голы всего'
+                    ];
+                } else {
+                    // Найти тип действия в базе
+                    $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                    if ($actionType) {
+                        $actionTypesInfo[$actionName] = [
+                            'short_name' => $actionType->short_name ?: $actionType->name,
+                            'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                            'icon' => $actionType->icon,
+                            'color' => $actionType->color,
+                            'full_name' => $actionType->name
+                        ];
+                    } else {
+                        $actionTypesInfo[$actionName] = [
+                            'short_name' => $actionName,
+                            'short_name_table' => $actionName,
+                            'icon' => null,
+                            'color' => null,
+                            'full_name' => $actionName
+                        ];
+                    }
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'season' => [
+                        'id' => null,
+                        'name' => null,
+                        'date_from' => null,
+                        'date_to' => null,
+                        'competition' => [
+                            'id' => $competition->id,
+                            'title' => $competition->title
+                        ]
+                    ],
+                    'statistics' => $playerStats,
+                    'action_types' => $actionTypesInfo,
+                    'total_matches' => count($playerMatches),
+                    'total_events' => $events->count()
+                ],
+                'message' => 'Статистика игрока по соревнованию успешно получена'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении статистики: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }

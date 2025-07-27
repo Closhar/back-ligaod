@@ -872,6 +872,14 @@ Route::prefix('clubs/{club}/statistics')->group(function () {
     Route::get('/players/competition/{competition}', [PlayerStatisticsController::class, 'getPlayerStatsByCompetition']);
 });
 
+// Маршруты для статистики конкретного игрока
+Route::prefix('people/{person}/statistics')->group(function () {
+    Route::get('/seasons', [PlayerStatisticsController::class, 'getPersonSeasons']);
+    Route::get('/overall', [PlayerStatisticsController::class, 'getPersonStatsOverall']);
+    Route::get('/season/{season}', [PlayerStatisticsController::class, 'getPersonStatsBySeason']);
+    Route::get('/competition/{competition}', [PlayerStatisticsController::class, 'getPersonStatsByCompetition']);
+});
+
 
 
 
