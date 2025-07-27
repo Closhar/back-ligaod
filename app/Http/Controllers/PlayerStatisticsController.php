@@ -730,42 +730,26 @@ class PlayerStatisticsController extends Controller
                 $competition = Competition::find($competitionId);
                 if ($competition) {
                     $competitions->put($competition->id, $competition);
-                    Log::info("Найдено соревнование: {$competition->title}");
-                }
+                    }
 
                 // Получаем сезоны этого соревнования через pivot таблицу
                 $competitionSeasons = DB::table('competition_seasons')
                     ->where('competition_id', $competitionId)
                     ->get();
 
-                Log::info("Найдено записей в competition_seasons для соревнования {$competitionId}: " . $competitionSeasons->count());
-
                 foreach ($competitionSeasons as $cs) {
-                    Log::info("Обрабатываем запись competition_seasons: ID={$cs->id}, season_id={$cs->season_id}");
-
                     if ($cs->season_id) {
                         $season = Season::find($cs->season_id);
                         if ($season) {
                             $playerSeasons->put($season->id, $season);
-                            Log::info("Добавлен сезон: {$season->title} (ID: {$season->id})");
-                        } else {
-                            Log::error("Сезон с ID {$cs->season_id} не найден!");
                         }
-                    } else {
-                        Log::warning("Запись competition_seasons ID={$cs->id} не имеет season_id");
                     }
                 }
             }
 
-            Log::info("Найдено уникальных сезонов для игрока {$personId}: " . $playerSeasons->count());
-            Log::info("Найдено уникальных соревнований для игрока {$personId}: " . $competitions->count());
-
             // Сортируем сезоны по дате (новые сначала)
             $sortedSeasons = $playerSeasons->sortByDesc('date_from')->values();
             $sortedCompetitions = $competitions->sortBy('title')->values();
-
-            Log::info("Итоговое количество сезонов: " . $sortedSeasons->count());
-            Log::info("Итоговое количество соревнований: " . $sortedCompetitions->count());
 
             return response()->json([
                 'success' => true,
@@ -976,18 +960,12 @@ class PlayerStatisticsController extends Controller
                 ], 404);
             }
 
-            Log::info("Найден сезон: {$season->title}");
-
             // Получаем все соревнования, связанные с этим сезоном через pivot таблицу
             $competitionIds = DB::table('competition_seasons')
                 ->where('season_id', $season->id)
                 ->pluck('competition_id');
 
-            Log::info("Найдено соревнований для сезона {$season->id}: " . $competitionIds->count());
-            Log::info("ID соревнований: " . $competitionIds->toJson());
-
             if ($competitionIds->isEmpty()) {
-                Log::error("Соревнования для сезона {$season->id} не найдены");
                 return response()->json([
                     'success' => false,
                     'error' => 'Соревнования для данного сезона не найдены'
@@ -1011,8 +989,6 @@ class PlayerStatisticsController extends Controller
                     'competition'
                 ])
                 ->get();
-
-            Log::info("Найдено событий для игрока {$personId} в сезоне {$season->id}: " . $events->count());
 
             // Инициализируем массивы для статистики
             $playerStats = [];
