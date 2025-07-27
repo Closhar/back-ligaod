@@ -299,27 +299,27 @@ class PlayerStatisticsController extends Controller
                         ];
                     }
 
-                    $actionType = $action->actionType->name;
+                                        $actionType = $action->actionType->name;
 
-                    // Группируем головы (group=1) в общее поле "ГОЛЫ"
+                    // Для всех типов действий сначала добавляем в общее поле
+                    if (!isset($playerStats[$playerId]['actions'][$actionType])) {
+                        $playerStats[$playerId]['actions'][$actionType] = 0;
+                    }
+
+                    // Для типов действий с group=2 суммируем значение поля value
+                    // Для остальных считаем количество событий
+                    if ($action->actionType->group == 2) {
+                        $playerStats[$playerId]['actions'][$actionType] += $action->value ?? 0;
+                    } else {
+                        $playerStats[$playerId]['actions'][$actionType]++;
+                    }
+
+                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
                     if ($action->actionType->group == 1) {
                         if (!isset($playerStats[$playerId]['actions']['ГОЛЫ'])) {
                             $playerStats[$playerId]['actions']['ГОЛЫ'] = 0;
                         }
                         $playerStats[$playerId]['actions']['ГОЛЫ'] += $action->value ?? 1;
-                    } else {
-                        // Для остальных типов действий
-                        if (!isset($playerStats[$playerId]['actions'][$actionType])) {
-                            $playerStats[$playerId]['actions'][$actionType] = 0;
-                        }
-
-                        // Для типов действий с group=2 суммируем значение поля value
-                        // Для остальных считаем количество событий
-                        if ($action->actionType->group == 2) {
-                            $playerStats[$playerId]['actions'][$actionType] += $action->value ?? 0;
-                        } else {
-                            $playerStats[$playerId]['actions'][$actionType]++;
-                        }
                     }
                 }
             }
