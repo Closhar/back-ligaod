@@ -1589,4 +1589,71 @@ class PlayerStatisticsController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Получить соревнования игрока по сезону
+     */
+    public function getPersonCompetitionsBySeason($personId, $seasonId): JsonResponse
+    {
+        try {
+            // Находим сезон по ID
+            $season = Season::find($seasonId);
+            if (!$season) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Сезон не найден'
+                ], 404);
+            }
+
+            // Получаем все соревнования, связанные с этим сезоном через pivot таблицу
+            $competitionIds = DB::table('competition_seasons')
+                ->where('season_id', $season->id)
+                ->pluck('competition_id');
+
+            if ($competitionIds->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Соревнования для данного сезона не найдены'
+                ], 404);
+            }
+
+            // Получаем события игрока в соревнованиях этого сезона
+            $events = Event::whereIn('competition_id', $competitionIds)
+                ->where(function($query) use ($personId) {
+                    $query->whereHas('actions', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        })
+                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        });
+                })
+                ->with(['competition'])
+                ->get();
+
+            // Собираем уникальные соревнования, в которых есть события игрока
+            $competitions = collect();
+            foreach ($events as $event) {
+                if ($event->competition && !$competitions->contains('id', $event->competition->id)) {
+                    $competitions->push($event->competition);
+                }
+            }
+
+            // Сортируем соревнования по названию
+            $sortedCompetitions = $competitions->sortBy('title')->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'competitions' => $sortedCompetitions
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения соревнований игрока по сезону: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Ошибка получения соревнований игрока по сезону'
+            ], 500);
+        }
+    }
 }
