@@ -1263,36 +1263,34 @@ class PlayerStatisticsController extends Controller
     public function getPersonStatsBySeasonAndCompetition($personId, $seasonId, $competitionId): JsonResponse
     {
         try {
-            Log::info("getPersonStatsBySeasonAndCompetition called with personId: $personId, seasonId: $seasonId, competitionId: $competitionId");
-
             // Получаем сезон
-            $season = CompetitionSeason::find($seasonId);
+            $season = Season::find($seasonId);
             if (!$season) {
-                Log::error("Season not found: $seasonId");
                 return response()->json([
                     'success' => false,
                     'message' => 'Сезон не найден'
                 ], 404);
             }
-            Log::info("Season found: " . $season->name . " (competition_id: " . $season->competition_id . ")");
 
             // Получаем соревнование
             $competition = \App\Models\Competition::find($competitionId);
             if (!$competition) {
-                Log::error("Competition not found: $competitionId");
                 return response()->json([
                     'success' => false,
                     'message' => 'Соревнование не найдено'
                 ], 404);
             }
-            Log::info("Competition found: " . $competition->title . " (id: " . $competition->id . ")");
 
-            // Проверяем, что сезон принадлежит данному соревнованию
-            if ($season->competition_id != $competition->id) {
-                Log::error("Season competition_id ($season->competition_id) doesn't match competition id ($competition->id)");
+            // Проверяем, что сезон связан с данным соревнованием через pivot таблицу
+            $competitionSeason = DB::table('competition_seasons')
+                ->where('season_id', $season->id)
+                ->where('competition_id', $competition->id)
+                ->first();
+
+            if (!$competitionSeason) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Сезон не принадлежит данному соревнованию'
+                    'message' => 'Сезон не связан с данным соревнованием'
                 ], 400);
             }
 
@@ -1317,7 +1315,7 @@ class PlayerStatisticsController extends Controller
                 ])
                 ->get();
 
-            Log::info("Found " . $events->count() . " events for person $personId in competition $competitionId");
+
 
             $playerStats = [];
             $playerStatsByClub = [];
