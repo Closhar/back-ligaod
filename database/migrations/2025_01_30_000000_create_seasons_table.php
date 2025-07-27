@@ -22,7 +22,7 @@ return new class extends Migration
         });
 
         // Создаем таблицу связи сезонов с соревнованиями
-        Schema::create('competition_season', function (Blueprint $table) {
+        Schema::create('competition_seasons', function (Blueprint $table) {
             $table->id();
             $table->bigInteger('competition_id')->unsigned();
             $table->bigInteger('season_id')->unsigned();
@@ -41,7 +41,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('competition_season');
+        Schema::dropIfExists('competition_seasons');
         Schema::dropIfExists('seasons');
     }
 };

@@ -734,14 +734,14 @@ class PlayerStatisticsController extends Controller
                 }
 
                 // Получаем сезоны этого соревнования через pivot таблицу
-                $competitionSeasons = DB::table('competition_season')
+                $competitionSeasons = DB::table('competition_seasons')
                     ->where('competition_id', $competitionId)
                     ->get();
 
-                Log::info("Найдено записей в competition_season для соревнования {$competitionId}: " . $competitionSeasons->count());
+                Log::info("Найдено записей в competition_seasons для соревнования {$competitionId}: " . $competitionSeasons->count());
 
                 foreach ($competitionSeasons as $cs) {
-                    Log::info("Обрабатываем запись competition_season: ID={$cs->id}, season_id={$cs->season_id}");
+                    Log::info("Обрабатываем запись competition_seasons: ID={$cs->id}, season_id={$cs->season_id}");
 
                     if ($cs->season_id) {
                         $season = Season::find($cs->season_id);
@@ -752,7 +752,7 @@ class PlayerStatisticsController extends Controller
                             Log::error("Сезон с ID {$cs->season_id} не найден!");
                         }
                     } else {
-                        Log::warning("Запись competition_season ID={$cs->id} не имеет season_id");
+                        Log::warning("Запись competition_seasons ID={$cs->id} не имеет season_id");
                     }
                 }
             }
@@ -979,7 +979,7 @@ class PlayerStatisticsController extends Controller
             Log::info("Найден сезон: {$season->title}");
 
             // Получаем все соревнования, связанные с этим сезоном через pivot таблицу
-            $competitionIds = DB::table('competition_season')
+            $competitionIds = DB::table('competition_seasons')
                 ->where('season_id', $season->id)
                 ->pluck('competition_id');
 
@@ -1490,7 +1490,7 @@ class PlayerStatisticsController extends Controller
             }
 
             // Получаем все соревнования, связанные с этим сезоном через pivot таблицу
-            $competitionIds = DB::table('competition_season')
+            $competitionIds = DB::table('competition_seasons')
                 ->where('season_id', $season->id)
                 ->pluck('competition_id');
 

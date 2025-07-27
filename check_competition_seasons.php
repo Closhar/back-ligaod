@@ -11,19 +11,19 @@ $app->make(Illuminate\Contracts\Console\Kernel::class)->bootstrap();
 echo "Проверка таблицы competition_season...\n\n";
 
 try {
-    echo "=== ВСЕ ЗАПИСИ В TABLЕ competition_season ===\n";
-    $allRecords = DB::table('competition_season')->get();
+    echo "=== ВСЕ ЗАПИСИ В TABLЕ competition_seasons ===\n";
+    $allRecords = DB::table('competition_seasons')->get();
     echo "Всего записей: " . $allRecords->count() . "\n\n";
 
     foreach ($allRecords as $record) {
         echo "ID: {$record->id}, Competition ID: {$record->competition_id}, Season ID: {$record->season_id}\n";
     }
 
-    echo "\n=== ПРОВЕРКА КОНКРЕТНЫХ СОРЕВНОВАНИЙ ===\n";
-    $competition111 = DB::table('competition_season')->where('competition_id', 111)->get();
+        echo "\n=== ПРОВЕРКА КОНКРЕТНЫХ СОРЕВНОВАНИЙ ===\n";
+    $competition111 = DB::table('competition_seasons')->where('competition_id', 111)->get();
     echo "Записей для соревнования 111: " . $competition111->count() . "\n";
 
-    $competition95 = DB::table('competition_season')->where('competition_id', 95)->get();
+    $competition95 = DB::table('competition_seasons')->where('competition_id', 95)->get();
     echo "Записей для соревнования 95: " . $competition95->count() . "\n";
 
     echo "\n=== ПРОВЕРКА СЕЗОНОВ ===\n";

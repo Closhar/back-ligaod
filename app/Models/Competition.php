@@ -60,7 +60,7 @@ class Competition extends Model
 
     public function newSeasons()
     {
-        return $this->belongsToMany(Season::class, 'competition_season')
+        return $this->belongsToMany(Season::class, 'competition_seasons')
                     ->withTimestamps();
     }
 

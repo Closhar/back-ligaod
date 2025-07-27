@@ -49,12 +49,12 @@ try {
     foreach ($playerCompetitions as $competitionId) {
         echo "Обрабатываем соревнование: {$competitionId}\n";
 
-        // Проверяем записи в competition_season
-        $competitionSeasons = DB::table('competition_season')
+        // Проверяем записи в competition_seasons
+        $competitionSeasons = DB::table('competition_seasons')
             ->where('competition_id', $competitionId)
             ->get();
 
-        echo "  Записей в competition_season: " . $competitionSeasons->count() . "\n";
+        echo "  Записей в competition_seasons: " . $competitionSeasons->count() . "\n";
 
         foreach ($competitionSeasons as $cs) {
             echo "  - CompetitionSeason ID: {$cs->id}, season_id: {$cs->season_id}\n";

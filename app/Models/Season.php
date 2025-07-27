@@ -28,7 +28,7 @@ class Season extends Model
      */
     public function competitions()
     {
-        return $this->belongsToMany(Competition::class, 'competition_season')
+        return $this->belongsToMany(Competition::class, 'competition_seasons')
                     ->withTimestamps();
     }
 
