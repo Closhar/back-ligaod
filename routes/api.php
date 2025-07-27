@@ -60,6 +60,7 @@ use App\Http\Controllers\EventTeamActionController;
 use App\Http\Controllers\ParseTableController;
 use App\Http\Controllers\PlayerStatisticsController;
 use App\Http\Controllers\PromptTemplateController;
+use App\Http\Controllers\SeasonController;
 use App\Http\Controllers\TeamActionTypeController;
 use App\Http\Controllers\TelegramController;
 use App\Http\Controllers\UserController;
