@@ -1741,4 +1741,108 @@ class PlayerStatisticsController extends Controller
             ], 500);
         }
     }
+
+
+
+        /**
+     * Получить матчи игрока
+     */
+    public function getPersonMatches($personId, Request $request): JsonResponse
+    {
+        try {
+            $page = $request->get('page', 1);
+            $perPage = $request->get('per_page', 15);
+
+            // Базовый запрос для получения событий игрока
+            $query = Event::where(function($query) use ($personId) {
+                    $query->whereHas('actions', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        })
+                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        });
+                })
+                ->with([
+                    'actions' => function($query) use ($personId) {
+                        $query->where('person_id', $personId)
+                              ->with(['actionType']);
+                    },
+                    'lineups' => function($query) use ($personId) {
+                        $query->where('person_id', $personId);
+                    },
+                    'competition',
+                    'club1',
+                    'club2'
+                ]);
+
+            // Получаем общее количество событий
+            $totalEvents = $query->count();
+
+            // Применяем пагинацию
+            $events = $query->orderBy('date_from', 'desc')
+                           ->offset(($page - 1) * $perPage)
+                           ->limit($perPage)
+                           ->get();
+
+            // Формируем матчи с событиями игрока
+            $matches = [];
+            foreach ($events as $event) {
+                $playerEvents = [];
+
+                // Собираем события игрока в этом матче
+                foreach ($event->actions as $action) {
+                    $playerEvents[] = [
+                        'id' => $action->id,
+                        'action_type' => $action->actionType->name,
+                        'minute' => $action->minute,
+                        'value' => $action->value
+                    ];
+                }
+
+                // Определяем команды
+                $homeTeam = $event->club1;
+                $awayTeam = $event->club2;
+
+                $matches[] = [
+                    'id' => $event->id,
+                    'date' => $event->date_from,
+                    'home_team' => $homeTeam ? [
+                        'id' => $homeTeam->id,
+                        'title' => $homeTeam->title,
+                        'image_path' => $homeTeam->club_image_path
+                    ] : null,
+                    'away_team' => $awayTeam ? [
+                        'id' => $awayTeam->id,
+                        'title' => $awayTeam->title,
+                        'image_path' => $awayTeam->club_image_path
+                    ] : null,
+                    'home_score' => $event->score1,
+                    'away_score' => $event->score2,
+                    'player_events' => $playerEvents,
+                    'competition' => $event->competition ? [
+                        'id' => $event->competition->id,
+                        'title' => $event->competition->title
+                    ] : null
+                ];
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'matches' => $matches,
+                    'total' => $totalEvents,
+                    'per_page' => $perPage,
+                    'current_page' => $page,
+                    'last_page' => ceil($totalEvents / $perPage)
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения матчей игрока: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Ошибка получения матчей игрока'
+            ], 500);
+        }
+    }
 }
