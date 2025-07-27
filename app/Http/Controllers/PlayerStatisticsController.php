@@ -842,9 +842,11 @@ class PlayerStatisticsController extends Controller
                         ->first();
                 }
 
-                // Подсчитать матчи
-                if (!in_array($event->id, $playerMatches)) {
-                    $playerMatches[] = $event->id;
+                // Подсчитать матчи только если игрок был в составе
+                if ($event->lineups->count() > 0) {
+                    if (!in_array($event->id, $playerMatches)) {
+                        $playerMatches[] = $event->id;
+                    }
                 }
 
                 // Подсчитать сезоны
@@ -1114,10 +1116,12 @@ class PlayerStatisticsController extends Controller
             $playerStats = [];
             $playerMatches = [];
 
-            // Подсчитать матчи
+            // Подсчитать матчи только если игрок был в составе
             foreach ($events as $event) {
-                if (!in_array($event->id, $playerMatches)) {
-                    $playerMatches[] = $event->id;
+                if ($event->lineups->count() > 0) {
+                    if (!in_array($event->id, $playerMatches)) {
+                        $playerMatches[] = $event->id;
+                    }
                 }
 
                 // Подсчитать действия
@@ -1273,10 +1277,12 @@ class PlayerStatisticsController extends Controller
             $playerStats = [];
             $playerMatches = [];
 
-            // Подсчитать матчи
+            // Подсчитать матчи только если игрок был в составе
             foreach ($events as $event) {
-                if (!in_array($event->id, $playerMatches)) {
-                    $playerMatches[] = $event->id;
+                if ($event->lineups->count() > 0) {
+                    if (!in_array($event->id, $playerMatches)) {
+                        $playerMatches[] = $event->id;
+                    }
                 }
 
                 // Подсчитать действия
