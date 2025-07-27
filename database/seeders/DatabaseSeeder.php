@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             RatingYearSeeder::class,
             TournamentTypeSeeder::class,
             AdminPageSeeder::class,
+            CompetitionSeasonPageSeeder::class,
         ]);
     }
 }

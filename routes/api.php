@@ -526,6 +526,11 @@ Route::post('competitions/{id}/upload-image', [CompetitionController::class, 'up
 Route::delete('competitions/{id}/image', [CompetitionController::class, 'destroyImage']);
 Route::post('competitions/{id}/delete-image', [CompetitionController::class, 'deleteImage']);
 
+// Маршруты для сезонов соревнований
+Route::apiResource('competition-seasons', \App\Http\Controllers\Api\CompetitionSeasonController::class);
+Route::get('competition-seasons/competition/{competitionId}', [\App\Http\Controllers\Api\CompetitionSeasonController::class, 'byCompetition']);
+Route::get('competition-seasons/active', [\App\Http\Controllers\Api\CompetitionSeasonController::class, 'active']);
+
 Route::apiResource('images', ImageController::class);
 Route::post('images/{id}/upload-image', [ImageController::class, 'uploadImage']);
 Route::delete('images/{id}/image', [ImageController::class, 'destroyImage']);

@@ -48,6 +48,16 @@ class Competition extends Model
         return $this->hasMany(Event::class);
     }
 
+    public function seasons(): HasMany
+    {
+        return $this->hasMany(CompetitionSeason::class);
+    }
+
+    public function activeSeasons(): HasMany
+    {
+        return $this->hasMany(CompetitionSeason::class)->where('is_active', true);
+    }
+
     public function parseTable(): BelongsTo
     {
         return $this->belongsTo(ParseTable::class);
@@ -106,6 +116,26 @@ class Competition extends Model
     public function getEventNameAttribute()
     {
         return $this->title;
+    }
+
+    /**
+     * Получить активный сезон на определенную дату
+     */
+    public function getActiveSeasonOnDate(string $date): ?CompetitionSeason
+    {
+        return $this->seasons()
+            ->where('is_active', true)
+            ->where('date_from', '<=', $date)
+            ->where('date_to', '>=', $date)
+            ->first();
+    }
+
+    /**
+     * Получить все сезоны, отсортированные по дате начала
+     */
+    public function getSeasonsOrdered(): \Illuminate\Database\Eloquent\Collection
+    {
+        return $this->seasons()->orderBy('date_from', 'desc')->get();
     }
 
 }
