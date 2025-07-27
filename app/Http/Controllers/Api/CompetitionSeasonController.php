@@ -56,9 +56,20 @@ class CompetitionSeasonController extends Controller
                 'title' => 'required|string|max:255',
                 'date_from' => 'nullable|date',
                 'date_to' => 'nullable|date|after_or_equal:date_from',
-                'is_active' => 'boolean',
+                'is_active' => 'nullable',
                 'description' => 'nullable|string',
             ]);
+
+            // Преобразуем is_active в boolean
+            if (isset($validated['is_active'])) {
+                if (is_string($validated['is_active'])) {
+                    $validated['is_active'] = in_array(strtolower($validated['is_active']), ['true', '1', 'yes', 'on']);
+                } else {
+                    $validated['is_active'] = (bool) $validated['is_active'];
+                }
+            } else {
+                $validated['is_active'] = true; // По умолчанию активен
+            }
 
             $season = CompetitionSeason::create($validated);
             $season->load('competition:id,title,title_short');
@@ -101,9 +112,18 @@ class CompetitionSeasonController extends Controller
                 'title' => 'sometimes|required|string|max:255',
                 'date_from' => 'nullable|date',
                 'date_to' => 'nullable|date|after_or_equal:date_from',
-                'is_active' => 'sometimes|boolean',
+                'is_active' => 'nullable',
                 'description' => 'nullable|string',
             ]);
+
+            // Преобразуем is_active в boolean
+            if (isset($validated['is_active'])) {
+                if (is_string($validated['is_active'])) {
+                    $validated['is_active'] = in_array(strtolower($validated['is_active']), ['true', '1', 'yes', 'on']);
+                } else {
+                    $validated['is_active'] = (bool) $validated['is_active'];
+                }
+            }
 
             $season->update($validated);
             $season->load('competition:id,title,title_short');
