@@ -43,7 +43,7 @@ class EventActionController extends Controller
             $data['value'] = (float) $data['value'];
         }
 
-        // Обработка player_name - если person_id указан, то player_name может быть пустым
+                        // Обработка player_name - если person_id указан, то player_name может быть пустым
         if (isset($data['person_id']) && $data['person_id'] !== null) {
             $data['player_name'] = $data['player_name'] ?? '';
         }
