@@ -54,7 +54,7 @@ class PlayerStatisticsController extends Controller
             }
 
             // Убрать дубликаты сезонов и отсортировать
-            $uniqueSeasons = $seasons->unique('id')->sortByDesc('date_from')->values();
+            $uniqueSeasons = $seasons->unique('title')->sortByDesc('date_from')->values();
 
             // Убрать дубликаты соревнований и отсортировать
             $uniqueCompetitions = $competitions->values()->sortBy('title');
