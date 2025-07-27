@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 class PlayerStatisticsController extends Controller
 {
     /**
-     * Получить все сезоны соревнований для клуба
+     * Получить все сезоны и соревнования для клуба
      */
     public function getClubSeasons(Club $club): JsonResponse
     {
@@ -26,11 +26,16 @@ class PlayerStatisticsController extends Controller
                 }])
                 ->get();
 
-            // Собрать уникальные сезоны с информацией о соревновании
+            // Собрать уникальные сезоны и соревнования
             $seasons = collect();
+            $competitions = collect();
+
             foreach ($events as $event) {
                 if ($event->competition) {
-                    // Получаем все сезоны соревнования с информацией о соревновании
+                    // Добавляем соревнование
+                    $competitions->put($event->competition->id, $event->competition);
+
+                    // Получаем все сезоны соревнования
                     $eventSeasons = $event->competition->seasons()
                         ->with('competition:id,title,title_short')
                         ->get();
@@ -38,19 +43,14 @@ class PlayerStatisticsController extends Controller
                 }
             }
 
-            // Убрать дубликаты и отсортировать
+            // Убрать дубликаты сезонов и отсортировать
             $uniqueSeasons = $seasons->unique('id')->sortByDesc('date_from')->values();
 
-            // Формируем названия сезонов в формате "Название турнира - Название сезона"
-            $formattedSeasons = $uniqueSeasons->map(function($season) {
-                $competitionTitle = $season->competition->title ?? $season->competition->title_short ?? 'Неизвестный турнир';
-                $seasonName = $season->title ?? 'Без названия';
-                $season->display_name = $competitionTitle . ' - ' . $seasonName;
-                return $season;
-            });
+            // Убрать дубликаты соревнований и отсортировать
+            $uniqueCompetitions = $competitions->values()->sortBy('title');
 
             // Если нет сезонов, создаем виртуальный сезон "Все время"
-            if ($formattedSeasons->isEmpty()) {
+            if ($uniqueSeasons->isEmpty()) {
                 $virtualSeason = (object) [
                     'id' => 'all',
                     'title' => 'Все время',
@@ -60,19 +60,150 @@ class PlayerStatisticsController extends Controller
                     'competition_id' => null,
                     'is_virtual' => true
                 ];
-                $formattedSeasons = collect([$virtualSeason]);
+                $uniqueSeasons = collect([$virtualSeason]);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $formattedSeasons,
-                'message' => 'Сезоны успешно получены'
+                'data' => [
+                    'seasons' => $uniqueSeasons,
+                    'competitions' => $uniqueCompetitions
+                ],
+                'message' => 'Данные успешно получены'
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при получении сезонов: ' . $e->getMessage()
+                'message' => 'Ошибка при получении данных: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить статистику игроков по конкретному соревнованию
+     */
+    public function getPlayerStatsByCompetition(Club $club, $competitionId): JsonResponse
+    {
+        try {
+            // Получаем соревнование
+            $competition = \App\Models\Competition::find($competitionId);
+            if (!$competition) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Соревнование не найдено'
+                ], 404);
+            }
+
+            // Получить события клуба для данного соревнования
+            $events = Event::where(function($query) use ($club) {
+                    $query->where('club1_id', $club->id)
+                          ->orWhere('club2_id', $club->id);
+                })
+                ->where('competition_id', $competition->id)
+                ->with([
+                    'actions' => function($query) use ($club) {
+                        $query->where('club_id', $club->id)
+                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
+                    },
+                    'lineups' => function($query) use ($club) {
+                        $query->where('club_id', $club->id)
+                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
+                    }
+                ])
+                ->get();
+
+            if ($events->isEmpty()) {
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'players' => [],
+                        'action_types' => [],
+                        'season' => null
+                    ],
+                    'message' => 'Нет событий для данного соревнования'
+                ]);
+            }
+
+            // Собираем статистику игроков
+            $playerStats = [];
+            $actionTypes = [];
+            $playerSeasons = [];
+
+            foreach ($events as $event) {
+                // Обрабатываем действия игроков
+                foreach ($event->actions as $action) {
+                    $playerId = $action->person_id;
+                    $actionType = $action->actionType->name ?? 'Неизвестное действие';
+
+                    if (!isset($playerStats[$playerId])) {
+                        $playerStats[$playerId] = [
+                            'player' => $action->person,
+                            'actions' => [],
+                            'total_matches' => 0
+                        ];
+                    }
+
+                    if (!isset($playerStats[$playerId]['actions'][$actionType])) {
+                        $playerStats[$playerId]['actions'][$actionType] = 0;
+                    }
+                    $playerStats[$playerId]['actions'][$actionType]++;
+
+                    // Собираем информацию о типах действий
+                    if (!isset($actionTypes[$actionType])) {
+                        $actionTypes[$actionType] = [
+                            'name' => $actionType,
+                            'icon' => $action->actionType->icon ?? null,
+                            'color' => $action->actionType->color ?? null,
+                            'short_name' => $action->actionType->short_name ?? $actionType,
+                            'short_name_table' => $action->actionType->short_name_table ?? $actionType,
+                            'full_name' => $action->actionType->full_name ?? $actionType
+                        ];
+                    }
+                }
+
+                // Обрабатываем составы для подсчета матчей
+                foreach ($event->lineups as $lineup) {
+                    $playerId = $lineup->person_id;
+
+                    if (!isset($playerStats[$playerId])) {
+                        $playerStats[$playerId] = [
+                            'player' => $lineup->person,
+                            'actions' => [],
+                            'total_matches' => 0
+                        ];
+                    }
+
+                    $playerStats[$playerId]['total_matches']++;
+                }
+            }
+
+            // Преобразуем в массив и добавляем общую статистику
+            $result = [];
+            foreach ($playerStats as $playerId => $stats) {
+                $stats['total_seasons'] = 0;
+                $result[] = $stats;
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'players' => $result,
+                    'action_types' => $actionTypes,
+                    'season' => [
+                        'competition' => $competition,
+                        'date_from' => $competition->date_from,
+                        'date_to' => $competition->date_to,
+                        'total_events' => $events->count()
+                    ]
+                ],
+                'message' => 'Статистика успешно загружена'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении статистики: ' . $e->getMessage()
             ], 500);
         }
     }
