@@ -1042,6 +1042,17 @@ class PlayerStatisticsController extends Controller
                             $playerStats['Голы всего'] = 0;
                         }
                         $playerStats['Голы всего'] += $action->value ?? 1;
+
+                        // Добавляем информацию о типе действия для "Голы всего"
+                        if (!isset($actionTypesInfo['Голы всего'])) {
+                            $actionTypesInfo['Голы всего'] = [
+                                'name' => 'Голы всего',
+                                'short_name' => 'Голы всего',
+                                'icon' => 'heroicons:fire',
+                                'color' => 'text-red-500',
+                                'full_name' => 'голы всего'
+                            ];
+                        }
                     }
 
                     // Статистика по клубам
