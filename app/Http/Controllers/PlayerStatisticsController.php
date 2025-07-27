@@ -1545,6 +1545,7 @@ class PlayerStatisticsController extends Controller
                         });
                 })
                 ->whereIn('competition_id', $seasons->pluck('competition_id'))
+                ->whereIn('season_id', $seasons->pluck('id')) // Добавляем фильтрацию по season_id
                 ->with([
                     'actions' => function($query) use ($personId) {
                         $query->where('person_id', $personId)
