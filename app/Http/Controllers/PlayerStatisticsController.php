@@ -26,12 +26,14 @@ class PlayerStatisticsController extends Controller
                 }])
                 ->get();
 
-            // Собрать уникальные сезоны
+            // Собрать уникальные сезоны с информацией о соревновании
             $seasons = collect();
             foreach ($events as $event) {
                 if ($event->competition) {
-                    // Получаем все сезоны соревнования, а не только те, что попадают в диапазон дат
-                    $eventSeasons = $event->competition->seasons()->get();
+                    // Получаем все сезоны соревнования с информацией о соревновании
+                    $eventSeasons = $event->competition->seasons()
+                        ->with('competition:id,title,title_short')
+                        ->get();
                     $seasons = $seasons->merge($eventSeasons);
                 }
             }
@@ -39,22 +41,31 @@ class PlayerStatisticsController extends Controller
             // Убрать дубликаты и отсортировать
             $uniqueSeasons = $seasons->unique('id')->sortByDesc('date_from')->values();
 
+            // Формируем названия сезонов в формате "Название турнира - Название сезона"
+            $formattedSeasons = $uniqueSeasons->map(function($season) {
+                $competitionTitle = $season->competition->title ?? $season->competition->title_short ?? 'Неизвестный турнир';
+                $seasonName = $season->name ?? 'Без названия';
+                $season->display_name = $competitionTitle . ' - ' . $seasonName;
+                return $season;
+            });
+
             // Если нет сезонов, создаем виртуальный сезон "Все время"
-            if ($uniqueSeasons->isEmpty()) {
+            if ($formattedSeasons->isEmpty()) {
                 $virtualSeason = (object) [
                     'id' => 'all',
                     'name' => 'Все время',
+                    'display_name' => 'Все время',
                     'date_from' => null,
                     'date_to' => null,
                     'competition_id' => null,
                     'is_virtual' => true
                 ];
-                $uniqueSeasons = collect([$virtualSeason]);
+                $formattedSeasons = collect([$virtualSeason]);
             }
 
             return response()->json([
                 'success' => true,
-                'data' => $uniqueSeasons,
+                'data' => $formattedSeasons,
                 'message' => 'Сезоны успешно получены'
             ]);
 
