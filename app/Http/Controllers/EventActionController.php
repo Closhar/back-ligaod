@@ -28,15 +28,26 @@ class EventActionController extends Controller
             'event_id' => 'required|integer|exists:events,id',
             'club_id' => 'required|integer|exists:clubs,id',
             'person_id' => 'nullable|integer|exists:people,id',
-            'player_name' => 'nullable|string',
+            'player_name' => 'nullable|string|max:255',
             'action_type_id' => 'required|integer|exists:action_types,id',
-            'minute' => 'sometimes|nullable|integer',
-            'value' => 'nullable|numeric',
+            'minute' => 'sometimes|nullable|integer|min:0|max:999',
+            'value' => 'nullable|numeric|between:0,999999.99',
             'related_action_id' => 'nullable|integer|exists:event_actions,id',
             'extra_info' => 'nullable|string',
             'sort_order' => 'nullable|integer',
             'score' => 'nullable|string',
         ]);
+
+        // Преобразуем value в правильный формат для decimal
+        if (isset($data['value']) && $data['value'] !== null) {
+            $data['value'] = (float) $data['value'];
+        }
+
+        // Обработка player_name - если person_id указан, то player_name может быть пустым
+        if (isset($data['person_id']) && $data['person_id'] !== null) {
+            $data['player_name'] = $data['player_name'] ?? '';
+        }
+
         // Если sort_order не передан, выставляем максимальный+1 среди событий этого event_id
         if (!isset($data['sort_order']) || $data['sort_order'] === null) {
             $maxSort = EventAction::where('event_id', $data['event_id'])->max('sort_order');
@@ -50,15 +61,26 @@ class EventActionController extends Controller
         $data = $request->validate([
             'club_id' => 'sometimes|integer|exists:clubs,id',
             'person_id' => 'nullable|integer|exists:people,id',
-            'player_name' => 'nullable|string',
+            'player_name' => 'nullable|string|max:255',
             'action_type_id' => 'sometimes|integer|exists:action_types,id',
-            'minute' => 'sometimes|nullable|integer',
-            'value' => 'nullable|numeric',
+            'minute' => 'sometimes|nullable|integer|min:0|max:999',
+            'value' => 'nullable|numeric|between:0,999999.99',
             'related_action_id' => 'nullable|integer|exists:event_actions,id',
             'extra_info' => 'nullable|string',
             'sort_order' => 'nullable|integer',
             'score' => 'nullable|string',
         ]);
+
+                // Преобразуем value в правильный формат для decimal
+        if (isset($data['value']) && $data['value'] !== null) {
+            $data['value'] = (float) $data['value'];
+        }
+
+        // Обработка player_name - если person_id указан, то player_name может быть пустым
+        if (isset($data['person_id']) && $data['person_id'] !== null) {
+            $data['player_name'] = $data['player_name'] ?? '';
+        }
+
         $eventAction->update($data);
         return $eventAction;
     }
