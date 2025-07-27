@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Club;
+use App\Models\Competition;
 use App\Models\CompetitionSeason;
 use App\Models\Event;
 use App\Models\EventAction;
+use App\Models\Season;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -691,113 +693,24 @@ class PlayerStatisticsController extends Controller
     public function getPersonSeasons($personId): JsonResponse
     {
         try {
-            // Получить все события игрока с соревнованиями и сезонами
-            $events = Event::whereHas('actions', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
-                })
-                ->orWhereHas('lineups', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
-                })
-                ->with(['competition.seasons' => function($query) {
-                    $query->orderBy('date_from', 'desc');
-                }])
-                ->get();
+            // Получаем все сезоны из новой таблицы seasons
+            $seasons = Season::orderBy('date_from', 'desc')->get();
 
-            // Собрать уникальные сезоны и соревнования
-            $seasons = collect();
-            $competitions = collect();
-
-            foreach ($events as $event) {
-                if ($event->competition) {
-                    // Добавляем соревнование
-                    $competitions->put($event->competition->id, $event->competition);
-
-                    // Получаем все сезоны соревнования
-                    $eventSeasons = $event->competition->seasons()
-                        ->with('competition:id,title,title_short')
-                        ->get();
-                    // Используем union вместо merge, чтобы избежать дублирования
-                    $seasons = $seasons->union($eventSeasons->keyBy('id'));
-                }
-            }
-
-            // Убрать дубликаты сезонов и отсортировать
-            $uniqueSeasons = $seasons->unique('id')->sortByDesc('date_from')->values();
-
-            // Убрать дубликаты соревнований и отсортировать
-            $uniqueCompetitions = $competitions->values()->sortBy('title');
-
-            // Добавить информацию о сезонах для каждого соревнования
-            foreach ($uniqueCompetitions as $competition) {
-                $competitionSeasons = $uniqueSeasons->where('competition_id', $competition->id);
-                $competition->seasons_info = $competitionSeasons->map(function($season) {
-                    return [
-                        'id' => $season->id,
-                        'name' => $season->name,
-                        'title' => $season->title,
-                        'date_from' => $season->date_from,
-                        'date_to' => $season->date_to
-                    ];
-                })->values();
-            }
-
-            // Если соревнования не найдены через события, попробуем получить их из сезонов
-            if ($uniqueCompetitions->isEmpty() && $uniqueSeasons->isNotEmpty()) {
-                $competitionsFromSeasons = collect();
-
-                foreach ($uniqueSeasons as $season) {
-                    if ($season->competition_id && !$season->is_virtual) {
-                        $competition = \App\Models\Competition::find($season->competition_id);
-                        if ($competition) {
-                            $competitionsFromSeasons->put($competition->id, $competition);
-                        }
-                    }
-                }
-
-                $uniqueCompetitions = $competitionsFromSeasons->values()->sortBy('title');
-
-                // Добавить информацию о сезонах для каждого соревнования
-                foreach ($uniqueCompetitions as $competition) {
-                    $competitionSeasons = $uniqueSeasons->where('competition_id', $competition->id);
-                    $competition->seasons_info = $competitionSeasons->map(function($season) {
-                        return [
-                            'id' => $season->id,
-                            'name' => $season->name,
-                            'title' => $season->title,
-                            'date_from' => $season->date_from,
-                            'date_to' => $season->date_to
-                        ];
-                    })->values();
-                }
-            }
-
-            // Если нет сезонов, создаем виртуальный сезон "Все время"
-            if ($uniqueSeasons->isEmpty()) {
-                $virtualSeason = (object) [
-                    'id' => 'all',
-                    'title' => 'Все время',
-                    'display_name' => 'Все время',
-                    'date_from' => null,
-                    'date_to' => null,
-                    'competition_id' => null,
-                    'is_virtual' => true
-                ];
-                $uniqueSeasons = collect([$virtualSeason]);
-            }
+            // Получаем все соревнования
+            $competitions = Competition::orderBy('title')->get();
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'seasons' => $uniqueSeasons->values(),
-                    'competitions' => $uniqueCompetitions->values()
-                ],
-                'message' => 'Данные успешно получены'
+                    'seasons' => $seasons,
+                    'competitions' => $competitions
+                ]
             ]);
-
         } catch (\Exception $e) {
+            Log::error('Ошибка получения сезонов игрока: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при получении данных: ' . $e->getMessage()
+                'error' => 'Ошибка получения сезонов игрока'
             ], 500);
         }
     }
@@ -983,23 +896,29 @@ class PlayerStatisticsController extends Controller
     public function getPersonStatsBySeason($personId, $seasonId): JsonResponse
     {
         try {
-            // Если это виртуальный сезон "Все время"
-            if ($seasonId === 'all') {
-                return $this->getPersonStatsOverall($personId);
-            }
-
-            // Получаем сезон
-            $season = CompetitionSeason::find($seasonId);
+            // Находим сезон по ID
+            $season = Season::find($seasonId);
             if (!$season) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Сезон не найден'
+                    'error' => 'Сезон не найден'
                 ], 404);
             }
 
-            // Получить события игрока для данного сезона
-            $events = Event::where('competition_id', $season->competition_id)
-                ->where(function($query) use ($personId) {
+            // Получаем все соревнования, связанные с этим сезоном через pivot таблицу
+            $competitionIds = DB::table('competition_season')
+                ->where('season_id', $season->id)
+                ->pluck('competition_id');
+
+            if ($competitionIds->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Соревнования для данного сезона не найдены'
+                ], 404);
+            }
+
+            // Получаем события для всех соревнований этого сезона
+            $events = Event::where(function($query) use ($personId) {
                     $query->whereHas('actions', function($subQuery) use ($personId) {
                             $subQuery->where('person_id', $personId);
                         })
@@ -1007,119 +926,83 @@ class PlayerStatisticsController extends Controller
                             $subQuery->where('person_id', $personId);
                         });
                 })
+                ->whereIn('competition_id', $competitionIds)
                 ->with([
-                    'actions' => function($query) use ($personId) {
-                        $query->where('person_id', $personId)
-                              ->with(['actionType', 'club.city']);
-                    },
-                    'lineups' => function($query) use ($personId) {
-                        $query->where('person_id', $personId);
-                    }
+                    'actions.actionType',
+                    'actions.club.city',
+                    'lineups',
+                    'competition'
                 ])
                 ->get();
 
+            // Инициализируем массивы для статистики
             $playerStats = [];
+            $actionTypesInfo = [];
             $playerStatsByClub = [];
-            $playerMatches = [];
+            $totalMatches = 0;
 
-            // Подсчитать матчи только если игрок был в составе
+            // Обрабатываем каждое событие
             foreach ($events as $event) {
-                if ($event->lineups->count() > 0) {
-                    if (!in_array($event->id, $playerMatches)) {
-                        $playerMatches[] = $event->id;
-                    }
+                // Подсчитываем матчи (если игрок в составе)
+                if ($event->lineups->where('person_id', $personId)->count() > 0) {
+                    $totalMatches++;
                 }
 
-                // Подсчитать действия
+                // Обрабатываем действия игрока
                 foreach ($event->actions as $action) {
-                    $actionType = $action->actionType->name;
-                    $club = $action->club;
-                    $clubKey = $club ? $club->id : 0;
-                    $clubInfo = $club ? [
-                        'id' => $club->id,
-                        'title' => $club->title,
-                        'image_path' => $club->club_image_path,
-                        'city' => $club->city ? $club->city->title : null
-                    ] : null;
+                    if ($action->person_id != $personId) continue;
 
-                    // Общая статистика
-                    if (!isset($playerStats[$actionType])) {
-                        $playerStats[$actionType] = 0;
+                    $actionType = $action->actionType;
+                    if (!$actionType) continue;
+
+                    $actionName = $actionType->name;
+                    if ($actionName === 'ГОЛЫ') {
+                        $actionName = 'Голы всего';
                     }
 
-                    if ($action->actionType->group == 2) {
-                        $playerStats[$actionType] += $action->value ?? 0;
+                    // Инициализируем статистику по действию
+                    if (!isset($playerStats[$actionName])) {
+                        $playerStats[$actionName] = 0;
+                        $actionTypesInfo[$actionName] = [
+                            'name' => $actionName,
+                            'short_name' => $actionType->short_name ?? $actionName,
+                            'icon' => $actionType->icon ?? 'heroicons:star',
+                            'color' => $actionType->color ?? 'text-gray-600',
+                            'full_name' => $actionType->full_name ?? $actionName
+                        ];
+                    }
+
+                    // Подсчитываем статистику в зависимости от группы
+                    if ($actionType->group === 2) {
+                        $playerStats[$actionName] += $action->value ?? 0;
                     } else {
-                        $playerStats[$actionType]++;
+                        $playerStats[$actionName]++;
                     }
 
                     // Статистика по клубам
-                    if (!isset($playerStatsByClub[$actionType])) {
-                        $playerStatsByClub[$actionType] = [];
-                    }
-                    if (!isset($playerStatsByClub[$actionType][$clubKey])) {
-                        $playerStatsByClub[$actionType][$clubKey] = [
-                            'count' => 0,
-                            'club' => $clubInfo
-                        ];
-                    }
-                    if ($action->actionType->group == 2) {
-                        $playerStatsByClub[$actionType][$clubKey]['count'] += $action->value ?? 0;
-                    } else {
-                        $playerStatsByClub[$actionType][$clubKey]['count']++;
-                    }
-
-                    // Голы всего (по клубам)
-                    if ($action->actionType->group == 1) {
-                        if (!isset($playerStats['Голы всего'])) {
-                            $playerStats['Голы всего'] = 0;
+                    if ($action->club) {
+                        $clubKey = $action->club->id;
+                        if (!isset($playerStatsByClub[$actionName])) {
+                            $playerStatsByClub[$actionName] = [];
                         }
-                        $playerStats['Голы всего'] += $action->value ?? 1;
-                        if (!isset($playerStatsByClub['Голы всего'])) {
-                            $playerStatsByClub['Голы всего'] = [];
-                        }
-                        if (!isset($playerStatsByClub['Голы всего'][$clubKey])) {
-                            $playerStatsByClub['Голы всего'][$clubKey] = [
+                        if (!isset($playerStatsByClub[$actionName][$clubKey])) {
+                            $playerStatsByClub[$actionName][$clubKey] = [
                                 'count' => 0,
-                                'club' => $clubInfo
+                                'club' => [
+                                    'id' => $action->club->id,
+                                    'title' => $action->club->title,
+                                    'image_path' => $action->club->image_path,
+                                    'city' => $action->club->city ? $action->club->city->title : null
+                                ]
                             ];
                         }
-                        $playerStatsByClub['Голы всего'][$clubKey]['count'] += $action->value ?? 1;
-                    }
-                }
-            }
 
-            // Собрать информацию о типах действий
-            $actionTypesInfo = [];
-            foreach ($playerStats as $actionName => $count) {
-                // Специальная обработка для поля "Голы всего"
-                if ($actionName === 'Голы всего') {
-                    $actionTypesInfo[$actionName] = [
-                        'short_name' => 'Голы всего',
-                        'short_name_table' => 'Голы всего',
-                        'icon' => 'heroicons:fire',
-                        'color' => 'text-red-500',
-                        'full_name' => 'голы всего'
-                    ];
-                } else {
-                    // Найти тип действия в базе
-                    $actionType = \App\Models\ActionType::where('name', $actionName)->first();
-                    if ($actionType) {
-                        $actionTypesInfo[$actionName] = [
-                            'short_name' => $actionType->short_name ?: $actionType->name,
-                            'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
-                            'icon' => $actionType->icon,
-                            'color' => $actionType->color,
-                            'full_name' => $actionType->name
-                        ];
-                    } else {
-                        $actionTypesInfo[$actionName] = [
-                            'short_name' => $actionName,
-                            'short_name_table' => $actionName,
-                            'icon' => null,
-                            'color' => null,
-                            'full_name' => $actionName
-                        ];
+                        // Подсчитываем статистику по клубам в зависимости от группы
+                        if ($actionType->group === 2) {
+                            $playerStatsByClub[$actionName][$clubKey]['count'] += $action->value ?? 0;
+                        } else {
+                            $playerStatsByClub[$actionName][$clubKey]['count']++;
+                        }
                     }
                 }
             }
@@ -1127,29 +1010,20 @@ class PlayerStatisticsController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'season' => [
-                        'id' => $season->id,
-                        'name' => $season->name,
-                        'date_from' => $season->date_from,
-                        'date_to' => $season->date_to,
-                        'competition' => [
-                            'id' => $season->competition->id,
-                            'title' => $season->competition->title
-                        ]
-                    ],
                     'statistics' => $playerStats,
-                    'statistics_by_club' => $playerStatsByClub,
                     'action_types' => $actionTypesInfo,
-                    'total_matches' => count($playerMatches),
-                    'total_events' => $events->count()
-                ],
-                'message' => 'Статистика игрока по сезону успешно получена'
+                    'statistics_by_club' => $playerStatsByClub,
+                    'total_matches' => $totalMatches,
+                    'total_seasons' => 1,
+                    'total_competitions' => $competitionIds->count()
+                ]
             ]);
 
         } catch (\Exception $e) {
+            Log::error('Ошибка получения статистики по сезону: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при получении статистики: ' . $e->getMessage()
+                'error' => 'Ошибка получения статистики по сезону'
             ], 500);
         }
     }
@@ -1525,18 +1399,29 @@ class PlayerStatisticsController extends Controller
     public function getPersonStatsBySeasonTitle($personId, $seasonTitle): JsonResponse
     {
         try {
-            // Найти все сезоны с таким названием
-            $seasons = \App\Models\CompetitionSeason::where('title', $seasonTitle)->get();
-
-            if ($seasons->isEmpty()) {
+            // Находим сезон по названию
+            $season = Season::where('title', $seasonTitle)->first();
+            if (!$season) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Сезон не найден'
+                    'error' => 'Сезон не найден'
                 ], 404);
             }
 
-            // Получить все события игрока из всех соревнований с этим сезоном
-            $events = Event::where(function($query) use ($personId, $seasons) {
+            // Получаем все соревнования, связанные с этим сезоном через pivot таблицу
+            $competitionIds = DB::table('competition_season')
+                ->where('season_id', $season->id)
+                ->pluck('competition_id');
+
+            if ($competitionIds->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Соревнования для данного сезона не найдены'
+                ], 404);
+            }
+
+            // Получаем события для всех соревнований этого сезона
+            $events = Event::where(function($query) use ($personId) {
                     $query->whereHas('actions', function($subQuery) use ($personId) {
                             $subQuery->where('person_id', $personId);
                         })
@@ -1544,52 +1429,49 @@ class PlayerStatisticsController extends Controller
                             $subQuery->where('person_id', $personId);
                         });
                 })
-                ->whereIn('competition_id', $seasons->pluck('competition_id'))
+                ->whereIn('competition_id', $competitionIds)
                 ->with([
-                    'actions' => function($query) use ($personId) {
-                        $query->where('person_id', $personId)
-                              ->with(['actionType', 'club.city']);
-                    },
-                    'lineups' => function($query) use ($personId) {
-                        $query->where('person_id', $personId);
-                    }
+                    'actions.actionType',
+                    'actions.club.city',
+                    'lineups',
+                    'competition'
                 ])
                 ->get();
 
-            // Остальная логика такая же как в других методах
+            // Инициализируем массивы для статистики
             $playerStats = [];
             $actionTypesInfo = [];
             $playerStatsByClub = [];
             $totalMatches = 0;
-            $totalSeasons = 0;
-            $totalCompetitions = 0;
 
+            // Обрабатываем каждое событие
             foreach ($events as $event) {
-                // Подсчитываем матчи только если игрок был в составе
-                if ($event->lineups->count() > 0) {
+                // Подсчитываем матчи (если игрок в составе)
+                if ($event->lineups->where('person_id', $personId)->count() > 0) {
                     $totalMatches++;
                 }
 
+                // Обрабатываем действия игрока
                 foreach ($event->actions as $action) {
+                    if ($action->person_id != $personId) continue;
+
                     $actionType = $action->actionType;
                     if (!$actionType) continue;
 
                     $actionName = $actionType->name;
-
-                    // Переименовываем "ГОЛЫ" в "Голы всего"
                     if ($actionName === 'ГОЛЫ') {
                         $actionName = 'Голы всего';
                     }
 
-                    // Инициализируем статистику
+                    // Инициализируем статистику по действию
                     if (!isset($playerStats[$actionName])) {
                         $playerStats[$actionName] = 0;
                         $actionTypesInfo[$actionName] = [
                             'name' => $actionType->name,
-                            'short_name' => $actionType->short_name,
-                            'icon' => $actionType->icon,
-                            'color' => $actionType->color,
-                            'full_name' => $actionType->full_name
+                            'short_name' => $actionType->short_name ?? $actionName,
+                            'icon' => $actionType->icon ?? 'heroicons:star',
+                            'color' => $actionType->color ?? 'text-gray-600',
+                            'full_name' => $actionType->full_name ?? $actionName
                         ];
                     }
 
@@ -1614,7 +1496,7 @@ class PlayerStatisticsController extends Controller
                                 'club' => [
                                     'id' => $action->club->id,
                                     'title' => $action->club->title,
-                                    'image_path' => $action->club->club_image_path,
+                                    'image_path' => $action->club->image_path,
                                     'city' => $action->club->city ? $action->club->city->title : null
                                 ]
                             ];
@@ -1630,10 +1512,6 @@ class PlayerStatisticsController extends Controller
                 }
             }
 
-            // Подсчитываем общие метрики
-            $totalSeasons = $seasons->unique('competition_id')->count();
-            $totalCompetitions = $seasons->pluck('competition_id')->unique()->count();
-
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -1641,16 +1519,16 @@ class PlayerStatisticsController extends Controller
                     'action_types' => $actionTypesInfo,
                     'statistics_by_club' => $playerStatsByClub,
                     'total_matches' => $totalMatches,
-                    'total_seasons' => $totalSeasons,
-                    'total_competitions' => $totalCompetitions
+                    'total_seasons' => 1,
+                    'total_competitions' => $competitionIds->count()
                 ]
             ]);
 
         } catch (\Exception $e) {
-            Log::error('Ошибка получения статистики игрока по названию сезона: ' . $e->getMessage());
+            Log::error('Ошибка получения статистики по сезону: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка получения статистики'
+                'error' => 'Ошибка получения статистики по сезону'
             ], 500);
         }
     }
