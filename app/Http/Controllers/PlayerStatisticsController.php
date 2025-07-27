@@ -44,7 +44,7 @@ class PlayerStatisticsController extends Controller
             // Формируем названия сезонов в формате "Название турнира - Название сезона"
             $formattedSeasons = $uniqueSeasons->map(function($season) {
                 $competitionTitle = $season->competition->title ?? $season->competition->title_short ?? 'Неизвестный турнир';
-                $seasonName = $season->name ?? 'Без названия';
+                $seasonName = $season->title ?? 'Без названия';
                 $season->display_name = $competitionTitle . ' - ' . $seasonName;
                 return $season;
             });
@@ -53,7 +53,7 @@ class PlayerStatisticsController extends Controller
             if ($formattedSeasons->isEmpty()) {
                 $virtualSeason = (object) [
                     'id' => 'all',
-                    'name' => 'Все время',
+                    'title' => 'Все время',
                     'display_name' => 'Все время',
                     'date_from' => null,
                     'date_to' => null,
