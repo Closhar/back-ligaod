@@ -1048,7 +1048,7 @@ class PlayerStatisticsController extends Controller
                                 'club' => [
                                     'id' => $action->club->id,
                                     'title' => $action->club->title,
-                                    'image_path' => $action->club->image,
+                                    'image_path' => $action->club->club_image_path,
                                     'city' => $action->club->city ? $action->club->city->title : null
                                 ]
                             ];
@@ -1553,7 +1553,7 @@ class PlayerStatisticsController extends Controller
                                 'club' => [
                                     'id' => $action->club->id,
                                     'title' => $action->club->title,
-                                    'image_path' => $action->club->image,
+                                    'image_path' => $action->club->club_image_path,
                                     'city' => $action->club->city ? $action->club->city->title : null
                                 ]
                             ];
