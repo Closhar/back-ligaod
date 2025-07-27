@@ -59,6 +59,20 @@ class PlayerStatisticsController extends Controller
             // Убрать дубликаты соревнований и отсортировать
             $uniqueCompetitions = $competitions->values()->sortBy('title');
 
+            // Добавить информацию о сезонах для каждого соревнования
+            foreach ($uniqueCompetitions as $competition) {
+                $competitionSeasons = $uniqueSeasons->where('competition_id', $competition->id);
+                $competition->seasons_info = $competitionSeasons->map(function($season) {
+                    return [
+                        'id' => $season->id,
+                        'name' => $season->name,
+                        'title' => $season->title,
+                        'date_from' => $season->date_from,
+                        'date_to' => $season->date_to
+                    ];
+                })->values();
+            }
+
             // Если соревнования не найдены через события, попробуем получить их из сезонов
             if ($uniqueCompetitions->isEmpty() && $uniqueSeasons->isNotEmpty()) {
                 Log::info('Соревнования не найдены через события, получаем из сезонов');
@@ -75,6 +89,20 @@ class PlayerStatisticsController extends Controller
                 }
 
                 $uniqueCompetitions = $competitionsFromSeasons->values()->sortBy('title');
+
+                // Добавить информацию о сезонах для каждого соревнования
+                foreach ($uniqueCompetitions as $competition) {
+                    $competitionSeasons = $uniqueSeasons->where('competition_id', $competition->id);
+                    $competition->seasons_info = $competitionSeasons->map(function($season) {
+                        return [
+                            'id' => $season->id,
+                            'name' => $season->name,
+                            'title' => $season->title,
+                            'date_from' => $season->date_from,
+                            'date_to' => $season->date_to
+                        ];
+                    })->values();
+                }
             }
 
             Log::info('Итоговое количество сезонов: ' . $uniqueSeasons->count());
