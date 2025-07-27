@@ -94,7 +94,7 @@ class PlayerStatisticsController extends Controller
                 ->where('competition_id', $season->competition_id)
                 ->with(['actions' => function($query) use ($club) {
                     $query->where('club_id', $club->id)
-                          ->with(['person.activeAmpluaMemberships.amplua', 'actionType']);
+                          ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
                 }])
                 ->get();
 
@@ -124,7 +124,8 @@ class PlayerStatisticsController extends Controller
                                 'id' => $action->person->id,
                                 'full_name' => $action->person->full_name,
                                 'player_number' => $action->person->player_number,
-                                'amplua' => $action->person->activeAmpluaMemberships->first()?->amplua?->name ?? 'Не указано'
+                                'amplua' => $action->person->activeAmpluaMemberships->first()?->amplua?->name ?? 'Не указано',
+                                'main_image' => $action->person->mainImage
                             ],
                             'actions' => [],
                             'total_matches' => 0
@@ -195,7 +196,7 @@ class PlayerStatisticsController extends Controller
                 ->orWhere('club2_id', $club->id)
                 ->with(['actions' => function($query) use ($club) {
                     $query->where('club_id', $club->id)
-                          ->with(['person.activeAmpluaMemberships.amplua', 'actionType']);
+                          ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
                 }, 'competition.seasons'])
                 ->get();
 
@@ -235,19 +236,20 @@ class PlayerStatisticsController extends Controller
                     }
 
                     // Подсчитать действия
-                    if (!isset($playerStats[$playerId])) {
-                        $playerStats[$playerId] = [
-                            'player' => [
-                                'id' => $action->person->id,
-                                'full_name' => $action->person->full_name,
-                                'player_number' => $action->person->player_number,
-                                'amplua' => $action->person->activeAmpluaMemberships->first()?->amplua?->name ?? 'Не указано'
-                            ],
-                            'actions' => [],
-                            'total_matches' => 0,
-                            'total_seasons' => 0
-                        ];
-                    }
+                                            if (!isset($playerStats[$playerId])) {
+                            $playerStats[$playerId] = [
+                                'player' => [
+                                    'id' => $action->person->id,
+                                    'full_name' => $action->person->full_name,
+                                    'player_number' => $action->person->player_number,
+                                    'amplua' => $action->person->activeAmpluaMemberships->first()?->amplua?->name ?? 'Не указано',
+                                    'main_image' => $action->person->mainImage
+                                ],
+                                'actions' => [],
+                                'total_matches' => 0,
+                                'total_seasons' => 0
+                            ];
+                        }
 
                     $actionType = $action->actionType->name;
                     if (!isset($playerStats[$playerId]['actions'][$actionType])) {
