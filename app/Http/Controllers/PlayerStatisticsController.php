@@ -249,12 +249,12 @@ class PlayerStatisticsController extends Controller
                         $playerStats[$playerId]['actions'][$actionType]++;
                     }
 
-                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    // Дополнительно группируем головы (group=1) в общее поле "Голы всего"
                     if ($action->actionType->group == 1) {
-                        if (!isset($playerStats[$playerId]['actions']['ГОЛЫ'])) {
-                            $playerStats[$playerId]['actions']['ГОЛЫ'] = 0;
+                        if (!isset($playerStats[$playerId]['actions']['Голы всего'])) {
+                            $playerStats[$playerId]['actions']['Голы всего'] = 0;
                         }
-                        $playerStats[$playerId]['actions']['ГОЛЫ'] += $action->value ?? 1;
+                        $playerStats[$playerId]['actions']['Голы всего'] += $action->value ?? 1;
                     }
                 }
             }
@@ -275,11 +275,11 @@ class PlayerStatisticsController extends Controller
             foreach ($result as $player) {
                 foreach ($player['actions'] as $actionName => $count) {
                     if (!isset($actionTypesInfo[$actionName])) {
-                        // Специальная обработка для поля "ГОЛЫ"
-                        if ($actionName === 'ГОЛЫ') {
+                        // Специальная обработка для поля "Голы всего"
+                        if ($actionName === 'Голы всего') {
                             $actionTypesInfo[$actionName] = [
-                                'short_name' => 'ГОЛЫ',
-                                'short_name_table' => 'ГОЛЫ',
+                                'short_name' => 'Голы всего',
+                                'short_name_table' => 'Голы всего',
                                 'icon' => 'heroicons:fire',
                                 'color' => 'text-red-500',
                                 'full_name' => 'голы всего'
@@ -424,12 +424,12 @@ class PlayerStatisticsController extends Controller
                         $playerStats[$playerId]['actions'][$actionType]++;
                     }
 
-                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    // Дополнительно группируем головы (group=1) в общее поле "Голы всего"
                     if ($action->actionType->group == 1) {
-                        if (!isset($playerStats[$playerId]['actions']['ГОЛЫ'])) {
-                            $playerStats[$playerId]['actions']['ГОЛЫ'] = 0;
+                        if (!isset($playerStats[$playerId]['actions']['Голы всего'])) {
+                            $playerStats[$playerId]['actions']['Голы всего'] = 0;
                         }
-                        $playerStats[$playerId]['actions']['ГОЛЫ'] += $action->value ?? 1;
+                        $playerStats[$playerId]['actions']['Голы всего'] += $action->value ?? 1;
                     }
                 }
             }
@@ -450,11 +450,11 @@ class PlayerStatisticsController extends Controller
             foreach ($result as $player) {
                 foreach ($player['actions'] as $actionName => $count) {
                     if (!isset($actionTypesInfo[$actionName])) {
-                        // Специальная обработка для поля "ГОЛЫ"
-                        if ($actionName === 'ГОЛЫ') {
+                        // Специальная обработка для поля "Голы всего"
+                        if ($actionName === 'Голы всего') {
                             $actionTypesInfo[$actionName] = [
-                                'short_name' => 'ГОЛЫ',
-                                'short_name_table' => 'ГОЛЫ',
+                                'short_name' => 'Голы всего',
+                                'short_name_table' => 'Голы всего',
                                 'icon' => 'heroicons:fire',
                                 'color' => 'text-red-500',
                                 'full_name' => 'голы всего'
@@ -606,12 +606,12 @@ class PlayerStatisticsController extends Controller
                         $playerStats[$playerId]['actions'][$actionType]++;
                     }
 
-                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    // Дополнительно группируем головы (group=1) в общее поле "Голы всего"
                     if ($action->actionType->group == 1) {
-                        if (!isset($playerStats[$playerId]['actions']['ГОЛЫ'])) {
-                            $playerStats[$playerId]['actions']['ГОЛЫ'] = 0;
+                        if (!isset($playerStats[$playerId]['actions']['Голы всего'])) {
+                            $playerStats[$playerId]['actions']['Голы всего'] = 0;
                         }
-                        $playerStats[$playerId]['actions']['ГОЛЫ'] += $action->value ?? 1;
+                        $playerStats[$playerId]['actions']['Голы всего'] += $action->value ?? 1;
                     }
                 }
             }
@@ -633,11 +633,11 @@ class PlayerStatisticsController extends Controller
             foreach ($result as $player) {
                 foreach ($player['actions'] as $actionName => $count) {
                     if (!isset($actionTypesInfo[$actionName])) {
-                        // Специальная обработка для поля "ГОЛЫ"
-                        if ($actionName === 'ГОЛЫ') {
+                        // Специальная обработка для поля "Голы всего"
+                        if ($actionName === 'Голы всего') {
                             $actionTypesInfo[$actionName] = [
-                                'short_name' => 'ГОЛЫ',
-                                'short_name_table' => 'ГОЛЫ',
+                                'short_name' => 'Голы всего',
+                                'short_name_table' => 'Голы всего',
                                 'icon' => 'heroicons:fire',
                                 'color' => 'text-red-500',
                                 'full_name' => 'голы всего'
@@ -1200,6 +1200,167 @@ class PlayerStatisticsController extends Controller
                     'total_events' => $events->count()
                 ],
                 'message' => 'Статистика игрока по соревнованию успешно получена'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка при получении статистики: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить статистику конкретного игрока по сезону и соревнованию
+     */
+    public function getPersonStatsBySeasonAndCompetition($personId, $seasonId, $competitionId): JsonResponse
+    {
+        try {
+            Log::info("getPersonStatsBySeasonAndCompetition called with personId: $personId, seasonId: $seasonId, competitionId: $competitionId");
+
+            // Получаем сезон
+            $season = CompetitionSeason::find($seasonId);
+            if (!$season) {
+                Log::error("Season not found: $seasonId");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Сезон не найден'
+                ], 404);
+            }
+            Log::info("Season found: " . $season->name . " (competition_id: " . $season->competition_id . ")");
+
+            // Получаем соревнование
+            $competition = \App\Models\Competition::find($competitionId);
+            if (!$competition) {
+                Log::error("Competition not found: $competitionId");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Соревнование не найдено'
+                ], 404);
+            }
+            Log::info("Competition found: " . $competition->title . " (id: " . $competition->id . ")");
+
+            // Проверяем, что сезон принадлежит данному соревнованию
+            if ($season->competition_id != $competition->id) {
+                Log::error("Season competition_id ($season->competition_id) doesn't match competition id ($competition->id)");
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Сезон не принадлежит данному соревнованию'
+                ], 400);
+            }
+
+            // Получить события игрока для данного сезона и соревнования
+            $events = Event::whereHas('actions', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->orWhereHas('lineups', function($query) use ($personId) {
+                    $query->where('person_id', $personId);
+                })
+                ->where('competition_id', $competition->id)
+                ->with([
+                    'actions' => function($query) use ($personId) {
+                        $query->where('person_id', $personId)
+                              ->with(['actionType']);
+                    },
+                    'lineups' => function($query) use ($personId) {
+                        $query->where('person_id', $personId);
+                    }
+                ])
+                ->get();
+
+            Log::info("Found " . $events->count() . " events for person $personId in competition $competitionId");
+
+            $playerStats = [];
+            $playerMatches = [];
+
+            // Подсчитать матчи
+            foreach ($events as $event) {
+                if (!in_array($event->id, $playerMatches)) {
+                    $playerMatches[] = $event->id;
+                }
+
+                // Подсчитать действия
+                foreach ($event->actions as $action) {
+                    $actionType = $action->actionType->name;
+
+                    if (!isset($playerStats[$actionType])) {
+                        $playerStats[$actionType] = 0;
+                    }
+
+                    // Для типов действий с group=2 суммируем значение поля value
+                    // Для остальных считаем количество событий
+                    if ($action->actionType->group == 2) {
+                        $playerStats[$actionType] += $action->value ?? 0;
+                    } else {
+                        $playerStats[$actionType]++;
+                    }
+
+                    // Дополнительно группируем головы (group=1) в общее поле "ГОЛЫ"
+                    if ($action->actionType->group == 1) {
+                        if (!isset($playerStats['ГОЛЫ'])) {
+                            $playerStats['ГОЛЫ'] = 0;
+                        }
+                        $playerStats['ГОЛЫ'] += $action->value ?? 1;
+                    }
+                }
+            }
+
+            // Собрать информацию о типах действий
+            $actionTypesInfo = [];
+            foreach ($playerStats as $actionName => $count) {
+                // Специальная обработка для поля "ГОЛЫ"
+                if ($actionName === 'ГОЛЫ') {
+                    $actionTypesInfo[$actionName] = [
+                        'short_name' => 'ГОЛЫ',
+                        'short_name_table' => 'ГОЛЫ',
+                        'icon' => 'heroicons:fire',
+                        'color' => 'text-red-500',
+                        'full_name' => 'голы всего'
+                    ];
+                } else {
+                    // Найти тип действия в базе
+                    $actionType = \App\Models\ActionType::where('name', $actionName)->first();
+                    if ($actionType) {
+                        $actionTypesInfo[$actionName] = [
+                            'short_name' => $actionType->short_name ?: $actionType->name,
+                            'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                            'icon' => $actionType->icon,
+                            'color' => $actionType->color,
+                            'full_name' => $actionType->name
+                        ];
+                    } else {
+                        $actionTypesInfo[$actionName] = [
+                            'short_name' => $actionName,
+                            'short_name_table' => $actionName,
+                            'icon' => null,
+                            'color' => null,
+                            'full_name' => $actionName
+                        ];
+                    }
+                }
+            }
+
+            Log::info("Returning statistics with " . count($playerStats) . " stats and " . count($playerMatches) . " matches");
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'season' => [
+                        'id' => $season->id,
+                        'name' => $season->name,
+                        'date_from' => $season->date_from,
+                        'date_to' => $season->date_to,
+                        'competition' => [
+                            'id' => $competition->id,
+                            'title' => $competition->title
+                        ]
+                    ],
+                    'statistics' => $playerStats,
+                    'action_types' => $actionTypesInfo,
+                    'total_matches' => count($playerMatches),
+                    'total_events' => $events->count()
+                ],
+                'message' => 'Статистика игрока по сезону и соревнованию успешно получена'
             ]);
 
         } catch (\Exception $e) {
