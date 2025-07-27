@@ -98,7 +98,7 @@ try {
             }
 
             // Подсчитываем статистику
-            if ($actionType->group === 2) {
+            if ($actionType->group == 2) {
                 $oldValue = $playerStats[$actionName];
                 $value = $action->value ?? 0;
                 $playerStats[$actionName] += $value;
@@ -127,7 +127,7 @@ try {
                     ];
                 }
 
-                if ($actionType->group === 2) {
+                if ($actionType->group == 2) {
                     $oldClubValue = $playerStatsByClub[$actionName][$clubKey]['count'];
                     $value = $action->value ?? 0;
                     $playerStatsByClub[$actionName][$clubKey]['count'] += $value;

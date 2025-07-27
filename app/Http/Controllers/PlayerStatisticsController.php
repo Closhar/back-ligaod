@@ -1032,7 +1032,7 @@ class PlayerStatisticsController extends Controller
                     }
 
                     // Подсчитываем статистику в зависимости от группы
-                    if ($actionType->group === 2) {
+                    if ($actionType->group == 2) {
                         // Для группы 2 - суммируем очки
                         $oldValue = $playerStats[$actionName];
                         $playerStats[$actionName] += $action->value ?? 0;
@@ -1062,7 +1062,7 @@ class PlayerStatisticsController extends Controller
                         }
 
                         // Подсчитываем статистику по клубам в зависимости от группы
-                        if ($actionType->group === 2) {
+                        if ($actionType->group == 2) {
                             $oldClubValue = $playerStatsByClub[$actionName][$clubKey]['count'];
                             $playerStatsByClub[$actionName][$clubKey]['count'] += $action->value ?? 0;
                             Log::info("Клуб {$action->club->title}: {$oldClubValue} + {$action->value} = {$playerStatsByClub[$actionName][$clubKey]['count']}");
