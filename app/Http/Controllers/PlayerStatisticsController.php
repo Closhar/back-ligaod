@@ -998,6 +998,8 @@ class PlayerStatisticsController extends Controller
 
             // Обрабатываем каждое событие
             foreach ($events as $event) {
+                Log::info("Обрабатываем событие ID: {$event->id}, соревнование: {$event->competition->title}");
+
                 // Подсчитываем матчи (если игрок в составе)
                 if ($event->lineups->where('person_id', $personId)->count() > 0) {
                     $totalMatches++;
@@ -1015,6 +1017,8 @@ class PlayerStatisticsController extends Controller
                         $actionName = 'Голы всего';
                     }
 
+                    Log::info("Действие: {$actionName}, группа: {$actionType->group}, значение: {$action->value}");
+
                     // Инициализируем статистику по действию
                     if (!isset($playerStats[$actionName])) {
                         $playerStats[$actionName] = 0;
@@ -1030,10 +1034,13 @@ class PlayerStatisticsController extends Controller
                     // Подсчитываем статистику в зависимости от группы
                     if ($actionType->group === 2) {
                         // Для группы 2 - суммируем очки
+                        $oldValue = $playerStats[$actionName];
                         $playerStats[$actionName] += $action->value ?? 0;
+                        Log::info("Группа 2: {$oldValue} + {$action->value} = {$playerStats[$actionName]}");
                     } else {
                         // Для остальных групп - считаем количество
                         $playerStats[$actionName]++;
+                        Log::info("Группа не 2: +1 = {$playerStats[$actionName]}");
                     }
 
                     // Статистика по клубам
@@ -1056,15 +1063,19 @@ class PlayerStatisticsController extends Controller
 
                         // Подсчитываем статистику по клубам в зависимости от группы
                         if ($actionType->group === 2) {
+                            $oldClubValue = $playerStatsByClub[$actionName][$clubKey]['count'];
                             $playerStatsByClub[$actionName][$clubKey]['count'] += $action->value ?? 0;
+                            Log::info("Клуб {$action->club->title}: {$oldClubValue} + {$action->value} = {$playerStatsByClub[$actionName][$clubKey]['count']}");
                         } else {
                             $playerStatsByClub[$actionName][$clubKey]['count']++;
+                            Log::info("Клуб {$action->club->title}: +1 = {$playerStatsByClub[$actionName][$clubKey]['count']}");
                         }
                     }
                 }
             }
 
             Log::info("Итоговая статистика для игрока {$personId} в сезоне {$season->id}: " . json_encode($playerStats));
+            Log::info("Статистика по клубам: " . json_encode($playerStatsByClub));
 
             return response()->json([
                 'success' => true,
