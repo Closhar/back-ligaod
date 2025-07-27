@@ -574,7 +574,7 @@ class PlayerStatisticsController extends Controller
                                 'short_name_table' => 'ГОЛЫ',
                                 'icon' => 'heroicons:fire',
                                 'color' => 'text-red-500',
-                                'full_name' => 'Голы (сумма всех типов голов)'
+                                'full_name' => 'голы всего'
                             ];
                         } else {
                             // Найти тип действия в базе
