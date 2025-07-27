@@ -882,6 +882,7 @@ Route::prefix('people/{person}/statistics')->group(function () {
     Route::get('/competition/{competition}', [PlayerStatisticsController::class, 'getPersonStatsByCompetition']);
     Route::get('/season/{season}/competition/{competition}', [PlayerStatisticsController::class, 'getPersonStatsBySeasonAndCompetition']);
     Route::get('/season/{season}/competitions', [PlayerStatisticsController::class, 'getPersonCompetitionsBySeason']);
+    Route::get('/competitions', [PlayerStatisticsController::class, 'getPersonCompetitions']);
 });
 
 // Маршруты для сезонов

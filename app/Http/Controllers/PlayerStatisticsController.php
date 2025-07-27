@@ -1654,4 +1654,49 @@ class PlayerStatisticsController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Получить все соревнования игрока
+     */
+    public function getPersonCompetitions($personId): JsonResponse
+    {
+        try {
+            // Получаем события игрока
+            $events = Event::where(function($query) use ($personId) {
+                    $query->whereHas('actions', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        })
+                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                            $subQuery->where('person_id', $personId);
+                        });
+                })
+                ->with(['competition'])
+                ->get();
+
+            // Собираем уникальные соревнования, в которых есть события игрока
+            $competitions = collect();
+            foreach ($events as $event) {
+                if ($event->competition && !$competitions->contains('id', $event->competition->id)) {
+                    $competitions->push($event->competition);
+                }
+            }
+
+            // Сортируем соревнования по названию
+            $sortedCompetitions = $competitions->sortBy('title')->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'competitions' => $sortedCompetitions
+                ]
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения соревнований игрока: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Ошибка получения соревнований игрока'
+            ], 500);
+        }
+    }
 }
