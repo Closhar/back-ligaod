@@ -1803,7 +1803,8 @@ class PlayerStatisticsController extends Controller
                             'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
                             'icon' => $actionType->icon,
                             'color' => $actionType->color,
-                            'full_name' => $actionType->name
+                            'full_name' => $actionType->name,
+                            'group' => $actionType->group
                         ];
                     }
 
@@ -1841,6 +1842,8 @@ class PlayerStatisticsController extends Controller
                     ] : null
                 ];
             }
+
+
 
 
 
