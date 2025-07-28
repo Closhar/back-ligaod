@@ -192,8 +192,17 @@ class ClubPlayerController extends Controller
             ->whereNull('left_at')
             ->get();
 
+        // Фильтруем только игроков (спортсменов) - тех, у кого есть активные амплуа
+        $playerMemberships = $memberships->filter(function ($membership) {
+            $person = $membership->person;
+            if (!$person) return false;
+
+            // Проверяем, есть ли у персоны активные амплуа
+            return $person->activeAmpluaMemberships()->exists();
+        });
+
         // Для каждого игрока подгружаем ВСЕ амплуа
-        $result = $memberships->map(function ($membership) {
+        $result = $playerMemberships->map(function ($membership) {
             $person = $membership->person;
             $ampluas = $person ? $person->ampluaMemberships()->with('amplua')->get()->map(function($ampluaMembership) {
                 return [
