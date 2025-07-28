@@ -1839,8 +1839,8 @@ class PlayerStatisticsController extends Controller
                         'image_path' => $awayTeam->club_image_path,
                         'city' => $awayTeam->city?->title
                     ] : null,
-                    'home_score' => $event->score1,
-                    'away_score' => $event->score2,
+                    'home_score' => $event->result ? explode('-', $event->result)[0] ?? null : null,
+                    'away_score' => $event->result ? explode('-', $event->result)[1] ?? null : null,
                     'player_events' => $playerEvents,
                     'competition' => $event->competition ? [
                         'id' => $event->competition->id,
