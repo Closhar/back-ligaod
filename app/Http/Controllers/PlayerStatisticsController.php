@@ -1771,8 +1771,8 @@ class PlayerStatisticsController extends Controller
                         $query->where('person_id', $personId);
                     },
                     'competition',
-                    'club1',
-                    'club2'
+                    'club1.city',
+                    'club2.city'
                 ]);
 
             // Получаем общее количество событий
@@ -1828,12 +1828,14 @@ class PlayerStatisticsController extends Controller
                     'home_team' => $homeTeam ? [
                         'id' => $homeTeam->id,
                         'title' => $homeTeam->title,
-                        'image_path' => $homeTeam->club_image_path
+                        'image_path' => $homeTeam->club_image_path,
+                        'city' => $homeTeam->city?->title
                     ] : null,
                     'away_team' => $awayTeam ? [
                         'id' => $awayTeam->id,
                         'title' => $awayTeam->title,
-                        'image_path' => $awayTeam->club_image_path
+                        'image_path' => $awayTeam->club_image_path,
+                        'city' => $awayTeam->city?->title
                     ] : null,
                     'home_score' => $event->score1,
                     'away_score' => $event->score2,
