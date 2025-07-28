@@ -1762,6 +1762,8 @@ class PlayerStatisticsController extends Controller
                             $subQuery->where('person_id', $personId);
                         });
                 })
+                ->whereNotNull('result')
+                ->where('result', '!=', '')
                 ->with([
                     'actions' => function($query) use ($personId) {
                         $query->where('person_id', $personId)
@@ -1822,6 +1824,30 @@ class PlayerStatisticsController extends Controller
                 $homeTeam = $event->club1;
                 $awayTeam = $event->club2;
 
+                                // Обработка результата матча
+                $result = $event->result;
+                $homeScore = null;
+                $awayScore = null;
+
+                if ($result && !empty(trim($result))) {
+                    $cleanResult = trim($result);
+
+                    // Пробуем разные разделители
+                    if (strpos($cleanResult, '-') !== false) {
+                        $scores = explode('-', $cleanResult);
+                        if (count($scores) >= 2) {
+                            $homeScore = trim($scores[0]);
+                            $awayScore = trim($scores[1]);
+                        }
+                    } elseif (strpos($cleanResult, ':') !== false) {
+                        $scores = explode(':', $cleanResult);
+                        if (count($scores) >= 2) {
+                            $homeScore = trim($scores[0]);
+                            $awayScore = trim($scores[1]);
+                        }
+                    }
+                }
+
                 $matches[] = [
                     'id' => $event->id,
                     'date' => $event->date_from,
@@ -1839,8 +1865,8 @@ class PlayerStatisticsController extends Controller
                         'image_path' => $awayTeam->club_image_path,
                         'city' => $awayTeam->city?->title
                     ] : null,
-                    'home_score' => $event->result ? explode('-', $event->result)[0] ?? null : null,
-                    'away_score' => $event->result ? explode('-', $event->result)[1] ?? null : null,
+                    'home_score' => $homeScore,
+                    'away_score' => $awayScore,
                     'player_events' => $playerEvents,
                     'competition' => $event->competition ? [
                         'id' => $event->competition->id,
