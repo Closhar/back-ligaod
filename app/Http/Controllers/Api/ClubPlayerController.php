@@ -185,14 +185,16 @@ class ClubPlayerController extends Controller
     /**
      * Получить список игроков клуба с амплуа и персональными данными
      */
-    public function players(Request $request, Club $club): JsonResponse
+        public function players(Request $request, Club $club): JsonResponse
     {
         $memberships = PersonClubMembership::with(['person'])
             ->where('club_id', $club->id)
             ->whereNull('left_at')
             ->get();
 
-        // Фильтруем только игроков (спортсменов) - тех, у кого есть активные амплуа
+
+
+                // Фильтруем только игроков (спортсменов) - тех, у кого есть активные амплуа
         $playerMemberships = $memberships->filter(function ($membership) {
             $person = $membership->person;
             if (!$person) return false;
