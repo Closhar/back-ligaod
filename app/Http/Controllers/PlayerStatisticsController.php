@@ -1786,16 +1786,32 @@ class PlayerStatisticsController extends Controller
 
             // Формируем матчи с событиями игрока
             $matches = [];
+            $actionTypesInfo = [];
+
             foreach ($events as $event) {
                 $playerEvents = [];
 
                 // Собираем события игрока в этом матче
                 foreach ($event->actions as $action) {
+                    $actionTypeName = $action->actionType->name;
+
+                    // Собираем информацию о типах действий
+                    if (!isset($actionTypesInfo[$actionTypeName])) {
+                        $actionType = $action->actionType;
+                        $actionTypesInfo[$actionTypeName] = [
+                            'short_name' => $actionType->short_name ?: $actionType->name,
+                            'short_name_table' => $actionType->short_name_table ?: $actionType->short_name ?: $actionType->name,
+                            'icon' => $actionType->icon,
+                            'color' => $actionType->color,
+                            'full_name' => $actionType->name
+                        ];
+                    }
+
                     $playerEvents[] = [
                         'id' => $action->id,
-                        'action_type' => $action->actionType->name,
+                        'action_type' => $actionTypeName,
                         'minute' => $action->minute,
-                        'value' => $action->value
+                        'value' => $action->value ?? 1
                     ];
                 }
 
@@ -1826,10 +1842,13 @@ class PlayerStatisticsController extends Controller
                 ];
             }
 
+
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'matches' => $matches,
+                    'action_types' => $actionTypesInfo,
                     'total' => $totalEvents,
                     'per_page' => $perPage,
                     'current_page' => $page,
