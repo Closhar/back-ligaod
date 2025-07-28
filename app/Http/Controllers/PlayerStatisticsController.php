@@ -1808,6 +1808,8 @@ class PlayerStatisticsController extends Controller
                         ];
                     }
 
+
+
                     $playerEvents[] = [
                         'id' => $action->id,
                         'action_type' => $actionTypeName,
@@ -1842,6 +1844,8 @@ class PlayerStatisticsController extends Controller
                     ] : null
                 ];
             }
+
+
 
 
 
