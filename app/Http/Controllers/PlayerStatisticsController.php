@@ -1828,12 +1828,14 @@ class PlayerStatisticsController extends Controller
                     'home_team' => $homeTeam ? [
                         'id' => $homeTeam->id,
                         'title' => $homeTeam->title,
+                        'slug' => $homeTeam->slug,
                         'image_path' => $homeTeam->club_image_path,
                         'city' => $homeTeam->city?->title
                     ] : null,
                     'away_team' => $awayTeam ? [
                         'id' => $awayTeam->id,
                         'title' => $awayTeam->title,
+                        'slug' => $awayTeam->slug,
                         'image_path' => $awayTeam->club_image_path,
                         'city' => $awayTeam->city?->title
                     ] : null,
