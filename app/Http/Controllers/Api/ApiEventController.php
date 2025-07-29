@@ -359,8 +359,11 @@ class ApiEventController extends Controller
                 // Домашние матчи - где region_id события равен домашнему региону
                 $query->where('region_id', $regionId);
             } elseif ($matchType === 'away') {
-                // Выездные матчи - где region_id события НЕ равен домашнему региону
-                $query->where('region_id', '!=', $regionId);
+                // Выездные матчи - где region_id события НЕ равен домашнему региону или NULL
+                $query->where(function($q) use ($regionId) {
+                    $q->where('region_id', '!=', $regionId)
+                      ->orWhereNull('region_id');
+                });
             }
         }
 
