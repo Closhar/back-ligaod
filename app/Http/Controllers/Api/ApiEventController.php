@@ -9,6 +9,7 @@ use App\Models\Series;
 use App\Traits\SeriesCountTrait;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ApiEventController extends Controller
 {
@@ -19,8 +20,7 @@ class ApiEventController extends Controller
      */
     public function index(Request $request): array
     {
-        // Получаем параметры фильтрации из запроса
-        //$perPage = $request->input('events', 10);
+        // Получаем параметры фильтрации из запроса с защитой от больших значений
         $perPage = $request->input('per_page', 10);
         $page = $request->input('page', 1);
         $getEvents = $request->input('get_events');
@@ -37,11 +37,32 @@ class ApiEventController extends Controller
         $show = $request->input('show'); // По умолчанию показываем события с date_from >= сегодня
         $searchQuery = $request->input('q'); // Параметр поиска
         $show_concrete_date = false; // индикатор, что фильтруем по конкретной дате - при true игнорируется фильтр ВРЕМЕННОЙ ПРОМЕЖУТОК
-                $regionId = $request->input('region_id', 1);
+        $regionId = $request->input('region_id', 1);
 
-                // Преобразуем region_id в числовое значение
+        // Преобразуем region_id в числовое значение
         if (is_string($regionId)) {
             $regionId = is_numeric($regionId) ? (int)$regionId : 1;
+        }
+
+        // Защита от слишком больших значений per_page и get_events
+        $maxPerPage = 100; // Максимальное количество записей на страницу
+        $maxGetEvents = 1000; // Максимальное количество записей для get_events
+
+        if ($perPage > $maxPerPage) {
+            $perPage = $maxPerPage;
+        }
+        if ($perPage < 1) {
+            $perPage = 10;
+        }
+
+        if ($getEvents !== null) {
+            $getEvents = (int)$getEvents;
+            if ($getEvents > $maxGetEvents) {
+                $getEvents = $maxGetEvents;
+            }
+            if ($getEvents < 1) {
+                $getEvents = 10;
+            }
         }
 
         $is_active = $request->input('is_active', 1);
@@ -229,29 +250,36 @@ class ApiEventController extends Controller
             $show = 4;
         }
 
-        if ((!$show_concrete_date) && ($show)) {
-            // Применяем фильтр по show
+        // Применяем фильтр по show или фильтр по умолчанию
+        if (!$show_concrete_date) {
             $today = now()->toDateString(); // Сегодняшняя дата в формате 'Y-m-d'
-            switch ($show) {
-                case 1: // date_from >= сегодня
-                    $query->whereDate('date_from', '>=', $today);
-                    break;
-                case 2: // date_from <= сегодня ИЛИ date_to >= сегодня (события, которые начались до сегодня и еще продолжаются)
-                    {
-                        $query->where(function ($q) use ($today) {
-                            $q->whereDate('date_from', '<=', $today);
-                        });
-                        $sort = "date_from_desc";
-                    }
-                    break;
-                case 3: // date_from = сегодня
-                    $query->whereDate('date_from', '=', $today); // Фильтр по сегодняшней дате, игнорируя время
-                    break;
-                case 4: // Без ограничений по date_from
-                    break;
-                default:
-                    $query->whereDate('date_from', '>=', $today); // По умолчанию
-                    break;
+
+            if ($show !== null) {
+                // Если show указан, применяем соответствующий фильтр
+                switch ($show) {
+                    case 1: // date_from >= сегодня
+                        $query->whereDate('date_from', '>=', $today);
+                        break;
+                    case 2: // date_from <= сегодня ИЛИ date_to >= сегодня (события, которые начались до сегодня и еще продолжаются)
+                        {
+                            $query->where(function ($q) use ($today) {
+                                $q->whereDate('date_from', '<=', $today);
+                            });
+                            $sort = "date_from_desc";
+                        }
+                        break;
+                    case 3: // date_from = сегодня
+                        $query->whereDate('date_from', '=', $today); // Фильтр по сегодняшней дате, игнорируя время
+                        break;
+                    case 4: // Без ограничений по date_from
+                        break;
+                    default:
+                        $query->whereDate('date_from', '>=', $today); // По умолчанию для show
+                        break;
+                }
+            } else {
+                // Если show не указан, применяем фильтр по умолчанию (будущие события)
+                $query->whereDate('date_from', '>=', $today);
             }
         }
 
@@ -376,6 +404,13 @@ class ApiEventController extends Controller
         // Получаем общее количество записей с учетом фильтрации
         $total = $query->count();
 
+        // Дополнительная защита от слишком большого количества записей
+        if ($total > 10000) {
+            // Если записей слишком много, ограничиваем результат
+            \Illuminate\Support\Facades\Log::warning("ApiEventController: Попытка получить слишком много записей ({$total}). Ограничиваем до 1000.");
+            $total = 1000;
+        }
+
         // Обработка параметра get_events
         if ($getEvents !== null) {
             // Если get_events задан, ограничиваем количество записей
@@ -384,6 +419,9 @@ class ApiEventController extends Controller
             // Иначе применяем пагинацию
             $events = $query->paginate($perPage, ['*'], 'page', $page);
         }
+
+        // Логируем для отладки
+        \Illuminate\Support\Facades\Log::info("ApiEventController: Получено {$total} записей, возвращается " . count($events) . " записей");
 
         // считаем серию
         $events->transform(function ($event) use ($regionId) {
