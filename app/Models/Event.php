@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOneThrough;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Event extends Model
@@ -70,6 +71,26 @@ class Event extends Model
         return $this->belongsTo(Club::class, 'club2_id');
     }
 
+    // Алиасы для совместимости с API матчей
+    public function home_team(): BelongsTo
+    {
+        return $this->belongsTo(Club::class, 'club1_id');
+    }
+
+    public function away_team(): BelongsTo
+    {
+        return $this->belongsTo(Club::class, 'club2_id');
+    }
+
+    public function sport()
+    {
+        return $this->hasOneThrough(Sport::class, Competition::class, 'id', 'id', 'competition_id', 'sport_id');
+    }
+
+    public function events(): HasMany
+    {
+        return $this->hasMany(EventAction::class);
+    }
 
     public function arena(): BelongsTo
     {

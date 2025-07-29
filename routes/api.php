@@ -893,9 +893,8 @@ Route::prefix('people/{person}/matches')->group(function () {
 // Маршруты для сезонов
 Route::apiResource('seasons', SeasonController::class);
 
-// API маршруты для матчей
-Route::get('/matches/{id}', [App\Http\Controllers\Api\MatchController::class, 'show']);
-Route::get('/matches/{id}/similar', [App\Http\Controllers\Api\MatchController::class, 'similar']);
+// Маршрут для похожих событий
+Route::get('/events/{id}/similar', [App\Http\Controllers\Api\ApiEventController::class, 'similar']);
 
 
 

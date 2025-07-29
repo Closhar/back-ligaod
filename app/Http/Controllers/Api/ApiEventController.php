@@ -749,6 +749,78 @@ class ApiEventController extends Controller
     }
 
     /**
+     * Получить похожие события
+     */
+    public function similar($id): array
+    {
+        try {
+            $event = Event::findOrFail($id);
+
+            // Находим похожие события (те же команды или тот же турнир)
+            $similarEvents = Event::with(['club1', 'club2'])
+                ->where('id', '!=', $id)
+                ->where(function ($query) use ($event) {
+                    $query->where(function ($q) use ($event) {
+                        $q->where('club1_id', $event->club1_id)
+                          ->where('club2_id', $event->club2_id);
+                    })->orWhere(function ($q) use ($event) {
+                        $q->where('club1_id', $event->club2_id)
+                          ->where('club2_id', $event->club1_id);
+                    })->orWhere('competition_id', $event->competition_id);
+                })
+                ->orderBy('date_from', 'desc')
+                ->limit(10)
+                ->get()
+                ->map(function ($similarEvent) {
+                    return [
+                        'id' => $similarEvent->id,
+                        'date' => $similarEvent->date_from,
+                        'home_team' => [
+                            'id' => $similarEvent->club1->id,
+                            'title' => $similarEvent->club1->title,
+                        ],
+                        'away_team' => [
+                            'id' => $similarEvent->club2->id,
+                            'title' => $similarEvent->club2->title,
+                        ],
+                        'home_score' => $this->extractScore($similarEvent->result, 'home'),
+                        'away_score' => $this->extractScore($similarEvent->result, 'away'),
+                    ];
+                });
+
+            return $similarEvents->toArray();
+
+        } catch (\Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Извлекает счет из результата события
+     */
+    private function extractScore($result, $team): ?int
+    {
+        if (!$result) {
+            return null;
+        }
+
+        // Если результат в формате "2:1" или "2 - 1"
+        if (is_string($result)) {
+            $scores = preg_split('/[:\-\s]+/', $result);
+            if (count($scores) >= 2) {
+                return $team === 'home' ? (int)$scores[0] : (int)$scores[1];
+            }
+        }
+
+        // Если результат в формате массива
+        if (is_array($result)) {
+            return $result[$team] ?? null;
+        }
+
+        return null;
+    }
+
+    /**
      * Update the specified resource in storage.
      */
     public function update(Request $request, Event $event)
