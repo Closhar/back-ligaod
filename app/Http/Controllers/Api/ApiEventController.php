@@ -356,15 +356,11 @@ class ApiEventController extends Controller
         // Добавляем фильтр по типу матчей (домашние/выездные)
         if ($matchType && $matchType !== 'all') {
             if ($matchType === 'home') {
-                // Домашние матчи - где club1_id соответствует клубу из региона
-                $query->whereHas('club1', function ($q) use ($regionId) {
-                    $q->where('region_id', $regionId);
-                });
+                // Домашние матчи - где region_id события равен домашнему региону
+                $query->where('region_id', $regionId);
             } elseif ($matchType === 'away') {
-                // Выездные матчи - где club2_id соответствует клубу из региона
-                $query->whereHas('club2', function ($q) use ($regionId) {
-                    $q->where('region_id', $regionId);
-                });
+                // Выездные матчи - где region_id события НЕ равен домашнему региону
+                $query->where('region_id', '!=', $regionId);
             }
         }
 
