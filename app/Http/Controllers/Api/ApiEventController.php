@@ -71,6 +71,7 @@ class ApiEventController extends Controller
         $seriesId = $request->input('series_id'); // Добавляем получение series_id
         $sportPropertyId = $request->input('sport_property_id'); // Добавляем получение sport_property_id
         $tickets = $request->input('tickets'); // Параметр фильтрации по типу билетов (free/paid)
+        $matchType = $request->input('match_type'); // Параметр фильтрации по типу матчей (home/away/all)
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -349,6 +350,21 @@ class ApiEventController extends Controller
                 $query->where('free_tickets', true);
             } elseif ($tickets === 'paid') {
                 $query->where('free_tickets', false);
+            }
+        }
+
+        // Добавляем фильтр по типу матчей (домашние/выездные)
+        if ($matchType && $matchType !== 'all') {
+            if ($matchType === 'home') {
+                // Домашние матчи - где club1_id соответствует клубу из региона
+                $query->whereHas('club1', function ($q) use ($regionId) {
+                    $q->where('region_id', $regionId);
+                });
+            } elseif ($matchType === 'away') {
+                // Выездные матчи - где club2_id соответствует клубу из региона
+                $query->whereHas('club2', function ($q) use ($regionId) {
+                    $q->where('region_id', $regionId);
+                });
             }
         }
 
