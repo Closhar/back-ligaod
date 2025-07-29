@@ -77,6 +77,10 @@ class ApiEventController extends Controller
         $clubSlugItem = $request->input('club_item');
 
         $allRegions = $request->input('all_regions');
+        // Преобразуем all_regions в boolean
+        if ($allRegions !== null) {
+            $allRegions = filter_var($allRegions, FILTER_VALIDATE_BOOLEAN);
+        }
 
         if ($sportSlugItem) $sportSlug = $sportSlugItem;
         if ($arenaSlugItem) $arenaSlug = $arenaSlugItem;
@@ -187,7 +191,7 @@ class ApiEventController extends Controller
                 },
             ]);
 
-        if ($regionId) {
+        if ($regionId && !$allRegions) {
             // Если указан параметр tickets, показываем только события домашнего региона
             if ($tickets) {
                 $query->where('region_id', $regionId);
