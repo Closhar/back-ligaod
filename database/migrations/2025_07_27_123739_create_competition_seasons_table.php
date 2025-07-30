@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('competition_seasons', function (Blueprint $table) {
             $table->id();
             $table->foreignId('competition_id')->constrained('competitions')->onDelete('cascade');
-            $table->string('title'); // Название сезона (например "2024/2025")
+            $table->string('title')->nullable(); // Название сезона (например "2024/2025")
             $table->date('date_from')->nullable(); // Дата начала сезона
             $table->date('date_to')->nullable(); // Дата окончания сезона
             $table->boolean('is_active')->default(true); // Активный ли сезон
