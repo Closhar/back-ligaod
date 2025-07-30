@@ -229,6 +229,20 @@ class ApiEventController extends Controller
             }
         }
 
+        // Добавляем фильтр по типу матчей (домашние/выездные) - применяется независимо от других фильтров
+        if ($matchType && $matchType !== 'all') {
+            if ($matchType === 'home') {
+                // Домашние матчи - где region_id события равен домашнему региону
+                $query->where('region_id', $regionId);
+            } elseif ($matchType === 'away') {
+                // Выездные матчи - где region_id события НЕ равен домашнему региону или NULL
+                $query->where(function($q) use ($regionId) {
+                    $q->where('region_id', '!=', $regionId)
+                      ->orWhereNull('region_id');
+                });
+            }
+        }
+
         if ($is_active) {
             $query->where('is_active', $is_active);
         }
@@ -353,19 +367,7 @@ class ApiEventController extends Controller
             }
         }
 
-        // Добавляем фильтр по типу матчей (домашние/выездные)
-        if ($matchType && $matchType !== 'all') {
-            if ($matchType === 'home') {
-                // Домашние матчи - где region_id события равен домашнему региону
-                $query->where('region_id', $regionId);
-            } elseif ($matchType === 'away') {
-                // Выездные матчи - где region_id события НЕ равен домашнему региону или NULL
-                $query->where(function($q) use ($regionId) {
-                    $q->where('region_id', '!=', $regionId)
-                      ->orWhereNull('region_id');
-                });
-            }
-        }
+
 
         // Применяем поиск по параметру q
         if ($searchQuery) {
