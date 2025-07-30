@@ -73,13 +73,10 @@ class ApiEventController extends Controller
         $tickets = $request->input('tickets'); // Параметр фильтрации по типу билетов (free/paid)
         $matchType = $request->input('match_type'); // Параметр фильтрации по типу матчей (home/away/all)
 
-        // Нормализуем match_type - если пустая строка, считаем как 'all'
+                // Нормализуем match_type - если пустая строка, считаем как 'all'
         if ($matchType === '' || $matchType === null) {
             $matchType = 'all';
         }
-
-        // Отладочная информация
-        \Illuminate\Support\Facades\Log::info("ApiEventController: match_type = " . ($matchType ?? 'null') . ", region_id = " . ($regionId ?? 'null'));
 
         $sportSlugItem = $request->input('sport_item');
         $arenaSlugItem = $request->input('arena_item');
@@ -239,21 +236,16 @@ class ApiEventController extends Controller
 
         // Добавляем фильтр по типу матчей (домашние/выездные) - применяется независимо от других фильтров
         if ($matchType && $matchType !== 'all') {
-            \Illuminate\Support\Facades\Log::info("ApiEventController: Применяем фильтр match_type = " . $matchType);
             if ($matchType === 'home') {
                 // Домашние матчи - где region_id события равен домашнему региону
                 $query->where('region_id', $regionId);
-                \Illuminate\Support\Facades\Log::info("ApiEventController: Применен фильтр home для region_id = " . $regionId);
             } elseif ($matchType === 'away') {
                 // Выездные матчи - где region_id события НЕ равен домашнему региону или NULL
                 $query->where(function($q) use ($regionId) {
                     $q->where('region_id', '!=', $regionId)
                       ->orWhereNull('region_id');
                 });
-                \Illuminate\Support\Facades\Log::info("ApiEventController: Применен фильтр away для region_id = " . $regionId);
             }
-        } else {
-            \Illuminate\Support\Facades\Log::info("ApiEventController: Фильтр match_type не применяется (matchType = " . ($matchType ?? 'null') . ")");
         }
 
         if ($is_active) {
