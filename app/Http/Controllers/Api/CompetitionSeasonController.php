@@ -54,7 +54,7 @@ class CompetitionSeasonController extends Controller
             $validated = $request->validate([
                 'competition_id' => 'required|exists:competitions,id',
                 'season_id' => 'nullable|exists:seasons,id',
-                'title' => 'string|max:255',
+                'title' => 'nullable|string|max:255',
                 'date_from' => 'nullable|date',
                 'date_to' => 'nullable|date|after_or_equal:date_from',
                 'is_active' => 'nullable',
@@ -111,7 +111,7 @@ class CompetitionSeasonController extends Controller
             $validated = $request->validate([
                 'competition_id' => 'sometimes|required|exists:competitions,id',
                 'season_id' => 'nullable|exists:seasons,id',
-                'title' => 'sometimes|string|max:255',
+                'title' => 'sometimes|nullable|string|max:255',
                 'date_from' => 'nullable|date',
                 'date_to' => 'nullable|date|after_or_equal:date_from',
                 'is_active' => 'nullable',
