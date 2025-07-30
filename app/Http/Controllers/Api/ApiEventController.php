@@ -604,7 +604,12 @@ class ApiEventController extends Controller
      */
     public function show(Event $event, $id): array
     {
-        $event = Event::with([
+        $event = Event::select([
+            'id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image',
+            'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id',
+            'is_active', 'event_name', 'series_id', 'series_count', 'about',
+            'tickets', 'report', 'free_tickets', 'gallery_id', 'image', 'slug'
+        ])->with([
             'streams',
             'series' => function ($query) {
                 $query->select(['id', 'description']);

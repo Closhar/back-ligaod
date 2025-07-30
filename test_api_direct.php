@@ -1,75 +1,47 @@
 <?php
-// Простой тест API для проверки статистики игрока
 
-// URL API
-$apiUrl = 'http://p.sportrep.loc/api';
+// Прямой тест API endpoint
+$apiUrl = 'http://127.0.0.1:8000/api/v1/events/1?include=lineups';
 
-// ID игрока для тестирования
-$playerId = 1;
-$seasonId = 1;
-$competitionId = 1;
+echo "Тестирование API endpoint: $apiUrl\n";
+echo "=====================================\n\n";
 
-echo "Тестирование API статистики игрока\n";
-echo "===================================\n\n";
+$ch = curl_init();
+curl_setopt($ch, CURLOPT_URL, $apiUrl);
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    'Accept: application/json',
+    'Content-Type: application/json'
+]);
 
-// 1. Тест получения сезонов
-echo "1. Получение сезонов:\n";
-$url = "$apiUrl/people/$playerId/statistics/seasons";
-echo "URL: $url\n";
+$response = curl_exec($ch);
+$httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+curl_close($ch);
 
-$response = file_get_contents($url);
-$data = json_decode($response, true);
+echo "HTTP Code: $httpCode\n";
+echo "Response:\n";
 
-if ($data && isset($data['success']) && $data['success']) {
-    echo "✓ Успешно получены сезоны\n";
-    echo "Сезонов: " . count($data['data']['seasons']) . "\n";
-    echo "Соревнований: " . count($data['data']['competitions']) . "\n";
+if ($response) {
+    $data = json_decode($response, true);
 
-    // Показываем первые несколько сезонов
-    if (count($data['data']['seasons']) > 0) {
-        echo "Первые сезоны:\n";
-        foreach (array_slice($data['data']['seasons'], 0, 3) as $season) {
-            echo "  - ID: {$season['id']}, Название: {$season['title']}\n";
+    if (is_array($data) && count($data) > 0) {
+        $event = $data[0] ?? $data;
+
+        echo "Event ID: " . ($event['id'] ?? 'N/A') . "\n";
+        echo "Report field: " . ($event['report'] ?? 'NULL') . "\n";
+        echo "Report exists: " . (isset($event['report']) ? 'YES' : 'NO') . "\n";
+        echo "Report is null: " . (is_null($event['report']) ? 'YES' : 'NO') . "\n";
+        echo "Report length: " . (strlen($event['report'] ?? '') ?: 0) . "\n";
+
+        if (isset($event['report']) && !is_null($event['report'])) {
+            echo "\nПервые 200 символов report:\n";
+            echo substr($event['report'], 0, 200) . "...\n";
         }
-    }
-
-    // Показываем первые несколько соревнований
-    if (count($data['data']['competitions']) > 0) {
-        echo "Первые соревнования:\n";
-        foreach (array_slice($data['data']['competitions'], 0, 3) as $competition) {
-            echo "  - ID: {$competition['id']}, Название: {$competition['title']}\n";
-        }
-    }
-} else {
-    echo "✗ Ошибка получения сезонов\n";
-    echo "Ответ: " . $response . "\n";
-}
-
-echo "\n";
-
-// 2. Тест комбинированного endpoint
-echo "2. Тест комбинированного endpoint:\n";
-$url = "$apiUrl/people/$playerId/statistics/season/$seasonId/competition/$competitionId";
-echo "URL: $url\n";
-
-$response = file_get_contents($url);
-$data = json_decode($response, true);
-
-if ($data && isset($data['success']) && $data['success']) {
-    echo "✓ Успешно получена статистика\n";
-    echo "Матчей: " . ($data['data']['total_matches'] ?? 0) . "\n";
-    echo "Показателей: " . count($data['data']['statistics'] ?? []) . "\n";
-
-    if (isset($data['data']['statistics'])) {
-        echo "Статистика:\n";
-        foreach ($data['data']['statistics'] as $key => $value) {
-            echo "  $key: $value\n";
-        }
+    } else {
+        echo "Неверный формат ответа\n";
+        echo "Raw response: " . substr($response, 0, 500) . "...\n";
     }
 } else {
-    echo "✗ Ошибка получения статистики\n";
-    echo "Ответ: " . $response . "\n";
+    echo "Ошибка получения ответа\n";
 }
-
-echo "\nТестирование завершено.\n";
 ?>
