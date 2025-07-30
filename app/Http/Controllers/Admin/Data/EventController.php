@@ -430,6 +430,20 @@ class EventController extends Controller
                 }
             }
 
+            // Определяем сезон по дате события и формируем название
+            $eventDate = \Carbon\Carbon::parse($event->date_from);
+            $seasonData = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
+
+            // Определяем название соревнования
+            $competitionTitle = $seasonData['competition_title'] ?? $event->competition->title;
+
+            // Формируем финальное название
+            if ($seasonData['season_title']) {
+                $event->competition->title_with_season = $competitionTitle . ' ' . $seasonData['season_title'];
+            } else {
+                $event->competition->title_with_season = $competitionTitle;
+            }
+
             // Формируем club_info для club1
             $club1Info = null;
             if ($event->club1) {
@@ -864,6 +878,20 @@ class EventController extends Controller
                 },
             ])
             ->findOrFail($id);
+
+            // Определяем сезон по дате события и формируем название
+            $eventDate = \Carbon\Carbon::parse($item->date_from);
+            $seasonData = $this->getSeasonTitleForEvent($item->competition_id, $eventDate);
+
+            // Определяем название соревнования
+            $competitionTitle = $seasonData['competition_title'] ?? $item->competition->title;
+
+            // Формируем финальное название
+            if ($seasonData['season_title']) {
+                $item->competition->title_with_season = $competitionTitle . ' ' . $seasonData['season_title'];
+            } else {
+                $item->competition->title_with_season = $competitionTitle;
+            }
 
             // Добавляем дополнительные поля для редактора изображений
             $itemArray = $item->toArray();
@@ -1333,6 +1361,70 @@ class EventController extends Controller
                 'message' => $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Получить название сезона для события по дате
+     */
+    private function getSeasonTitleForEvent(int $competitionId, \Carbon\Carbon $eventDate): array
+    {
+        // Проверяем competition_seasons по датам
+        $competitionSeason = \App\Models\CompetitionSeason::where('competition_id', $competitionId)
+            ->where('is_active', true)
+            ->where(function($query) use ($eventDate) {
+                $query->where(function($subQuery) use ($eventDate) {
+                    $subQuery->where('date_from', '<=', $eventDate)
+                             ->where(function($dateQuery) use ($eventDate) {
+                                 $dateQuery->where('date_to', '>=', $eventDate)
+                                           ->orWhereNull('date_to');
+                             });
+                })->orWhere(function($subQuery) {
+                    // Если даты не указаны, берем любой активный сезон для этого соревнования
+                    $subQuery->whereNull('date_from')
+                             ->whereNull('date_to');
+                });
+            })
+            ->first();
+
+        // Ищем общий сезон
+        $season = \App\Models\Season::where('is_active', true)
+            ->where(function($query) use ($eventDate) {
+                $query->where(function($subQuery) use ($eventDate) {
+                    $subQuery->where('date_from', '<=', $eventDate)
+                             ->where(function($dateQuery) use ($eventDate) {
+                                 $dateQuery->where('date_to', '>=', $eventDate)
+                                           ->orWhereNull('date_to');
+                             });
+                })->orWhere(function($subQuery) {
+                    $subQuery->whereNull('date_from')
+                             ->whereNull('date_to');
+                });
+            })
+            ->whereHas('competitions', function($query) use ($competitionId) {
+                $query->where('competitions.id', $competitionId);
+            })
+            ->first();
+
+        $competitionTitle = null;
+        $seasonTitle = null;
+
+        // Если нашли competition_season по датам
+        if ($competitionSeason) {
+            // Если у competition_season есть title, используем его
+            if (!empty($competitionSeason->title)) {
+                $competitionTitle = $competitionSeason->title;
+            }
+        }
+
+        // Если нашли общий сезон, используем его title
+        if ($season) {
+            $seasonTitle = $season->title;
+        }
+
+        return [
+            'competition_title' => $competitionTitle,
+            'season_title' => $seasonTitle
+        ];
     }
 
     /**
