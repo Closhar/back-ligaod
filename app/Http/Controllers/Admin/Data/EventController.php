@@ -855,7 +855,8 @@ class EventController extends Controller
                         'articles.id', // Явно указываем таблицу
                         'articles.title',
                         'articles.slug',
-                        'articles.image'
+                        'articles.image',
+                        'articles.data'
                     ]);
                 },
                 'arena' => function ($query) {
