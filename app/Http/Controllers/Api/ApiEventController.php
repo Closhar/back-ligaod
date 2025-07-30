@@ -914,28 +914,43 @@ class ApiEventController extends Controller
      */
     private function getSeasonTitleForEvent(int $competitionId, \Carbon\Carbon $eventDate): ?string
     {
-        // Сначала проверяем competition_seasons
+        // Сначала проверяем competition_seasons с более мягкими условиями
         $competitionSeason = \App\Models\CompetitionSeason::where('competition_id', $competitionId)
             ->where('is_active', true)
-            ->where('date_from', '<=', $eventDate)
             ->where(function($query) use ($eventDate) {
-                $query->where('date_to', '>=', $eventDate)
-                      ->orWhereNull('date_to');
+                $query->where(function($subQuery) use ($eventDate) {
+                    $subQuery->where('date_from', '<=', $eventDate)
+                             ->where(function($dateQuery) use ($eventDate) {
+                                 $dateQuery->where('date_to', '>=', $eventDate)
+                                           ->orWhereNull('date_to');
+                             });
+                })->orWhere(function($subQuery) {
+                    // Если даты не указаны, берем любой активный сезон для этого соревнования
+                    $subQuery->whereNull('date_from')
+                             ->whereNull('date_to');
+                });
             })
-            ->whereNotNull('title')
-            ->where('title', '!=', '')
             ->first();
 
-        if ($competitionSeason) {
+        // Если нашли competition_season, но title пустой, ищем в общих сезонах
+        if ($competitionSeason && !empty($competitionSeason->title)) {
             return $competitionSeason->title;
         }
 
-        // Если не нашли в competition_seasons, проверяем общие сезоны через связь
+        // Если не нашли в competition_seasons или title пустой, проверяем общие сезоны через связь
         $season = \App\Models\Season::where('is_active', true)
-            ->where('date_from', '<=', $eventDate)
             ->where(function($query) use ($eventDate) {
-                $query->where('date_to', '>=', $eventDate)
-                      ->orWhereNull('date_to');
+                $query->where(function($subQuery) use ($eventDate) {
+                    $subQuery->where('date_from', '<=', $eventDate)
+                             ->where(function($dateQuery) use ($eventDate) {
+                                 $dateQuery->where('date_to', '>=', $eventDate)
+                                           ->orWhereNull('date_to');
+                             });
+                })->orWhere(function($subQuery) {
+                    // Если даты не указаны, берем любой активный сезон
+                    $subQuery->whereNull('date_from')
+                             ->whereNull('date_to');
+                });
             })
             ->whereHas('competitions', function($query) use ($competitionId) {
                 $query->where('competitions.id', $competitionId);
