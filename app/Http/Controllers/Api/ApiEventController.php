@@ -72,7 +72,12 @@ class ApiEventController extends Controller
         $sportPropertyId = $request->input('sport_property_id'); // Добавляем получение sport_property_id
         $tickets = $request->input('tickets'); // Параметр фильтрации по типу билетов (free/paid)
         $matchType = $request->input('match_type'); // Параметр фильтрации по типу матчей (home/away/all)
-        
+
+        // Нормализуем match_type - если пустая строка, считаем как 'all'
+        if ($matchType === '' || $matchType === null) {
+            $matchType = 'all';
+        }
+
         // Отладочная информация
         \Illuminate\Support\Facades\Log::info("ApiEventController: match_type = " . ($matchType ?? 'null') . ", region_id = " . ($regionId ?? 'null'));
 
