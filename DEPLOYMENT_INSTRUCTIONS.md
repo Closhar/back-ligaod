@@ -1,63 +1,47 @@
-# Инструкция по обновлению серверного бэкенда
+# Инструкции по деплою изменений
 
-## Проблема
-Блок "ИНФОРМАЦИЯ О СОБЫТИИ" не отображается на фронтенде, потому что поле `report` не передается в API ответе.
+## Изменения в API контроллере
 
-## Решение
-Добавлен `select` с полем `report` в метод `show` контроллера `ApiEventController`.
+Добавлены поля `display_lineups_mode` и `display_actions_mode` в select запросы методов `index` и `show` в `ApiEventController.php`.
 
-## Шаги для обновления сервера
+## Команды для деплоя
 
-### 1. Подключение к серверу
-```bash
-ssh user@server
-cd /path/to/p.sportrep.ru
-```
+1. **Перейти в директорию бэкенда:**
+   ```bash
+   cd /path/to/backend
+   ```
 
-### 2. Получение изменений из Git
-```bash
-git pull origin main
-```
+2. **Получить последние изменения:**
+   ```bash
+   git pull origin main
+   ```
 
-### 3. Обновление зависимостей (если нужно)
-```bash
-composer install --no-dev --optimize-autoloader
-```
+3. **Установить зависимости (если нужно):**
+   ```bash
+   composer install --no-dev --optimize-autoloader
+   ```
 
-### 4. Очистка кэша Laravel
-```bash
-php artisan cache:clear
-php artisan config:clear
-php artisan route:clear
-php artisan view:clear
-```
+4. **Очистить кэш:**
+   ```bash
+   php artisan cache:clear
+   php artisan config:clear
+   php artisan route:clear
+   ```
 
-### 5. Проверка изменений
-Файл `app/Http/Controllers/Api/ApiEventController.php` должен содержать:
-```php
-$event = Event::select([
-    'id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image',
-    'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id',
-    'is_active', 'event_name', 'series_id', 'series_count', 'about',
-    'tickets', 'report', 'free_tickets', 'gallery_id', 'image', 'slug'
-])->with([
-```
+5. **Проверить статус миграций:**
+   ```bash
+   php artisan migrate:status
+   ```
 
-### 6. Тестирование API
-```bash
-curl "https://p.sportrep.ru/api/v1/events/1?include=lineups" | jq '.[0].report'
-```
+6. **Применить миграции (если есть новые):**
+   ```bash
+   php artisan migrate
+   ```
 
-### 7. Перезапуск веб-сервера (если нужно)
-```bash
-sudo systemctl restart nginx
-sudo systemctl restart php-fpm
-```
+## Проверка изменений
 
-## Ожидаемый результат
-После обновления блок "ИНФОРМАЦИЯ О СОБЫТИИ" должен отображаться на странице матча для событий, у которых заполнено поле `report`.
+После деплоя проверьте, что в API ответе для событий теперь приходят поля:
+- `display_lineups_mode`
+- `display_actions_mode`
 
-## Проверка
-1. Откройте страницу матча: `https://sportrep.ru/clubs/zenit/matches/1`
-2. Проверьте, что блок "ИНФОРМАЦИЯ О СОБЫТИИ" отображается
-3. Проверьте API напрямую: `https://p.sportrep.ru/api/v1/events/1?include=lineups` 
+Эти поля должны определять режим отображения составов и событий матча. 
