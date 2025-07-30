@@ -463,6 +463,16 @@ class ApiEventController extends Controller
             // Добавляем parse_table_id в корень
             $event->parse_table_id = $event->competition->parse_table_id ?? null;
 
+            // Определяем сезон по дате события и добавляем к названию соревнования
+            $eventDate = \Carbon\Carbon::parse($event->date_from);
+            $seasonTitle = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
+
+            if ($seasonTitle) {
+                $event->competition->title_with_season = $event->competition->title . ' | ' . $seasonTitle;
+            } else {
+                $event->competition->title_with_season = $event->competition->title;
+            }
+
             // Вычисляем series_count если он не установлен
             if ($event->series_id) {
                 if ($event->series_count === null) {
@@ -745,6 +755,16 @@ class ApiEventController extends Controller
         // Добавляем parse_table_id в корень
         $event->parse_table_id = $event->competition->parse_table_id ?? null;
 
+        // Определяем сезон по дате события и добавляем к названию соревнования
+        $eventDate = \Carbon\Carbon::parse($event->date_from);
+        $seasonTitle = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
+
+        if ($seasonTitle) {
+            $event->competition->title_with_season = $event->competition->title . ' | ' . $seasonTitle;
+        } else {
+            $event->competition->title_with_season = $event->competition->title;
+        }
+
         return [$event->toArray()];
     }
 
@@ -887,5 +907,45 @@ class ApiEventController extends Controller
     public function destroy(Gender $gender)
     {
         //
+    }
+
+    /**
+     * Получить название сезона для события по дате
+     */
+    private function getSeasonTitleForEvent(int $competitionId, \Carbon\Carbon $eventDate): ?string
+    {
+        // Сначала проверяем competition_seasons
+        $competitionSeason = \App\Models\CompetitionSeason::where('competition_id', $competitionId)
+            ->where('is_active', true)
+            ->where('date_from', '<=', $eventDate)
+            ->where(function($query) use ($eventDate) {
+                $query->where('date_to', '>=', $eventDate)
+                      ->orWhereNull('date_to');
+            })
+            ->whereNotNull('title')
+            ->where('title', '!=', '')
+            ->first();
+
+        if ($competitionSeason) {
+            return $competitionSeason->title;
+        }
+
+        // Если не нашли в competition_seasons, проверяем общие сезоны через связь
+        $season = \App\Models\Season::where('is_active', true)
+            ->where('date_from', '<=', $eventDate)
+            ->where(function($query) use ($eventDate) {
+                $query->where('date_to', '>=', $eventDate)
+                      ->orWhereNull('date_to');
+            })
+            ->whereHas('competitions', function($query) use ($competitionId) {
+                $query->where('competitions.id', $competitionId);
+            })
+            ->first();
+
+        if ($season) {
+            return $season->title;
+        }
+
+        return null;
     }
 }
