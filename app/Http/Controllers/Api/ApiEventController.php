@@ -465,14 +465,16 @@ class ApiEventController extends Controller
 
             // Определяем сезон по дате события и формируем название
             $eventDate = \Carbon\Carbon::parse($event->date_from);
-            $seasonTitle = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
+            $seasonData = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
 
-            if ($seasonTitle) {
-                // Если есть название сезона, добавляем его к названию соревнования
-                $event->competition->title_with_season = $event->competition->title . ' ' . $seasonTitle;
+            // Определяем название соревнования
+            $competitionTitle = $seasonData['competition_title'] ?? $event->competition->title;
+
+            // Формируем финальное название
+            if ($seasonData['season_title']) {
+                $event->competition->title_with_season = $competitionTitle . ' ' . $seasonData['season_title'];
             } else {
-                // Если сезона нет, используем обычное название соревнования
-                $event->competition->title_with_season = $event->competition->title;
+                $event->competition->title_with_season = $competitionTitle;
             }
 
             // Вычисляем series_count если он не установлен
@@ -759,14 +761,16 @@ class ApiEventController extends Controller
 
         // Определяем сезон по дате события и формируем название
         $eventDate = \Carbon\Carbon::parse($event->date_from);
-        $seasonTitle = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
+        $seasonData = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
 
-        if ($seasonTitle) {
-            // Если есть название сезона, добавляем его к названию соревнования
-            $event->competition->title_with_season = $event->competition->title . ' ' . $seasonTitle;
+        // Определяем название соревнования
+        $competitionTitle = $seasonData['competition_title'] ?? $event->competition->title;
+
+        // Формируем финальное название
+        if ($seasonData['season_title']) {
+            $event->competition->title_with_season = $competitionTitle . ' ' . $seasonData['season_title'];
         } else {
-            // Если сезона нет, используем обычное название соревнования
-            $event->competition->title_with_season = $event->competition->title;
+            $event->competition->title_with_season = $competitionTitle;
         }
 
         return [$event->toArray()];
@@ -916,7 +920,7 @@ class ApiEventController extends Controller
     /**
      * Получить название сезона для события по дате
      */
-    private function getSeasonTitleForEvent(int $competitionId, \Carbon\Carbon $eventDate): ?string
+    private function getSeasonTitleForEvent(int $competitionId, \Carbon\Carbon $eventDate): array
     {
         // Проверяем competition_seasons по датам
         $competitionSeason = \App\Models\CompetitionSeason::where('competition_id', $competitionId)
@@ -936,38 +940,44 @@ class ApiEventController extends Controller
             })
             ->first();
 
+        // Ищем общий сезон
+        $season = \App\Models\Season::where('is_active', true)
+            ->where(function($query) use ($eventDate) {
+                $query->where(function($subQuery) use ($eventDate) {
+                    $subQuery->where('date_from', '<=', $eventDate)
+                             ->where(function($dateQuery) use ($eventDate) {
+                                 $dateQuery->where('date_to', '>=', $eventDate)
+                                           ->orWhereNull('date_to');
+                             });
+                })->orWhere(function($subQuery) {
+                    $subQuery->whereNull('date_from')
+                             ->whereNull('date_to');
+                });
+            })
+            ->whereHas('competitions', function($query) use ($competitionId) {
+                $query->where('competitions.id', $competitionId);
+            })
+            ->first();
+
+        $competitionTitle = null;
+        $seasonTitle = null;
+
         // Если нашли competition_season по датам
         if ($competitionSeason) {
-            // Если у competition_season есть title, возвращаем его
+            // Если у competition_season есть title, используем его
             if (!empty($competitionSeason->title)) {
-                return $competitionSeason->title;
-            }
-
-            // Если title пустой, ищем в общих сезонах
-            $season = \App\Models\Season::where('is_active', true)
-                ->where(function($query) use ($eventDate) {
-                    $query->where(function($subQuery) use ($eventDate) {
-                        $subQuery->where('date_from', '<=', $eventDate)
-                                 ->where(function($dateQuery) use ($eventDate) {
-                                     $dateQuery->where('date_to', '>=', $eventDate)
-                                               ->orWhereNull('date_to');
-                                 });
-                    })->orWhere(function($subQuery) {
-                        $subQuery->whereNull('date_from')
-                                 ->whereNull('date_to');
-                    });
-                })
-                ->whereHas('competitions', function($query) use ($competitionId) {
-                    $query->where('competitions.id', $competitionId);
-                })
-                ->first();
-
-            if ($season) {
-                return $season->title;
+                $competitionTitle = $competitionSeason->title;
             }
         }
 
-        // Если не нашли competition_season по датам или не нашли общий сезон
-        return null;
+        // Если нашли общий сезон, используем его title
+        if ($season) {
+            $seasonTitle = $season->title;
+        }
+
+        return [
+            'competition_title' => $competitionTitle,
+            'season_title' => $seasonTitle
+        ];
     }
 }
