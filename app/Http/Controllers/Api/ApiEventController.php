@@ -468,8 +468,8 @@ class ApiEventController extends Controller
             $seasonTitle = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
 
             if ($seasonTitle) {
-                // Если есть название сезона, используем только его
-                $event->competition->title_with_season = $seasonTitle;
+                // Если есть название сезона, добавляем его к названию соревнования
+                $event->competition->title_with_season = $event->competition->title . ' ' . $seasonTitle;
             } else {
                 // Если сезона нет, используем обычное название соревнования
                 $event->competition->title_with_season = $event->competition->title;
@@ -762,8 +762,8 @@ class ApiEventController extends Controller
         $seasonTitle = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
 
         if ($seasonTitle) {
-            // Если есть название сезона, используем только его
-            $event->competition->title_with_season = $seasonTitle;
+            // Если есть название сезона, добавляем его к названию соревнования
+            $event->competition->title_with_season = $event->competition->title . ' ' . $seasonTitle;
         } else {
             // Если сезона нет, используем обычное название соревнования
             $event->competition->title_with_season = $event->competition->title;
