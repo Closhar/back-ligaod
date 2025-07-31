@@ -132,7 +132,7 @@ class ApiArenaController extends Controller
                     $query->select([
                         'clubs.id', // Явно указываем таблицу
                         'clubs.title',
-                        DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
+                        DB::raw('CASE WHEN clubs.image IS NOT NULL AND clubs.image != "" THEN CONCAT("' . config('app.url') . '", "/storage/", clubs.image) ELSE NULL END AS full_image_path'),
                         'clubs.slug',
                         'clubs.city_id',
                         'clubs.age_id',
