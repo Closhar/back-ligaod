@@ -303,7 +303,7 @@ class ApiCompetitionController extends Controller
                         'clubs.sport_id',
                         'clubs.slug',
                         'clubs.image',
-                        DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS club_image_path")
+                        DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS full_image_path")
                     ])
                         ->with(['city', 'gender', 'sport']);
                 },
@@ -316,7 +316,7 @@ class ApiCompetitionController extends Controller
                         'clubs.sport_id',
                         'clubs.slug',
                         'clubs.image',
-                        DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS club_image_path")
+                        DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS full_image_path")
                     ])
                         ->with(['city', 'gender', 'sport']);
                 }
