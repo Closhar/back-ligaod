@@ -98,7 +98,7 @@ class ApiEventController extends Controller
                 },
                 'streams',
                 'series' => function ($query) {
-                    $query->select(['id','series_type_id', 'description'])
+                    $query->select(['id', 'series_type_id', 'description'])
                         ->with(['events' => function ($query) {
                             $query->select(['id', 'event_name']);
                         }]);
@@ -201,27 +201,27 @@ class ApiEventController extends Controller
                     if ($show_home === 1) {
                         $query->where('region_id', $regionId);
                     } elseif ($show_home === 2) {
-                        $query->where(function($q) use ($regionId) {
+                        $query->where(function ($q) use ($regionId) {
                             $q->where('events.region_id', '!=', $regionId)
-                              ->orWhereNull('events.region_id');
+                                ->orWhereNull('events.region_id');
                         })
-                        ->join('clubs as club1', 'events.club1_id', '=', 'club1.id')
-                        ->join('clubs as club2', 'events.club2_id', '=', 'club2.id')
-                        ->where(function($q) use ($regionId) {
-                            $q->where('club1.region_id', $regionId)
-                              ->orWhere('club2.region_id', $regionId);
-                        })
-                        ->select('events.*');
+                            ->join('clubs as club1', 'events.club1_id', '=', 'club1.id')
+                            ->join('clubs as club2', 'events.club2_id', '=', 'club2.id')
+                            ->where(function ($q) use ($regionId) {
+                                $q->where('club1.region_id', $regionId)
+                                    ->orWhere('club2.region_id', $regionId);
+                            })
+                            ->select('events.*');
                     }
                 } elseif ($show_native) {
-                    $query->where(function($q) use ($regionId) {
+                    $query->where(function ($q) use ($regionId) {
                         $q->where('region_id', $regionId)
-                          ->orWhereHas('club1', function($clubQuery) use ($regionId) {
-                              $clubQuery->where('region_id', $regionId);
-                          })
-                          ->orWhereHas('club2', function($clubQuery) use ($regionId) {
-                              $clubQuery->where('region_id', $regionId);
-                          });
+                            ->orWhereHas('club1', function ($clubQuery) use ($regionId) {
+                                $clubQuery->where('region_id', $regionId);
+                            })
+                            ->orWhereHas('club2', function ($clubQuery) use ($regionId) {
+                                $clubQuery->where('region_id', $regionId);
+                            });
                     });
                 } else {
                     $query->where('region_id', $regionId);
@@ -262,16 +262,16 @@ class ApiEventController extends Controller
             if ($show !== null) {
                 // Если show указан, применяем соответствующий фильтр
                 switch ($show) {
-                    case 1: // date_from >= сегодня
-                        $query->whereDate('date_from', '>=', $today);
+                    case 1: // Будущие события: date_from >= сегодня и result пустой
+                        $query->whereDate('date_from', '>=', $today)
+                            ->whereNull('result');
                         break;
-                    case 2: // date_from <= сегодня ИЛИ date_to >= сегодня (события, которые начались до сегодня и еще продолжаются)
-                        {
-                            $query->where(function ($q) use ($today) {
-                                $q->whereDate('date_from', '<=', $today);
-                            });
-                            $sort = "date_from_desc";
-                        }
+                    case 2: // Прошедшие события: date_from < сегодня или result заполнен
+                        $query->where(function ($q) use ($today) {
+                            $q->whereDate('date_from', '<', $today)
+                                ->orWhereNotNull('result');
+                        });
+                        $sort = "date_from_desc";
                         break;
                     case 3: // date_from = сегодня
                         $query->whereDate('date_from', '=', $today); // Фильтр по сегодняшней дате, игнорируя время
@@ -360,9 +360,9 @@ class ApiEventController extends Controller
                 $query->where('region_id', $regionId);
             } elseif ($matchType === 'away') {
                 // Выездные матчи - где region_id события НЕ равен домашнему региону или NULL
-                $query->where(function($q) use ($regionId) {
+                $query->where(function ($q) use ($regionId) {
                     $q->where('region_id', '!=', $regionId)
-                      ->orWhereNull('region_id');
+                        ->orWhereNull('region_id');
                 });
             }
         }
@@ -605,11 +605,31 @@ class ApiEventController extends Controller
     public function show(Event $event, $id): array
     {
         $event = Event::select([
-            'id', 'title', 'date_from', 'date_to', 'result', 'result_dop', 'image',
-            'competition_id', 'arena_id', 'club1_id', 'club2_id', 'region_id',
-            'is_active', 'event_name', 'series_id', 'series_count', 'about',
-            'tickets', 'report', 'free_tickets', 'gallery_id', 'image', 'slug',
-            'display_lineups_mode', 'display_actions_mode'
+            'id',
+            'title',
+            'date_from',
+            'date_to',
+            'result',
+            'result_dop',
+            'image',
+            'competition_id',
+            'arena_id',
+            'club1_id',
+            'club2_id',
+            'region_id',
+            'is_active',
+            'event_name',
+            'series_id',
+            'series_count',
+            'about',
+            'tickets',
+            'report',
+            'free_tickets',
+            'gallery_id',
+            'image',
+            'slug',
+            'display_lineups_mode',
+            'display_actions_mode'
         ])->with([
             'streams',
             'series' => function ($query) {
@@ -737,7 +757,7 @@ class ApiEventController extends Controller
                 ]);
             },
         ])
-        ->findOrFail($id);
+            ->findOrFail($id);
 
         // Загружаем события серии отдельно
         if ($event->series_id) {
@@ -797,10 +817,10 @@ class ApiEventController extends Controller
                 ->where(function ($query) use ($event) {
                     $query->where(function ($q) use ($event) {
                         $q->where('club1_id', $event->club1_id)
-                          ->where('club2_id', $event->club2_id);
+                            ->where('club2_id', $event->club2_id);
                     })->orWhere(function ($q) use ($event) {
                         $q->where('club1_id', $event->club2_id)
-                          ->where('club2_id', $event->club1_id);
+                            ->where('club2_id', $event->club1_id);
                     })->orWhere('competition_id', $event->competition_id);
                 })
                 ->orderBy('date_from', 'desc')
@@ -824,7 +844,6 @@ class ApiEventController extends Controller
                 });
 
             return $similarEvents->toArray();
-
         } catch (\Exception $e) {
             return [];
         }
@@ -932,36 +951,36 @@ class ApiEventController extends Controller
         // Проверяем competition_seasons по датам
         $competitionSeason = \App\Models\CompetitionSeason::where('competition_id', $competitionId)
             ->where('is_active', true)
-            ->where(function($query) use ($eventDate) {
-                $query->where(function($subQuery) use ($eventDate) {
+            ->where(function ($query) use ($eventDate) {
+                $query->where(function ($subQuery) use ($eventDate) {
                     $subQuery->where('date_from', '<=', $eventDate)
-                             ->where(function($dateQuery) use ($eventDate) {
-                                 $dateQuery->where('date_to', '>=', $eventDate)
-                                           ->orWhereNull('date_to');
-                             });
-                })->orWhere(function($subQuery) {
+                        ->where(function ($dateQuery) use ($eventDate) {
+                            $dateQuery->where('date_to', '>=', $eventDate)
+                                ->orWhereNull('date_to');
+                        });
+                })->orWhere(function ($subQuery) {
                     // Если даты не указаны, берем любой активный сезон для этого соревнования
                     $subQuery->whereNull('date_from')
-                             ->whereNull('date_to');
+                        ->whereNull('date_to');
                 });
             })
             ->first();
 
         // Ищем общий сезон
         $season = \App\Models\Season::where('is_active', true)
-            ->where(function($query) use ($eventDate) {
-                $query->where(function($subQuery) use ($eventDate) {
+            ->where(function ($query) use ($eventDate) {
+                $query->where(function ($subQuery) use ($eventDate) {
                     $subQuery->where('date_from', '<=', $eventDate)
-                             ->where(function($dateQuery) use ($eventDate) {
-                                 $dateQuery->where('date_to', '>=', $eventDate)
-                                           ->orWhereNull('date_to');
-                             });
-                })->orWhere(function($subQuery) {
+                        ->where(function ($dateQuery) use ($eventDate) {
+                            $dateQuery->where('date_to', '>=', $eventDate)
+                                ->orWhereNull('date_to');
+                        });
+                })->orWhere(function ($subQuery) {
                     $subQuery->whereNull('date_from')
-                             ->whereNull('date_to');
+                        ->whereNull('date_to');
                 });
             })
-            ->whereHas('competitions', function($query) use ($competitionId) {
+            ->whereHas('competitions', function ($query) use ($competitionId) {
                 $query->where('competitions.id', $competitionId);
             })
             ->first();

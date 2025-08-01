@@ -22,8 +22,6 @@ class PlayerStatisticsController extends Controller
     public function getClubSeasons(Request $request, $clubId): JsonResponse
     {
         try {
-            Log::info('Получение сезонов и соревнований для клуба ID: ' . $clubId);
-
             // Получаем все события клуба с соревнованиями
             $events = Event::with(['competition'])
                 ->where(function ($query) use ($clubId) {
@@ -32,16 +30,11 @@ class PlayerStatisticsController extends Controller
                 })
                 ->get();
 
-            Log::info('Найдено событий: ' . $events->count());
-
             $seasons = collect();
             $competitions = collect();
 
             foreach ($events as $event) {
-                Log::info('Обрабатываем событие ID: ' . $event->id . ', competition_id: ' . $event->competition_id . ', date: ' . $event->date);
-
                 if ($event->competition) {
-                    Log::info('Добавляем соревнование ID: ' . $event->competition->id . ', title: ' . $event->competition->title);
                     $competitions->put($event->competition->id, $event->competition);
 
                     // Получаем сезоны для этого соревнования через competition_seasons
@@ -60,14 +53,9 @@ class PlayerStatisticsController extends Controller
                         return $eventDate->between($seasonFrom, $seasonTo);
                     });
 
-                    Log::info('Найдено сезонов для события ' . $event->id . ': ' . $filteredSeasons->count());
-
                     foreach ($filteredSeasons as $season) {
-                        Log::info('Добавляем сезон ID: ' . $season->id . ', title: ' . $season->title . ', name: ' . $season->name);
                         $seasons->put($season->id, $season);
                     }
-                } else {
-                    Log::info('У события ' . $event->id . ' нет соревнования');
                 }
             }
 
@@ -92,14 +80,6 @@ class PlayerStatisticsController extends Controller
                         'date_to' => $season->date_to
                     ];
                 });
-            }
-
-            Log::info('Итоговое количество сезонов: ' . $uniqueSeasons->count());
-            Log::info('Итоговое количество соревнований: ' . $uniqueCompetitions->count());
-
-            // Подробное логирование каждого сезона
-            foreach ($uniqueSeasons as $season) {
-                Log::info('Сезон ID: ' . $season->id . ', title: ' . $season->title . ', name: ' . $season->name);
             }
 
             return response()->json([
