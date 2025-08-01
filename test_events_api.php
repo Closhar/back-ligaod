@@ -26,7 +26,7 @@ try {
 
     echo "Подключение к БД успешно\n";
 
-    // Проверяем события на сегодня
+    // Проверяем события на сегодня (используем московское время)
     $stmt = $pdo->prepare("
         SELECT id, title, date_from, is_active, region_id 
         FROM events 
@@ -35,21 +35,21 @@ try {
         LIMIT 5
     ");
 
-    $stmt->execute([$todayUTC]);
+    $stmt->execute([$todayMoscow]);
     $events = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo "Событий на сегодня ({$todayUTC}): " . count($events) . "\n";
+    echo "Событий на сегодня ({$todayMoscow}): " . count($events) . "\n";
 
     foreach ($events as $event) {
         echo "- ID: {$event['id']}, Название: {$event['title']}, Дата: {$event['date_from']}, Регион: {$event['region_id']}\n";
     }
 
-    // Проверяем события на завтра
-    $tomorrowUTC = Carbon::now('UTC')->addDay()->toDateString();
-    $stmt->execute([$tomorrowUTC]);
+    // Проверяем события на завтра (используем московское время)
+    $tomorrowMoscow = Carbon::now('Europe/Moscow')->addDay()->toDateString();
+    $stmt->execute([$tomorrowMoscow]);
     $eventsTomorrow = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    echo "Событий на завтра ({$tomorrowUTC}): " . count($eventsTomorrow) . "\n";
+    echo "Событий на завтра ({$tomorrowMoscow}): " . count($eventsTomorrow) . "\n";
 
     foreach ($eventsTomorrow as $event) {
         echo "- ID: {$event['id']}, Название: {$event['title']}, Дата: {$event['date_from']}, Регион: {$event['region_id']}\n";

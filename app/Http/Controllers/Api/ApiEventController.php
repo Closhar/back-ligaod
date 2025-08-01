@@ -257,9 +257,9 @@ class ApiEventController extends Controller
 
         // Применяем фильтр по show или фильтр по умолчанию
         if (!$show_concrete_date) {
-            // Используем UTC время для определения сегодняшней даты
-            // чтобы избежать проблем с временными зонами
-            $today = \Carbon\Carbon::now('UTC')->toDateString();
+            // Используем московское время для определения сегодняшней даты
+            // так как события в базе данных сохранены в московском времени
+            $today = \Carbon\Carbon::now('Europe/Moscow')->toDateString();
 
             if ($show !== null) {
                 // Если show указан, применяем соответствующий фильтр
@@ -513,9 +513,9 @@ class ApiEventController extends Controller
      */
     public function eventsTodayMap(Request $request)
     {
-        // Используем UTC время для определения сегодняшней даты
-        // чтобы избежать проблем с временными зонами
-        $today = \Carbon\Carbon::now('UTC')->toDateString();
+        // Используем московское время для определения сегодняшней даты
+        // так как события в базе данных сохранены в московском времени
+        $today = \Carbon\Carbon::now('Europe/Moscow')->toDateString();
         $events = Event::query()
             ->whereDate('date_from', $today)
             ->where('is_active', 1)

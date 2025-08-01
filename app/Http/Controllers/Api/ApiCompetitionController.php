@@ -92,9 +92,9 @@ class ApiCompetitionController extends Controller
 
         if (!$show_all) {
             // Применяем фильтр по show
-            // Используем UTC время для определения сегодняшней даты
-            // чтобы избежать проблем с временными зонами
-            $today = \Carbon\Carbon::now('UTC')->toDateString();
+            // Используем московское время для определения сегодняшней даты
+            // так как события в базе данных сохранены в московском времени
+            $today = \Carbon\Carbon::now('Europe/Moscow')->toDateString();
             switch ($show) {
                 case 1: // date_from >= актуальные: сегодня и будущие
                     $query->where(function ($q) use ($today) {
