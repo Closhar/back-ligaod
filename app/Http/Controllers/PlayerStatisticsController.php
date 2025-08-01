@@ -18,58 +18,61 @@ class PlayerStatisticsController extends Controller
     /**
      * Получить все сезоны и соревнования для клуба
      */
-    public function getClubSeasons(Club $club): JsonResponse
+    public function getClubSeasons(Request $request, $clubId): JsonResponse
     {
         try {
-            // Получить все события клуба с соревнованиями и сезонами
-            $events = Event::where('club1_id', $club->id)
-                ->orWhere('club2_id', $club->id)
-                ->with(['competition.seasons' => function ($query) {
-                    $query->orderBy('date_from', 'desc');
-                }])
+            Log::info('Получение сезонов и соревнований для клуба ID: ' . $clubId);
+
+            // Получаем все события клуба с соревнованиями
+            $events = Event::with(['competition'])
+                ->whereHas('teams', function ($query) use ($clubId) {
+                    $query->where('club_id', $clubId);
+                })
                 ->get();
 
-            Log::info('Клуб ID: ' . $club->id);
             Log::info('Найдено событий: ' . $events->count());
 
-            // Собрать уникальные сезоны и соревнования
             $seasons = collect();
             $competitions = collect();
 
             foreach ($events as $event) {
-                Log::info('Обрабатываем событие ID: ' . $event->id . ', competition_id: ' . $event->competition_id);
+                Log::info('Обрабатываем событие ID: ' . $event->id . ', competition_id: ' . $event->competition_id . ', date: ' . $event->date);
 
                 if ($event->competition) {
                     Log::info('Добавляем соревнование ID: ' . $event->competition->id . ', title: ' . $event->competition->title);
-                    // Добавляем соревнование
                     $competitions->put($event->competition->id, $event->competition);
 
-                    // Получаем сезон конкретного события из таблицы seasons
-                    if ($event->season_id) {
-                        $season = Season::with('competitions')->find($event->season_id);
-                        if ($season) {
-                            Log::info('Добавляем сезон ID: ' . $season->id . ', title: ' . $season->title . ', name: ' . $season->name);
-                            $seasons->put($season->id, $season);
-                        }
+                    // Получаем сезоны для этого соревнования через competition_seasons
+                    $competitionSeasons = DB::table('competition_seasons')
+                        ->join('seasons', 'competition_seasons.season_id', '=', 'seasons.id')
+                        ->where('competition_seasons.competition_id', $event->competition_id)
+                        ->where('competition_seasons.date_from', '<=', $event->date)
+                        ->where('competition_seasons.date_to', '>=', $event->date)
+                        ->select('seasons.*')
+                        ->get();
+
+                    Log::info('Найдено сезонов для события ' . $event->id . ': ' . $competitionSeasons->count());
+
+                    foreach ($competitionSeasons as $season) {
+                        Log::info('Добавляем сезон ID: ' . $season->id . ', title: ' . $season->title . ', name: ' . $season->name);
+                        $seasons->put($season->id, $season);
                     }
                 } else {
                     Log::info('У события ' . $event->id . ' нет соревнования');
                 }
             }
 
-            // Убрать дубликаты сезонов и отсортировать
+            // Получаем уникальные сезоны и соревнования
             $uniqueSeasons = $seasons->values()->sortByDesc('date_from');
-
-            // Убрать дубликаты соревнований и отсортировать
             $uniqueCompetitions = $competitions->values()->sortBy('title');
 
-            // Добавить информацию о сезонах для каждого соревнования
+            // Добавляем информацию о сезонах для каждого соревнования
             foreach ($uniqueCompetitions as $competition) {
-                // Получаем сезоны для этого соревнования через связь
-                $competitionSeasons = $uniqueSeasons->filter(function ($season) use ($competition) {
-                    // Проверяем, есть ли связь между сезоном и соревнованием
-                    return $season->competitions->contains('id', $competition->id);
-                });
+                $competitionSeasons = DB::table('competition_seasons')
+                    ->join('seasons', 'competition_seasons.season_id', '=', 'seasons.id')
+                    ->where('competition_seasons.competition_id', $competition->id)
+                    ->select('seasons.*')
+                    ->get();
 
                 $competition->seasons_info = $competitionSeasons->map(function ($season) {
                     return [
@@ -79,65 +82,30 @@ class PlayerStatisticsController extends Controller
                         'date_from' => $season->date_from,
                         'date_to' => $season->date_to
                     ];
-                })->values();
-            }
-
-            // Если соревнования не найдены через события, попробуем получить их из сезонов
-            if ($uniqueCompetitions->isEmpty() && $uniqueSeasons->isNotEmpty()) {
-                $competitionsFromSeasons = collect();
-
-                foreach ($uniqueSeasons as $season) {
-                    // Получаем соревнования для этого сезона
-                    $seasonCompetitions = $season->competitions;
-                    foreach ($seasonCompetitions as $competition) {
-                        $competitionsFromSeasons->put($competition->id, $competition);
-                    }
-                }
-
-                $uniqueCompetitions = $competitionsFromSeasons->values()->sortBy('title');
-
-                // Добавить информацию о сезонах для каждого соревнования
-                foreach ($uniqueCompetitions as $competition) {
-                    $competitionSeasons = $uniqueSeasons->filter(function ($season) use ($competition) {
-                        return $season->competitions->contains('id', $competition->id);
-                    });
-
-                    $competition->seasons_info = $competitionSeasons->map(function ($season) {
-                        return [
-                            'id' => $season->id,
-                            'name' => $season->name,
-                            'title' => $season->title,
-                            'date_from' => $season->date_from,
-                            'date_to' => $season->date_to
-                        ];
-                    })->values();
-                }
+                });
             }
 
             Log::info('Итоговое количество сезонов: ' . $uniqueSeasons->count());
             Log::info('Итоговое количество соревнований: ' . $uniqueCompetitions->count());
-            Log::info('Сезоны: ' . $uniqueSeasons->pluck('title', 'id')->toJson());
-            Log::info('Соревнования: ' . $uniqueCompetitions->pluck('id', 'title')->toJson());
 
             // Подробное логирование каждого сезона
             foreach ($uniqueSeasons as $season) {
                 Log::info('Сезон ID: ' . $season->id . ', title: ' . $season->title . ', name: ' . $season->name);
             }
 
-            $response = [
+            return response()->json([
                 'success' => true,
                 'data' => [
                     'seasons' => $uniqueSeasons->values(),
                     'competitions' => $uniqueCompetitions->values()
                 ],
                 'message' => 'Сезоны и соревнования успешно получены'
-            ];
-
-            return response()->json($response);
+            ]);
         } catch (\Exception $e) {
+            Log::error('Ошибка получения сезонов и соревнований: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка получения сезонов и соревнований: ' . $e->getMessage()
+                'message' => 'Ошибка получения данных: ' . $e->getMessage()
             ], 500);
         }
     }
