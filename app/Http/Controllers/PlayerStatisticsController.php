@@ -119,6 +119,11 @@ class PlayerStatisticsController extends Controller
             Log::info('Сезоны: ' . $uniqueSeasons->pluck('title', 'id')->toJson());
             Log::info('Соревнования: ' . $uniqueCompetitions->pluck('id', 'title')->toJson());
 
+            // Подробное логирование каждого сезона
+            foreach ($uniqueSeasons as $season) {
+                Log::info('Сезон ID: ' . $season->id . ', title: ' . $season->title . ', name: ' . $season->name);
+            }
+
             $response = [
                 'success' => true,
                 'data' => [
