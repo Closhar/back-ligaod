@@ -140,7 +140,6 @@ class Event extends Model
     public function getDateFormattedAttribute()
     {
         return \Carbon\Carbon::parse($this->date_from)->format('d.m.Y.');
-
     }
 
     public function getDateFromAttribute($value)
@@ -156,7 +155,6 @@ class Event extends Model
     public function getDateToFormattedAttribute()
     {
         return \Carbon\Carbon::parse($this->date_to)->format('d.m.Y.');
-
     }
 
     public function getTimeFormattedAttribute()
@@ -185,16 +183,14 @@ class Event extends Model
         if (!$this->club1) return $this->competition?->title_short . '. ' . $this->title;
         else
             return $this->date_formatted . ' ' . ($this->club1->title ?? 'Клуб 1') . ' (' . ($this->club1->city->title ?? 'Город не указан') . ') - ' . ($this->club2->title ?? 'Клуб 2') . ' (' . ($this->club2->city->title ?? 'Город не указан') . ') ' . $this->result;
-
     }
 
     public function getEventNameTopAttribute()
     {
         // Добавляем параметр event_name_last
-        if (!$this->club1) return $this->competition?->title_short . '. ' . $this->title;
+        if (!$this->club1) return $this->title;
         else
             return ($this->club1->title ?? 'Клуб 1') . ' (' . ($this->club1->city->title ?? 'Город не указан') . ') - ' . ($this->club2->title ?? 'Клуб 2') . ' (' . ($this->club2->city->title ?? 'Город не указан') . ') ';
-
     }
 
     public function getSportIconAttribute()
@@ -206,5 +202,4 @@ class Event extends Model
     {
         return $this->competition?->gender?->icon ?? null;
     }
-
 }
