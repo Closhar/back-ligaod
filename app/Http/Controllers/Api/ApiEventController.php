@@ -451,8 +451,9 @@ class ApiEventController extends Controller
             $event->time_iso = \Carbon\Carbon::parse($event->date_from)->utc()->toISOString();
 
             // Добавляем обратную совместимость - старые поля для существующих компонентов
-            $event->date_formatted = \Carbon\Carbon::parse($event->date_from)->utc()->format('d.m.Y.');
-            $event->time = \Carbon\Carbon::parse($event->date_from)->utc()->format('H:i');
+            // Для карты используем оригинальные поля из базы данных
+            $event->date_formatted = \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.');
+            $event->time = \Carbon\Carbon::parse($event->date_from)->format('H:i');
 
             // Добавляем параметр my_region
             $event->my_region = 1;
@@ -544,8 +545,10 @@ class ApiEventController extends Controller
                 'arena_image_path' => $event->arena?->image ? (config('app.url') . '/storage/' . $event->arena->image) : null,
                 'latitude' => $event->arena?->latitude,
                 'longitude' => $event->arena?->longitude,
-                'date_formatted' => \Carbon\Carbon::parse($event->date_from)->utc()->format('d.m.Y.'),
-                'time' => \Carbon\Carbon::parse($event->date_from)->utc()->format('H:i'),
+                // Для карты используем оригинальные поля из базы данных
+                // чтобы время отображалось как сохранено в БД
+                'date_formatted' => \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.'),
+                'time' => \Carbon\Carbon::parse($event->date_from)->format('H:i'),
                 'date_iso' => \Carbon\Carbon::parse($event->date_from)->utc()->toISOString(),
                 'time_iso' => \Carbon\Carbon::parse($event->date_from)->utc()->toISOString(),
             ];
