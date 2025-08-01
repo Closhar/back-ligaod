@@ -24,12 +24,12 @@ class PlayerStatisticsController extends Controller
             // Получить все события клуба с соревнованиями и сезонами
             $events = Event::where('club1_id', $club->id)
                 ->orWhere('club2_id', $club->id)
-                ->with(['competition.seasons' => function($query) {
+                ->with(['competition.seasons' => function ($query) {
                     $query->orderBy('date_from', 'desc');
                 }])
                 ->get();
 
-                        Log::info('Клуб ID: ' . $club->id);
+            Log::info('Клуб ID: ' . $club->id);
             Log::info('Найдено событий: ' . $events->count());
 
             // Собрать уникальные сезоны и соревнования
@@ -44,27 +44,34 @@ class PlayerStatisticsController extends Controller
                     // Добавляем соревнование
                     $competitions->put($event->competition->id, $event->competition);
 
-                    // Получаем все сезоны соревнования
-                    $eventSeasons = $event->competition->seasons()
-                        ->with('competition:id,title,title_short')
-                        ->get();
-                    Log::info('Найдено сезонов для соревнования ' . $event->competition->id . ': ' . $eventSeasons->count());
-                    $seasons = $seasons->merge($eventSeasons);
+                    // Получаем сезон конкретного события из таблицы seasons
+                    if ($event->season_id) {
+                        $season = Season::with('competitions')->find($event->season_id);
+                        if ($season) {
+                            Log::info('Добавляем сезон ID: ' . $season->id . ', title: ' . $season->title . ', name: ' . $season->name);
+                            $seasons->put($season->id, $season);
+                        }
+                    }
                 } else {
                     Log::info('У события ' . $event->id . ' нет соревнования');
                 }
             }
 
             // Убрать дубликаты сезонов и отсортировать
-            $uniqueSeasons = $seasons->unique('title')->sortByDesc('date_from')->values();
+            $uniqueSeasons = $seasons->values()->sortByDesc('date_from');
 
             // Убрать дубликаты соревнований и отсортировать
             $uniqueCompetitions = $competitions->values()->sortBy('title');
 
             // Добавить информацию о сезонах для каждого соревнования
             foreach ($uniqueCompetitions as $competition) {
-                $competitionSeasons = $uniqueSeasons->where('competition_id', $competition->id);
-                $competition->seasons_info = $competitionSeasons->map(function($season) {
+                // Получаем сезоны для этого соревнования через связь
+                $competitionSeasons = $uniqueSeasons->filter(function ($season) use ($competition) {
+                    // Проверяем, есть ли связь между сезоном и соревнованием
+                    return $season->competitions->contains('id', $competition->id);
+                });
+
+                $competition->seasons_info = $competitionSeasons->map(function ($season) {
                     return [
                         'id' => $season->id,
                         'name' => $season->name,
@@ -80,12 +87,10 @@ class PlayerStatisticsController extends Controller
                 $competitionsFromSeasons = collect();
 
                 foreach ($uniqueSeasons as $season) {
-                    if ($season->competition_id && !$season->is_virtual) {
-                        $competition = \App\Models\Competition::find($season->competition_id);
-                        if ($competition) {
-                            // Используем union вместо put, чтобы избежать дублирования
-                            $competitionsFromSeasons = $competitionsFromSeasons->union([$competition->id => $competition]);
-                        }
+                    // Получаем соревнования для этого сезона
+                    $seasonCompetitions = $season->competitions;
+                    foreach ($seasonCompetitions as $competition) {
+                        $competitionsFromSeasons->put($competition->id, $competition);
                     }
                 }
 
@@ -93,8 +98,11 @@ class PlayerStatisticsController extends Controller
 
                 // Добавить информацию о сезонах для каждого соревнования
                 foreach ($uniqueCompetitions as $competition) {
-                    $competitionSeasons = $uniqueSeasons->where('competition_id', $competition->id);
-                    $competition->seasons_info = $competitionSeasons->map(function($season) {
+                    $competitionSeasons = $uniqueSeasons->filter(function ($season) use ($competition) {
+                        return $season->competitions->contains('id', $competition->id);
+                    });
+
+                    $competition->seasons_info = $competitionSeasons->map(function ($season) {
                         return [
                             'id' => $season->id,
                             'name' => $season->name,
@@ -108,31 +116,8 @@ class PlayerStatisticsController extends Controller
 
             Log::info('Итоговое количество сезонов: ' . $uniqueSeasons->count());
             Log::info('Итоговое количество соревнований: ' . $uniqueCompetitions->count());
+            Log::info('Сезоны: ' . $uniqueSeasons->pluck('title', 'id')->toJson());
             Log::info('Соревнования: ' . $uniqueCompetitions->pluck('id', 'title')->toJson());
-
-            // Дополнительная отладка
-            Log::info('Коллекция competitions до обработки: ' . $competitions->count());
-            Log::info('Коллекция competitions после values(): ' . $competitions->values()->count());
-            Log::info('Коллекция competitions после sortBy(): ' . $uniqueCompetitions->count());
-
-            // Проверяем каждое соревнование
-            foreach ($uniqueCompetitions as $comp) {
-                Log::info('Соревнование в итоговом результате: ID=' . $comp->id . ', title=' . $comp->title);
-            }
-
-            // Если нет сезонов, создаем виртуальный сезон "Все время"
-            if ($uniqueSeasons->isEmpty()) {
-                $virtualSeason = (object) [
-                    'id' => 'all',
-                    'title' => 'Все время',
-                    'display_name' => 'Все время',
-                    'date_from' => null,
-                    'date_to' => null,
-                    'competition_id' => null,
-                    'is_virtual' => true
-                ];
-                $uniqueSeasons = collect([$virtualSeason]);
-            }
 
             $response = [
                 'success' => true,
@@ -140,18 +125,14 @@ class PlayerStatisticsController extends Controller
                     'seasons' => $uniqueSeasons->values(),
                     'competitions' => $uniqueCompetitions->values()
                 ],
-                'message' => 'Данные успешно получены'
+                'message' => 'Сезоны и соревнования успешно получены'
             ];
 
-            Log::info('Отправляем ответ с ' . $uniqueSeasons->count() . ' сезонами и ' . $uniqueCompetitions->count() . ' соревнованиями');
-            Log::info('Структура ответа: ' . json_encode($response, JSON_UNESCAPED_UNICODE));
-
             return response()->json($response);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при получении данных: ' . $e->getMessage()
+                'message' => 'Ошибка получения сезонов и соревнований: ' . $e->getMessage()
             ], 500);
         }
     }
@@ -172,19 +153,19 @@ class PlayerStatisticsController extends Controller
             }
 
             // Получить события клуба для данного соревнования
-            $events = Event::where(function($query) use ($club) {
-                    $query->where('club1_id', $club->id)
-                          ->orWhere('club2_id', $club->id);
-                })
+            $events = Event::where(function ($query) use ($club) {
+                $query->where('club1_id', $club->id)
+                    ->orWhere('club2_id', $club->id);
+            })
                 ->where('competition_id', $competition->id)
                 ->with([
-                    'actions' => function($query) use ($club) {
+                    'actions' => function ($query) use ($club) {
                         $query->where('club_id', $club->id)
-                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
+                            ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
                     },
-                    'lineups' => function($query) use ($club) {
+                    'lineups' => function ($query) use ($club) {
                         $query->where('club_id', $club->id)
-                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
+                            ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
                     }
                 ])
                 ->get();
@@ -267,7 +248,7 @@ class PlayerStatisticsController extends Controller
 
             // Преобразовать в массив и отсортировать по количеству матчей
             $result = array_values($playerStats);
-            usort($result, function($a, $b) {
+            usort($result, function ($a, $b) {
                 return $b['total_matches'] - $a['total_matches'];
             });
 
@@ -329,7 +310,6 @@ class PlayerStatisticsController extends Controller
                 ],
                 'message' => 'Статистика игроков успешно получена'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -359,24 +339,24 @@ class PlayerStatisticsController extends Controller
             }
 
             // Получить события клуба для данного соревнования (без ограничения по датам сезона)
-            $events = Event::where(function($query) use ($club) {
-                    $query->where('club1_id', $club->id)
-                          ->orWhere('club2_id', $club->id);
-                })
+            $events = Event::where(function ($query) use ($club) {
+                $query->where('club1_id', $club->id)
+                    ->orWhere('club2_id', $club->id);
+            })
                 ->where('competition_id', $season->competition_id)
                 ->with([
-                    'actions' => function($query) use ($club) {
+                    'actions' => function ($query) use ($club) {
                         $query->where('club_id', $club->id)
-                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
+                            ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
                     },
-                    'lineups' => function($query) use ($club) {
+                    'lineups' => function ($query) use ($club) {
                         $query->where('club_id', $club->id)
-                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
+                            ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
                     }
                 ])
                 ->get();
 
-                        // Собрать статистику игроков
+            // Собрать статистику игроков
             $playerStats = [];
             $playerMatches = [];
 
@@ -442,7 +422,7 @@ class PlayerStatisticsController extends Controller
 
             // Преобразовать в массив и отсортировать по количеству матчей
             $result = array_values($playerStats);
-            usort($result, function($a, $b) {
+            usort($result, function ($a, $b) {
                 return $b['total_matches'] - $a['total_matches'];
             });
 
@@ -504,7 +484,6 @@ class PlayerStatisticsController extends Controller
                 ],
                 'message' => 'Статистика игроков успешно получена'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -523,13 +502,13 @@ class PlayerStatisticsController extends Controller
             $events = Event::where('club1_id', $club->id)
                 ->orWhere('club2_id', $club->id)
                 ->with([
-                    'actions' => function($query) use ($club) {
+                    'actions' => function ($query) use ($club) {
                         $query->where('club_id', $club->id)
-                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
+                            ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage', 'actionType']);
                     },
-                    'lineups' => function($query) use ($club) {
+                    'lineups' => function ($query) use ($club) {
                         $query->where('club_id', $club->id)
-                              ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
+                            ->with(['person.activeAmpluaMemberships.amplua', 'person.mainImage']);
                     },
                     'competition.seasons'
                 ])
@@ -540,7 +519,7 @@ class PlayerStatisticsController extends Controller
             $playerMatches = [];
             $playerSeasons = [];
 
-                        // Сначала подсчитаем матчи для каждого игрока из состава
+            // Сначала подсчитаем матчи для каждого игрока из состава
             foreach ($events as $event) {
                 foreach ($event->lineups as $lineup) {
                     $playerId = $lineup->person_id;
@@ -593,7 +572,7 @@ class PlayerStatisticsController extends Controller
                         ];
                     }
 
-                                        $actionType = $action->actionType->name;
+                    $actionType = $action->actionType->name;
 
                     // Для всех типов действий сначала добавляем в общее поле
                     if (!isset($playerStats[$playerId]['actions'][$actionType])) {
@@ -626,7 +605,7 @@ class PlayerStatisticsController extends Controller
 
             // Преобразовать в массив и отсортировать
             $result = array_values($playerStats);
-            usort($result, function($a, $b) {
+            usort($result, function ($a, $b) {
                 return $b['total_matches'] - $a['total_matches'];
             });
 
@@ -678,7 +657,6 @@ class PlayerStatisticsController extends Controller
                 ],
                 'message' => 'Общая статистика игроков успешно получена'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -696,14 +674,14 @@ class PlayerStatisticsController extends Controller
             Log::info("Получение сезонов для игрока {$personId}");
 
             // Получаем все события игрока
-            $events = Event::where(function($query) use ($personId) {
-                    $query->whereHas('actions', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        })
-                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        });
+            $events = Event::where(function ($query) use ($personId) {
+                $query->whereHas('actions', function ($subQuery) use ($personId) {
+                    $subQuery->where('person_id', $personId);
                 })
+                    ->orWhereHas('lineups', function ($subQuery) use ($personId) {
+                        $subQuery->where('person_id', $personId);
+                    });
+            })
                 ->get();
 
             Log::info("Найдено событий для игрока {$personId}: " . $events->count());
@@ -730,7 +708,7 @@ class PlayerStatisticsController extends Controller
                 $competition = Competition::find($competitionId);
                 if ($competition) {
                     $competitions->put($competition->id, $competition);
-                    }
+                }
 
                 // Получаем сезоны этого соревнования через pivot таблицу
                 $competitionSeasons = DB::table('competition_seasons')
@@ -774,18 +752,18 @@ class PlayerStatisticsController extends Controller
     {
         try {
             // Получить все события игрока с действиями
-            $events = Event::whereHas('actions', function($query) use ($personId) {
-                    $query->where('person_id', $personId);
-                })
-                ->orWhereHas('lineups', function($query) use ($personId) {
+            $events = Event::whereHas('actions', function ($query) use ($personId) {
+                $query->where('person_id', $personId);
+            })
+                ->orWhereHas('lineups', function ($query) use ($personId) {
                     $query->where('person_id', $personId);
                 })
                 ->with([
-                    'actions' => function($query) use ($personId) {
+                    'actions' => function ($query) use ($personId) {
                         $query->where('person_id', $personId)
-                              ->with(['actionType', 'club.city']);
+                            ->with(['actionType', 'club.city']);
                     },
-                    'lineups' => function($query) use ($personId) {
+                    'lineups' => function ($query) use ($personId) {
                         $query->where('person_id', $personId);
                     },
                     'competition.seasons'
@@ -933,7 +911,6 @@ class PlayerStatisticsController extends Controller
                 ],
                 'message' => 'Общая статистика игрока успешно получена'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -974,11 +951,11 @@ class PlayerStatisticsController extends Controller
 
             // Получаем события игрока в соревнованиях этого сезона
             $events = Event::whereIn('competition_id', $competitionIds)
-                ->where(function($query) use ($personId) {
-                    $query->whereHas('actions', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        })
-                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                ->where(function ($query) use ($personId) {
+                    $query->whereHas('actions', function ($subQuery) use ($personId) {
+                        $subQuery->where('person_id', $personId);
+                    })
+                        ->orWhereHas('lineups', function ($subQuery) use ($personId) {
                             $subQuery->where('person_id', $personId);
                         });
                 })
@@ -996,7 +973,7 @@ class PlayerStatisticsController extends Controller
             $playerStatsByClub = [];
             $totalMatches = 0;
 
-                        // Обрабатываем каждое событие
+            // Обрабатываем каждое событие
             foreach ($events as $event) {
                 // Подсчитываем матчи (если игрок в составе)
                 if ($event->lineups->where('person_id', $personId)->count() > 0) {
@@ -1117,7 +1094,6 @@ class PlayerStatisticsController extends Controller
                     'total_competitions' => $competitionIds->count()
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Ошибка получения статистики по сезону: ' . $e->getMessage());
             return response()->json([
@@ -1144,20 +1120,20 @@ class PlayerStatisticsController extends Controller
 
             // Получить события игрока для данного соревнования
             $events = Event::where('competition_id', $competition->id)
-                ->where(function($query) use ($personId) {
-                    $query->whereHas('actions', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        })
-                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                ->where(function ($query) use ($personId) {
+                    $query->whereHas('actions', function ($subQuery) use ($personId) {
+                        $subQuery->where('person_id', $personId);
+                    })
+                        ->orWhereHas('lineups', function ($subQuery) use ($personId) {
                             $subQuery->where('person_id', $personId);
                         });
                 })
                 ->with([
-                    'actions' => function($query) use ($personId) {
+                    'actions' => function ($query) use ($personId) {
                         $query->where('person_id', $personId)
-                              ->with(['actionType', 'club.city']);
+                            ->with(['actionType', 'club.city']);
                     },
-                    'lineups' => function($query) use ($personId) {
+                    'lineups' => function ($query) use ($personId) {
                         $query->where('person_id', $personId);
                     }
                 ])
@@ -1290,7 +1266,6 @@ class PlayerStatisticsController extends Controller
                 ],
                 'message' => 'Статистика игрока по соревнованию успешно получена'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1338,20 +1313,20 @@ class PlayerStatisticsController extends Controller
 
             // Получить события игрока для данного сезона и соревнования
             $events = Event::where('competition_id', $competition->id)
-                ->where(function($query) use ($personId) {
-                    $query->whereHas('actions', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        })
-                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                ->where(function ($query) use ($personId) {
+                    $query->whereHas('actions', function ($subQuery) use ($personId) {
+                        $subQuery->where('person_id', $personId);
+                    })
+                        ->orWhereHas('lineups', function ($subQuery) use ($personId) {
                             $subQuery->where('person_id', $personId);
                         });
                 })
                 ->with([
-                    'actions' => function($query) use ($personId) {
+                    'actions' => function ($query) use ($personId) {
                         $query->where('person_id', $personId)
-                              ->with(['actionType', 'club.city']);
+                            ->with(['actionType', 'club.city']);
                     },
-                    'lineups' => function($query) use ($personId) {
+                    'lineups' => function ($query) use ($personId) {
                         $query->where('person_id', $personId);
                     }
                 ])
@@ -1484,7 +1459,6 @@ class PlayerStatisticsController extends Controller
                 ],
                 'message' => 'Статистика игрока по сезону и соревнованию успешно получена'
             ]);
-
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -1518,14 +1492,14 @@ class PlayerStatisticsController extends Controller
             }
 
             // Получаем события для всех соревнований этого сезона
-            $events = Event::where(function($query) use ($personId) {
-                    $query->whereHas('actions', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        })
-                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        });
+            $events = Event::where(function ($query) use ($personId) {
+                $query->whereHas('actions', function ($subQuery) use ($personId) {
+                    $subQuery->where('person_id', $personId);
                 })
+                    ->orWhereHas('lineups', function ($subQuery) use ($personId) {
+                        $subQuery->where('person_id', $personId);
+                    });
+            })
                 ->whereIn('competition_id', $competitionIds)
                 ->with([
                     'actions.actionType',
@@ -1620,7 +1594,6 @@ class PlayerStatisticsController extends Controller
                     'total_competitions' => $competitionIds->count()
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Ошибка получения статистики по сезону: ' . $e->getMessage());
             return response()->json([
@@ -1659,11 +1632,11 @@ class PlayerStatisticsController extends Controller
 
             // Получаем события игрока в соревнованиях этого сезона
             $events = Event::whereIn('competition_id', $competitionIds)
-                ->where(function($query) use ($personId) {
-                    $query->whereHas('actions', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        })
-                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
+                ->where(function ($query) use ($personId) {
+                    $query->whereHas('actions', function ($subQuery) use ($personId) {
+                        $subQuery->where('person_id', $personId);
+                    })
+                        ->orWhereHas('lineups', function ($subQuery) use ($personId) {
                             $subQuery->where('person_id', $personId);
                         });
                 })
@@ -1687,7 +1660,6 @@ class PlayerStatisticsController extends Controller
                     'competitions' => $sortedCompetitions
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Ошибка получения соревнований игрока по сезону: ' . $e->getMessage());
             return response()->json([
@@ -1704,14 +1676,14 @@ class PlayerStatisticsController extends Controller
     {
         try {
             // Получаем события игрока
-            $events = Event::where(function($query) use ($personId) {
-                    $query->whereHas('actions', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        })
-                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        });
+            $events = Event::where(function ($query) use ($personId) {
+                $query->whereHas('actions', function ($subQuery) use ($personId) {
+                    $subQuery->where('person_id', $personId);
                 })
+                    ->orWhereHas('lineups', function ($subQuery) use ($personId) {
+                        $subQuery->where('person_id', $personId);
+                    });
+            })
                 ->with(['competition'])
                 ->get();
 
@@ -1732,7 +1704,6 @@ class PlayerStatisticsController extends Controller
                     'competitions' => $sortedCompetitions
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Ошибка получения соревнований игрока: ' . $e->getMessage());
             return response()->json([
@@ -1744,7 +1715,7 @@ class PlayerStatisticsController extends Controller
 
 
 
-        /**
+    /**
      * Получить матчи игрока
      */
     public function getPersonMatches($personId, Request $request): JsonResponse
@@ -1754,22 +1725,22 @@ class PlayerStatisticsController extends Controller
             $perPage = $request->get('per_page', 15);
 
             // Базовый запрос для получения событий игрока
-            $query = Event::where(function($query) use ($personId) {
-                    $query->whereHas('actions', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        })
-                        ->orWhereHas('lineups', function($subQuery) use ($personId) {
-                            $subQuery->where('person_id', $personId);
-                        });
+            $query = Event::where(function ($query) use ($personId) {
+                $query->whereHas('actions', function ($subQuery) use ($personId) {
+                    $subQuery->where('person_id', $personId);
                 })
+                    ->orWhereHas('lineups', function ($subQuery) use ($personId) {
+                        $subQuery->where('person_id', $personId);
+                    });
+            })
                 ->whereNotNull('result')
                 ->where('result', '!=', '')
                 ->with([
-                    'actions' => function($query) use ($personId) {
+                    'actions' => function ($query) use ($personId) {
                         $query->where('person_id', $personId)
-                              ->with(['actionType']);
+                            ->with(['actionType']);
                     },
-                    'lineups' => function($query) use ($personId) {
+                    'lineups' => function ($query) use ($personId) {
                         $query->where('person_id', $personId);
                     },
                     'competition',
@@ -1782,9 +1753,9 @@ class PlayerStatisticsController extends Controller
 
             // Применяем пагинацию
             $events = $query->orderBy('date_from', 'desc')
-                           ->offset(($page - 1) * $perPage)
-                           ->limit($perPage)
-                           ->get();
+                ->offset(($page - 1) * $perPage)
+                ->limit($perPage)
+                ->get();
 
             // Формируем матчи с событиями игрока
             $matches = [];
@@ -1824,7 +1795,7 @@ class PlayerStatisticsController extends Controller
                 $homeTeam = $event->club1;
                 $awayTeam = $event->club2;
 
-                                // Обработка результата матча
+                // Обработка результата матча
                 $result = $event->result;
                 $homeScore = null;
                 $awayScore = null;
@@ -1892,7 +1863,6 @@ class PlayerStatisticsController extends Controller
                     'last_page' => ceil($totalEvents / $perPage)
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Ошибка получения матчей игрока: ' . $e->getMessage());
             return response()->json([
