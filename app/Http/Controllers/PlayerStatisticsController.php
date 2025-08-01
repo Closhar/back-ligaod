@@ -25,8 +25,9 @@ class PlayerStatisticsController extends Controller
 
             // Получаем все события клуба с соревнованиями
             $events = Event::with(['competition'])
-                ->whereHas('teams', function ($query) use ($clubId) {
-                    $query->where('club_id', $clubId);
+                ->where(function ($query) use ($clubId) {
+                    $query->where('club1_id', $clubId)
+                        ->orWhere('club2_id', $clubId);
                 })
                 ->get();
 
