@@ -8,6 +8,7 @@ use App\Models\CompetitionSeason;
 use App\Models\Event;
 use App\Models\EventAction;
 use App\Models\Season;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -47,14 +48,21 @@ class PlayerStatisticsController extends Controller
                     $competitionSeasons = DB::table('competition_seasons')
                         ->join('seasons', 'competition_seasons.season_id', '=', 'seasons.id')
                         ->where('competition_seasons.competition_id', $event->competition_id)
-                        ->where('competition_seasons.date_from', '<=', $event->date)
-                        ->where('competition_seasons.date_to', '>=', $event->date)
-                        ->select('seasons.*')
+                        ->select('seasons.*', 'competition_seasons.date_from', 'competition_seasons.date_to')
                         ->get();
 
-                    Log::info('Найдено сезонов для события ' . $event->id . ': ' . $competitionSeasons->count());
+                    // Фильтруем сезоны по дате события в PHP
+                    $filteredSeasons = $competitionSeasons->filter(function ($season) use ($event) {
+                        $eventDate = Carbon::parse($event->date);
+                        $seasonFrom = Carbon::parse($season->date_from);
+                        $seasonTo = Carbon::parse($season->date_to);
 
-                    foreach ($competitionSeasons as $season) {
+                        return $eventDate->between($seasonFrom, $seasonTo);
+                    });
+
+                    Log::info('Найдено сезонов для события ' . $event->id . ': ' . $filteredSeasons->count());
+
+                    foreach ($filteredSeasons as $season) {
                         Log::info('Добавляем сезон ID: ' . $season->id . ', title: ' . $season->title . ', name: ' . $season->name);
                         $seasons->put($season->id, $season);
                     }
