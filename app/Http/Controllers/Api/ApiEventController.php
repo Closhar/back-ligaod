@@ -450,6 +450,10 @@ class ApiEventController extends Controller
             $event->date_iso = \Carbon\Carbon::parse($event->date_from)->utc()->toISOString();
             $event->time_iso = \Carbon\Carbon::parse($event->date_from)->utc()->toISOString();
 
+            // Добавляем обратную совместимость - старые поля для существующих компонентов
+            $event->date_formatted = \Carbon\Carbon::parse($event->date_from)->utc()->format('d.m.Y.');
+            $event->time = \Carbon\Carbon::parse($event->date_from)->utc()->format('H:i');
+
             // Добавляем параметр my_region
             $event->my_region = 1;
             if ($regionId && $event->region_id != $regionId) {
@@ -542,6 +546,8 @@ class ApiEventController extends Controller
                 'longitude' => $event->arena?->longitude,
                 'date_formatted' => \Carbon\Carbon::parse($event->date_from)->utc()->format('d.m.Y.'),
                 'time' => \Carbon\Carbon::parse($event->date_from)->utc()->format('H:i'),
+                'date_iso' => \Carbon\Carbon::parse($event->date_from)->utc()->toISOString(),
+                'time_iso' => \Carbon\Carbon::parse($event->date_from)->utc()->toISOString(),
             ];
         })->filter(function ($item) {
             // Только если есть координаты
