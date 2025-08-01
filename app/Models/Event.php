@@ -139,7 +139,7 @@ class Event extends Model
 
     public function getDateFormattedAttribute()
     {
-        return \Carbon\Carbon::parse($this->date_from)->format('d.m.Y.');
+        return \Carbon\Carbon::parse($this->date_from)->utc()->format('d.m.Y.');
     }
 
     public function getDateFromAttribute($value)
@@ -154,19 +154,19 @@ class Event extends Model
 
     public function getDateToFormattedAttribute()
     {
-        return \Carbon\Carbon::parse($this->date_to)->format('d.m.Y.');
+        return \Carbon\Carbon::parse($this->date_to)->utc()->format('d.m.Y.');
     }
 
     public function getTimeFormattedAttribute()
     {
-        $t = \Carbon\Carbon::parse($this->date_from)->format('H:i');
+        $t = \Carbon\Carbon::parse($this->date_from)->utc()->format('H:i');
         if ($t == '00:00') $t = '--:--';
         return $t;
     }
 
     public function getTimeToFormattedAttribute()
     {
-        $t = \Carbon\Carbon::parse($this->date_to)->format('H:i');
+        $t = \Carbon\Carbon::parse($this->date_to)->utc()->format('H:i');
         if ($t == '00:00') $t = '--:--';
         return $t;
     }

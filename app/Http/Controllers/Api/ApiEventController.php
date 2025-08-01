@@ -446,11 +446,9 @@ class ApiEventController extends Controller
 
         // считаем серию
         $events->transform(function ($event) use ($regionId) {
-            // Преобразуем date_from в формат "DD.MM.YYYY."
-            $event->date_formatted = \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.');
-
-            // Извлекаем время из date_from в формате "HH:MM"
-            $event->time = \Carbon\Carbon::parse($event->date_from)->format('H:i');
+            // Передаем ISO строки для конвертации на клиенте
+            $event->date_iso = \Carbon\Carbon::parse($event->date_from)->utc()->toISOString();
+            $event->time_iso = \Carbon\Carbon::parse($event->date_from)->utc()->toISOString();
 
             // Добавляем параметр my_region
             $event->my_region = 1;
@@ -542,8 +540,8 @@ class ApiEventController extends Controller
                 'arena_image_path' => $event->arena?->image ? (config('app.url') . '/storage/' . $event->arena->image) : null,
                 'latitude' => $event->arena?->latitude,
                 'longitude' => $event->arena?->longitude,
-                'date_formatted' => \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.'),
-                'time' => \Carbon\Carbon::parse($event->date_from)->format('H:i'),
+                'date_formatted' => \Carbon\Carbon::parse($event->date_from)->utc()->format('d.m.Y.'),
+                'time' => \Carbon\Carbon::parse($event->date_from)->utc()->format('H:i'),
             ];
         })->filter(function ($item) {
             // Только если есть координаты
