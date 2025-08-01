@@ -453,7 +453,9 @@ class ApiEventController extends Controller
             // Добавляем обратную совместимость - старые поля для существующих компонентов
             // Для карты используем оригинальные поля из базы данных
             $event->date_formatted = \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.');
-            $event->time = \Carbon\Carbon::parse($event->date_from)->format('H:i');
+            $time = \Carbon\Carbon::parse($event->date_from)->format('H:i');
+            // Для карты время 00:00 отображаем как --:--
+            $event->time = ($time === '00:00') ? '--:--' : $time;
 
             // Добавляем параметр my_region
             $event->my_region = 1;
@@ -536,6 +538,10 @@ class ApiEventController extends Controller
 
         // Формируем массив для карты
         $result = $events->map(function ($event) {
+            $time = \Carbon\Carbon::parse($event->date_from)->format('H:i');
+            // Для карты время 00:00 отображаем как --:--
+            $displayTime = ($time === '00:00') ? '--:--' : $time;
+
             return [
                 'event_id' => $event->id,
                 'event_title' => $event->title,
@@ -548,7 +554,7 @@ class ApiEventController extends Controller
                 // Для карты используем оригинальные поля из базы данных
                 // чтобы время отображалось как сохранено в БД
                 'date_formatted' => \Carbon\Carbon::parse($event->date_from)->format('d.m.Y.'),
-                'time' => \Carbon\Carbon::parse($event->date_from)->format('H:i'),
+                'time' => $displayTime,
                 'date_iso' => \Carbon\Carbon::parse($event->date_from)->utc()->toISOString(),
                 'time_iso' => \Carbon\Carbon::parse($event->date_from)->utc()->toISOString(),
             ];
