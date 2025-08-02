@@ -140,23 +140,21 @@ class ApiArenaController extends Controller
                         'clubs.sport_id', // Для HasMany!!!!
                         'clubs.region_id'
                     ])
-                    ->when($showNative == 1, function ($query) use ($homeRegion) {
-                        $query->where('clubs.region_id', $homeRegion);
-                    })
-                    ->with([
-                        'city' => function ($cityQuery) {
-                            $cityQuery->select(['cities.id', 'cities.title']);
-                        },
-                        'age' => function ($ageQuery) {
-                            $ageQuery->select(['ages.id', 'ages.title_short']);
-                        },
-                        'gender' => function ($genderQuery) {
-                            $genderQuery->select(['genders.id', 'genders.title', 'genders.icon']);
-                        },
-                        'sport' => function ($genderQuery) {
-                            $genderQuery->select(['sports.id', 'sports.title', 'sports.icon']);
-                        }
-                    ]);
+                        // Убираем фильтрацию по региону для арен - показываем все команды стадиона
+                        ->with([
+                            'city' => function ($cityQuery) {
+                                $cityQuery->select(['cities.id', 'cities.title']);
+                            },
+                            'age' => function ($ageQuery) {
+                                $ageQuery->select(['ages.id', 'ages.title_short']);
+                            },
+                            'gender' => function ($genderQuery) {
+                                $genderQuery->select(['genders.id', 'genders.title', 'genders.icon']);
+                            },
+                            'sport' => function ($genderQuery) {
+                                $genderQuery->select(['sports.id', 'sports.title', 'sports.icon']);
+                            }
+                        ]);
                 },
                 'city' => function ($cityQuery) {
                     $cityQuery->select(['cities.id', 'cities.title']);
