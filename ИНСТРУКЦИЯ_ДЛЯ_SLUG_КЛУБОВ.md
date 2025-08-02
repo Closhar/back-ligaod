@@ -49,9 +49,11 @@ public function show(Club $club, $slug): array
 
 ```php
 'activeClubMemberships.club' => function ($query) {
-    $query->select(['id', 'title', 'slug', 'image', 'city_id', 'sport_id', 'gender_id', 'full_info']);
+    $query->select(['id', 'title', 'slug', 'image', 'city_id', 'sport_id', 'gender_id']);
 },
 ```
+
+**Примечание:** Поле `full_info` не нужно добавлять в select, так как это виртуальное поле (accessor), которое автоматически вычисляется Laravel.
 
 ## Команды для применения на сервере
 
@@ -89,4 +91,4 @@ curl -X GET "https://p.sportrep.ru/api/v1/clubs/292" -H "Accept: application/jso
 curl -X GET "https://p.sportrep.ru/api/v1/people/48" -H "Accept: application/json"
 ```
 
-В `active_club_memberships[0].club` должно появиться поле `slug` и `full_info`.
+В `active_club_memberships[0].club` должно появиться поле `slug` и `full_info` (вычисляется автоматически).
