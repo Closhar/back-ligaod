@@ -113,6 +113,15 @@ class PersonController extends Controller
                 });
             }
 
+            // Фильтрация по дню рождения (месяц и день)
+            if ($request->has('birthday_month') && !empty($request->birthday_month)) {
+                $query->whereMonth('birth_date', $request->birthday_month);
+            }
+            
+            if ($request->has('birthday_day') && !empty($request->birthday_day)) {
+                $query->whereDay('birth_date', $request->birthday_day);
+            }
+
             // Сортировка
             $sortBy = $request->get('sort_by', 'created_at');
             $sortOrder = $request->get('sort_order', 'desc');
