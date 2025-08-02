@@ -113,9 +113,9 @@ class ApiClubController extends Controller
             if ($isAlien == 0) {
                 $query->where('region_id', '=', $regionId);
             } elseif ($isAlien == 1) {
-                $query->where(function($q) use ($regionId) {
+                $query->where(function ($q) use ($regionId) {
                     $q->where('region_id', '!=', $regionId)
-                      ->orWhereNull('region_id');
+                        ->orWhereNull('region_id');
                 });
             }
         }
@@ -134,12 +134,12 @@ class ApiClubController extends Controller
         if ($searchQuery && !$request->has('field')) {
             if ($type !== 'async') {
                 $query->join('cities as city', 'clubs.city_id', '=', 'city.id')
-                      ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
-                      ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id');
+                    ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
+                    ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id');
             }
-            $query->where(function($q) use ($searchQuery) {
+            $query->where(function ($q) use ($searchQuery) {
                 $q->where('clubs.title', 'LIKE', "%{$searchQuery}%")
-                  ->orWhere(DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short)'), 'LIKE', "%{$searchQuery}%");
+                    ->orWhere(DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short)'), 'LIKE', "%{$searchQuery}%");
             });
         }
 
@@ -175,7 +175,7 @@ class ApiClubController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Club $gender, $slug): array
+    public function show(Club $club, $slug): array
     {
         // Получаем активные членства (игроки этого клуба, у которых left_at = null)
         $activeMemberships = \App\Models\PersonClubMembership::with([
@@ -183,7 +183,7 @@ class ApiClubController extends Controller
             'person.mainImage',
             'person.positionMemberships.position',
         ])
-            ->where('club_id', $gender->id)
+            ->where('club_id', $club->id)
             ->whereNull('left_at')
             ->get();
 
@@ -197,7 +197,9 @@ class ApiClubController extends Controller
             }
         }
 
-        $clubArr = $gender->toArray();
+        // Явно включаем slug в результат
+        $clubArr = $club->toArray();
+        $clubArr['slug'] = $club->slug; // Убеждаемся, что slug включен
         $clubArr['active_memberships'] = $activeMemberships->toArray();
         return $clubArr;
     }

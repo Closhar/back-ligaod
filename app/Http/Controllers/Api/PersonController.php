@@ -41,7 +41,7 @@ class PersonController extends Controller
                     $query->whereHas('club'); // Исключаем членства с несуществующими командами
                 },
                 'activeClubMemberships.club' => function ($query) {
-                    $query->select(['id', 'title', 'image', 'city_id', 'sport_id', 'gender_id']); // Выбираем поля для full_info
+                    $query->select(['id', 'title', 'slug', 'image', 'city_id', 'sport_id', 'gender_id']); // Выбираем поля для full_info
                 },
                 'activeClubMemberships.club.city',
                 'activeClubMemberships.club.sport',
@@ -117,7 +117,7 @@ class PersonController extends Controller
             if ($request->has('birthday_month') && !empty($request->birthday_month)) {
                 $query->whereMonth('birth_date', $request->birthday_month);
             }
-            
+
             if ($request->has('birthday_day') && !empty($request->birthday_day)) {
                 $query->whereDay('birth_date', $request->birthday_day);
             }
@@ -1259,8 +1259,10 @@ class PersonController extends Controller
                 $src_color = imagecolorat($src_im, $x, $y);
 
                 // Проверяем, что координаты в пределах основного изображения
-                if ($dst_x + $x >= 0 && $dst_x + $x < imagesx($dst_im) &&
-                    $dst_y + $y >= 0 && $dst_y + $y < imagesy($dst_im)) {
+                if (
+                    $dst_x + $x >= 0 && $dst_x + $x < imagesx($dst_im) &&
+                    $dst_y + $y >= 0 && $dst_y + $y < imagesy($dst_im)
+                ) {
 
                     $dst_color = imagecolorat($dst_im, $dst_x + $x, $dst_y + $y);
 

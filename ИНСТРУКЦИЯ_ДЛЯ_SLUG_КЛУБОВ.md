@@ -1,6 +1,8 @@
 # Инструкция для применения изменений в модели Club
 
-## Изменения в файле `app/Models/Club.php`
+## Изменения в файлах
+
+### 1. `app/Models/Club.php`
 
 Добавлено поле `slug` в массив `$fillable`:
 
@@ -19,6 +21,36 @@ protected $fillable = [
     'description',
     'tlgs_to_parse'
 ];
+```
+
+### 2. `app/Http/Controllers/Api/ApiClubController.php`
+
+Исправлен метод `show()`:
+
+-   Переименован параметр `$gender` в `$club`
+-   Добавлено явное включение `slug` в результат
+
+```php
+public function show(Club $club, $slug): array
+{
+    // ... код ...
+
+    // Явно включаем slug в результат
+    $clubArr = $club->toArray();
+    $clubArr['slug'] = $club->slug; // Убеждаемся, что slug включен
+    $clubArr['active_memberships'] = $activeMemberships->toArray();
+    return $clubArr;
+}
+```
+
+### 3. `app/Http/Controllers/Api/PersonController.php`
+
+Добавлено поле `slug` в select для клубов:
+
+```php
+'activeClubMemberships.club' => function ($query) {
+    $query->select(['id', 'title', 'slug', 'image', 'city_id', 'sport_id', 'gender_id']);
+},
 ```
 
 ## Команды для применения на сервере
@@ -50,3 +82,11 @@ curl -X GET "https://p.sportrep.ru/api/v1/clubs/292" -H "Accept: application/jso
 ```
 
 Теперь в ответе должно быть поле `slug` для клуба "Рыси".
+
+Также проверить API персон:
+
+```bash
+curl -X GET "https://p.sportrep.ru/api/v1/people/48" -H "Accept: application/json"
+```
+
+В `active_club_memberships[0].club` должно появиться поле `slug`.
