@@ -26,7 +26,7 @@ class Person extends Model
     ];
 
     protected $casts = [
-        'birth_date' => 'date',
+        'birth_date' => 'datetime',
         'player_number' => 'integer',
         'is_active' => 'boolean',
     ];
@@ -69,7 +69,67 @@ class Person extends Model
         if (!$this->birth_date) {
             return null;
         }
-        return $this->birth_date->age;
+
+        // Если birth_date - это строка, создаем Carbon объект
+        if (is_string($this->birth_date)) {
+            return \Carbon\Carbon::parse($this->birth_date)->age;
+        }
+
+        // Если это Carbon объект
+        if ($this->birth_date instanceof \Carbon\Carbon) {
+            return $this->birth_date->age;
+        }
+
+        return null;
+    }
+
+    /**
+     * Получить дату рождения в правильном формате (без UTC конвертации)
+     */
+    public function getBirthDateAttribute($value)
+    {
+        if (!$value) {
+            return null;
+        }
+
+        // Если это уже Carbon объект, возвращаем его как есть
+        if ($value instanceof \Carbon\Carbon) {
+            return $value->format('Y-m-d');
+        }
+
+        // Если это строка, возвращаем её как есть
+        return $value;
+    }
+
+    /**
+     * Установить дату рождения
+     */
+    public function setBirthDateAttribute($value)
+    {
+        if (!$value) {
+            $this->attributes['birth_date'] = null;
+            return;
+        }
+
+        // Если это строка в формате Y-m-d, сохраняем как есть
+        if (is_string($value) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $value)) {
+            $this->attributes['birth_date'] = $value;
+            return;
+        }
+
+        // Если это Carbon объект, конвертируем в строку
+        if ($value instanceof \Carbon\Carbon) {
+            $this->attributes['birth_date'] = $value->format('Y-m-d');
+            return;
+        }
+
+        // Для других случаев пытаемся создать Carbon объект
+        try {
+            $carbon = \Carbon\Carbon::parse($value);
+            $this->attributes['birth_date'] = $carbon->format('Y-m-d');
+        } catch (\Exception $e) {
+            $this->attributes['birth_date'] = $value;
+        }
     }
 
     /**
@@ -267,7 +327,7 @@ class Person extends Model
     {
         return $query->where(function ($q) {
             $q->whereHas('activePositionMemberships')
-              ->orWhereHas('activeAmpluaMemberships');
+                ->orWhereHas('activeAmpluaMemberships');
         });
     }
 
