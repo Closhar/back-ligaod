@@ -18,6 +18,21 @@ class Club extends Model
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
     protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name', 'logo_url'];
 
+    protected $fillable = [
+        'title',
+        'slug',
+        'image',
+        'image_bg',
+        'city_id',
+        'sport_id',
+        'gender_id',
+        'age_id',
+        'rating_region_id',
+        'gallery_id',
+        'description',
+        'tlgs_to_parse'
+    ];
+
     protected static function booted(): void
     {
         static::addGlobalScope('order', function ($builder) {
@@ -98,7 +113,6 @@ class Club extends Model
     public function getClubImagePathAttribute()
     {
         return config('app.url') . '/storage/' . $this->image;
-
     }
 
     public function getBgClubImagePathAttribute()
@@ -149,5 +163,4 @@ class Club extends Model
     {
         return $this->club_image_path;
     }
-
 }
