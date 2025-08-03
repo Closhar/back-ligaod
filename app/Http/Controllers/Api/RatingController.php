@@ -687,6 +687,7 @@ class RatingController extends Controller
                         'position' => $achievement->position,
                         'club_id' => $achievement->club_id,
                         'club_name' => $achievement->club->name,
+                        'club_slug' => $achievement->club->slug,
                         'club_logo' => $achievement->club->logo_url,
                         'points' => $achievement->points_earned,
                         'region_name' => $achievement->club->ratingRegion ? $achievement->club->ratingRegion->name : 'Не указан',
