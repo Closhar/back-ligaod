@@ -191,6 +191,7 @@ Route::group(['prefix' => '/v1'], function () {
         Route::get('/region-year-total-ratings', [RatingController::class, 'getRegionYearTotalRatings']);
         Route::get('/region-year-total-ratings-history', [RatingController::class, 'getRegionYearTotalRatingsHistory']);
         Route::get('/actuality-status', [RatingController::class, 'getRatingActualityStatus']);
+        Route::get('/competitions', [RatingController::class, 'getCompetitions']);
     });
 });
 

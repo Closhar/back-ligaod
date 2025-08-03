@@ -146,7 +146,7 @@ class RatingController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Получить список регионов
      */
     public function getRegions(Request $request): JsonResponse
@@ -157,10 +157,10 @@ class RatingController extends Controller
             ->withCount('clubs');
 
         if ($query) {
-            $regions->where(function($q) use ($query) {
+            $regions->where(function ($q) use ($query) {
                 $q->where('name', 'like', "%{$query}%")
-                  ->orWhere('code', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%");
+                    ->orWhere('code', 'like', "%{$query}%")
+                    ->orWhere('description', 'like', "%{$query}%");
             });
         }
 
@@ -172,7 +172,7 @@ class RatingController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Получить список видов спорта для рейтинга
      */
     public function getSports(Request $request): JsonResponse
@@ -183,9 +183,9 @@ class RatingController extends Controller
         $sports = Sport::orderBy('title');
 
         if ($query) {
-            $sports->where(function($q) use ($query) {
+            $sports->where(function ($q) use ($query) {
                 $q->where('title', 'like', "%{$query}%")
-                  ->orWhere('title_short', 'like', "%{$query}%");
+                    ->orWhere('title_short', 'like', "%{$query}%");
             });
         }
 
@@ -197,7 +197,7 @@ class RatingController extends Controller
         ]);
     }
 
-        /**
+    /**
      * Получить список годов для рейтинга
      */
     public function getYears(Request $request): JsonResponse
@@ -211,10 +211,10 @@ class RatingController extends Controller
             ->withCount('achievements');
 
         if ($query) {
-            $years->where(function($q) use ($query) {
+            $years->where(function ($q) use ($query) {
                 $q->where('year', 'like', "%{$query}%")
-                  ->orWhere('title', 'like', "%{$query}%")
-                  ->orWhere('description', 'like', "%{$query}%");
+                    ->orWhere('title', 'like', "%{$query}%")
+                    ->orWhere('description', 'like', "%{$query}%");
             });
         }
 
@@ -510,7 +510,7 @@ class RatingController extends Controller
                 })
                 ->where('year', $year)
                 ->get()
-                ->map(function($ach) {
+                ->map(function ($ach) {
                     return [
                         'club_id' => $ach->club_id,
                         'club_name' => $ach->club ? $ach->club->name : null,
@@ -626,5 +626,76 @@ class RatingController extends Controller
             ['id' => 1],
             ['is_actual' => true]
         );
+    }
+
+    /**
+     * Получить соревнования рейтинга за указанный год
+     */
+    public function getCompetitions(Request $request): \Illuminate\Http\JsonResponse
+    {
+        try {
+            $request->validate([
+                'year' => 'required|integer|min:2020|max:2030'
+            ]);
+
+            $year = $request->year;
+
+            // Получаем все достижения клубов за указанный год, которые участвуют в рейтинге
+            $achievements = \App\Models\ClubAchievement::with(['club', 'club.ratingRegion', 'tournamentType'])
+                ->where('year', $year)
+                ->whereHas('club', function ($query) {
+                    $query->whereNotNull('rating_region_id');
+                })
+                ->where('points_earned', '>', 0) // Только достижения с очками
+                ->orderBy('tournament_type_id')
+                ->orderBy('position')
+                ->get();
+
+            // Группируем достижения по типам турниров
+            $competitions = [];
+            $groupedAchievements = $achievements->groupBy('tournament_type_id');
+
+            foreach ($groupedAchievements as $tournamentTypeId => $tournamentAchievements) {
+                // Получаем информацию о типе турнира
+                $tournamentType = $tournamentAchievements->first()->tournamentType;
+                
+                if (!$tournamentType) {
+                    continue; // Пропускаем достижения без типа турнира
+                }
+
+                $competition = [
+                    'id' => md5($tournamentType->id . $year), // Уникальный ID для турнира
+                    'tournament_type_id' => $tournamentType->id,
+                    'tournament_type' => $tournamentType->name,
+                    'tournament_code' => $tournamentType->code,
+                    'year' => $year,
+                    'teams_count' => $tournamentAchievements->count(),
+                    'results' => []
+                ];
+
+                foreach ($tournamentAchievements as $achievement) {
+                    $competition['results'][] = [
+                        'id' => $achievement->id,
+                        'position' => $achievement->position,
+                        'club_id' => $achievement->club_id,
+                        'club_name' => $achievement->club->name,
+                        'club_logo' => $achievement->club->logo_url,
+                        'points' => $achievement->points_earned,
+                        'region_name' => $achievement->club->ratingRegion ? $achievement->club->ratingRegion->name : 'Не указан',
+                        'teams_count' => $achievement->teams_count,
+                        'tournament_type' => $achievement->tournament_type,
+                        'is_farm' => $achievement->is_farm,
+                        'promotion' => $achievement->promoted
+                    ];
+                }
+
+                $competitions[] = $competition;
+            }
+
+            return response()->json($competitions);
+        } catch (\Throwable $e) {
+            \Log::error('getCompetitions error: ' . $e->getMessage(), ['trace' => $e->getTraceAsString()]);
+            return response()->json([], 500);
+        }
     }
 }
