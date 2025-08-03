@@ -116,7 +116,7 @@ Route::group(['prefix' => '/v1'], function () {
     Route::get('/apage/{id}', [ApiParamsController::class, 'getAdminPage'])->name('params.apage');
     Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->name('params.amenu');
 
-        // Маршруты для рейтинга SRRR
+    // Маршруты для рейтинга SRRR
     Route::prefix('rating')->group(function () {
         // GET маршруты
         Route::get('/top', [RatingController::class, 'getTopRating']);
@@ -183,7 +183,6 @@ Route::group(['prefix' => '/v1'], function () {
         Route::post('/{id}/delete-multiple-images', [ApiGalleryController::class, 'deleteMultipleImages']);
         Route::post('/{id}/update-positions', [ApiGalleryController::class, 'updatePositions']);
         Route::post('/{id}/download-images', [ApiGalleryController::class, 'downloadImages']);
-
     });
 
 
@@ -193,7 +192,6 @@ Route::group(['prefix' => '/v1'], function () {
         Route::get('/region-year-total-ratings-history', [RatingController::class, 'getRegionYearTotalRatingsHistory']);
         Route::get('/actuality-status', [RatingController::class, 'getRatingActualityStatus']);
     });
-
 });
 
 // --- CRUD для шаблонов изображений (без авторизации для админки) ---
@@ -282,7 +280,7 @@ Route::post('/ai/generate', [App\Http\Controllers\Admin\Data\AIController::class
 Route::middleware('auth:sanctum')->group(function () {
     Route::post('/adminlogout', [AuthController::class, 'logout']);
     //Route::middleware('can:admin')->group(function () {
-//    Route::apiResource('admin-pages', AdminPageController::class);
+    //    Route::apiResource('admin-pages', AdminPageController::class);
     //});
 });
 //Route::apiResource('admin-pages', AdminPageController::class);
@@ -895,7 +893,3 @@ Route::apiResource('seasons', SeasonController::class);
 
 // Маршрут для похожих событий
 Route::get('/events/{id}/similar', [App\Http\Controllers\Api\ApiEventController::class, 'similar']);
-
-
-
-
