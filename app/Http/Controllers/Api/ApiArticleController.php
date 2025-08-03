@@ -36,6 +36,7 @@ class ApiArticleController extends Controller
 
         // Строим запрос
         $query = Article::query()
+            ->where('published', 1) // Показываем только опубликованные статьи
             ->select(
                 'id',
                 'title',
@@ -160,8 +161,11 @@ class ApiArticleController extends Controller
             ->select(
                 '*'
             )
-            ->where('id', $id)
-            ->orWhere('slug', $id)
+            ->where('published', 1) // Показываем только опубликованные статьи
+            ->where(function ($query) use ($id) {
+                $query->where('id', $id)
+                    ->orWhere('slug', $id);
+            })
             ->with([
                 'galleries' => function ($galleryQuery) {
                     $galleryQuery->select([
