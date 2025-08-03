@@ -621,159 +621,160 @@ class ApiEventController extends Controller
      */
     public function show(Event $event, $id): array
     {
-        $event = Event::select([
-            'id',
-            'title',
-            'date_from',
-            'date_to',
-            'result',
-            'result_dop',
-            'image',
-            'competition_id',
-            'arena_id',
-            'club1_id',
-            'club2_id',
-            'region_id',
-            'is_active',
-            'event_name',
-            'series_id',
-            'series_count',
-            'about',
-            'tickets',
-            'report',
-            'free_tickets',
-            'gallery_id',
-            'image',
-            'slug',
-            'display_lineups_mode',
-            'display_actions_mode'
-        ])->with([
-            'streams',
-            'series' => function ($query) {
-                $query->select(['id', 'description']);
-            },
-            'competition' => function ($query) {
-                $query->select([
-                    'id', // Явно указываем таблицу
-                    'title',
-                    DB::raw("CONCAT('" . config('app.url') . "', '/storage/', competitions.image) AS full_image_path"),
-                    'title_short',
-                    'image',
-                    'sport_id',
-                    'gender_id',
-                    'parse_table_id',
-                ])->with([
-                    'sport' => function ($sportQuery) {
-                        $sportQuery->select(['id', 'title', 'slug', 'icon']);
-                    },
-                    'gender' => function ($sportQuery) {
-                        $sportQuery->select(['id', 'title', 'title_short', 'icon']);
-                    },
-                ]);
-            },
-            'club1' => function ($query) {
-                $query->select([
-                    'clubs.id', // Явно указываем таблицу
-                    'clubs.title',
-                    'clubs.image',
-                    DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS club_image_path"),
-                    'clubs.slug',
-                    'clubs.city_id',
-                    'clubs.age_id',
-                    'clubs.gender_id',
-                    'clubs.sport_id' // Для HasMany!!!!
-                ])->with([
-                    'city' => function ($cityQuery) {
-                        $cityQuery->select(['cities.id', 'cities.title', 'cities.title_short']);
-                    },
-                    'sport' => function ($sportQuery) {
-                        $sportQuery->select(['id', 'title', 'slug', 'icon']);
-                    },
-                    'age' => function ($ageQuery) {
-                        $ageQuery->select(['ages.id', 'ages.title', 'ages.title_short']);
-                    },
-                    'gender' => function ($genderQuery) {
-                        $genderQuery->select(['id', 'title', 'icon']);
-                    }
-                ]);
-            },
-            'club2' => function ($query) {
-                $query->select([
-                    'clubs.id', // Явно указываем таблицу
-                    'clubs.title',
-                    'clubs.image',
-                    DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS club_image_path"),
-                    'clubs.slug',
-                    'clubs.city_id',
-                    'clubs.age_id',
-                    'clubs.gender_id',
-                    'clubs.sport_id' // Для HasMany!!!!
-                ])->with([
-                    'city' => function ($cityQuery) {
-                        $cityQuery->select(['cities.id', 'cities.title', 'cities.title_short']);
-                    },
-                    'sport' => function ($sportQuery) {
-                        $sportQuery->select(['id', 'title', 'slug', 'icon']);
-                    },
-                    'age' => function ($ageQuery) {
-                        $ageQuery->select(['ages.id', 'ages.title', 'ages.title_short']);
-                    },
-                    'gender' => function ($genderQuery) {
-                        $genderQuery->select(['id', 'title', 'icon']);
-                    }
-                ]);
-            },
-            'gallery' => function ($galleryQuery) {
-                $galleryQuery->select([
-                    'galleries.id',
-                    'galleries.title',
-                    'galleries.image_id'
-                ])
-                    ->with([
-                        'images' => function ($q) {
-                            $q->select([
-                                'images.id',
-                                'images.title',
-                                'images.image',
-                                'images.gallery_id'
-                            ]);
+        $event = Event::where('is_active', 1) // Показываем только активные события
+            ->select([
+                'id',
+                'title',
+                'date_from',
+                'date_to',
+                'result',
+                'result_dop',
+                'image',
+                'competition_id',
+                'arena_id',
+                'club1_id',
+                'club2_id',
+                'region_id',
+                'is_active',
+                'event_name',
+                'series_id',
+                'series_count',
+                'about',
+                'tickets',
+                'report',
+                'free_tickets',
+                'gallery_id',
+                'image',
+                'slug',
+                'display_lineups_mode',
+                'display_actions_mode'
+            ])->with([
+                'streams',
+                'series' => function ($query) {
+                    $query->select(['id', 'description']);
+                },
+                'competition' => function ($query) {
+                    $query->select([
+                        'id', // Явно указываем таблицу
+                        'title',
+                        DB::raw("CONCAT('" . config('app.url') . "', '/storage/', competitions.image) AS full_image_path"),
+                        'title_short',
+                        'image',
+                        'sport_id',
+                        'gender_id',
+                        'parse_table_id',
+                    ])->with([
+                        'sport' => function ($sportQuery) {
+                            $sportQuery->select(['id', 'title', 'slug', 'icon']);
                         },
-                        'main_image' => function ($q) {
-                            $q->select([
-                                'images.id',
-                                'images.title'
-                            ]);
+                        'gender' => function ($sportQuery) {
+                            $sportQuery->select(['id', 'title', 'title_short', 'icon']);
+                        },
+                    ]);
+                },
+                'club1' => function ($query) {
+                    $query->select([
+                        'clubs.id', // Явно указываем таблицу
+                        'clubs.title',
+                        'clubs.image',
+                        DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS club_image_path"),
+                        'clubs.slug',
+                        'clubs.city_id',
+                        'clubs.age_id',
+                        'clubs.gender_id',
+                        'clubs.sport_id' // Для HasMany!!!!
+                    ])->with([
+                        'city' => function ($cityQuery) {
+                            $cityQuery->select(['cities.id', 'cities.title', 'cities.title_short']);
+                        },
+                        'sport' => function ($sportQuery) {
+                            $sportQuery->select(['id', 'title', 'slug', 'icon']);
+                        },
+                        'age' => function ($ageQuery) {
+                            $ageQuery->select(['ages.id', 'ages.title', 'ages.title_short']);
+                        },
+                        'gender' => function ($genderQuery) {
+                            $genderQuery->select(['id', 'title', 'icon']);
                         }
                     ]);
-            },
-            'articles' => function ($query) {
-                $query->select([
-                    'articles.id', // Явно указываем таблицу
-                    'articles.title',
-                    'articles.slug',
-                    'articles.image',
-                    'articles.data'
-                ]);
-            },
-            'arena' => function ($query) {
-                $query->select([
-                    'arenas.id', // Явно указываем таблицу
-                    'arenas.title',
-                    'arenas.city_id',
-                    'arenas.slug',
-                    'arenas.address',
-                    'arenas.map',
-                    'arenas.image',
-                    'arenas.latitude',
-                    'arenas.longitude',
-                    DB::raw("CONCAT('" . config('app.url') . "', '/storage/', arenas.image) AS arena_image_path"),
-                ])->with([
-                    'city' => function ($cityQuery) {
-                        $cityQuery->select(['id', 'title', 'title_short']);
-                    }
-                ]);
-            },
-        ])
+                },
+                'club2' => function ($query) {
+                    $query->select([
+                        'clubs.id', // Явно указываем таблицу
+                        'clubs.title',
+                        'clubs.image',
+                        DB::raw("CONCAT('" . config('app.url') . "', '/storage/', clubs.image) AS club_image_path"),
+                        'clubs.slug',
+                        'clubs.city_id',
+                        'clubs.age_id',
+                        'clubs.gender_id',
+                        'clubs.sport_id' // Для HasMany!!!!
+                    ])->with([
+                        'city' => function ($cityQuery) {
+                            $cityQuery->select(['cities.id', 'cities.title', 'cities.title_short']);
+                        },
+                        'sport' => function ($sportQuery) {
+                            $sportQuery->select(['id', 'title', 'slug', 'icon']);
+                        },
+                        'age' => function ($ageQuery) {
+                            $ageQuery->select(['ages.id', 'ages.title', 'ages.title_short']);
+                        },
+                        'gender' => function ($genderQuery) {
+                            $genderQuery->select(['id', 'title', 'icon']);
+                        }
+                    ]);
+                },
+                'gallery' => function ($galleryQuery) {
+                    $galleryQuery->select([
+                        'galleries.id',
+                        'galleries.title',
+                        'galleries.image_id'
+                    ])
+                        ->with([
+                            'images' => function ($q) {
+                                $q->select([
+                                    'images.id',
+                                    'images.title',
+                                    'images.image',
+                                    'images.gallery_id'
+                                ]);
+                            },
+                            'main_image' => function ($q) {
+                                $q->select([
+                                    'images.id',
+                                    'images.title'
+                                ]);
+                            }
+                        ]);
+                },
+                'articles' => function ($query) {
+                    $query->select([
+                        'articles.id', // Явно указываем таблицу
+                        'articles.title',
+                        'articles.slug',
+                        'articles.image',
+                        'articles.data'
+                    ]);
+                },
+                'arena' => function ($query) {
+                    $query->select([
+                        'arenas.id', // Явно указываем таблицу
+                        'arenas.title',
+                        'arenas.city_id',
+                        'arenas.slug',
+                        'arenas.address',
+                        'arenas.map',
+                        'arenas.image',
+                        'arenas.latitude',
+                        'arenas.longitude',
+                        DB::raw("CONCAT('" . config('app.url') . "', '/storage/', arenas.image) AS arena_image_path"),
+                    ])->with([
+                        'city' => function ($cityQuery) {
+                            $cityQuery->select(['id', 'title', 'title_short']);
+                        }
+                    ]);
+                },
+            ])
             ->findOrFail($id);
 
         // Загружаем события серии отдельно
