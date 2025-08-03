@@ -511,11 +511,20 @@ class RatingController extends Controller
                 ->where('year', $year)
                 ->get()
                 ->map(function ($ach) {
+                    $club = $ach->club;
+                    $clubSlug = $club ? $club->slug : null;
+                    
+                    // Логируем для отладки
+                    if ($club && !$clubSlug) {
+                        \Log::warning("Club {$club->id} ({$club->name}) has no slug");
+                    }
+                    
                     return [
                         'club_id' => $ach->club_id,
-                        'club_name' => $ach->club ? $ach->club->name : null,
+                        'club_name' => $club ? $club->name : null,
+                        'club_slug' => $clubSlug,
                         'points' => $ach->points_earned,
-                        'logo_url' => $ach->club ? $ach->club->logo_url : null,
+                        'logo_url' => $club ? $club->logo_url : null,
                         'tournament_type' => $ach->tournamentType ? $ach->tournamentType->name : $ach->tournament_type,
                         'position' => $ach->position
                     ];
@@ -682,15 +691,23 @@ class RatingController extends Controller
                 ];
 
                 foreach ($tournamentAchievements as $achievement) {
+                    $club = $achievement->club;
+                    $clubSlug = $club ? $club->slug : null;
+                    
+                    // Логируем для отладки
+                    if ($club && !$clubSlug) {
+                        \Log::warning("Club {$club->id} ({$club->name}) has no slug in competitions");
+                    }
+                    
                     $competition['results'][] = [
                         'id' => $achievement->id,
                         'position' => $achievement->position,
                         'club_id' => $achievement->club_id,
-                        'club_name' => $achievement->club->name,
-                        'club_slug' => $achievement->club->slug,
-                        'club_logo' => $achievement->club->logo_url,
+                        'club_name' => $club ? $club->name : null,
+                        'club_slug' => $clubSlug,
+                        'club_logo' => $club ? $club->logo_url : null,
                         'points' => $achievement->points_earned,
-                        'region_name' => $achievement->club->ratingRegion ? $achievement->club->ratingRegion->name : 'Не указан',
+                        'region_name' => $club && $club->ratingRegion ? $club->ratingRegion->name : 'Не указан',
                         'teams_count' => $achievement->teams_count,
                         'tournament_type' => $achievement->tournament_type,
                         'is_farm' => $achievement->is_farm,
