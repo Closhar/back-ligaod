@@ -122,20 +122,50 @@ class PersonController extends Controller
                 $query->whereDay('birth_date', $request->birthday_day);
             }
 
-            // Фильтрация по клубу - ИСПРАВЛЕНО: используем clubMemberships вместо activeClubMemberships
+            // Фильтрация по клубу - пробуем разные варианты связей
             if ($request->has('club') && !empty($request->club)) {
-                $query->whereHas('clubMemberships', function ($q) use ($request) {
-                    $q->whereHas('club', function ($clubQuery) use ($request) {
+                $query->where(function ($q) use ($request) {
+                    // Вариант 1: через clubMemberships
+                    $q->whereHas('clubMemberships', function ($subQ) use ($request) {
+                        $subQ->whereHas('club', function ($clubQuery) use ($request) {
+                            $clubQuery->where('slug', $request->club);
+                        });
+                    });
+
+                    // Вариант 2: через прямую связь с клубами
+                    $q->orWhereHas('clubs', function ($clubQuery) use ($request) {
                         $clubQuery->where('slug', $request->club);
+                    });
+
+                    // Вариант 3: через activeClubMemberships (на случай если это правильная связь)
+                    $q->orWhereHas('activeClubMemberships', function ($subQ) use ($request) {
+                        $subQ->whereHas('club', function ($clubQuery) use ($request) {
+                            $clubQuery->where('slug', $request->club);
+                        });
                     });
                 });
             }
 
-            // Фильтрация по спорту - ИСПРАВЛЕНО: используем sportMemberships вместо activeSportMemberships
+            // Фильтрация по спорту - пробуем разные варианты связей
             if ($request->has('sport') && !empty($request->sport)) {
-                $query->whereHas('sportMemberships', function ($q) use ($request) {
-                    $q->whereHas('sport', function ($sportQuery) use ($request) {
+                $query->where(function ($q) use ($request) {
+                    // Вариант 1: через sportMemberships
+                    $q->whereHas('sportMemberships', function ($subQ) use ($request) {
+                        $subQ->whereHas('sport', function ($sportQuery) use ($request) {
+                            $sportQuery->where('slug', $request->sport);
+                        });
+                    });
+
+                    // Вариант 2: через прямую связь со спортами
+                    $q->orWhereHas('sports', function ($sportQuery) use ($request) {
                         $sportQuery->where('slug', $request->sport);
+                    });
+
+                    // Вариант 3: через activeSportMemberships (на случай если это правильная связь)
+                    $q->orWhereHas('activeSportMemberships', function ($subQ) use ($request) {
+                        $subQ->whereHas('sport', function ($sportQuery) use ($request) {
+                            $sportQuery->where('slug', $request->sport);
+                        });
                     });
                 });
             }
@@ -174,5 +204,350 @@ class PersonController extends Controller
         }
     }
 
-    // ... остальные методы остаются без изменений
+    /**
+     * Получить конкретную персону с полной информацией
+     */
+    public function show(Person $person): JsonResponse
+    {
+        $person->load([
+            'clubs',
+            'sports',
+            'images',
+            'surnameChanges',
+            'clubMemberships.club',
+            'sportMemberships.sport',
+            'positionMemberships.position',
+            'ampluaMemberships.amplua',
+            'activeClubMemberships',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'data' => array_merge(
+                $person->toArray(),
+                ['activeClubMemberships' => $person->activeClubMemberships->toArray()]
+            )
+        ]);
+    }
+
+    /**
+     * Создать новую персону
+     */
+    public function store(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'required|string|max:255',
+            'last_name' => 'required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'birth_date' => 'nullable|date|before:today',
+            'passport_series' => 'nullable|string|size:4',
+            'passport_number' => 'nullable|string|size:6',
+            'address' => 'nullable|string',
+            'player_number' => 'nullable|integer|min:0',
+            'gender' => 'required|string|in:m,f',
+            'is_active' => 'sometimes|boolean',
+            'about' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        // Проверка уникальности по ФИО и дате рождения
+        $data = $validator->validated();
+        if (!isset($data['gender']) || !$data['gender']) {
+            $data['gender'] = 'm';
+        }
+        $exists = \App\Models\Person::where('first_name', $data['first_name'])
+            ->where('last_name', $data['last_name'])
+            ->where('middle_name', $data['middle_name'] ?? null)
+            ->where('birth_date', $data['birth_date'] ?? null)
+            ->exists();
+        if ($exists) {
+            return response()->json([
+                'success' => false,
+                'errors' => [
+                    'unique' => ['Персона с такими ФИО и датой рождения уже существует.']
+                ]
+            ], 422);
+        }
+
+        $person = Person::create($data);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Персона успешно создана',
+            'data' => $person
+        ], 201);
+    }
+
+    /**
+     * Обновить персону
+     */
+    public function update(Request $request, Person $person): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'first_name' => 'sometimes|required|string|max:255',
+            'last_name' => 'sometimes|required|string|max:255',
+            'middle_name' => 'nullable|string|max:255',
+            'birth_date' => 'nullable|date|before:today',
+            'passport_series' => 'nullable|string|size:4',
+            'passport_number' => 'nullable|string|size:6',
+            'address' => 'nullable|string',
+            'player_number' => 'nullable|integer|min:0',
+            'gender' => 'nullable|string|in:m,f',
+            'is_active' => 'sometimes|boolean',
+            'about' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $person->update($validator->validated());
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Персона успешно обновлена',
+            'data' => $person
+        ]);
+    }
+
+    /**
+     * Удалить персону
+     */
+    public function destroy(Person $person): JsonResponse
+    {
+        // Удаляем все изображения
+        foreach ($person->images as $image) {
+            if (Storage::disk('public')->exists($image->image_path)) {
+                Storage::disk('public')->delete($image->image_path);
+            }
+        }
+
+        $person->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Персона успешно удалена'
+        ]);
+    }
+
+    /**
+     * Получить статистику по персонам
+     */
+    public function statistics(): JsonResponse
+    {
+        $stats = [
+            'total' => Person::count(),
+            'sportsmen' => Person::sportsmen()->count(),
+            'non_sportsmen' => Person::nonSportsmen()->count(),
+            'with_active_role' => Person::withActiveRole()->count(),
+            'with_clubs' => Person::whereHas('activeClubMemberships')->count(),
+            'with_sports' => Person::whereHas('activeSportMemberships')->count(),
+            'with_images' => Person::whereHas('images')->count(),
+            'with_positions' => Person::whereHas('activePositionMemberships')->count(),
+            'with_ampluas' => Person::whereHas('activeAmpluaMemberships')->count(),
+        ];
+
+        return response()->json([
+            'success' => true,
+            'data' => $stats
+        ]);
+    }
+
+    /**
+     * Получить список команд для фильтрации
+     */
+    public function clubs(): JsonResponse
+    {
+        try {
+            $type = request()->query('type');
+            $searchQuery = request()->query('q');
+            $limit = request()->query('limit', 10);
+
+            $query = Club::with(['city', 'sport', 'gender']);
+
+            // Если это асинхронный запрос, добавляем поиск
+            if ($type === 'async' && $searchQuery) {
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
+            }
+
+            $clubs = $query->orderBy('title')->limit($limit)->get();
+
+            // Добавляем поля для совместимости с фронтендом
+            $clubs->each(function ($club) {
+                $club->name = $club->full_info;
+                $club->logo_url = $club->club_image_path;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $clubs
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки команд: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить список видов спорта для фильтрации
+     */
+    public function sports(): JsonResponse
+    {
+        try {
+            $type = request()->query('type');
+            $searchQuery = request()->query('q');
+            $limit = request()->query('limit', 10);
+
+            $query = Sport::query();
+
+            // Если это асинхронный запрос, добавляем поиск
+            if ($type === 'async' && $searchQuery) {
+                $query->where('title', 'LIKE', "%{$searchQuery}%");
+            }
+
+            $sports = $query->orderBy('title')->limit($limit)->get();
+
+            // Добавляем поля для совместимости с фронтендом
+            $sports->each(function ($sport) {
+                $sport->name = $sport->title;
+                $sport->icon_name = $sport->icon;
+                $sport->icon = $sport->icon;
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => $sports
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки видов спорта: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить список должностей для фильтрации
+     */
+    public function positions(): JsonResponse
+    {
+        try {
+            $type = request()->query('type');
+            $searchQuery = request()->query('q');
+            $limit = request()->query('limit', 10);
+
+            $query = Position::where('is_active', true);
+
+            // Если это асинхронный запрос, добавляем поиск
+            if ($type === 'async' && $searchQuery) {
+                $query->where('name', 'LIKE', "%{$searchQuery}%");
+            }
+
+            $positions = $query->orderBy('name')->limit($limit)->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $positions
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки должностей: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Получить список амплуа для фильтрации
+     */
+    public function ampluas(): JsonResponse
+    {
+        try {
+            $type = request()->query('type');
+            $searchQuery = request()->query('q');
+            $limit = request()->query('limit', 10);
+
+            $query = Amplua::where('is_active', true);
+
+            // Если это асинхронный запрос, добавляем поиск
+            if ($type === 'async' && $searchQuery) {
+                $query->where('name', 'LIKE', "%{$searchQuery}%");
+            }
+
+            $ampluas = $query->orderBy('name')->limit($limit)->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $ampluas
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки амплуа: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Поиск персон по ФИО и дате рождения (для автокомплита)
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $lastName = $request->get('last_name');
+        $firstName = $request->get('first_name');
+        $middleName = $request->get('middle_name');
+        $birthDate = $request->get('birth_date');
+        $query = $request->get('query', '');
+
+        $people = Person::query()
+            ->when($lastName, function ($q) use ($lastName) {
+                $q->where('last_name', 'like', "%$lastName%");
+            })
+            ->when($firstName, function ($q) use ($firstName) {
+                $q->where('first_name', 'like', "%$firstName%");
+            })
+            ->when($middleName, function ($q) use ($middleName) {
+                $q->where('middle_name', 'like', "%$middleName%");
+            })
+            ->when($birthDate, function ($q) use ($birthDate) {
+                $q->whereDate('birth_date', $birthDate);
+            })
+            ->when(!$lastName && !$firstName && !$middleName && $query, function ($q) use ($query) {
+                $q->where(function ($sub) use ($query) {
+                    $sub->where('last_name', 'like', "%$query%")
+                        ->orWhere('first_name', 'like', "%$query%")
+                        ->orWhere('middle_name', 'like', "%$query%")
+                        ->orWhereRaw("CONCAT(last_name, ' ', first_name, ' ', middle_name) like ?", ["%$query%"]);
+                });
+            })
+            ->orderBy('last_name')
+            ->limit(20)
+            ->get();
+
+        $result = $people->map(function ($person) {
+            $label = $person->full_name;
+            if ($person->birth_date) {
+                $label .= ' (' . $person->birth_date->format('d.m.Y') . ')';
+            }
+            return [
+                'id' => $person->id,
+                'full_name' => $person->full_name,
+                'birth_date' => $person->birth_date ? $person->birth_date->format('Y-m-d') : null,
+                'label' => $label,
+            ];
+        });
+
+        return response()->json($result);
+    }
 }
