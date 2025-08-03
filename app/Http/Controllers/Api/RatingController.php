@@ -655,7 +655,6 @@ class RatingController extends Controller
                 ->whereHas('club', function ($query) {
                     $query->whereNotNull('rating_region_id');
                 })
-                ->where('points_earned', '>', 0) // Только достижения с очками
                 ->orderBy('tournament_type_id')
                 ->orderBy('position')
                 ->get();
