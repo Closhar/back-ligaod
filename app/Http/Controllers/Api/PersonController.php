@@ -124,7 +124,7 @@ class PersonController extends Controller
 
             // Фильтрация по клубу - ИСПРАВЛЕНО: используем clubMemberships вместо activeClubMemberships
             if ($request->has('club') && !empty($request->club)) {
-                $query->whereHas('activeClubMemberships', function ($q) use ($request) {
+                $query->whereHas('clubMemberships', function ($q) use ($request) {
                     $q->whereHas('club', function ($clubQuery) use ($request) {
                         $clubQuery->where('slug', $request->club);
                     });
@@ -133,7 +133,7 @@ class PersonController extends Controller
 
             // Фильтрация по спорту - ИСПРАВЛЕНО: используем sportMemberships вместо activeSportMemberships
             if ($request->has('sport') && !empty($request->sport)) {
-                $query->whereHas('activeSportMemberships', function ($q) use ($request) {
+                $query->whereHas('sportMemberships', function ($q) use ($request) {
                     $q->whereHas('sport', function ($sportQuery) use ($request) {
                         $sportQuery->where('slug', $request->sport);
                     });
