@@ -641,7 +641,7 @@ class RatingController extends Controller
             $year = $request->year;
 
             // Получаем все достижения клубов за указанный год, которые участвуют в рейтинге
-            $achievements = \App\Models\ClubAchievement::with(['club', 'club.ratingRegion', 'tournamentType'])
+            $achievements = \App\Models\ClubAchievement::with(['club', 'club.ratingRegion', 'club.sport', 'club.gender', 'tournamentType'])
                 ->where('year', $year)
                 ->whereHas('club', function ($query) {
                     $query->whereNotNull('rating_region_id');
@@ -651,23 +651,31 @@ class RatingController extends Controller
                 ->orderBy('position')
                 ->get();
 
-            // Группируем достижения по типам турниров
+            // Группируем достижения по спорту, полу и типу турнира
             $competitions = [];
-            $groupedAchievements = $achievements->groupBy('tournament_type_id');
+            $groupedAchievements = $achievements->groupBy(function ($achievement) {
+                return $achievement->club->sport_id . '_' . $achievement->club->gender_id . '_' . $achievement->tournament_type_id;
+            });
 
-            foreach ($groupedAchievements as $tournamentTypeId => $tournamentAchievements) {
+            foreach ($groupedAchievements as $groupKey => $tournamentAchievements) {
                 // Получаем информацию о типе турнира
                 $tournamentType = $tournamentAchievements->first()->tournamentType;
-                
-                if (!$tournamentType) {
-                    continue; // Пропускаем достижения без типа турнира
+                $sport = $tournamentAchievements->first()->club->sport;
+                $gender = $tournamentAchievements->first()->club->gender;
+
+                if (!$tournamentType || !$sport || !$gender) {
+                    continue; // Пропускаем достижения без необходимой информации
                 }
 
                 $competition = [
-                    'id' => md5($tournamentType->id . $year), // Уникальный ID для турнира
+                    'id' => md5($tournamentType->id . $sport->id . $gender->id . $year), // Уникальный ID для турнира
                     'tournament_type_id' => $tournamentType->id,
                     'tournament_type' => $tournamentType->name,
                     'tournament_code' => $tournamentType->code,
+                    'sport_id' => $sport->id,
+                    'sport_name' => $sport->name,
+                    'gender_id' => $gender->id,
+                    'gender_name' => $gender->name,
                     'year' => $year,
                     'teams_count' => $tournamentAchievements->count(),
                     'results' => []
