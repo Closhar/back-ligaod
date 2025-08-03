@@ -513,12 +513,12 @@ class RatingController extends Controller
                 ->map(function ($ach) {
                     $club = $ach->club;
                     $clubSlug = $club ? $club->slug : null;
-                    
+
                     // Логируем для отладки
                     if ($club && !$clubSlug) {
                         \Log::warning("Club {$club->id} ({$club->name}) has no slug");
                     }
-                    
+
                     return [
                         'club_id' => $ach->club_id,
                         'club_name' => $club ? $club->name : null,
@@ -681,6 +681,8 @@ class RatingController extends Controller
                     'tournament_type_id' => $tournamentType->id,
                     'tournament_type' => $tournamentType->name,
                     'tournament_code' => $tournamentType->code,
+                    'tournament_color_class' => $tournamentType->color_class,
+                    'tournament_sort_order' => $tournamentType->sort_order,
                     'sport_id' => $sport->id,
                     'sport_name' => $sport->name,
                     'gender_id' => $gender->id,
@@ -693,12 +695,12 @@ class RatingController extends Controller
                 foreach ($tournamentAchievements as $achievement) {
                     $club = $achievement->club;
                     $clubSlug = $club ? $club->slug : null;
-                    
+
                     // Логируем для отладки
                     if ($club && !$clubSlug) {
                         \Log::warning("Club {$club->id} ({$club->name}) has no slug in competitions");
                     }
-                    
+
                     $competition['results'][] = [
                         'id' => $achievement->id,
                         'position' => $achievement->position,
