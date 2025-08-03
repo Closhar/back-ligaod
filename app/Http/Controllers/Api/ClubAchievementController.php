@@ -367,9 +367,10 @@ class ClubAchievementController extends Controller
             // Пересчитать лимит только для затронутой группы
             $regionId = $club->rating_region_id ?? null;
             $genderId = $club->gender_id ?? null;
+            $sportId = $club->sport_id ?? null;
             $tournamentTypeId = $achievement->tournament_type_id;
-            if ($regionId && $year && $tournamentTypeId && $genderId) {
-                \App\Models\ClubAchievement::recalculateRegionLimitForGroup($regionId, $year, $tournamentTypeId, $genderId);
+            if ($regionId && $year && $tournamentTypeId && $genderId && $sportId) {
+                \App\Models\ClubAchievement::recalculateRegionLimitForGroup($regionId, $year, $tournamentTypeId, $genderId, $sportId);
             }
 
             // Пересчитать рейтинг региона

@@ -84,7 +84,7 @@ class SRRRRatingService
 
         foreach ($regions as $region) {
             // Получаем рейтинги за текущий и три предыдущих года
-            $years = [$year-3, $year-2, $year-1, $year];
+            $years = [$year - 3, $year - 2, $year - 1, $year];
             $ratingYears = \App\Models\RatingYear::whereIn('year', $years)->pluck('id', 'year');
             $total = 0;
             foreach ($years as $y) {
@@ -125,9 +125,12 @@ class SRRRRatingService
                     ->where('year', $year)
                     ->get();
 
-                // Группируем по типу турнира
-                $byTournamentType = $achievements->groupBy('tournament_type_id');
-                foreach ($byTournamentType as $tournamentTypeId => $groupedAchievements) {
+                // Группируем по типу турнира и виду спорта
+                $byTournamentTypeAndSport = $achievements->groupBy(function ($achievement) {
+                    return $achievement->tournament_type_id . '_' . ($achievement->club ? $achievement->club->sport_id : 'null');
+                });
+
+                foreach ($byTournamentTypeAndSport as $groupKey => $groupedAchievements) {
                     $tournamentType = $groupedAchievements->first()->tournamentType;
                     if (!$tournamentType) continue;
                     $maxPerRegion = (int)($tournamentType->max_participants_per_region ?? 0);
@@ -305,7 +308,7 @@ class SRRRRatingService
         $achievements = ClubAchievement::with(['club'])
             ->whereHas('club', function ($query) use ($regionId, $sportId) {
                 $query->where('rating_region_id', $regionId)
-                      ->where('sport_id', $sportId);
+                    ->where('sport_id', $sportId);
             })
             ->where('year', $year)
             ->get();

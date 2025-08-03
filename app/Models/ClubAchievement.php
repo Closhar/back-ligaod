@@ -101,13 +101,16 @@ class ClubAchievement extends Model
         $tournamentTypeId = $this->tournament_type_id;
         $genderId = $this->club ? $this->club->gender_id : null;
         $regionId = $this->club ? $this->club->rating_region_id : null;
-        // Находим все достижения этой группы (по году, турниру, полу, региону)
+        $sportId = $this->club ? $this->club->sport_id : null;
+
+        // Находим все достижения этой группы (по году, турниру, полу, региону, виду спорта)
         $groupAchievements = self::with(['tournamentType', 'club'])
             ->where('year', $year)
             ->where('tournament_type_id', $tournamentTypeId)
-            ->whereHas('club', function($q) use ($regionId, $genderId) {
+            ->whereHas('club', function ($q) use ($regionId, $genderId, $sportId) {
                 $q->where('rating_region_id', $regionId)
-                  ->where('gender_id', $genderId);
+                    ->where('gender_id', $genderId)
+                    ->where('sport_id', $sportId);
             })
             ->get();
         // Сортировка: сначала по очкам по убыванию, затем по id по возрастанию
@@ -138,17 +141,18 @@ class ClubAchievement extends Model
     public static function recalculateRegionLimit(): void
     {
         $achievements = self::with(['tournamentType', 'club'])
-            ->whereHas('tournamentType', function($q) {
+            ->whereHas('tournamentType', function ($q) {
                 $q->where('max_participants_per_region', '>', 0);
             })
             ->get();
 
-        $grouped = $achievements->groupBy(function($ach) {
+        $grouped = $achievements->groupBy(function ($ach) {
             return implode('_', [
                 $ach->club ? $ach->club->rating_region_id : 'null',
                 $ach->year,
                 $ach->tournament_type_id,
-                $ach->club ? $ach->club->gender_id : 'null'
+                $ach->club ? $ach->club->gender_id : 'null',
+                $ach->club ? $ach->club->sport_id : 'null'
             ]);
         });
 
@@ -178,17 +182,18 @@ class ClubAchievement extends Model
     }
 
     /**
-     * Пересчитать лимит max_participants_per_region только для одной группы (регион, год, турнир, пол)
+     * Пересчитать лимит max_participants_per_region только для одной группы (регион, год, турнир, пол, вид спорта)
      */
-    public static function recalculateRegionLimitForGroup($regionId, $year, $tournamentTypeId, $genderId): void
+    public static function recalculateRegionLimitForGroup($regionId, $year, $tournamentTypeId, $genderId, $sportId): void
     {
         $achievements = self::with(['tournamentType', 'club'])
-            ->whereHas('tournamentType', function($q) {
+            ->whereHas('tournamentType', function ($q) {
                 $q->where('max_participants_per_region', '>', 0);
             })
-            ->whereHas('club', function($q) use ($regionId, $genderId) {
+            ->whereHas('club', function ($q) use ($regionId, $genderId, $sportId) {
                 $q->where('rating_region_id', $regionId)
-                  ->where('gender_id', $genderId);
+                    ->where('gender_id', $genderId)
+                    ->where('sport_id', $sportId);
             })
             ->where('year', $year)
             ->where('tournament_type_id', $tournamentTypeId)
@@ -350,11 +355,16 @@ class ClubAchievement extends Model
         $multiplier = $n / 10;
 
         switch ($position) {
-            case 1: return 100 * $multiplier;
-            case 2: return 80 * $multiplier;
-            case 3: return 60 * $multiplier;
-            case 4: return 20 * $multiplier;
-            default: return 0;
+            case 1:
+                return 100 * $multiplier;
+            case 2:
+                return 80 * $multiplier;
+            case 3:
+                return 60 * $multiplier;
+            case 4:
+                return 20 * $multiplier;
+            default:
+                return 0;
         }
     }
 
@@ -381,11 +391,20 @@ class ClubAchievement extends Model
         $basePoints = 0;
 
         switch ($position) {
-            case 1: $basePoints = 50 * $multiplier; break;
-            case 2: $basePoints = 30 * $multiplier; break;
-            case 3: $basePoints = 20 * $multiplier; break;
-            case 4: $basePoints = 5 * $multiplier; break;
-            default: $basePoints = 0;
+            case 1:
+                $basePoints = 50 * $multiplier;
+                break;
+            case 2:
+                $basePoints = 30 * $multiplier;
+                break;
+            case 3:
+                $basePoints = 20 * $multiplier;
+                break;
+            case 4:
+                $basePoints = 5 * $multiplier;
+                break;
+            default:
+                $basePoints = 0;
         }
 
         // Используем бонус за повышение из настроек турнира
@@ -399,11 +418,16 @@ class ClubAchievement extends Model
     private function calculateCupPoints(): float
     {
         switch ($this->position) {
-            case 1: return 50; // Победа
-            case 2: return 30; // Финал
-            case 3: return 20; // Полуфинал
-            case 4: return 20; // Полуфинал
-            default: return 0;
+            case 1:
+                return 50; // Победа
+            case 2:
+                return 30; // Финал
+            case 3:
+                return 20; // Полуфинал
+            case 4:
+                return 20; // Полуфинал
+            default:
+                return 0;
         }
     }
 
@@ -413,9 +437,12 @@ class ClubAchievement extends Model
     private function calculateSupercupPoints(): float
     {
         switch ($this->position) {
-            case 1: return 30; // Победа
-            case 2: return 10; // Участие
-            default: return 0;
+            case 1:
+                return 30; // Победа
+            case 2:
+                return 10; // Участие
+            default:
+                return 0;
         }
     }
 

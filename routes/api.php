@@ -98,6 +98,10 @@ Route::group(['prefix' => '/v1'], function () {
     Route::get('/clubs', [ApiClubController::class, 'index'])->name('api.clubs.index');
     Route::get('/clubs/{id}', [ApiClubController::class, 'show'])->name('api.clubs.show');
     Route::post('/clubs/{id}/regions', [ApiClubController::class, 'addRegion'])->name('api.clubs.addRegion');
+
+    // V1 API endpoints для совместимости
+    Route::get('/v1/clubs', [ApiClubController::class, 'index'])->name('api.v1.clubs.index');
+    Route::get('/v1/clubs/{id}', [ApiClubController::class, 'show'])->name('api.v1.clubs.show');
     Route::get('/arenas', [ApiArenaController::class, 'index'])->name('api.arenas.index');
     Route::get('/arenas/{id}', [ApiArenaController::class, 'show'])->name('api.arenas.show');
     Route::get('/competitions', [ApiCompetitionController::class, 'index'])->name('api.competitions.index');
