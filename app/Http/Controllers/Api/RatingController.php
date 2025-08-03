@@ -685,6 +685,7 @@ class RatingController extends Controller
                     'tournament_sort_order' => $tournamentType->sort_order,
                     'sport_id' => $sport->id,
                     'sport_name' => $sport->name,
+                    'sport_icon' => $sport->icon,
                     'gender_id' => $gender->id,
                     'gender_name' => $gender->name,
                     'year' => $year,
