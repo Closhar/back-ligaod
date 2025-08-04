@@ -663,7 +663,7 @@ class ApiEventController extends Controller
                         'sort_order'
                     ])->with([
                         'person' => function ($personQuery) {
-                            $personQuery->select(['id', 'full_name', 'first_name', 'last_name', 'middle_name']);
+                            $personQuery->select(['id', 'first_name', 'last_name', 'middle_name'])->withAppends(['full_name']);
                         },
                         'club' => function ($clubQuery) {
                             $clubQuery->select(['id', 'title', 'slug']);
@@ -685,7 +685,7 @@ class ApiEventController extends Controller
                         'sort_order'
                     ])->with([
                         'person' => function ($personQuery) {
-                            $personQuery->select(['id', 'full_name', 'first_name', 'last_name', 'middle_name']);
+                            $personQuery->select(['id', 'first_name', 'last_name', 'middle_name'])->withAppends(['full_name']);
                         },
                         'actionType' => function ($actionTypeQuery) {
                             $actionTypeQuery->select(['id', 'name', 'short_name', 'icon', 'color', 'group']);
