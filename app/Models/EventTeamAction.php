@@ -12,6 +12,7 @@ class EventTeamAction extends Model
         'team_action_type_id',
         'value_home',
         'value_away',
+        'sort_order',
     ];
 
     public function event()
