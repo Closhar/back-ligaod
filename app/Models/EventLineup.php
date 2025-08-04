@@ -22,6 +22,15 @@ class EventLineup extends Model
         'is_captain' => 'boolean',
     ];
 
+    protected $appends = [
+        'full_name'
+    ];
+
+    public function getFullNameAttribute()
+    {
+        return $this->person ? $this->person->full_name : $this->player_name;
+    }
+
     public function event()
     {
         return $this->belongsTo(Event::class);
