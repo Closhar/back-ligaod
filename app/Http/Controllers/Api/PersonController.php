@@ -564,6 +564,7 @@ class PersonController extends Controller
                     return [
                         'id' => $image->id,
                         'image_path' => $image->image_path,
+                        'image_url' => $image->image_url, // Добавляем image_url
                         'alt_text' => $image->alt_text ?? '',
                         'created_at' => $image->created_at?->toISOString(),
                         'updated_at' => $image->updated_at?->toISOString(),
