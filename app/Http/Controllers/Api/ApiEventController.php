@@ -650,6 +650,65 @@ class ApiEventController extends Controller
                 'display_actions_mode'
             ])->with([
                 'streams',
+                'lineups' => function ($query) {
+                    $query->select([
+                        'id',
+                        'event_id',
+                        'club_id',
+                        'person_id',
+                        'player_name',
+                        'number',
+                        'is_captain',
+                        'parent_lineup_id',
+                        'sort_order'
+                    ])->with([
+                        'person' => function ($personQuery) {
+                            $personQuery->select(['id', 'full_name', 'first_name', 'last_name', 'middle_name']);
+                        },
+                        'club' => function ($clubQuery) {
+                            $clubQuery->select(['id', 'title', 'slug']);
+                        }
+                    ])->orderBy('sort_order', 'asc');
+                },
+                'actions' => function ($query) {
+                    $query->select([
+                        'id',
+                        'event_id',
+                        'club_id',
+                        'person_id',
+                        'action_type_id',
+                        'player_name',
+                        'minute',
+                        'is_overtime',
+                        'value',
+                        'score',
+                        'sort_order'
+                    ])->with([
+                        'person' => function ($personQuery) {
+                            $personQuery->select(['id', 'full_name', 'first_name', 'last_name', 'middle_name']);
+                        },
+                        'actionType' => function ($actionTypeQuery) {
+                            $actionTypeQuery->select(['id', 'name', 'short_name', 'icon', 'color', 'group']);
+                        },
+                        'club' => function ($clubQuery) {
+                            $clubQuery->select(['id', 'title', 'slug']);
+                        }
+                    ])->orderBy('sort_order', 'asc');
+                },
+                'eventTeamActions' => function ($query) {
+                    $query->select([
+                        'id',
+                        'event_id',
+                        'team_action_type_id',
+                        'value_home',
+                        'value_away',
+                        'sort_order'
+                    ])->with([
+                        'teamActionType' => function ($teamActionTypeQuery) {
+                            $teamActionTypeQuery->select(['id', 'name', 'icon', 'group']);
+                        }
+                    ])->orderBy('sort_order', 'asc');
+                },
                 'series' => function ($query) {
                     $query->select(['id', 'description']);
                 },

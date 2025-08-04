@@ -25,4 +25,4 @@ Homestead.json
 .phpunit.result.cache
 
 public/MadelineProto.log
-storage/madeline/*
+/storage/madeline/*
