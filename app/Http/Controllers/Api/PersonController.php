@@ -550,4 +550,41 @@ class PersonController extends Controller
 
         return response()->json($result);
     }
+
+    /**
+     * Получить изображения персоны
+     */
+    public function getImages(Person $person): JsonResponse
+    {
+        try {
+            $images = $person->images()
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function ($image) {
+                    return [
+                        'id' => $image->id,
+                        'image_path' => $image->image_path,
+                        'alt_text' => $image->alt_text ?? '',
+                        'created_at' => $image->created_at?->toISOString(),
+                        'updated_at' => $image->updated_at?->toISOString(),
+                    ];
+                });
+
+            return response()->json([
+                'success' => true,
+                'data' => $images
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Ошибка получения изображений персоны', [
+                'person_id' => $person->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка получения изображений: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
