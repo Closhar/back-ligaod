@@ -213,6 +213,12 @@ class ClubController extends Controller
     public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
+            // Логируем входящие данные
+            Log::info('Club creation request', [
+                'data' => $request->all(),
+                'headers' => $request->headers->all()
+            ]);
+
             $validated = $request->validate([
                 'title' => 'required|string|max:255',
                 'title_short' => 'nullable|string|max:100',
@@ -222,6 +228,7 @@ class ClubController extends Controller
                 'emails' => 'nullable|string',
                 'sites' => 'nullable|string',
                 'vks' => 'nullable|string',
+                'telegrams' => 'nullable|string',
                 'instagrams' => 'nullable|string',
                 'youtubes' => 'nullable|string',
                 'facebooks' => 'nullable|string',
@@ -229,8 +236,8 @@ class ClubController extends Controller
                 'map' => 'nullable|string',
                 'tlgs_to_parse' => 'nullable|string',
                 'slug' => 'nullable|string|max:255|unique:clubs,slug',
-                'city_id' => 'required_without:city_title|exists:cities,id',
-                'city_title' => 'required_without:city_id|string|max:255',
+                'city_id' => 'nullable|exists:cities,id',
+                'city_title' => 'nullable|string|max:255',
                 'gallery_id' => 'nullable|exists:galleries,id',
                 'sport_id' => 'required|exists:sports,id',
                 'gender_id' => 'required|exists:genders,id',
@@ -242,32 +249,67 @@ class ClubController extends Controller
                 'rating_region_id' => 'nullable|exists:rating_regions,id'
             ]);
 
+            Log::info('Validation passed', ['validated_data' => $validated]);
+
             // Обработка city_title
-            if (isset($validated['city_title'])) {
+            if (isset($validated['city_title']) && !empty($validated['city_title'])) {
+                Log::info('Processing city_title', ['city_title' => $validated['city_title']]);
+
                 $city = \App\Models\City::where('title', $validated['city_title'])->first();
 
                 if (!$city) {
+                    Log::info('Creating new city', ['city_title' => $validated['city_title']]);
                     $city = \App\Models\City::create([
-                        'title' => mb_convert_encoding($validated['city_title'], 'UTF-8', 'auto'),
-                        'title_short' => mb_substr(mb_convert_encoding($validated['city_title'], 'UTF-8', 'auto'), 0, 3)
+                        'title' => $validated['city_title'],
+                        'title_short' => mb_substr($validated['city_title'], 0, 3)
                     ]);
+                    Log::info('City created', ['city_id' => $city->id]);
                 }
 
                 $validated['city_id'] = $city->id;
                 unset($validated['city_title']);
             }
 
+            // Убеждаемся, что обязательные поля присутствуют
+            if (!isset($validated['city_id'])) {
+                Log::warning('City ID is missing');
+                return response()->json([
+                    'message' => 'Validation failed',
+                    'errors' => ['city_id' => ['City is required']]
+                ], 422);
+            }
+
+            Log::info('Creating club', ['final_data' => $validated]);
+
             $item = Club::create($validated);
+
+            Log::info('Club created successfully', ['club_id' => $item->id]);
 
             return response()->json($item, 201);
 
         } catch (ValidationException $e) {
+            Log::warning('Validation failed', [
+                'errors' => $e->errors(),
+                'request_data' => $request->all()
+            ]);
+
             return response()->json([
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Internal Server Error'], 500);
+            Log::error('Club creation error', [
+                'message' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->all(),
+                'memory_usage' => memory_get_usage(true),
+                'memory_peak' => memory_get_peak_usage(true)
+            ]);
+
+            return response()->json([
+                'message' => 'Internal Server Error',
+                'error' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
     }
 

@@ -13,14 +13,23 @@ class Club extends Model
 {
     use KTranslateTrait, HasFactory;
 
-    protected $guarded = [];
-
-    protected $hidden = ['created_at', 'updated_at', 'pivot'];
-    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name', 'logo_url'];
-
     protected $fillable = [
         'title',
+        'title_short',
         'slug',
+        'about',
+        'address',
+        'phones',
+        'emails',
+        'sites',
+        'telegrams',
+        'vks',
+        'instagrams',
+        'youtubes',
+        'facebooks',
+        'xs',
+        'map',
+        'tlgs_to_parse',
         'image',
         'image_bg',
         'city_id',
@@ -29,9 +38,12 @@ class Club extends Model
         'age_id',
         'rating_region_id',
         'gallery_id',
-        'description',
-        'tlgs_to_parse'
+        'region_id',
+        'is_alien'
     ];
+
+    protected $hidden = ['created_at', 'updated_at', 'pivot'];
+    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name', 'logo_url'];
 
     protected static function booted(): void
     {
