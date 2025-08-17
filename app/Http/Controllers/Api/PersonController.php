@@ -273,12 +273,6 @@ class PersonController extends Controller
                     ]);
                 }]);
             },
-            'gender' => function ($query) {
-                $query->select([
-                    'genders.id',
-                    'genders.title'
-                ]);
-            },
             'mainImage'
         ]);
 
