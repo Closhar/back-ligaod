@@ -242,24 +242,43 @@ class PersonController extends Controller
     public function show(Person $person): JsonResponse
     {
         $person->load([
-            'clubs',
-            'sports',
+            'clubs' => function ($query) {
+                $query->select(['id', 'title', 'slug', 'image']);
+            },
+            'sports' => function ($query) {
+                $query->select(['id', 'title', 'icon']);
+            },
             'images',
             'surnameChanges',
             'clubMemberships.club',
             'sportMemberships.sport',
             'positionMemberships.position',
             'ampluaMemberships.amplua',
-            'activeClubMemberships',
+            'activeClubMemberships' => function ($query) {
+                $query->with(['club' => function ($clubQuery) {
+                    $clubQuery->select(['id', 'title', 'slug', 'image']);
+                }]);
+            },
+            'gender' => function ($query) {
+                $query->select(['id', 'title']);
+            },
+            'mainImage'
         ]);
 
-        return response()->json([
-            'success' => true,
-            'data' => array_merge(
-                $person->toArray(),
-                ['activeClubMemberships' => $person->activeClubMemberships->toArray()]
-            )
-        ]);
+        // Формируем данные для фронтенда
+        $personData = $person->toArray();
+
+        // Добавляем photo_path если есть главное изображение
+        if ($person->mainImage) {
+            $personData['photo_path'] = config('app.url') . '/storage/' . $person->mainImage->path;
+        }
+
+        // Добавляем biography из поля about
+        if ($person->about) {
+            $personData['biography'] = $person->about;
+        }
+
+        return response()->json($personData);
     }
 
     /**
