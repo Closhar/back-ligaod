@@ -613,6 +613,9 @@ Route::post('articles/{id}/relations', function (Request $request, $id) {
         case 'videos':
             $article->videos()->sync($relationIds);
             break;
+        case 'people':
+            $article->people()->sync($relationIds);
+            break;
         default:
             return response()->json(['message' => 'Неизвестный тип отношения'], 400);
     }

@@ -275,4 +275,48 @@ class ArticleController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Сохранение отношений morphedByMany
+     */
+    public function saveRelations(Request $request, $id)
+    {
+        try {
+            $article = Article::findOrFail($id);
+
+            $validated = $request->validate([
+                'relation_type' => 'required|string|in:sports,clubs,arenas,competitions,events,galleries,videos,people',
+                'relation_ids' => 'required|array',
+                'relation_ids.*' => 'integer'
+            ]);
+
+            $relationType = $validated['relation_type'];
+            $relationIds = $validated['relation_ids'];
+
+            // Очищаем существующие связи
+            $article->$relationType()->detach();
+
+            // Добавляем новые связи
+            if (!empty($relationIds)) {
+                $article->$relationType()->attach($relationIds);
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Отношения успешно сохранены'
+            ]);
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка валидации',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка сохранения отношений: ' . $e->getMessage()
+            ], 500);
+        }
+    }
 }
