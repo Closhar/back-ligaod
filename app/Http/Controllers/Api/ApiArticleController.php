@@ -259,8 +259,7 @@ class ApiArticleController extends Controller
                         'people.first_name',
                         'people.last_name',
                         'people.middle_name',
-                        'people.birth_date',
-                        'people.slug'
+                        'people.birth_date'
                     ]);
                 },
 
