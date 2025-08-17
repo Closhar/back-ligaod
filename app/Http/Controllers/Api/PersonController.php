@@ -24,6 +24,38 @@ class PersonController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
+            // Проверяем, является ли это асинхронным запросом
+            $type = $request->query('type');
+            $searchQuery = $request->query('q');
+
+            // Если это асинхронный запрос, возвращаем упрощенный список
+            if ($type === 'async') {
+                $query = Person::select(['id', 'first_name', 'last_name', 'middle_name', 'birth_date'])
+                    ->orderBy('last_name')
+                    ->orderBy('first_name');
+
+                // Добавляем поиск по ФИО и дате рождения
+                if ($searchQuery) {
+                    $query->where(function ($q) use ($searchQuery) {
+                        $q->where('first_name', 'LIKE', "%{$searchQuery}%")
+                          ->orWhere('last_name', 'LIKE', "%{$searchQuery}%")
+                          ->orWhere('middle_name', 'LIKE', "%{$searchQuery}%")
+                          ->orWhere('birth_date', 'LIKE', "%{$searchQuery}%");
+                    });
+                }
+
+                $people = $query->limit(20)->get();
+
+                // Формируем title для отображения: ФИО (дата рождения)
+                $people->each(function ($person) {
+                    $fullName = trim($person->last_name . ' ' . $person->first_name . ' ' . ($person->middle_name ?? ''));
+                    $birthDate = $person->birth_date ? date('d.m.Y', strtotime($person->birth_date)) : '';
+                    $person->title = $fullName . ($birthDate ? " ({$birthDate})" : '');
+                });
+
+                return response()->json($people);
+            }
+
             // Сначала проверим, есть ли вообще персоны в базе
             $totalCount = Person::count();
 

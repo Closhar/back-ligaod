@@ -118,7 +118,8 @@ class ArticleController extends Controller
                 'competitions',
                 'events',
                 'galleries',
-                'videos'
+                'videos',
+                'people'
             ])->findOrFail($id);
 
             return response()->json($article);
