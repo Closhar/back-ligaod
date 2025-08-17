@@ -243,10 +243,19 @@ class PersonController extends Controller
     {
         $person->load([
             'clubs' => function ($query) {
-                $query->select(['id', 'title', 'slug', 'image']);
+                $query->select([
+                    'clubs.id',
+                    'clubs.title',
+                    'clubs.slug',
+                    'clubs.image'
+                ]);
             },
             'sports' => function ($query) {
-                $query->select(['id', 'title', 'icon']);
+                $query->select([
+                    'sports.id',
+                    'sports.title',
+                    'sports.icon'
+                ]);
             },
             'images',
             'surnameChanges',
@@ -256,11 +265,19 @@ class PersonController extends Controller
             'ampluaMemberships.amplua',
             'activeClubMemberships' => function ($query) {
                 $query->with(['club' => function ($clubQuery) {
-                    $clubQuery->select(['id', 'title', 'slug', 'image']);
+                    $clubQuery->select([
+                        'clubs.id',
+                        'clubs.title',
+                        'clubs.slug',
+                        'clubs.image'
+                    ]);
                 }]);
             },
             'gender' => function ($query) {
-                $query->select(['id', 'title']);
+                $query->select([
+                    'genders.id',
+                    'genders.title'
+                ]);
             },
             'mainImage'
         ]);
