@@ -159,7 +159,16 @@ class ApiArticleController extends Controller
     {
         return Article::query()
             ->select(
-                '*'
+                'id',
+                'title',
+                'description',
+                'content',
+                'data',
+                'slug',
+                'image',
+                'photo_info',
+                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS article_image_path'),
+                DB::raw("DATE_FORMAT(data, '%d.%m.%Y %H:%i') as date_formatted")
             )
             ->where('published', 1) // Показываем только опубликованные статьи
             ->where(function ($query) use ($id) {
@@ -243,6 +252,16 @@ class ApiArticleController extends Controller
                         'events.club2_id',
                         'event_name'
                     );
+                },
+                'people' => function ($query) {
+                    $query->select([
+                        'people.id',
+                        'people.first_name',
+                        'people.last_name',
+                        'people.middle_name',
+                        'people.birth_date',
+                        'people.slug'
+                    ]);
                 },
 
             ])
