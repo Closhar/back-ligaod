@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Person extends Model
 {
@@ -255,9 +256,9 @@ class Person extends Model
     /**
      * Получить основное изображение
      */
-    public function mainImage(): HasMany
+    public function mainImage(): HasOne
     {
-        return $this->hasMany(PersonImage::class)->where('is_main', true);
+        return $this->hasOne(PersonImage::class)->where('is_main', true);
     }
 
     /**

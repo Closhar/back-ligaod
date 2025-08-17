@@ -280,7 +280,7 @@ class PersonController extends Controller
         $personData = $person->toArray();
 
         // Добавляем photo_path если есть главное изображение
-        if ($person->mainImage) {
+        if ($person->mainImage && $person->mainImage->path) {
             $personData['photo_path'] = config('app.url') . '/storage/' . $person->mainImage->path;
         }
 
