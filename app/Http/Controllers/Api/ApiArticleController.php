@@ -260,6 +260,19 @@ class ApiArticleController extends Controller
                         'people.last_name',
                         'people.middle_name',
                         'people.birth_date'
+                    ])->with([
+                        'clubs' => function ($clubQuery) {
+                            $clubQuery->select([
+                                'clubs.id',
+                                'clubs.slug'
+                            ]);
+                        },
+                        'sports' => function ($sportQuery) {
+                            $sportQuery->select([
+                                'sports.id',
+                                'sports.slug'
+                            ]);
+                        }
                     ]);
                 },
 
