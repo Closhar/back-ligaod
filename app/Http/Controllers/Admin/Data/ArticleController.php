@@ -74,6 +74,7 @@ class ArticleController extends Controller
                 'data' => 'required|date',
                 'slug' => 'required|string|max:255',
                 'region_id' => 'nullable|integer|exists:regions,id',
+                'photo_info' => 'nullable|string',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
             ]);
 
@@ -145,6 +146,7 @@ class ArticleController extends Controller
                 'slug' => 'string|max:255',
                 'description' => 'string|max:1000',
                 'content' => 'string',
+                'photo_info' => 'nullable|string',
                 'region_id' => 'nullable|integer|exists:regions,id',
                 'published' => 'boolean',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',

@@ -25,7 +25,8 @@ class Article extends Model
         'content',
         'published',
         'image',
-        'views'
+        'views',
+        'photo_info'
     ];
 
     protected $hidden = ['pivot', 'created_at', 'updated_at'];
