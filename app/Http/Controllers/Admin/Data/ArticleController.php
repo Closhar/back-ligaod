@@ -109,7 +109,7 @@ class ArticleController extends Controller
         try {
             $article = Article::select([
                 'id', 'title', 'description', 'data', 'slug', 'region_id',
-                'published', 'image', 'content', 'created_at', 'updated_at'
+                'published', 'image', 'content', 'photo_info', 'created_at', 'updated_at'
             ])->with([
                 'region',
                 'sports',
