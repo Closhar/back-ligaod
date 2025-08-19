@@ -14,6 +14,7 @@ class Stream extends Model
         'link',
         'in_player',
         'in_profile',
+        'in_main',
         'event_id'
     ];
 
