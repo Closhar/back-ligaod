@@ -71,17 +71,8 @@ class Person extends Model
             return null;
         }
 
-        // Если birth_date - это строка, создаем Carbon объект
-        if (is_string($this->birth_date)) {
-            return \Carbon\Carbon::parse($this->birth_date)->age;
-        }
-
-        // Если это Carbon объект
-        if ($this->birth_date instanceof \Carbon\Carbon) {
-            return $this->birth_date->age;
-        }
-
-        return null;
+        // birth_date теперь всегда Carbon объект благодаря casts
+        return $this->birth_date->age;
     }
 
     /**
@@ -93,12 +84,8 @@ class Person extends Model
             return null;
         }
 
-        // Если это уже Carbon объект, возвращаем его как есть
-        if ($value instanceof \Carbon\Carbon) {
-            return $value->format('Y-m-d');
-        }
-
-        // Если это строка, возвращаем её как есть
+        // Теперь birth_date всегда будет Carbon объектом благодаря casts
+        // Возвращаем его как есть для совместимости
         return $value;
     }
 

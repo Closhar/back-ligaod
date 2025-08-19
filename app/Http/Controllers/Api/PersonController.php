@@ -49,7 +49,7 @@ class PersonController extends Controller
                 // Формируем title для отображения: ФИО (дата рождения)
                 $people->each(function ($person) {
                     $fullName = trim($person->last_name . ' ' . $person->first_name . ' ' . ($person->middle_name ?? ''));
-                    $birthDate = $person->birth_date ? date('d.m.Y', strtotime($person->birth_date)) : '';
+                    $birthDate = $person->birth_date ? $person->birth_date->format('d.m.Y') : '';
                     $person->title = $fullName . ($birthDate ? " ({$birthDate})" : '');
                 });
 
@@ -600,8 +600,10 @@ class PersonController extends Controller
         $result = $people->map(function ($person) {
             $label = $person->full_name;
             if ($person->birth_date) {
+                // Теперь birth_date всегда Carbon объект благодаря casts
                 $label .= ' (' . $person->birth_date->format('d.m.Y') . ')';
             }
+
             return [
                 'id' => $person->id,
                 'full_name' => $person->full_name,
