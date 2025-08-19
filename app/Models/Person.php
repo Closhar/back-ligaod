@@ -76,20 +76,6 @@ class Person extends Model
     }
 
     /**
-     * Получить дату рождения в правильном формате (без UTC конвертации)
-     */
-    public function getBirthDateAttribute($value)
-    {
-        if (!$value) {
-            return null;
-        }
-
-        // Теперь birth_date всегда будет Carbon объектом благодаря casts
-        // Возвращаем его как есть для совместимости
-        return $value;
-    }
-
-    /**
      * Установить дату рождения
      */
     public function setBirthDateAttribute($value)

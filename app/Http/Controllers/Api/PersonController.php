@@ -49,7 +49,20 @@ class PersonController extends Controller
                 // Формируем title для отображения: ФИО (дата рождения)
                 $people->each(function ($person) {
                     $fullName = trim($person->last_name . ' ' . $person->first_name . ' ' . ($person->middle_name ?? ''));
-                    $birthDate = $person->birth_date ? $person->birth_date->format('d.m.Y') : '';
+                    $birthDate = '';
+                    if ($person->birth_date) {
+                        // Дополнительная защита: убеждаемся что birth_date это Carbon объект
+                        if (is_string($person->birth_date)) {
+                            try {
+                                $carbonDate = \Carbon\Carbon::parse($person->birth_date);
+                                $birthDate = $carbonDate->format('d.m.Y');
+                            } catch (\Exception $e) {
+                                $birthDate = $person->birth_date;
+                            }
+                        } elseif ($person->birth_date instanceof \Carbon\Carbon) {
+                            $birthDate = $person->birth_date->format('d.m.Y');
+                        }
+                    }
                     $person->title = $fullName . ($birthDate ? " ({$birthDate})" : '');
                 });
 
@@ -600,14 +613,40 @@ class PersonController extends Controller
         $result = $people->map(function ($person) {
             $label = $person->full_name;
             if ($person->birth_date) {
-                // Теперь birth_date всегда Carbon объект благодаря casts
-                $label .= ' (' . $person->birth_date->format('d.m.Y') . ')';
+                // Дополнительная защита: убеждаемся что birth_date это Carbon объект
+                $birthDate = $person->birth_date;
+                if (is_string($birthDate)) {
+                    try {
+                        $carbonDate = \Carbon\Carbon::parse($birthDate);
+                        $label .= ' (' . $carbonDate->format('d.m.Y') . ')';
+                    } catch (\Exception $e) {
+                        // Если не удалось распарсить дату, добавляем как есть
+                        $label .= ' (' . $birthDate . ')';
+                    }
+                } elseif ($birthDate instanceof \Carbon\Carbon) {
+                    $label .= ' (' . $birthDate->format('d.m.Y') . ')';
+                }
+            }
+
+            // Безопасно форматируем birth_date для возврата
+            $formattedBirthDate = null;
+            if ($person->birth_date) {
+                if (is_string($person->birth_date)) {
+                    try {
+                        $carbonDate = \Carbon\Carbon::parse($person->birth_date);
+                        $formattedBirthDate = $carbonDate->format('Y-m-d');
+                    } catch (\Exception $e) {
+                        $formattedBirthDate = $person->birth_date;
+                    }
+                } elseif ($person->birth_date instanceof \Carbon\Carbon) {
+                    $formattedBirthDate = $person->birth_date->format('Y-m-d');
+                }
             }
 
             return [
                 'id' => $person->id,
                 'full_name' => $person->full_name,
-                'birth_date' => $person->birth_date ? $person->birth_date->format('Y-m-d') : null,
+                'birth_date' => $formattedBirthDate,
                 'label' => $label,
             ];
         });
