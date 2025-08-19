@@ -528,7 +528,8 @@ class EventController extends Controller
                         'title' => $stream->title,
                         'link' => $stream->link,
                         'in_player' => $stream->in_player,
-                        'in_profile' => $stream->in_profile
+                        'in_profile' => $stream->in_profile,
+                        'in_main' => $stream->in_main
                     ];
                 }),
             ];

@@ -60,20 +60,13 @@ class StreamController extends Controller
                 'in_main' => 'boolean'
             ]);
 
-                        // Временная отладка валидированных данных
-            dd('Валидированные данные:', $validated);
-
-            // Временная отладка перед созданием
-            dd('Данные для создания:', $validated);
+            // Временная отладка валидированных данных
+            \Log::info('StreamController store - валидированные данные:', $validated);
 
             $stream = Stream::create($validated);
 
             // Временная отладка созданной записи
-            dd('Созданная запись:', $stream->toArray());
-
-            // Дополнительная отладка - проверяем, что поле in_main есть в базе
-            $freshStream = Stream::find($stream->id);
-            dd('Свежая запись из БД:', $freshStream->toArray());
+            \Log::info('StreamController store - созданная запись:', $stream->toArray());
 
             return response()->json($stream, 201);
         } catch (ValidationException $e) {

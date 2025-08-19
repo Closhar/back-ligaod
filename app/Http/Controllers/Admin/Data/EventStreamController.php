@@ -37,7 +37,8 @@ class EventStreamController extends Controller
             'title' => 'required|string|max:255',
             'link' => 'nullable|string|max:1000',
             'in_player' => 'boolean',
-            'in_profile' => 'boolean'
+            'in_profile' => 'boolean',
+            'in_main' => 'boolean'
         ]);
 
         if ($validator->fails()) {
@@ -72,6 +73,7 @@ class EventStreamController extends Controller
                         'link' => $link,
                         'in_player' => true,
                         'in_profile' => false,
+                        'in_main' => $validatedData['in_main'] ?? false,
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream1;
@@ -83,6 +85,7 @@ class EventStreamController extends Controller
                         'link' => $convertedUrl,
                         'in_player' => false,
                         'in_profile' => true,
+                        'in_main' => $validatedData['in_main'] ?? false,
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream2;
@@ -94,6 +97,7 @@ class EventStreamController extends Controller
                         'link' => $convertedUrl,
                         'in_player' => false,
                         'in_profile' => false,
+                        'in_main' => $validatedData['in_main'] ?? false,
                         'event_id' => $event->id
                     ]);
                     $streams[] = $stream3;
