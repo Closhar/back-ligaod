@@ -63,10 +63,17 @@ class StreamController extends Controller
             // Временная отладка валидированных данных
             \Log::info('StreamController store - валидированные данные:', $validated);
 
+                        // Временная отладка перед созданием
+            \Log::info('StreamController store - данные для создания:', $validated);
+
             $stream = Stream::create($validated);
 
             // Временная отладка созданной записи
             \Log::info('StreamController store - созданная запись:', $stream->toArray());
+
+            // Дополнительная отладка - проверяем, что поле in_main есть в базе
+            $freshStream = Stream::find($stream->id);
+            \Log::info('StreamController store - свежая запись из БД:', $freshStream->toArray());
 
             return response()->json($stream, 201);
         } catch (ValidationException $e) {
