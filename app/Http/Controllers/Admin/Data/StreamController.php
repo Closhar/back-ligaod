@@ -56,7 +56,8 @@ class StreamController extends Controller
                 'link' => 'required|url',
                 'event_id' => 'integer|exists:events,id',
                 'in_player' => 'boolean',
-                'in_profile' => 'boolean'
+                'in_profile' => 'boolean',
+                'in_main' => 'boolean'
             ]);
 
             $stream = Stream::create($validated);
@@ -96,7 +97,8 @@ class StreamController extends Controller
             'link' => 'nullable|url|max:500',
             'event_id' => 'nullable|integer|exists:events,id',
             'in_player' => 'boolean',
-            'in_profile' => 'boolean'
+            'in_profile' => 'boolean',
+            'in_main' => 'boolean'
         ]);
 
         if ($validator->fails()) {
