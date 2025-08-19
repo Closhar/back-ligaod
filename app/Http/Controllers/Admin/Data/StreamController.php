@@ -23,8 +23,47 @@ class StreamController extends Controller
             $query->where('id', $request->input('id'));
         }
 
-        // Загрузка связи с событием
-        $query->with('event');
+        // Фильтрация по in_main
+        if ($request->has('in_main')) {
+            $query->where('in_main', $request->input('in_main'));
+        }
+
+        // Фильтрация по in_player
+        if ($request->has('in_player')) {
+            $query->where('in_player', $request->input('in_player'));
+        }
+
+        // Фильтрация по in_profile
+        if ($request->has('in_profile')) {
+            $query->where('in_profile', $request->input('in_profile'));
+        }
+
+        // Сортировка
+        if ($request->has('sort')) {
+            $sortDirection = $request->input('sort') === 'desc' ? 'desc' : 'asc';
+            $query->orderBy('created_at', $sortDirection);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        // Загрузка связей
+        $withRelations = [];
+        if ($request->has('with')) {
+            $relations = explode(',', $request->input('with'));
+            foreach ($relations as $relation) {
+                $relation = trim($relation);
+                if (in_array($relation, ['event', 'event.competition', 'event.arena'])) {
+                    $withRelations[] = $relation;
+                }
+            }
+        }
+
+        if (!empty($withRelations)) {
+            $query->with($withRelations);
+        } else {
+            // По умолчанию загружаем событие
+            $query->with('event');
+        }
 
         // Retrieve streams with filtering and pagination
         return $query->paginate($request->input('per_page', 10));
@@ -60,13 +99,7 @@ class StreamController extends Controller
                 'in_main' => 'boolean'
             ]);
 
-            // Временная отладка валидированных данных
-            \Log::info('StreamController store - валидированные данные:', $validated);
-
             $stream = Stream::create($validated);
-
-            // Временная отладка созданной записи
-            \Log::info('StreamController store - созданная запись:', $stream->toArray());
 
             return response()->json($stream, 201);
         } catch (ValidationException $e) {
