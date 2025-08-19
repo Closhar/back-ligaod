@@ -16,6 +16,12 @@ class StreamController extends Controller
 {
     public function index(Request $request)
     {
+        // Логируем входящий запрос для отладки
+        \Log::info('StreamController index request', [
+            'query_params' => $request->all(),
+            'user_agent' => $request->userAgent()
+        ]);
+
         $query = Stream::query();
 
         // Фильтрация по ID
@@ -39,10 +45,19 @@ class StreamController extends Controller
         }
 
         // Сортировка
-        if ($request->has('sort')) {
+        if ($request->has('sort_by') && $request->has('sort')) {
             $sortDirection = $request->input('sort') === 'desc' ? 'desc' : 'asc';
-            $query->orderBy('created_at', $sortDirection);
+
+            // Специальная обработка для сортировки по дате события
+            if ($request->input('sort_by') === 'event.date_from') {
+                $query->join('events', 'streams.event_id', '=', 'events.id')
+                      ->orderBy('events.date_from', $sortDirection)
+                      ->select('streams.*');
+            } else {
+                $query->orderBy($request->input('sort_by'), $sortDirection);
+            }
         } else {
+            // По умолчанию сортируем по дате создания
             $query->orderBy('created_at', 'desc');
         }
 
@@ -66,7 +81,18 @@ class StreamController extends Controller
         }
 
         // Retrieve streams with filtering and pagination
-        return $query->paginate($request->input('per_page', 10));
+        $result = $query->paginate($request->input('per_page', 10));
+
+        // Логируем результат для отладки
+        \Log::info('StreamController index result', [
+            'total_count' => $result->total(),
+            'current_page' => $result->currentPage(),
+            'per_page' => $result->perPage(),
+            'streams_count' => $result->count(),
+            'has_in_main_true' => $result->where('in_main', true)->count()
+        ]);
+
+        return $result;
     }
 
     public function store(Request $request): \Illuminate\Http\JsonResponse
