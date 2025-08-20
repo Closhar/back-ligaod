@@ -239,40 +239,32 @@ class StreamController extends Controller
      */
     private function getSeasonTitleForEvent(int $competitionId, Carbon $eventDate): array
     {
-        // Проверяем competition_seasons по датам
+        // Проверяем competition_seasons по датам - ТОЛЬКО строгая проверка интервала
         $competitionSeason = CompetitionSeason::where('competition_id', $competitionId)
             ->where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
-                    // Случай 1: Строгая проверка интервала date_from - date_to
+                    // Строгая проверка: дата события должна попадать в интервал date_from - date_to
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->where('date_to', '>=', $eventDate);
                 })->orWhere(function ($subQuery) use ($eventDate) {
-                    // Случай 2: Если date_to не указан, проверяем только date_from
+                    // Если date_to не указан, проверяем только date_from (сезон без конца)
                     $subQuery->where('date_from', '<=', $eventDate)
-                        ->whereNull('date_to');
-                })->orWhere(function ($subQuery) {
-                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
-                    $subQuery->whereNull('date_from')
                         ->whereNull('date_to');
                 });
             })
             ->first();
 
-        // Ищем общий сезон
+        // Ищем общий сезон - ТОЛЬКО строгая проверка интервала
         $season = Season::where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
-                    // Случай 1: Строгая проверка интервала date_from - date_to
+                    // Строгая проверка: дата события должна попадать в интервал date_from - date_to
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->where('date_to', '>=', $eventDate);
                 })->orWhere(function ($subQuery) use ($eventDate) {
-                    // Случай 2: Если date_to не указан, проверяем только date_from
+                    // Если date_to не указан, проверяем только date_from (сезон без конца)
                     $subQuery->where('date_from', '<=', $eventDate)
-                        ->whereNull('date_to');
-                })->orWhere(function ($subQuery) {
-                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
-                    $subQuery->whereNull('date_from')
                         ->whereNull('date_to');
                 });
             })
@@ -301,17 +293,28 @@ class StreamController extends Controller
         Log::info('StreamController: Результат поиска сезона', [
             'competition_id' => $competitionId,
             'event_date' => $eventDate->format('Y-m-d'),
+            'event_date_timestamp' => $eventDate->timestamp,
             'found_competition_season' => $competitionSeason ? [
                 'id' => $competitionSeason->id,
                 'title' => $competitionSeason->title,
                 'date_from' => $competitionSeason->date_from,
-                'date_to' => $competitionSeason->date_to
+                'date_from_timestamp' => $competitionSeason->date_from ? $competitionSeason->date_from->timestamp : null,
+                'date_to' => $competitionSeason->date_to,
+                'date_to_timestamp' => $competitionSeason->date_to ? $competitionSeason->date_to->timestamp : null,
+                'is_in_range' => $competitionSeason->date_from && $competitionSeason->date_to
+                    ? ($competitionSeason->date_from <= $eventDate && $competitionSeason->date_to >= $eventDate)
+                    : 'date_to is null'
             ] : null,
             'found_season' => $season ? [
                 'id' => $season->id,
                 'title' => $season->title,
                 'date_from' => $season->date_from,
-                'date_to' => $season->date_to
+                'date_from_timestamp' => $season->date_from ? $season->date_from->timestamp : null,
+                'date_to' => $season->date_to,
+                'date_to_timestamp' => $season->date_to ? $season->date_to->timestamp : null,
+                'is_in_range' => $season->date_from && $season->date_to
+                    ? ($season->date_from <= $eventDate && $season->date_to >= $eventDate)
+                    : 'date_to is null'
             ] : null,
             'result' => [
                 'competition_title' => $competitionTitle,
