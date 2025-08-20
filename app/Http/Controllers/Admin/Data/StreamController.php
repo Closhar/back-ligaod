@@ -239,31 +239,31 @@ class StreamController extends Controller
      */
     private function getSeasonTitleForEvent(int $competitionId, Carbon $eventDate): array
     {
-        // Проверяем competition_seasons по датам - ТОЛЬКО строгая проверка интервала
+        // Проверяем competition_seasons по датам
         $competitionSeason = CompetitionSeason::where('competition_id', $competitionId)
             ->where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
-                    // Строгая проверка: дата события должна попадать в интервал date_from - date_to
+                    // Случай 1: Строгая проверка интервала date_from - date_to
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->where('date_to', '>=', $eventDate);
                 })->orWhere(function ($subQuery) use ($eventDate) {
-                    // Если date_to не указан, проверяем только date_from (сезон без конца)
+                    // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->whereNull('date_to');
                 });
             })
             ->first();
 
-        // Ищем общий сезон - ТОЛЬКО строгая проверка интервала
+        // Ищем общий сезон
         $season = Season::where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
-                    // Строгая проверка: дата события должна попадать в интервал date_from - date_to
+                    // Случай 1: Строгая проверка интервала date_from - date_to
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->where('date_to', '>=', $eventDate);
                 })->orWhere(function ($subQuery) use ($eventDate) {
-                    // Если date_to не указан, проверяем только date_from (сезон без конца)
+                    // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->whereNull('date_to');
                 });
