@@ -256,7 +256,7 @@ class StreamController extends Controller
             })
             ->first();
 
-        // Ищем общий сезон ТОЛЬКО по датам (строгий интервал или открытый конец)
+        // Ищем общий сезон: допускаем три случая (строгий интервал, открытый конец, без дат)
         $season = Season::where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
@@ -267,6 +267,10 @@ class StreamController extends Controller
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->whereNull('date_to');
+                })->orWhere(function ($subQuery) {
+                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
+                    $subQuery->whereNull('date_from')
+                        ->whereNull('date_to');
                 });
             })
             ->whereHas('competitions', function ($query) use ($competitionId) {
@@ -276,12 +280,11 @@ class StreamController extends Controller
 
         $competitionTitle = null;
         $seasonTitle = null;
+        $isInSeasonRange = false;
 
         // Если нашли competition_season по датам
         if ($competitionSeason) {
             // Проверяем, попадает ли дата события в диапазон сезона
-            $isInSeasonRange = false;
-
             if ($competitionSeason->date_from && $competitionSeason->date_to) {
                 // Строгая проверка интервала
                 $isInSeasonRange = ($competitionSeason->date_from <= $eventDate && $competitionSeason->date_to >= $eventDate);
@@ -299,9 +302,9 @@ class StreamController extends Controller
             }
         }
 
-        // Если нашли общий сезон, используем его title
+        // Показываем общий сезон ТОЛЬКО когда событие действительно попадает в competitionSeason
         if ($season) {
-            $seasonTitle = $season->title;
+            $seasonTitle = ($competitionSeason && $isInSeasonRange) ? $season->title : null;
         }
 
         // Логируем для отладки
@@ -331,7 +334,7 @@ class StreamController extends Controller
                     ? ($season->date_from <= $eventDate && $season->date_to >= $eventDate)
                     : ($season->date_from && !$season->date_to
                         ? ($season->date_from <= $eventDate)
-                        : false)
+                        : 'no_dates')
             ] : null,
             'result' => [
                 'competition_title' => $competitionTitle,
