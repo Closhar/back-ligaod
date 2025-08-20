@@ -251,6 +251,10 @@ class StreamController extends Controller
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->whereNull('date_to');
+                })->orWhere(function ($subQuery) {
+                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
+                    $subQuery->whereNull('date_from')
+                        ->whereNull('date_to');
                 });
             })
             ->first();
@@ -265,6 +269,10 @@ class StreamController extends Controller
                 })->orWhere(function ($subQuery) use ($eventDate) {
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
+                        ->whereNull('date_to');
+                })->orWhere(function ($subQuery) {
+                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
+                    $subQuery->whereNull('date_from')
                         ->whereNull('date_to');
                 });
             })
