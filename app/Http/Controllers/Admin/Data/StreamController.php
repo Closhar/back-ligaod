@@ -239,7 +239,7 @@ class StreamController extends Controller
      */
     private function getSeasonTitleForEvent(int $competitionId, Carbon $eventDate): array
     {
-        // Проверяем competition_seasons по датам
+        // Проверяем competition_seasons по датам - ТОЛЬКО строгая проверка по датам
         $competitionSeason = CompetitionSeason::where('competition_id', $competitionId)
             ->where('is_active', true)
             ->where(function ($query) use ($eventDate) {
@@ -251,15 +251,11 @@ class StreamController extends Controller
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->whereNull('date_to');
-                })->orWhere(function ($subQuery) {
-                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
-                    $subQuery->whereNull('date_from')
-                        ->whereNull('date_to');
                 });
             })
             ->first();
 
-        // Ищем общий сезон
+        // Ищем общий сезон - ТОЛЬКО строгая проверка по датам
         $season = Season::where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
@@ -269,10 +265,6 @@ class StreamController extends Controller
                 })->orWhere(function ($subQuery) use ($eventDate) {
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
-                        ->whereNull('date_to');
-                })->orWhere(function ($subQuery) {
-                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
-                    $subQuery->whereNull('date_from')
                         ->whereNull('date_to');
                 });
             })
