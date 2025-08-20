@@ -4,10 +4,14 @@ namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
 use App\Models\Stream;
+use App\Models\CompetitionSeason;
+use App\Models\Season;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
+use Exception;
 
 /**
  * Контроллер для управления отдельным стримом
@@ -17,7 +21,7 @@ class StreamController extends Controller
     public function index(Request $request)
     {
         // Логируем входящий запрос для отладки
-        \Log::info('StreamController index request', [
+        Log::info('StreamController index request', [
             'query_params' => $request->all(),
             'user_agent' => $request->userAgent()
         ]);
@@ -83,8 +87,18 @@ class StreamController extends Controller
         // Retrieve streams with filtering and pagination
         $result = $query->paginate($request->input('per_page', 10));
 
+        // Формируем title_with_season для связанных событий
+        if ($result->count() > 0) {
+            $result->getCollection()->transform(function ($stream) {
+                if ($stream->event && $stream->event->competition) {
+                    $this->addTitleWithSeason($stream->event);
+                }
+                return $stream;
+            });
+        }
+
         // Логируем результат для отладки
-        \Log::info('StreamController index result', [
+        Log::info('StreamController index result', [
             'total_count' => $result->total(),
             'current_page' => $result->currentPage(),
             'per_page' => $result->perPage(),
@@ -104,7 +118,7 @@ class StreamController extends Controller
                 try {
                     $date = Carbon::parse($dateInput);
                     $request->merge(['date' => $date->format('Y-m-d H:i:s')]);
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     return response()->json([
                         'message' => 'Некорректный формат даты. Используйте ISO 8601 или YYYY-MM-DD HH:ii:ss'
                     ], 422);
@@ -133,7 +147,7 @@ class StreamController extends Controller
                 'message' => 'Validation failed',
                 'errors' => $e->errors()
             ], 422);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json([
                 'message' => 'Internal Server Error',
                 'error' => $e->getMessage()
@@ -146,7 +160,7 @@ class StreamController extends Controller
         try {
             $stream = Stream::findOrFail($id);
             return response()->json($stream);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return response()->json(['message' => 'Not Found'], 404);
         }
     }
@@ -183,5 +197,93 @@ class StreamController extends Controller
         $stream->delete();
 
         return response()->json(null, 204);
+    }
+
+    /**
+     * Добавить title_with_season для события
+     */
+    private function addTitleWithSeason($event)
+    {
+        if (!$event->competition) {
+            return;
+        }
+
+        // Определяем сезон по дате события и формируем название
+        $eventDate = Carbon::parse($event->date_from);
+        $seasonData = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
+
+        // Определяем название соревнования
+        $competitionTitle = $seasonData['competition_title'] ?? $event->competition->title;
+
+        // Формируем финальное название
+        if ($seasonData['season_title']) {
+            $event->competition->title_with_season = $competitionTitle . ' ' . $seasonData['season_title'];
+        } else {
+            $event->competition->title_with_season = $competitionTitle;
+        }
+    }
+
+    /**
+     * Получить название сезона для события по дате
+     */
+    private function getSeasonTitleForEvent(int $competitionId, Carbon $eventDate): array
+    {
+        // Проверяем competition_seasons по датам
+        $competitionSeason = CompetitionSeason::where('competition_id', $competitionId)
+            ->where('is_active', true)
+            ->where(function ($query) use ($eventDate) {
+                $query->where(function ($subQuery) use ($eventDate) {
+                    $subQuery->where('date_from', '<=', $eventDate)
+                        ->where(function ($dateQuery) use ($eventDate) {
+                            $dateQuery->where('date_to', '>=', $eventDate)
+                                ->orWhereNull('date_to');
+                        });
+                })->orWhere(function ($subQuery) {
+                    // Если даты не указаны, берем любой активный сезон для этого соревнования
+                    $subQuery->whereNull('date_from')
+                        ->whereNull('date_to');
+                });
+            })
+            ->first();
+
+        // Ищем общий сезон
+        $season = Season::where('is_active', true)
+            ->where(function ($query) use ($eventDate) {
+                $query->where(function ($subQuery) use ($eventDate) {
+                    $subQuery->where('date_from', '<=', $eventDate)
+                        ->where(function ($dateQuery) use ($eventDate) {
+                            $dateQuery->where('date_to', '>=', $eventDate)
+                                ->orWhereNull('date_to');
+                        });
+                })->orWhere(function ($subQuery) {
+                    $subQuery->whereNull('date_from')
+                        ->whereNull('date_to');
+                });
+            })
+            ->whereHas('competitions', function ($query) use ($competitionId) {
+                $query->where('competitions.id', $competitionId);
+            })
+            ->first();
+
+        $competitionTitle = null;
+        $seasonTitle = null;
+
+        // Если нашли competition_season по датам
+        if ($competitionSeason) {
+            // Если у competition_season есть title, используем его
+            if (!empty($competitionSeason->title)) {
+                $competitionTitle = $competitionSeason->title;
+            }
+        }
+
+        // Если нашли общий сезон, используем его title
+        if ($season) {
+            $seasonTitle = $season->title;
+        }
+
+        return [
+            'competition_title' => $competitionTitle,
+            'season_title' => $seasonTitle
+        ];
     }
 }
