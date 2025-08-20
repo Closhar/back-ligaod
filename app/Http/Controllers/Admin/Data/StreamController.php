@@ -77,11 +77,12 @@ class StreamController extends Controller
             }
         }
 
+        // Всегда загружаем competition.sport и competition.gender для формирования title_with_season
         if (!empty($withRelations)) {
             $query->with($withRelations);
         } else {
-            // По умолчанию загружаем событие
-            $query->with('event');
+            // По умолчанию загружаем событие с соревнованием, спортом и гендером
+            $query->with(['event.competition.sport', 'event.competition.gender', 'event.arena']);
         }
 
         // Retrieve streams with filtering and pagination
