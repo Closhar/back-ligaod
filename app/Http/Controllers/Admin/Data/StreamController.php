@@ -256,7 +256,7 @@ class StreamController extends Controller
             })
             ->first();
 
-        // Ищем общий сезон: ТОЛЬКО сезоны, в которые попадает дата события
+        // Ищем общий сезон: допускаем три случая (строгий интервал, открытый конец, без дат)
         $season = Season::where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
@@ -266,6 +266,10 @@ class StreamController extends Controller
                 })->orWhere(function ($subQuery) use ($eventDate) {
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
+                        ->whereNull('date_to');
+                })->orWhere(function ($subQuery) {
+                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
+                    $subQuery->whereNull('date_from')
                         ->whereNull('date_to');
                 });
             })
@@ -331,7 +335,7 @@ class StreamController extends Controller
                     ? ($season->date_from <= $eventDate && $season->date_to >= $eventDate)
                     : ($season->date_from && !$season->date_to
                         ? ($season->date_from <= $eventDate)
-                        : false)
+                        : 'no_dates')
             ] : null,
             'result' => [
                 'competition_title' => $competitionTitle,
