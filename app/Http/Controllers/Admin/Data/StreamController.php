@@ -239,7 +239,7 @@ class StreamController extends Controller
      */
     private function getSeasonTitleForEvent(int $competitionId, Carbon $eventDate): array
     {
-        // Проверяем competition_seasons по датам - ТОЛЬКО строгая проверка по датам
+        // Проверяем competition_seasons по датам
         $competitionSeason = CompetitionSeason::where('competition_id', $competitionId)
             ->where('is_active', true)
             ->where(function ($query) use ($eventDate) {
@@ -251,11 +251,15 @@ class StreamController extends Controller
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
                         ->whereNull('date_to');
+                })->orWhere(function ($subQuery) {
+                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
+                    $subQuery->whereNull('date_from')
+                        ->whereNull('date_to');
                 });
             })
             ->first();
 
-        // Ищем общий сезон - ТОЛЬКО строгая проверка по датам
+        // Ищем общий сезон
         $season = Season::where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
@@ -265,6 +269,10 @@ class StreamController extends Controller
                 })->orWhere(function ($subQuery) use ($eventDate) {
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
+                        ->whereNull('date_to');
+                })->orWhere(function ($subQuery) {
+                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
+                    $subQuery->whereNull('date_from')
                         ->whereNull('date_to');
                 });
             })
@@ -278,9 +286,22 @@ class StreamController extends Controller
 
         // Если нашли competition_season по датам
         if ($competitionSeason) {
-            // Если у competition_season есть title, используем его
-            // (сезон уже найден по правильным критериям, дополнительная проверка не нужна)
-            if (!empty($competitionSeason->title)) {
+            // Проверяем, попадает ли дата события в диапазон сезона
+            $isInSeasonRange = false;
+
+            if ($competitionSeason->date_from && $competitionSeason->date_to) {
+                // Строгая проверка интервала
+                $isInSeasonRange = ($competitionSeason->date_from <= $eventDate && $competitionSeason->date_to >= $eventDate);
+            } elseif ($competitionSeason->date_from && !$competitionSeason->date_to) {
+                // Проверяем только начало сезона
+                $isInSeasonRange = ($competitionSeason->date_from <= $eventDate);
+            } else {
+                // Если даты не указаны, считаем что сезон подходит
+                $isInSeasonRange = true;
+            }
+
+            // Если дата попадает в диапазон сезона И у сезона есть title, используем его
+            if ($isInSeasonRange && !empty($competitionSeason->title)) {
                 $competitionTitle = $competitionSeason->title;
             }
         }
