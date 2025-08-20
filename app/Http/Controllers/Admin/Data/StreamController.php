@@ -213,6 +213,16 @@ class StreamController extends Controller
         $eventDate = Carbon::parse($event->date_from);
         $seasonData = $this->getSeasonTitleForEvent($event->competition_id, $eventDate);
 
+        // Логируем для отладки
+        Log::info('StreamController: Формирование title_with_season', [
+            'event_id' => $event->id,
+            'competition_id' => $event->competition_id,
+            'event_date' => $eventDate->format('Y-m-d'),
+            'competition_title' => $event->competition->title,
+            'season_data' => $seasonData,
+            'final_title' => $seasonData['competition_title'] ?? $event->competition->title
+        ]);
+
         // Определяем название соревнования
         $competitionTitle = $seasonData['competition_title'] ?? $event->competition->title;
 
@@ -229,35 +239,32 @@ class StreamController extends Controller
      */
     private function getSeasonTitleForEvent(int $competitionId, Carbon $eventDate): array
     {
-        // Проверяем competition_seasons по датам
+        // Проверяем competition_seasons по датам - СТРОГО по интервалу
         $competitionSeason = CompetitionSeason::where('competition_id', $competitionId)
             ->where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
+                    // Строгая проверка: дата события должна попадать в интервал date_from - date_to
                     $subQuery->where('date_from', '<=', $eventDate)
-                        ->where(function ($dateQuery) use ($eventDate) {
-                            $dateQuery->where('date_to', '>=', $eventDate)
-                                ->orWhereNull('date_to');
-                        });
-                })->orWhere(function ($subQuery) {
-                    // Если даты не указаны, берем любой активный сезон для этого соревнования
-                    $subQuery->whereNull('date_from')
+                        ->where('date_to', '>=', $eventDate);
+                })->orWhere(function ($subQuery) use ($eventDate) {
+                    // Если date_to не указан, проверяем только date_from
+                    $subQuery->where('date_from', '<=', $eventDate)
                         ->whereNull('date_to');
                 });
             })
             ->first();
 
-        // Ищем общий сезон
+        // Ищем общий сезон - СТРОГО по интервалу
         $season = Season::where('is_active', true)
             ->where(function ($query) use ($eventDate) {
                 $query->where(function ($subQuery) use ($eventDate) {
+                    // Строгая проверка: дата события должна попадать в интервал date_from - date_to
                     $subQuery->where('date_from', '<=', $eventDate)
-                        ->where(function ($dateQuery) use ($eventDate) {
-                            $dateQuery->where('date_to', '>=', $eventDate)
-                                ->orWhereNull('date_to');
-                        });
-                })->orWhere(function ($subQuery) {
-                    $subQuery->whereNull('date_from')
+                        ->where('date_to', '>=', $eventDate);
+                })->orWhere(function ($subQuery) use ($eventDate) {
+                    // Если date_to не указан, проверяем только date_from
+                    $subQuery->where('date_from', '<=', $eventDate)
                         ->whereNull('date_to');
                 });
             })
@@ -281,6 +288,28 @@ class StreamController extends Controller
         if ($season) {
             $seasonTitle = $season->title;
         }
+
+        // Логируем для отладки
+        Log::info('StreamController: Результат поиска сезона', [
+            'competition_id' => $competitionId,
+            'event_date' => $eventDate->format('Y-m-d'),
+            'found_competition_season' => $competitionSeason ? [
+                'id' => $competitionSeason->id,
+                'title' => $competitionSeason->title,
+                'date_from' => $competitionSeason->date_from,
+                'date_to' => $competitionSeason->date_to
+            ] : null,
+            'found_season' => $season ? [
+                'id' => $season->id,
+                'title' => $season->title,
+                'date_from' => $season->date_from,
+                'date_to' => $season->date_to
+            ] : null,
+            'result' => [
+                'competition_title' => $competitionTitle,
+                'season_title' => $seasonTitle
+            ]
+        ]);
 
         return [
             'competition_title' => $competitionTitle,
