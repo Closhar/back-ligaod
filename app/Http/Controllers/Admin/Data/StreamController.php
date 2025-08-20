@@ -239,7 +239,8 @@ class StreamController extends Controller
      */
     private function getSeasonTitleForEvent(int $competitionId, Carbon $eventDate): array
     {
-        // Проверяем competition_seasons по датам
+        // Проверяем competition_seasons по датам: только сезоны, где дата события попадает в диапазон
+        // (сезоны без дат НЕ учитываем для названия соревнования)
         $competitionSeason = CompetitionSeason::where('competition_id', $competitionId)
             ->where('is_active', true)
             ->where(function ($query) use ($eventDate) {
@@ -250,10 +251,6 @@ class StreamController extends Controller
                 })->orWhere(function ($subQuery) use ($eventDate) {
                     // Случай 2: Если date_to не указан, проверяем только date_from
                     $subQuery->where('date_from', '<=', $eventDate)
-                        ->whereNull('date_to');
-                })->orWhere(function ($subQuery) {
-                    // Случай 3: Если даты не указаны вообще, берем любой активный сезон
-                    $subQuery->whereNull('date_from')
                         ->whereNull('date_to');
                 });
             })
@@ -296,8 +293,8 @@ class StreamController extends Controller
                 // Проверяем только начало сезона
                 $isInSeasonRange = ($competitionSeason->date_from <= $eventDate);
             } else {
-                // Если даты не указаны, считаем что сезон подходит
-                $isInSeasonRange = true;
+                // Если даты отсутствуют, НЕ считаем, что сезон подходит (такие сезоны исключены ещё на этапе выборки)
+                $isInSeasonRange = false;
             }
 
             // Если дата попадает в диапазон сезона И у сезона есть title, используем его
