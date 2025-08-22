@@ -58,6 +58,7 @@ use App\Http\Controllers\EventActionController;
 use App\Http\Controllers\EventLineupController;
 use App\Http\Controllers\EventTeamActionController;
 use App\Http\Controllers\ParseTableController;
+use App\Http\Controllers\ParserController;
 use App\Http\Controllers\PlayerStatisticsController;
 use App\Http\Controllers\PromptTemplateController;
 use App\Http\Controllers\SeasonController;
@@ -901,3 +902,17 @@ Route::apiResource('seasons', SeasonController::class);
 
 // Маршрут для похожих событий
 Route::get('/events/{id}/similar', [App\Http\Controllers\Api\ApiEventController::class, 'similar']);
+
+// Parser routes
+Route::prefix('admin/parser')->name('admin.parser.')->middleware(['auth:sanctum'])->group(function () {
+    Route::get('/', [ParserController::class, 'index'])->name('index');
+    Route::get('/create', [ParserController::class, 'create'])->name('create');
+    Route::post('/', [ParserController::class, 'store'])->name('store');
+    Route::get('/{template}', [ParserController::class, 'show'])->name('show');
+    Route::get('/{template}/edit', [ParserController::class, 'edit'])->name('edit');
+    Route::put('/{template}', [ParserController::class, 'update'])->name('update');
+    Route::delete('/{template}', [ParserController::class, 'destroy'])->name('destroy');
+    Route::post('/{template}/test', [ParserController::class, 'test'])->name('test');
+    Route::post('/{template}/parse', [ParserController::class, 'parse'])->name('parse');
+    Route::patch('/{template}/toggle', [ParserController::class, 'toggleActive'])->name('toggle');
+});
