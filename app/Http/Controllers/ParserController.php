@@ -7,7 +7,6 @@ use App\Models\ParserField;
 use App\Services\ParserService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\View\View;
 
 class ParserController extends Controller
 {
@@ -55,7 +54,17 @@ class ParserController extends Controller
         ]);
 
         foreach ($validated['fields'] as $fieldData) {
-            $template->fields()->create($fieldData);
+            $template->fields()->create([
+                'name' => $fieldData['name'],
+                'selector' => $fieldData['selector'],
+                'selector_type' => $fieldData['selector_type'],
+                'data_type' => $fieldData['data_type'],
+                'target_table' => $fieldData['target_table'] ?? null,
+                'target_field' => $fieldData['target_field'] ?? null,
+                'update_strategy' => $fieldData['update_strategy'],
+                'is_required' => $fieldData['is_required'] ?? false,
+                'order' => $fieldData['order'] ?? 0,
+            ]);
         }
 
         return response()->json([
@@ -65,18 +74,18 @@ class ParserController extends Controller
         ]);
     }
 
-    public function show(ParserTemplate $template): View
+    public function show(ParserTemplate $template): JsonResponse
     {
         $template->load('fields', 'logs');
 
-        return view('admin.parser.show', compact('template'));
+        return response()->json($template);
     }
 
-    public function edit(ParserTemplate $template): View
+    public function edit(ParserTemplate $template): JsonResponse
     {
         $template->load('fields');
 
-        return view('admin.parser.edit', compact('template'));
+        return response()->json($template);
     }
 
     public function update(Request $request, ParserTemplate $template): JsonResponse
@@ -110,7 +119,17 @@ class ParserController extends Controller
 
         // Создаем новые поля
         foreach ($validated['fields'] as $fieldData) {
-            $template->fields()->create($fieldData);
+            $template->fields()->create([
+                'name' => $fieldData['name'],
+                'selector' => $fieldData['selector'],
+                'selector_type' => $fieldData['selector_type'],
+                'data_type' => $fieldData['data_type'],
+                'target_table' => $fieldData['target_table'] ?? null,
+                'target_field' => $fieldData['target_field'] ?? null,
+                'update_strategy' => $fieldData['update_strategy'],
+                'is_required' => $fieldData['is_required'] ?? false,
+                'order' => $fieldData['order'] ?? 0,
+            ]);
         }
 
         return response()->json([
