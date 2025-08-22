@@ -13,11 +13,13 @@ class ParserTemplate extends Model
         'description',
         'url_pattern',
         'conditions',
+        'headers',
         'is_active',
     ];
 
     protected $casts = [
         'conditions' => 'array',
+        'headers' => 'array',
         'is_active' => 'boolean',
     ];
 

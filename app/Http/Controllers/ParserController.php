@@ -50,6 +50,7 @@ class ParserController extends Controller
             'description' => $validated['description'],
             'url_pattern' => $validated['url_pattern'],
             'conditions' => $validated['conditions'] ?? [],
+            'headers' => $validated['headers'] ?? null,
             'is_active' => true,
         ]);
 
@@ -95,6 +96,7 @@ class ParserController extends Controller
             'description' => 'nullable|string',
             'url_pattern' => 'required|string',
             'conditions' => 'nullable|array',
+            'headers' => 'nullable|array',
             'fields' => 'required|array|min:1',
             'fields.*.name' => 'required|string|max:255',
             'fields.*.selector' => 'required|string',
@@ -112,6 +114,7 @@ class ParserController extends Controller
             'description' => $validated['description'],
             'url_pattern' => $validated['url_pattern'],
             'conditions' => $validated['conditions'] ?? [],
+            'headers' => $validated['headers'] ?? null,
         ]);
 
         // Удаляем старые поля

@@ -12,8 +12,9 @@ class ParserService
     public function parseUrl(ParserTemplate $template, string $url): ParserLog
     {
         try {
-            // Получаем HTML страницы (используем тот же подход, что и в ParseTableController)
-            $response = Http::timeout(30)->get($url);
+            // Получаем HTML страницы с заголовками для обхода антибот защиты
+            $headers = $this->getHeaders($template);
+            $response = Http::timeout(30)->withHeaders($headers)->get($url);
 
             if (!$response->successful()) {
                 throw new \Exception("HTTP Error: " . $response->status());
@@ -149,8 +150,9 @@ class ParserService
     public function testTemplate(ParserTemplate $template, string $url): array
     {
         try {
-            // Получаем HTML страницы (используем тот же подход, что и в ParseTableController)
-            $response = Http::timeout(30)->get($url);
+            // Получаем HTML страницы с заголовками для обхода антибот защиты
+            $headers = $this->getHeaders($template);
+            $response = Http::timeout(30)->withHeaders($headers)->get($url);
 
             if (!$response->successful()) {
                 return [
@@ -186,5 +188,33 @@ class ParserService
                 'data' => [],
             ];
         }
+    }
+
+    /**
+     * Получает заголовки для HTTP запроса
+     * Если в шаблоне есть пользовательские заголовки, использует их
+     * Иначе использует стандартные заголовки для обхода антибот защиты
+     */
+    private function getHeaders(ParserTemplate $template): array
+    {
+        // Если в шаблоне есть пользовательские заголовки, используем их
+        if (!empty($template->headers) && is_array($template->headers)) {
+            return $template->headers;
+        }
+
+        // Стандартные заголовки для обхода антибот защиты
+        return [
+            'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+            'Accept-Language' => 'ru-RU,ru;q=0.9,en;q=0.8',
+            'Accept-Encoding' => 'gzip, deflate, br',
+            'DNT' => '1',
+            'Connection' => 'keep-alive',
+            'Upgrade-Insecure-Requests' => '1',
+            'Sec-Fetch-Dest' => 'document',
+            'Sec-Fetch-Mode' => 'navigate',
+            'Sec-Fetch-Site' => 'none',
+            'Cache-Control' => 'max-age=0',
+        ];
     }
 }
