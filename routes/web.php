@@ -85,3 +85,17 @@ Route::get('/auth/google/callback', function () {
     //return redirect('http://localhost:3000/auth/google/callback?token=' . $token);
     return redirect(env('NUXT_URL') . '/auth/google/callback?token=' . $token);
 });
+
+// Parser routes
+Route::prefix('admin/parser')->name('admin.parser.')->middleware(['auth'])->group(function () {
+    Route::get('/', [App\Http\Controllers\ParserController::class, 'index'])->name('index');
+    Route::get('/create', [App\Http\Controllers\ParserController::class, 'create'])->name('create');
+    Route::post('/', [App\Http\Controllers\ParserController::class, 'store'])->name('store');
+    Route::get('/{template}', [App\Http\Controllers\ParserController::class, 'show'])->name('show');
+    Route::get('/{template}/edit', [App\Http\Controllers\ParserController::class, 'edit'])->name('edit');
+    Route::put('/{template}', [App\Http\Controllers\ParserController::class, 'update'])->name('update');
+    Route::delete('/{template}', [App\Http\Controllers\ParserController::class, 'destroy'])->name('destroy');
+    Route::post('/{template}/test', [App\Http\Controllers\ParserController::class, 'test'])->name('test');
+    Route::post('/{template}/parse', [App\Http\Controllers\ParserController::class, 'parse'])->name('parse');
+    Route::patch('/{template}/toggle', [App\Http\Controllers\ParserController::class, 'toggleActive'])->name('toggle');
+});
