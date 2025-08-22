@@ -904,7 +904,7 @@ Route::apiResource('seasons', SeasonController::class);
 Route::get('/events/{id}/similar', [App\Http\Controllers\Api\ApiEventController::class, 'similar']);
 
 // Parser routes
-Route::prefix('admin/parser')->name('admin.parser.')->middleware(['auth:sanctum'])->group(function () {
+Route::prefix('admin/parser')->name('admin.parser.')->group(function () {
     Route::get('/', [ParserController::class, 'index'])->name('index');
     Route::get('/create', [ParserController::class, 'create'])->name('create');
     Route::post('/', [ParserController::class, 'store'])->name('store');
