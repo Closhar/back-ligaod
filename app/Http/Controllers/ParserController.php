@@ -61,6 +61,19 @@ class ParserController extends Controller
         ]);
 
         foreach ($validated['fields'] as $fieldData) {
+            // Обрабатываем team_identification - убеждаемся что это массив
+            $teamIdentification = null;
+            if (isset($fieldData['team_identification'])) {
+                if (is_array($fieldData['team_identification'])) {
+                    $teamIdentification = $fieldData['team_identification'];
+                } elseif (is_string($fieldData['team_identification'])) {
+                    $decoded = json_decode($fieldData['team_identification'], true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $teamIdentification = $decoded;
+                    }
+                }
+            }
+
             $template->fields()->create([
                 'name' => $fieldData['name'],
                 'selector' => $fieldData['selector'],
@@ -76,7 +89,7 @@ class ParserController extends Controller
                 'search_phrase' => $fieldData['search_phrase'] ?? null,
                 'value_separator' => $fieldData['value_separator'] ?? null,
                 'result_format' => $fieldData['result_format'] ?? null,
-                'team_identification' => $fieldData['team_identification'] ?? null,
+                'team_identification' => $teamIdentification,
             ]);
         }
 
@@ -140,6 +153,19 @@ class ParserController extends Controller
 
         // Создаем новые поля
         foreach ($validated['fields'] as $fieldData) {
+            // Обрабатываем team_identification - убеждаемся что это массив
+            $teamIdentification = null;
+            if (isset($fieldData['team_identification'])) {
+                if (is_array($fieldData['team_identification'])) {
+                    $teamIdentification = $fieldData['team_identification'];
+                } elseif (is_string($fieldData['team_identification'])) {
+                    $decoded = json_decode($fieldData['team_identification'], true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        $teamIdentification = $decoded;
+                    }
+                }
+            }
+
             $template->fields()->create([
                 'name' => $fieldData['name'],
                 'selector' => $fieldData['selector'],
@@ -155,7 +181,7 @@ class ParserController extends Controller
                 'search_phrase' => $fieldData['search_phrase'] ?? null,
                 'value_separator' => $fieldData['value_separator'] ?? null,
                 'result_format' => $fieldData['result_format'] ?? null,
-                'team_identification' => $fieldData['team_identification'] ?? null,
+                'team_identification' => $teamIdentification,
             ]);
         }
 
