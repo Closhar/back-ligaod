@@ -29,6 +29,20 @@ echo "Шаблон: {$template->name}\n";
 echo "URL паттерн: {$template->url_pattern}\n";
 echo "Условия: " . json_encode($template->conditions, JSON_UNESCAPED_UNICODE) . "\n\n";
 
+// Проверяем поля шаблона
+$fields = $template->fields;
+echo "Поля для извлечения данных:\n";
+if ($fields->count() > 0) {
+    foreach ($fields as $field) {
+        echo "- {$field->name} (селектор: {$field->selector}, тип: {$field->selector_type})\n";
+        echo "  Целевая таблица: {$field->target_table}.{$field->target_field}\n";
+        echo "  Стратегия обновления: {$field->update_strategy}\n";
+        echo "  Обязательное: " . ($field->is_required ? 'Да' : 'Нет') . "\n\n";
+    }
+} else {
+    echo "❌ Поля не настроены! Это причина пустых данных.\n\n";
+}
+
 // Тестируем URL
 $testUrl = 'https://online.khl.ru/online/899314.html';
 
@@ -51,7 +65,14 @@ try {
 
     if ($result['success']) {
         echo "✓ Шаблон успешно обработал страницу\n";
-        echo "Извлеченные данные: " . json_encode($result['data'], JSON_UNESCAPED_UNICODE) . "\n";
+        echo "Извлеченные данные: " . json_encode($result['data'], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT) . "\n";
+
+        if (empty($result['data'])) {
+            echo "\n⚠️  Данные пустые! Возможные причины:\n";
+            echo "1. В шаблоне не настроены поля для извлечения\n";
+            echo "2. Селекторы полей не находят элементы на странице\n";
+            echo "3. HTML страницы изменился\n";
+        }
     } else {
         echo "✗ Ошибка: {$result['error']}\n";
 
