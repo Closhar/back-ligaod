@@ -6,20 +6,26 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('parser_templates', function (Blueprint $table) {
             $table->id();
-            $table->string('name'); // Название шаблона
-            $table->text('description')->nullable(); // Описание шаблона
-            $table->string('url_pattern'); // Паттерн URL для применения шаблона
-            $table->text('conditions')->nullable(); // Условия применения (JSON)
-            $table->boolean('is_active')->default(true); // Активен ли шаблон
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->string('url_pattern');
+            $table->json('conditions')->nullable();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('parser_templates');
     }

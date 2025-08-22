@@ -6,23 +6,28 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('parser_logs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('parser_template_id')->constrained()->onDelete('cascade');
-            $table->string('url'); // URL обработанной страницы
-            $table->text('raw_data')->nullable(); // Сырые данные
-            $table->text('parsed_data')->nullable(); // Обработанные данные
-            $table->text('errors')->nullable(); // Ошибки парсинга
-            $table->enum('status', ['success', 'error', 'partial']); // Статус парсинга
-            $table->integer('records_created')->default(0); // Количество созданных записей
-            $table->integer('records_updated')->default(0); // Количество обновленных записей
+            $table->string('url');
+            $table->enum('status', ['success', 'error', 'partial']);
+            $table->json('parsed_data')->nullable();
+            $table->text('error_message')->nullable();
+            $table->integer('records_created')->default(0);
+            $table->integer('records_updated')->default(0);
             $table->timestamps();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('parser_logs');
     }

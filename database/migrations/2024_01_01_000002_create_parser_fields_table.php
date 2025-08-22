@@ -6,26 +6,31 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
     {
         Schema::create('parser_fields', function (Blueprint $table) {
             $table->id();
             $table->foreignId('parser_template_id')->constrained()->onDelete('cascade');
-            $table->string('name'); // Название поля
-            $table->string('selector'); // CSS/XPath селектор
-            $table->string('selector_type')->default('css'); // Тип селектора (css, xpath)
-            $table->string('data_type')->default('text'); // Тип данных (text, number, date, etc.)
-            $table->text('extraction_rules')->nullable(); // Правила извлечения (JSON)
-            $table->string('target_table')->nullable(); // Целевая таблица БД
-            $table->string('target_field')->nullable(); // Целевое поле БД
-            $table->string('update_strategy')->default('update'); // Стратегия обновления (insert, update, upsert)
-            $table->boolean('is_required')->default(false); // Обязательное поле
-            $table->integer('order')->default(0); // Порядок обработки
+            $table->string('name');
+            $table->string('selector');
+            $table->enum('selector_type', ['css', 'xpath']);
+            $table->string('data_type');
+            $table->string('target_table')->nullable();
+            $table->string('target_field')->nullable();
+            $table->enum('update_strategy', ['insert', 'update', 'upsert']);
+            $table->boolean('is_required')->default(false);
+            $table->integer('order')->default(0);
             $table->timestamps();
         });
     }
 
-    public function down()
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
     {
         Schema::dropIfExists('parser_fields');
     }
