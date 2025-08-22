@@ -19,6 +19,11 @@ class ParserField extends Model
         'update_strategy',
         'is_required',
         'order',
+        'search_context',
+        'search_phrase',
+        'value_separator',
+        'team_identification',
+        'result_format',
     ];
 
     protected $casts = [
@@ -36,6 +41,14 @@ class ParserField extends Model
         // Если есть специальные правила извлечения, используем их
         if (!empty($this->extraction_rules)) {
             $value = $this->extractBySearchPhrase($html);
+            if ($value !== null) {
+                return $this->processValue($value);
+            }
+        }
+
+        // Если есть настройки умного парсинга, используем их
+        if (!empty($this->search_phrase)) {
+            $value = $this->extractBySmartParsing($html);
             if ($value !== null) {
                 return $this->processValue($value);
             }
@@ -251,5 +264,238 @@ class ParserField extends Model
         }
 
         return null;
+    }
+
+    /**
+     * Умный парсинг по поисковым фразам
+     */
+    private function extractBySmartParsing(string $html): ?string
+    {
+        try {
+            $searchContext = $this->search_context ?? '';
+            $searchPhrase = $this->search_phrase ?? '';
+            $valueSeparator = $this->value_separator ?? '-';
+            $resultFormat = $this->result_format ?? '';
+
+            if (empty($searchPhrase)) {
+                return null;
+            }
+
+            // Определяем команды если нужно
+            $teams = null;
+            if (in_array($resultFormat, ['team_stats', 'player_events', 'team_names'])) {
+                $teams = $this->extractTeams($html);
+            }
+
+            switch ($resultFormat) {
+                case 'team_stats':
+                    return $this->extractTeamStats($html, $searchContext, $searchPhrase, $valueSeparator);
+                
+                case 'match_result':
+                    return $this->extractMatchResult($html, $searchContext, $searchPhrase, $valueSeparator);
+                
+                case 'team_names':
+                    return $this->extractTeamNames($html, $searchContext, $searchPhrase, $valueSeparator);
+                
+                case 'player_events':
+                    return $this->extractPlayerEvents($html, $searchContext, $searchPhrase, $teams);
+                
+                default:
+                    return $this->extractSimpleValue($html, $searchContext, $searchPhrase, $valueSeparator);
+            }
+        } catch (\Exception $e) {
+            \Log::warning('Error in smart parsing: ' . $e->getMessage(), [
+                'field_id' => $this->id,
+                'field_name' => $this->name
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Извлечение статистики команд
+     */
+    private function extractTeamStats(string $html, string $context, string $phrase, string $separator): string
+    {
+        $value = $this->extractSimpleValue($html, $context, $phrase, $separator);
+        if (empty($value)) {
+            return '';
+        }
+
+        // Разделяем значения и форматируем
+        $values = explode($separator, $value);
+        $values = array_map('trim', $values);
+        $values = array_filter($values);
+
+        return implode(' | ', $values);
+    }
+
+    /**
+     * Извлечение результата матча
+     */
+    private function extractMatchResult(string $html, string $context, string $phrase, string $separator): string
+    {
+        $value = $this->extractSimpleValue($html, $context, $phrase, $separator);
+        if (empty($value)) {
+            return '';
+        }
+
+        // Преобразуем формат (например, "4 – 3" в "4:3")
+        $value = str_replace(['–', '-', ' '], ':', $value);
+        $value = preg_replace('/:+/', ':', $value); // Убираем множественные двоеточия
+
+        return $value;
+    }
+
+    /**
+     * Извлечение названий команд
+     */
+    private function extractTeamNames(string $html, string $context, string $phrase, string $separator): string
+    {
+        $value = $this->extractSimpleValue($html, $context, $phrase, $separator);
+        if (empty($value)) {
+            return '';
+        }
+
+        // Разделяем названия команд
+        $teams = explode($separator, $value);
+        $teams = array_map('trim', $teams);
+        $teams = array_filter($teams);
+
+        return implode(' | ', $value);
+    }
+
+    /**
+     * Извлечение событий игроков
+     */
+    private function extractPlayerEvents(string $html, string $context, string $phrase, ?array $teams): string
+    {
+        // Ищем все строки с событием
+        $lines = explode("\n", $html);
+        $events = [];
+
+        foreach ($lines as $line) {
+            if (stripos($line, $phrase) !== false) {
+                $event = $this->parsePlayerEvent($line, $teams);
+                if ($event) {
+                    $events[] = $event;
+                }
+            }
+        }
+
+        if (empty($events)) {
+            return '';
+        }
+
+        return json_encode($events, JSON_UNESCAPED_UNICODE);
+    }
+
+    /**
+     * Парсинг события игрока
+     */
+    private function parsePlayerEvent(string $line, ?array $teams): ?array
+    {
+        // Извлекаем время (формат MM:SS)
+        if (preg_match('/(\d{1,2}:\d{2})/', $line, $timeMatches)) {
+            $time = $timeMatches[1];
+        } else {
+            $time = '';
+        }
+
+        // Извлекаем игрока (после точки или скобки)
+        if (preg_match('/[\.\)]\s*(\d+\.\s*[А-Яа-я\s]+)/u', $line, $playerMatches)) {
+            $player = trim($playerMatches[1]);
+        } else {
+            $player = '';
+        }
+
+        // Определяем команду
+        $team = '';
+        if ($teams) {
+            foreach ($teams as $teamName) {
+                if (stripos($line, $teamName) !== false) {
+                    $team = $teamName;
+                    break;
+                }
+            }
+        }
+
+        if (empty($time) && empty($player)) {
+            return null;
+        }
+
+        return [
+            'team' => $team,
+            'player' => $player,
+            'min' => $time,
+            'event' => trim($line)
+        ];
+    }
+
+    /**
+     * Извлечение команд из HTML
+     */
+    private function extractTeams(string $html): array
+    {
+        $teamIdentification = $this->team_identification ?? [];
+        $searchPhrase = $teamIdentification['search_phrase'] ?? '';
+        $teamSeparator = $teamIdentification['team_separator'] ?? '-';
+
+        if (empty($searchPhrase)) {
+            return [];
+        }
+
+        $value = $this->extractSimpleValue($html, $searchPhrase, ':', $teamSeparator);
+        if (empty($value)) {
+            return [];
+        }
+
+        $teams = explode($teamSeparator, $value);
+        $teams = array_map('trim', $teams);
+        $teams = array_filter($teams);
+
+        return $teams;
+    }
+
+    /**
+     * Простое извлечение значения
+     */
+    private function extractSimpleValue(string $html, string $context, string $phrase, string $separator): string
+    {
+        // Ищем контекст
+        $contextStart = 0;
+        if (!empty($context)) {
+            $contextPos = stripos($html, $context);
+            if ($contextPos === false) {
+                return ''; // Контекст не найден
+            }
+            $contextStart = $contextPos;
+        }
+
+        // Ищем поисковую фразу в контексте
+        $searchPos = stripos(substr($html, $contextStart), $phrase);
+        if ($searchPos === false) {
+            return ''; // Поисковая фраза не найдена
+        }
+
+        $searchPos += $contextStart;
+        $valueStart = $searchPos + strlen($phrase);
+
+        // Извлекаем текст после поисковой фразы
+        $remainingText = substr($html, $valueStart, 200);
+
+        // Ищем конец значения
+        $valueEnd = strpos($remainingText, ';');
+        if ($valueEnd === false) {
+            $valueEnd = strpos($remainingText, '.');
+        }
+        if ($valueEnd === false) {
+            $valueEnd = strpos($remainingText, '<');
+        }
+        if ($valueEnd === false) {
+            $valueEnd = 200;
+        }
+
+        return trim(substr($remainingText, 0, $valueEnd));
     }
 }
