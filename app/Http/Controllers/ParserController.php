@@ -39,7 +39,7 @@ class ParserController extends Controller
             'fields.*.selector_type' => 'required|in:css,xpath',
             'fields.*.data_type' => 'required|string',
             'fields.*.target_table' => 'nullable|string',
-            'fields.*.target_field' => 'nullable|string',
+            'fields.*.target_field' => 'nullable',
             'fields.*.update_strategy' => 'required|in:insert,update,upsert',
             'fields.*.is_required' => 'boolean',
             'fields.*.order' => 'integer',
@@ -80,7 +80,7 @@ class ParserController extends Controller
                 'selector_type' => $fieldData['selector_type'],
                 'data_type' => $fieldData['data_type'],
                 'target_table' => $fieldData['target_table'] ?? null,
-                'target_field' => $fieldData['target_field'] ?? null,
+                'target_field' => $fieldData['target_field'] ? (string) $fieldData['target_field'] : null,
                 'update_strategy' => $fieldData['update_strategy'],
                 'is_required' => $fieldData['is_required'] ?? false,
                 'order' => $fieldData['order'] ?? 0,
@@ -128,7 +128,7 @@ class ParserController extends Controller
             'fields.*.selector_type' => 'required|in:css,xpath',
             'fields.*.data_type' => 'required|string',
             'fields.*.target_table' => 'nullable|string',
-            'fields.*.target_field' => 'nullable|string',
+            'fields.*.target_field' => 'nullable',
             'fields.*.update_strategy' => 'required|in:insert,update,upsert',
             'fields.*.is_required' => 'boolean',
             'fields.*.order' => 'integer',
@@ -172,7 +172,7 @@ class ParserController extends Controller
                 'selector_type' => $fieldData['selector_type'],
                 'data_type' => $fieldData['data_type'],
                 'target_table' => $fieldData['target_table'] ?? null,
-                'target_field' => $fieldData['target_field'] ?? null,
+                'target_field' => $fieldData['target_field'] ? (string) $fieldData['target_field'] : null,
                 'update_strategy' => $fieldData['update_strategy'],
                 'is_required' => $fieldData['is_required'] ?? false,
                 'order' => $fieldData['order'] ?? 0,
@@ -201,6 +201,17 @@ class ParserController extends Controller
         ]);
     }
 
+    public function toggleActive(ParserTemplate $template): JsonResponse
+    {
+        $template->update(['is_active' => !$template->is_active]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Template status updated successfully',
+            'is_active' => $template->is_active,
+        ]);
+    }
+
     public function test(Request $request, ParserTemplate $template): JsonResponse
     {
         $validated = $request->validate([
@@ -209,12 +220,15 @@ class ParserController extends Controller
 
         try {
             $result = $this->parserService->testTemplate($template, $validated['url']);
-            return response()->json($result);
+
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage(),
-                'data' => [],
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -225,29 +239,18 @@ class ParserController extends Controller
             'url' => 'required|url',
         ]);
 
-        $log = $this->parserService->parseUrl($template, $validated['url']);
+        try {
+            $result = $this->parserService->parseUrl($template, $validated['url']);
 
-        return response()->json([
-            'success' => $log->status === 'success',
-            'message' => $log->status === 'success'
-                ? 'Data parsed and saved successfully'
-                : 'Failed to parse data',
-            'log_id' => $log->id,
-            'records_created' => $log->records_created,
-            'records_updated' => $log->records_updated,
-        ]);
-    }
-
-    public function toggleActive(ParserTemplate $template): JsonResponse
-    {
-        $template->update(['is_active' => !$template->is_active]);
-
-        return response()->json([
-            'success' => true,
-            'is_active' => $template->is_active,
-            'message' => $template->is_active
-                ? 'Template activated'
-                : 'Template deactivated',
-        ]);
+            return response()->json([
+                'success' => true,
+                'data' => $result,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
     }
 }
