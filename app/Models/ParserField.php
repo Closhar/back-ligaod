@@ -50,6 +50,10 @@ class ParserField extends Model
         if (!empty($this->search_phrase)) {
             $value = $this->extractBySmartParsing($html);
             if ($value !== null) {
+                // Для событий команд возвращаем массив с двумя значениями
+                if ($this->target_table === 'event_teams' && $this->result_format === 'team_stats') {
+                    return $this->formatTeamStatsValue($value);
+                }
                 return $this->processValue($value);
             }
         }
@@ -58,6 +62,11 @@ class ParserField extends Model
 
         if (empty($value)) {
             return null;
+        }
+
+        // Для событий команд возвращаем массив с двумя значениями
+        if ($this->target_table === 'event_teams') {
+            return $this->formatRawValueForTeamEvents($value);
         }
 
         return $this->processValue($value);
@@ -328,6 +337,68 @@ class ParserField extends Model
         $values = array_filter($values);
 
         return implode(' | ', $values);
+    }
+
+    /**
+     * Форматирование значения статистики команд для событий команд
+     */
+    private function formatTeamStatsValue(string $value): array
+    {
+        if (empty($value)) {
+            return ['value1' => '', 'value2' => ''];
+        }
+
+        // Разделяем значения по разделителю
+        $values = explode(' | ', $value);
+        $values = array_map('trim', $values);
+        $values = array_filter($values);
+
+        // Берем первые два значения
+        $value1 = $values[0] ?? '';
+        $value2 = $values[1] ?? '';
+
+        return [
+            'value1' => $value1,
+            'value2' => $value2
+        ];
+    }
+
+    /**
+     * Форматирование сырого значения для событий команд
+     */
+    private function formatRawValueForTeamEvents(string $value): array
+    {
+        if (empty($value)) {
+            return ['value1' => '', 'value2' => ''];
+        }
+
+        // Пытаемся найти разделитель в значении
+        $separators = ['-', ':', '|', '–', '—'];
+        $separator = null;
+        $separatedValue = null;
+
+        foreach ($separators as $sep) {
+            if (strpos($value, $sep) !== false) {
+                $separator = $sep;
+                $separatedValue = explode($sep, $value);
+                break;
+            }
+        }
+
+        if ($separatedValue && count($separatedValue) >= 2) {
+            $value1 = trim($separatedValue[0]);
+            $value2 = trim($separatedValue[1]);
+        } else {
+            // Если разделитель не найден, пытаемся разделить по пробелам
+            $parts = preg_split('/\s+/', trim($value));
+            $value1 = $parts[0] ?? '';
+            $value2 = $parts[1] ?? '';
+        }
+
+        return [
+            'value1' => $value1,
+            'value2' => $value2
+        ];
     }
 
     /**
