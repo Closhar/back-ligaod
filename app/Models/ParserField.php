@@ -53,10 +53,29 @@ class ParserField extends Model
 
     private function extractByCss(string $html): string
     {
-        // Простая реализация CSS селектора
-        // В реальном проекте лучше использовать DOMDocument
-        if (preg_match('/' . preg_quote($this->selector, '/') . '[^>]*>(.*?)<\/[^>]*>/s', $html, $matches)) {
-            return trim(strip_tags($matches[1]));
+        try {
+            // Используем DOMDocument для более надежного извлечения
+            $dom = new \DOMDocument();
+            @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+            $xpath = new \DOMXPath($dom);
+
+            // Конвертируем CSS селектор в XPath
+            $xpathSelector = $this->cssToXpath($this->selector);
+            $nodes = $xpath->query($xpathSelector);
+
+            if ($nodes && $nodes->length > 0) {
+                $value = '';
+                foreach ($nodes as $node) {
+                    $value .= $node->textContent . ' ';
+                }
+                return trim($value);
+            }
+        } catch (\Exception $e) {
+            // Логируем ошибку, но не прерываем выполнение
+            \Log::warning('Error extracting CSS value: ' . $e->getMessage(), [
+                'selector' => $this->selector,
+                'field_id' => $this->id
+            ]);
         }
 
         return '';
@@ -118,5 +137,40 @@ class ParserField extends Model
         }
 
         return $value;
+    }
+
+    /**
+     * Конвертирует CSS селектор в XPath
+     */
+    private function cssToXpath(string $cssSelector): string
+    {
+        $cssSelector = trim($cssSelector);
+
+        // Класс
+        if (substr($cssSelector, 0, 1) === '.') {
+            $className = substr($cssSelector, 1);
+            return "//*[contains(@class, '$className')]";
+        }
+
+        // ID
+        if (substr($cssSelector, 0, 1) === '#') {
+            $idName = substr($cssSelector, 1);
+            return "//*[@id='$idName']";
+        }
+
+        // Тег
+        if (preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $cssSelector)) {
+            return "//$cssSelector";
+        }
+
+        // Комбинированный селектор (например, div.class)
+        if (preg_match('/^([a-zA-Z][a-zA-Z0-9]*)\.([a-zA-Z][a-zA-Z0-9]*)$/', $cssSelector, $matches)) {
+            $tag = $matches[1];
+            $class = $matches[2];
+            return '//' . $tag . '[contains(@class, "' . $class . '")]';
+        }
+
+        // По умолчанию возвращаем как есть (предполагая, что это уже XPath)
+        return $cssSelector;
     }
 }
