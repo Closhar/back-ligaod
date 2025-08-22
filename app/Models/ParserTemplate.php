@@ -77,7 +77,7 @@ class ParserTemplate extends Model
         return true;
     }
 
-    private function extractValue(string $html, string $selector, string $type): string
+    public function extractValue(string $html, string $selector, string $type): string
     {
         try {
             if ($type === 'css') {
