@@ -12,7 +12,7 @@ class ParserService
     public function parseUrl(ParserTemplate $template, string $url): ParserLog
     {
         try {
-            // Получаем HTML страницы
+            // Получаем HTML страницы (используем тот же подход, что и в ParseTableController)
             $response = Http::timeout(30)->get($url);
 
             if (!$response->successful()) {
@@ -149,6 +149,7 @@ class ParserService
     public function testTemplate(ParserTemplate $template, string $url): array
     {
         try {
+            // Получаем HTML страницы (используем тот же подход, что и в ParseTableController)
             $response = Http::timeout(30)->get($url);
 
             if (!$response->successful()) {

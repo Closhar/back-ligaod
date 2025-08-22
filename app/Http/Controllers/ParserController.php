@@ -154,9 +154,16 @@ class ParserController extends Controller
             'url' => 'required|url',
         ]);
 
-        $result = $this->parserService->testTemplate($template, $validated['url']);
-
-        return response()->json($result);
+        try {
+            $result = $this->parserService->testTemplate($template, $validated['url']);
+            return response()->json($result);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage(),
+                'data' => [],
+            ], 500);
+        }
     }
 
     public function parse(Request $request, ParserTemplate $template): JsonResponse
