@@ -290,16 +290,16 @@ class ParserField extends Model
             switch ($resultFormat) {
                 case 'team_stats':
                     return $this->extractTeamStats($html, $searchContext, $searchPhrase, $valueSeparator);
-                
+
                 case 'match_result':
                     return $this->extractMatchResult($html, $searchContext, $searchPhrase, $valueSeparator);
-                
+
                 case 'team_names':
                     return $this->extractTeamNames($html, $searchContext, $searchPhrase, $valueSeparator);
-                
+
                 case 'player_events':
                     return $this->extractPlayerEvents($html, $searchContext, $searchPhrase, $teams);
-                
+
                 default:
                     return $this->extractSimpleValue($html, $searchContext, $searchPhrase, $valueSeparator);
             }
@@ -362,7 +362,7 @@ class ParserField extends Model
         $teams = array_map('trim', $teams);
         $teams = array_filter($teams);
 
-        return implode(' | ', $value);
+        return implode(' | ', $teams);
     }
 
     /**

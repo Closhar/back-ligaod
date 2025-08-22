@@ -43,6 +43,12 @@ class ParserController extends Controller
             'fields.*.update_strategy' => 'required|in:insert,update,upsert',
             'fields.*.is_required' => 'boolean',
             'fields.*.order' => 'integer',
+            // Новые поля умного парсинга
+            'fields.*.search_context' => 'nullable|string',
+            'fields.*.search_phrase' => 'nullable|string',
+            'fields.*.value_separator' => 'nullable|string',
+            'fields.*.result_format' => 'nullable|string',
+            'fields.*.team_identification' => 'nullable|array',
         ]);
 
         $template = ParserTemplate::create([
@@ -65,6 +71,12 @@ class ParserController extends Controller
                 'update_strategy' => $fieldData['update_strategy'],
                 'is_required' => $fieldData['is_required'] ?? false,
                 'order' => $fieldData['order'] ?? 0,
+                // Новые поля умного парсинга
+                'search_context' => $fieldData['search_context'] ?? null,
+                'search_phrase' => $fieldData['search_phrase'] ?? null,
+                'value_separator' => $fieldData['value_separator'] ?? null,
+                'result_format' => $fieldData['result_format'] ?? null,
+                'team_identification' => $fieldData['team_identification'] ?? null,
             ]);
         }
 
@@ -107,6 +119,12 @@ class ParserController extends Controller
             'fields.*.update_strategy' => 'required|in:insert,update,upsert',
             'fields.*.is_required' => 'boolean',
             'fields.*.order' => 'integer',
+            // Новые поля умного парсинга
+            'fields.*.search_context' => 'nullable|string',
+            'fields.*.search_phrase' => 'nullable|string',
+            'fields.*.value_separator' => 'nullable|string',
+            'fields.*.result_format' => 'nullable|string',
+            'fields.*.team_identification' => 'nullable|array',
         ]);
 
         $template->update([
@@ -132,6 +150,12 @@ class ParserController extends Controller
                 'update_strategy' => $fieldData['update_strategy'],
                 'is_required' => $fieldData['is_required'] ?? false,
                 'order' => $fieldData['order'] ?? 0,
+                // Новые поля умного парсинга
+                'search_context' => $fieldData['search_context'] ?? null,
+                'search_phrase' => $fieldData['search_phrase'] ?? null,
+                'value_separator' => $fieldData['value_separator'] ?? null,
+                'result_format' => $fieldData['result_format'] ?? null,
+                'team_identification' => $fieldData['team_identification'] ?? null,
             ]);
         }
 
