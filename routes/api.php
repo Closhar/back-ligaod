@@ -903,6 +903,12 @@ Route::apiResource('seasons', SeasonController::class);
 // Маршрут для похожих событий
 Route::get('/events/{id}/similar', [App\Http\Controllers\Api\ApiEventController::class, 'similar']);
 
+// Admin data routes for select fields
+Route::prefix('admin')->middleware(['auth:sanctum', 'admin'])->group(function () {
+    Route::get('/action-types', [ActionTypeController::class, 'index']);
+    Route::get('/team-action-types', [TeamActionTypeController::class, 'index']);
+});
+
 // Parser routes
 Route::prefix('admin/parser')->name('admin.parser.')->middleware(['auth:sanctum', 'admin'])->group(function () {
     Route::get('/', [ParserController::class, 'index'])->name('index');
