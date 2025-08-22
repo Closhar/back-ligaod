@@ -8,8 +8,8 @@
 
 1. **Не указано** → селект заблокирован
 2. **События (events)** → опции: "Результат матча" (result), "Доп.результат" (dop_result)
-3. **События команд (event_teams)** → опции из таблицы `action_types` (поле `name`, значение `id`)
-4. **События игроков (event_players)** → опции из таблицы `team_action_types` (поле `name`, значение `id`)
+3. **События команд (event_teams)** → опции из таблицы `team_action_types` (поле `name`, значение `id`)
+4. **События игроков (event_players)** → опции из таблицы `action_types` (поле `name`, значение `id`)
 
 ## Что изменено
 
@@ -30,11 +30,11 @@
 ### 2. Backend
 
 **Новые контроллеры:**
-- `ActionTypeController` - для загрузки типов действий
+- `ActionTypeController` - для загрузки типов действий игроков
 - `TeamActionTypeController` - для загрузки типов действий команд
 
 **Новые API endpoints:**
-- `GET /admin/action-types` - список типов действий
+- `GET /admin/action-types` - список типов действий игроков
 - `GET /admin/team-action-types` - список типов действий команд
 
 **Маршруты:**
@@ -42,7 +42,7 @@
 
 ## Структура данных
 
-### ActionType (События команд)
+### ActionType (События игроков)
 ```json
 [
   {"id": 1, "name": "Гол"},
@@ -51,7 +51,7 @@
 ]
 ```
 
-### TeamActionType (События игроков)
+### TeamActionType (События команд)
 ```json
 [
   {"id": 1, "name": "Замена"},
@@ -71,7 +71,7 @@
    - Обновляются опции в селекте целевого поля
 
 3. **При выборе целевого поля:**
-   - Сохраняется ID для `event_teams` и `event_players`
+   - Сохраняется ID для `event_teams` (из `team_action_types`) и `event_players` (из `action_types`)
    - Сохраняется строковое значение для `events`
 
 ## Преимущества
