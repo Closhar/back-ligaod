@@ -189,13 +189,13 @@ class ParserService
 
             $parsedData = $this->parseHtml($template, $html);
 
-                    return [
-            'success' => true,
-            'error' => null,
-            'data' => $parsedData,
-            'html_preview' => substr($html, 0, 1000) . '...',
-            'debug_info' => $debugInfo,
-        ];
+            return [
+                'success' => true,
+                'error' => null,
+                'data' => $parsedData,
+                'html_preview' => substr($html, 0, 1000) . '...',
+                'debug_info' => $debugInfo,
+            ];
 
         } catch (\Exception $e) {
             return [
