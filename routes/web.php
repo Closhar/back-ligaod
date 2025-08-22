@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ParserController;
 use App\Models\User;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
@@ -88,14 +89,14 @@ Route::get('/auth/google/callback', function () {
 
 // Parser routes
 Route::prefix('admin/parser')->name('admin.parser.')->middleware(['auth'])->group(function () {
-    Route::get('/', [App\Http\Controllers\ParserController::class, 'index'])->name('index');
-    Route::get('/create', [App\Http\Controllers\ParserController::class, 'create'])->name('create');
-    Route::post('/', [App\Http\Controllers\ParserController::class, 'store'])->name('store');
-    Route::get('/{template}', [App\Http\Controllers\ParserController::class, 'show'])->name('show');
-    Route::get('/{template}/edit', [App\Http\Controllers\ParserController::class, 'edit'])->name('edit');
-    Route::put('/{template}', [App\Http\Controllers\ParserController::class, 'update'])->name('update');
-    Route::delete('/{template}', [App\Http\Controllers\ParserController::class, 'destroy'])->name('destroy');
-    Route::post('/{template}/test', [App\Http\Controllers\ParserController::class, 'test'])->name('test');
-    Route::post('/{template}/parse', [App\Http\Controllers\ParserController::class, 'parse'])->name('parse');
-    Route::patch('/{template}/toggle', [App\Http\Controllers\ParserController::class, 'toggleActive'])->name('toggle');
+    Route::get('/', [ParserController::class, 'index'])->name('index');
+    Route::get('/create', [ParserController::class, 'create'])->name('create');
+    Route::post('/', [ParserController::class, 'store'])->name('store');
+    Route::get('/{template}', [ParserController::class, 'show'])->name('show');
+    Route::get('/{template}/edit', [ParserController::class, 'edit'])->name('edit');
+    Route::put('/{template}', [ParserController::class, 'update'])->name('update');
+    Route::delete('/{template}', [ParserController::class, 'destroy'])->name('destroy');
+    Route::post('/{template}/test', [ParserController::class, 'test'])->name('test');
+    Route::post('/{template}/parse', [ParserController::class, 'parse'])->name('parse');
+    Route::patch('/{template}/toggle', [ParserController::class, 'toggleActive'])->name('toggle');
 });

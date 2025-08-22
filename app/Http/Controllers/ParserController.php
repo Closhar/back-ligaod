@@ -15,16 +15,16 @@ class ParserController extends Controller
         private ParserService $parserService
     ) {}
 
-    public function index(): View
+    public function index(): JsonResponse
     {
         $templates = ParserTemplate::with('fields')->orderBy('created_at', 'desc')->get();
 
-        return view('admin.parser.index', compact('templates'));
+        return response()->json($templates);
     }
 
-    public function create(): View
+    public function create(): JsonResponse
     {
-        return view('admin.parser.create');
+        return response()->json(['message' => 'Create form endpoint']);
     }
 
     public function store(Request $request): JsonResponse
