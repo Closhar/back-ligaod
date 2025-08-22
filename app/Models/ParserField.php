@@ -33,6 +33,14 @@ class ParserField extends Model
 
     public function extractValue(string $html): mixed
     {
+        // Если есть специальные правила извлечения, используем их
+        if (!empty($this->extraction_rules)) {
+            $value = $this->extractBySearchPhrase($html);
+            if ($value !== null) {
+                return $this->processValue($value);
+            }
+        }
+
         $value = $this->extractRawValue($html);
 
         if (empty($value)) {
@@ -172,5 +180,76 @@ class ParserField extends Model
 
         // По умолчанию возвращаем как есть (предполагая, что это уже XPath)
         return $cssSelector;
+    }
+
+    /**
+     * Извлекает значение по поисковой фразе и правилам
+     */
+    private function extractBySearchPhrase(string $html): ?string
+    {
+        foreach ($this->extraction_rules as $rule) {
+            if ($rule['type'] !== 'search_phrase') {
+                continue;
+            }
+
+            $searchPhrase = $rule['phrase'] ?? '';
+            $contextPhrase = $rule['context'] ?? '';
+            $separator = $rule['separator'] ?? '-';
+            $maxResults = $rule['max_results'] ?? 10;
+
+            if (empty($searchPhrase)) {
+                continue;
+            }
+
+            // Ищем контекст (например, "Статистика матча:")
+            $contextStart = 0;
+            if (!empty($contextPhrase)) {
+                $contextPos = stripos($html, $contextPhrase);
+                if ($contextPos === false) {
+                    continue; // Контекст не найден
+                }
+                $contextStart = $contextPos;
+            }
+
+            // Ищем поисковую фразу в контексте
+            $searchPos = stripos(substr($html, $contextStart), $searchPhrase);
+            if ($searchPos === false) {
+                continue; // Поисковая фраза не найдена
+            }
+
+            $searchPos += $contextStart;
+            $valueStart = $searchPos + strlen($searchPhrase);
+
+            // Извлекаем текст после поисковой фразы
+            $remainingText = substr($html, $valueStart, 200); // Берем 200 символов после фразы
+
+            // Ищем конец значения (до следующего знака препинания или тега)
+            $valueEnd = strpos($remainingText, ';');
+            if ($valueEnd === false) {
+                $valueEnd = strpos($remainingText, '.');
+            }
+            if ($valueEnd === false) {
+                $valueEnd = strpos($remainingText, '<');
+            }
+            if ($valueEnd === false) {
+                $valueEnd = 200; // Берем все 200 символов
+            }
+
+            $rawValue = trim(substr($remainingText, 0, $valueEnd));
+
+            // Разделяем по сепаратору
+            $values = explode($separator, $rawValue);
+            $values = array_map('trim', $values);
+            $values = array_filter($values); // Убираем пустые
+
+            // Ограничиваем количество результатов
+            $values = array_slice($values, 0, $maxResults);
+
+            if (!empty($values)) {
+                return implode(' | ', $values);
+            }
+        }
+
+        return null;
     }
 }
