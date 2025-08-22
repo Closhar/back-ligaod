@@ -136,7 +136,7 @@ class ParserTemplate extends Model
             $className = substr($cssSelector, 1);
             return "//*[contains(@class, '$className')]";
         }
-        
+
         // ID
         if (substr($cssSelector, 0, 1) === '#') {
             $idName = substr($cssSelector, 1);
@@ -152,7 +152,7 @@ class ParserTemplate extends Model
         if (preg_match('/^([a-zA-Z][a-zA-Z0-9]*)\.([a-zA-Z][a-zA-Z0-9]*)$/', $cssSelector, $matches)) {
             $tag = $matches[1];
             $class = $matches[2];
-            return "//$tag[contains(@class, '$class')]";
+            return '//' . $tag . '[contains(@class, "' . $class . '")]';
         }
 
         // По умолчанию возвращаем как есть (предполагая, что это уже XPath)
