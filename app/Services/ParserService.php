@@ -164,22 +164,38 @@ class ParserService
 
             $html = $response->body();
 
+            // Добавляем отладочную информацию
+            $debugInfo = [];
+            if (!empty($template->conditions)) {
+                foreach ($template->conditions as $index => $condition) {
+                    $value = $template->extractValue($html, $condition['selector'], $condition['type'] ?? 'css');
+                    $debugInfo[] = [
+                        'condition' => $condition,
+                        'extracted_value' => $value,
+                        'passed' => $this->checkCondition($condition, $value)
+                    ];
+                }
+            }
+
             if (!$template->shouldParse($html)) {
                 return [
                     'success' => false,
                     'error' => "Page does not meet parsing conditions",
                     'data' => [],
+                    'debug_info' => $debugInfo,
+                    'html_preview' => substr($html, 0, 1000) . '...',
                 ];
             }
 
             $parsedData = $this->parseHtml($template, $html);
 
-            return [
-                'success' => true,
-                'error' => null,
-                'data' => $parsedData,
-                'html_preview' => substr($html, 0, 1000) . '...',
-            ];
+                    return [
+            'success' => true,
+            'error' => null,
+            'data' => $parsedData,
+            'html_preview' => substr($html, 0, 1000) . '...',
+            'debug_info' => $debugInfo,
+        ];
 
         } catch (\Exception $e) {
             return [
@@ -216,5 +232,25 @@ class ParserService
             'Sec-Fetch-Site' => 'none',
             'Cache-Control' => 'max-age=0',
         ];
+    }
+
+    /**
+     * Проверяет условие парсинга
+     */
+    private function checkCondition(array $condition, string $value): bool
+    {
+        if (isset($condition['required']) && $condition['required'] && empty($value)) {
+            return false;
+        }
+
+        if (isset($condition['contains']) && !str_contains($value, $condition['contains'])) {
+            return false;
+        }
+
+        if (isset($condition['equals']) && $value !== $condition['equals']) {
+            return false;
+        }
+
+        return true;
     }
 }

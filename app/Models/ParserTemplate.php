@@ -79,15 +79,83 @@ class ParserTemplate extends Model
 
     private function extractValue(string $html, string $selector, string $type): string
     {
-        // Простая реализация извлечения значения
-        // В реальном проекте лучше использовать DOMDocument или Symfony DomCrawler
-        if ($type === 'css') {
-            // Простое извлечение по CSS селектору
-            if (preg_match('/' . preg_quote($selector, '/') . '[^>]*>(.*?)<\/[^>]*>/s', $html, $matches)) {
-                return trim(strip_tags($matches[1]));
+        try {
+            if ($type === 'css') {
+                // Используем DOMDocument для более точного извлечения
+                $dom = new \DOMDocument();
+                @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+                $xpath = new \DOMXPath($dom);
+
+                // Конвертируем CSS селектор в XPath (базовая поддержка)
+                $xpathSelector = $this->cssToXpath($selector);
+                $nodes = $xpath->query($xpathSelector);
+
+                if ($nodes && $nodes->length > 0) {
+                    $value = '';
+                    foreach ($nodes as $node) {
+                        $value .= $node->textContent . ' ';
+                    }
+                    return trim($value);
+                }
+            } elseif ($type === 'xpath') {
+                $dom = new \DOMDocument();
+                @$dom->loadHTML($html, LIBXML_NOERROR | LIBXML_NOWARNING);
+                $xpath = new \DOMXPath($dom);
+
+                $nodes = $xpath->query($selector);
+
+                if ($nodes && $nodes->length > 0) {
+                    $value = '';
+                    foreach ($nodes as $node) {
+                        $value .= $node->textContent . ' ';
+                    }
+                    return trim($value);
+                }
             }
+        } catch (\Exception $e) {
+            // Логируем ошибку, но не прерываем выполнение
+            \Log::warning('Error extracting value from HTML: ' . $e->getMessage(), [
+                'selector' => $selector,
+                'type' => $type
+            ]);
         }
 
         return '';
+    }
+
+    /**
+     * Простая конвертация CSS селектора в XPath
+     */
+    private function cssToXpath(string $cssSelector): string
+    {
+        // Базовые CSS селекторы
+        $cssSelector = trim($cssSelector);
+
+        // Класс
+        if (substr($cssSelector, 0, 1) === '.') {
+            $className = substr($cssSelector, 1);
+            return "//*[contains(@class, '$className')]";
+        }
+        
+        // ID
+        if (substr($cssSelector, 0, 1) === '#') {
+            $idName = substr($cssSelector, 1);
+            return "//*[@id='$idName']";
+        }
+
+        // Тег
+        if (preg_match('/^[a-zA-Z][a-zA-Z0-9]*$/', $cssSelector)) {
+            return "//$cssSelector";
+        }
+
+        // Комбинированный селектор (например, div.class)
+        if (preg_match('/^([a-zA-Z][a-zA-Z0-9]*)\.([a-zA-Z][a-zA-Z0-9]*)$/', $cssSelector, $matches)) {
+            $tag = $matches[1];
+            $class = $matches[2];
+            return "//$tag[contains(@class, '$class')]";
+        }
+
+        // По умолчанию возвращаем как есть (предполагая, что это уже XPath)
+        return $cssSelector;
     }
 }
