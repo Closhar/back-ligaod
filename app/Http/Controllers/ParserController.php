@@ -89,7 +89,7 @@ class ParserController extends Controller
                 'search_phrase' => $fieldData['search_phrase'] ?? null,
                 'value_separator' => $fieldData['value_separator'] ?? null,
                 'result_format' => $fieldData['result_format'] ?? null,
-                'team_identification' => $teamIdentification,
+                'team_identification' => $teamIdentification ? json_encode($teamIdentification) : null,
             ]);
         }
 
@@ -181,7 +181,7 @@ class ParserController extends Controller
                 'search_phrase' => $fieldData['search_phrase'] ?? null,
                 'value_separator' => $fieldData['value_separator'] ?? null,
                 'result_format' => $fieldData['result_format'] ?? null,
-                'team_identification' => $teamIdentification,
+                'team_identification' => $teamIdentification ? json_encode($teamIdentification) : null,
             ]);
         }
 
