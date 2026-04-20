@@ -5,15 +5,12 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('person_club_memberships', function (Blueprint $table) {
             $table->id();
             $table->foreignId('person_id')->constrained()->onDelete('cascade');
-            $table->foreignId('club_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('club_id');
             $table->date('joined_at')->nullable();
             $table->date('left_at')->nullable(); // null означает, что персона все еще в клубе
             $table->string('position')->nullable(); // должность/позиция в клубе
@@ -30,9 +27,6 @@ return new class extends Migration {
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('person_club_memberships');

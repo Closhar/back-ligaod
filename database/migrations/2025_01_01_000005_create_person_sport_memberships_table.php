@@ -5,15 +5,12 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('person_sport_memberships', function (Blueprint $table) {
             $table->id();
             $table->foreignId('person_id')->constrained()->onDelete('cascade');
-            $table->foreignId('sport_id')->constrained()->onDelete('cascade');
+            $table->unsignedBigInteger('sport_id');
             $table->date('started_at')->nullable();
             $table->date('ended_at')->nullable(); // null означает, что персона все еще занимается этим видом спорта
             $table->string('level')->nullable(); // уровень в спорте (любитель, профессионал, мастер спорта и т.д.)
@@ -30,9 +27,6 @@ return new class extends Migration {
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('person_sport_memberships');
