@@ -23,6 +23,8 @@ final class Search extends MoonShineComponent
 
     protected ?Closure $modifyInput = null;
 
+    protected string $form = '';
+
     public function __construct(
         private readonly string $key = 'search',
         private string $action = '',
@@ -52,15 +54,6 @@ final class Search extends MoonShineComponent
         $resource = moonshineRequest()->getResource();
 
         return ! \is_null($resource) && $resource->hasSearch();
-    }
-
-    protected function prepareBeforeRender(): void
-    {
-        $url = moonshineRequest()->getResource()?->getUrl();
-
-        if ($url !== null && $this->isSearchEnabled()) {
-            $this->action = $url;
-        }
     }
 
     /**
@@ -96,6 +89,7 @@ final class Search extends MoonShineComponent
                 'x-ref' => 'searchInput',
                 '@keyup.ctrl.k.window' => '$refs.searchInput.focus()',
                 '@keyup.ctrl.period.window' => '$refs.searchInput.focus()',
+                '@input.debounce.300ms' => '$refs.searchInput.value == "" ? $refs.searchForm.submit(): ""',
             ]);
 
         if (! \is_null($this->modifyInput)) {
@@ -149,14 +143,26 @@ final class Search extends MoonShineComponent
         return $form;
     }
 
+    protected function prepareBeforeRender(): void
+    {
+        $url = moonshineRequest()->getResource()?->getUrl();
+
+        if ($url !== null && $this->isSearchEnabled()) {
+            $this->action = $url;
+        }
+
+        $this->form = (string) $this->getForm();
+        $this->isEnabled = $this->isSearchEnabled();
+    }
+
     /**
      * @return array<string, mixed>
      */
     protected function viewData(): array
     {
         return [
-            'isEnabled' => $this->isSearchEnabled(),
-            'form' => $this->getForm(),
+            'isEnabled' => $this->isEnabled,
+            'form' => $this->form,
         ];
     }
 }

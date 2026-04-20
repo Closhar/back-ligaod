@@ -27,6 +27,7 @@ use MoonShine\UI\Fields\Image;
 use MoonShine\UI\Fields\Password;
 use MoonShine\UI\Fields\PasswordRepeat;
 use MoonShine\UI\Fields\Text;
+use Stringable;
 
 #[Icon('users')]
 #[Group('moonshine::ui.resource.system', 'users', translatable: true)]
@@ -140,7 +141,7 @@ class MoonShineUserResource extends ModelResource
     }
 
     /**
-     * @return array{name: array|string, moonshine_user_role_id: array|string, email: array|string, password: array|string}
+     * @return array<string, string[]|string|list<Rule>|list<Stringable>>
      */
     protected function rules($item): array
     {

@@ -4,13 +4,6 @@ import axios from 'axios'
 import MockAdapter from 'axios-mock-adapter'
 import {afterEach, beforeEach, describe, expect, jest, it} from '@jest/globals'
 
-global.MoonShine = {
-  ui: {
-    toast: jest.fn(), // Mock the toast function
-  },
-  callbacks: {},
-}
-
 // Mock DOM API
 document.querySelectorAll = jest.fn()
 document.querySelector = jest.fn()
@@ -93,11 +86,20 @@ describe('request function', () => {
     delete window.location
     window.location = {assign: jest.fn()}
 
+    // Mock $nextTick to execute callback immediately
+    const nextTickMock = jest.fn(callback => {
+      callback()
+      return Promise.resolve()
+    })
+
+    t.$nextTick = nextTickMock
+
     const componentRequestData = new ComponentRequestData()
     mockAxios.onGet('/test-url').reply(200, {redirect: '/new-location'})
 
     await request(t, '/test-url', 'get', {}, {}, componentRequestData)
 
+    expect(nextTickMock).toHaveBeenCalled()
     expect(window.location.assign).toHaveBeenCalledWith('/new-location')
     window.location = origWindowLocation
   })

@@ -10,8 +10,6 @@ use Illuminate\Support\Arr;
 use LaravelLang\LocaleList\Locale;
 use LaravelLang\Locales\Data\LocaleData;
 use LaravelLang\Locales\Facades\Locales;
-use LaravelLang\Models\Concerns\HasNames;
-use LaravelLang\Models\Concerns\ModelLoader;
 use LaravelLang\Models\Eloquent\Scopes\FilterTranslationsScope;
 use LaravelLang\Models\Eloquent\Translation;
 use LaravelLang\Models\Services\Attribute;
@@ -28,13 +26,14 @@ use function is_iterable;
  */
 trait HasTranslations
 {
-    use ModelLoader;
-    use HasNames;
+    use Concerns\HasNames;
+    use Concerns\ModelLoader;
+    use Concerns\Scopes;
 
     public function translations(): HasMany
     {
         return $this->translationsRaw()->tap(
-            new FilterTranslationsScope()
+            new FilterTranslationsScope
         );
     }
 
@@ -118,20 +117,20 @@ trait HasTranslations
         return $this;
     }
 
-    public function newInstance($attributes = [], $exists = false): static
+    public function fill(array $attributes): static
     {
-        $basic = Arr::except($attributes, $this->translatable());
+        $basic        = Arr::except($attributes, $this->translatable());
         $translatable = Arr::only($attributes, $this->translatable());
 
-        $model = parent::newInstance($basic, $exists);
+        parent::fill($basic);
 
         foreach ($translatable as $key => $value) {
             is_iterable($value)
-                ? $model->setTranslations($key, $value)
-                : $model->setTranslation($key, $value);
+                ? $this->setTranslations($key, $value)
+                : $this->setTranslation($key, $value);
         }
 
-        return $model;
+        return $this;
     }
 
     public function translatable(): array

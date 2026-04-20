@@ -125,9 +125,16 @@ export function crudFormQuery(formElements = null, maxLength = 50) {
     ) {
       const value = inputGetValue(element)
 
-      if (maxLength !== null && typeof value === 'string' && value.length <= maxLength) {
-        values[inputFieldName(name)] = value
-      } else if (maxLength === null) {
+      if (value === undefined) {
+        return
+      }
+
+      const isBoolean =
+        element.getAttribute('type') === 'checkbox' || element.getAttribute('type') === 'radio'
+
+      if (isBoolean && element.checked) {
+        values[inputFieldName(name)] = typeof element.value === 'boolean' ? 1 : element.value
+      } else if (maxLength === false || (typeof value === 'string' && value.length <= maxLength)) {
         values[inputFieldName(name)] = value
       }
     }

@@ -25,6 +25,7 @@ use MoonShine\UI\Components\Table\TableBuilder;
 use MoonShine\UI\Contracts\DefaultValueTypes\CanBeArray;
 use MoonShine\UI\Contracts\HasDefaultValueContract;
 use MoonShine\UI\Contracts\RemovableContract;
+use MoonShine\UI\Contracts\WrapperWithApplyContract;
 use MoonShine\UI\Exceptions\FieldException;
 use MoonShine\UI\Traits\Fields\HasVerticalMode;
 use MoonShine\UI\Traits\Fields\WithDefaultValue;
@@ -311,9 +312,10 @@ class Json extends Field implements
                 );
         }
 
-        return $fields
+        $fields
+            ->onlyFields()
             ->prepareReindexNames(parent: $this, before: static function (self $parent, FieldContract $field): void {
-                if (! $parent->isObjectMode()) {
+                if (! $field->getParent() instanceof WrapperWithApplyContract && ! $parent->isObjectMode()) {
                     $field->withoutWrapper();
                 } else {
                     $parent->customWrapperAttributes([
@@ -324,6 +326,8 @@ class Json extends Field implements
 
                 $field->setRequestKeyPrefix($parent->getRequestKeyPrefix());
             }, except: fn (FieldContract $parent): bool => $parent instanceof self && $parent->isObjectMode());
+
+        return $fields;
     }
 
     protected function resolveRawValue(): mixed
@@ -393,6 +397,15 @@ class Json extends Field implements
         $collection = $this->prepareOnApply($collection);
 
         foreach ($this->getFields() as $field) {
+            if ($field instanceof File) {
+                $column = $field->getColumn();
+
+                $collection = array_map(static fn (array $data): array => [
+                    ...$data,
+                    $column => $data[$field->getHiddenColumn()] ?? null,
+                ], $collection);
+            }
+
             if ($field instanceof self) {
                 foreach ($collection as $index => $value) {
                     $column = $field->getColumn();
@@ -528,12 +541,18 @@ class Json extends Field implements
 
         return $collection->when(
             $this->isKeyOrOnlyValue(),
-            fn ($data): Collection => $data->mapWithKeys(
+            fn (Collection $data): Collection => $data->mapWithKeys(
                 fn ($data, $key): array => $this->isOnlyValue()
                     ? [$key => $data['value']]
                     : [$data['key'] => $data['value']],
             ),
-        )->filter(fn ($value): bool => $this->filterEmpty($value))->toArray();
+        )
+            ->filter(fn ($value): bool => $this->filterEmpty($value))
+            ->when(
+                $this->isReorderable() && ! $this->isObjectMode() && ! $this->isKeyValue(),
+                static fn (Collection $data) => $data->sortKeys()
+            )
+            ->toArray();
     }
 
     public function isFilterEmpty(): bool
@@ -592,6 +611,12 @@ class Json extends Field implements
                 $field->when($fill, static fn (FieldContract $f): FieldContract => $f->fillData($values));
 
                 $apply = $callback($field, $values, $data);
+
+                if ($field instanceof WrapperWithApplyContract) {
+                    $applyValues[$index] = $apply;
+
+                    continue;
+                }
 
                 data_set(
                     /** @phpstan-ignore-next-line  */
@@ -682,7 +707,7 @@ class Json extends Field implements
 
         return $this->toValue() ?? $this->getPreparedFields()
             ->onlyFields()
-            ->mapWithKeys(fn (FieldContract $field) => [$field->getColumn() => null]);
+            ->mapWithKeys(fn (FieldContract $field): array => [$field->getColumn() => null]);
     }
 
     /**

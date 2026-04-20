@@ -390,7 +390,7 @@ class BelongsToMany extends ModelRelationField implements
         $oldPivot = $this->getCore()->getRequest()->getOld($this->getPivotName());
 
         return collect($old)
-            ->map(fn ($key): ?Model => clone $this->makeRelatedModel($key, relations: $oldPivot[$key] ?? [], related: $this->getRelation()?->getRelated()))
+            ->map(fn (int|string|null $key): Model => clone $this->makeRelatedModel($key, relations: $oldPivot[$key] ?? [], related: $this->getRelation()?->getRelated()))
             ->values();
     }
 
@@ -399,7 +399,7 @@ class BelongsToMany extends ModelRelationField implements
         if (\is_array($this->toValue())) {
             $this->setValue(
                 collect($this->toValue())
-                    ->map(fn ($key): ?Model => clone $this->makeRelatedModel($key, related: $this->getRelation()?->getRelated()))
+                    ->map(fn (int|string|null $key): Model => clone $this->makeRelatedModel($key, related: $this->getRelation()?->getRelated()))
                     ->values()
             );
         }
@@ -432,7 +432,7 @@ class BelongsToMany extends ModelRelationField implements
 
         if ($this->inLine) {
             return $values->implode(function (Model $item) use ($column) {
-                $value = $this->getColumnOrFormattedValue($item, data_get($item, $column, ''));
+                $value = $this->getColumnOrFormattedValue($item, data_get($item, $column, '') ?? null);
 
                 if (! \is_null($this->inLineLink)) {
                     /** @var Link|string $linkValue */
@@ -596,7 +596,7 @@ class BelongsToMany extends ModelRelationField implements
     {
         $casted = $this->getRelatedModel();
         $value = collect($value)
-            ->map(fn ($key): ?Model => clone $this->makeRelatedModel($key, related: $this->getRelation()?->getRelated()))
+            ->map(fn (int|string|null $key): Model => clone $this->makeRelatedModel($key, related: $this->getRelation()?->getRelated()))
             ->values();
 
         $casted?->setRelation($this->getRelationName(), $value);

@@ -15,6 +15,9 @@ class Application
         protected int $activityTimeout,
         protected array $allowedOrigins,
         protected int $maxMessageSize,
+        protected ?int $maxConnections = null,
+        protected string $acceptClientEventsFrom = 'members',
+        protected ?array $rateLimiting = null,
         protected array $options = [],
     ) {
         //
@@ -71,11 +74,51 @@ class Application
     }
 
     /**
+     * Get the maximum connections allowed for the application.
+     */
+    public function maxConnections(): ?int
+    {
+        return $this->maxConnections;
+    }
+
+    /**
+     * Determine if the application has a maximum connection limit.
+     */
+    public function hasMaxConnectionLimit(): bool
+    {
+        return $this->maxConnections !== null;
+    }
+
+    /**
      * Get the maximum message size allowed from the client.
      */
     public function maxMessageSize(): int
     {
         return $this->maxMessageSize;
+    }
+
+    /**
+     * Get who client events are accepted from for the application - either "all", "members", or "none".
+     */
+    public function acceptClientEventsFrom(): string
+    {
+        return $this->acceptClientEventsFrom;
+    }
+
+    /**
+     * Get the rate limiting configuration for the application.
+     */
+    public function rateLimiting(): ?array
+    {
+        return $this->rateLimiting;
+    }
+
+    /**
+     * Determine if the application has rate limiting enabled.
+     */
+    public function usesRateLimiting(): bool
+    {
+        return ($this->rateLimiting['enabled'] ?? false) === true;
     }
 
     /**

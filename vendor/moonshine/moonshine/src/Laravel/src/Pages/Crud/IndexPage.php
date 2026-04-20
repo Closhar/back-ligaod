@@ -136,7 +136,7 @@ class IndexPage extends CrudPage
                     )
                 ),
             ])
-                ->justifyAlign('between')
+                ->justifyAlign($this->getResource()->getTopButtons()->onlyVisible()->isEmpty() ? 'end' : 'between')
                 ->itemsAlign('start'),
             LineBreak::make(),
         ];

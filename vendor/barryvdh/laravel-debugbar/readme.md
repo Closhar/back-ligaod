@@ -71,8 +71,10 @@ If you want to use the facade to log messages, add this within the `register` me
 ```php
 public function register(): void
 {
-    $loader = \Illuminate\Foundation\AliasLoader::getInstance();
-    $loader->alias('Debugbar', \Barryvdh\Debugbar\Facades\Debugbar::class);
+    if (class_exists(\Barryvdh\Debugbar\Facades\Debugbar::class)) {
+        $loader = \Illuminate\Foundation\AliasLoader::getInstance();
+        $loader->alias('Debugbar', \Barryvdh\Debugbar\Facades\Debugbar::class);
+    }
 }
 ```
 
@@ -224,3 +226,7 @@ The Stopwatch extension adds a [stopwatch tag](http://symfony.com/blog/new-in-sy
     …some things that gets timed
 {% endstopwatch %}
 ```
+
+## Star History
+
+[![Star History Chart](https://api.star-history.com/svg?repos=barryvdh/laravel-debugbar&type=Date)](https://www.star-history.com/#barryvdh/laravel-debugbar&Date)

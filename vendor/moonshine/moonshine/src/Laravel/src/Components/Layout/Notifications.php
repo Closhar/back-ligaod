@@ -18,9 +18,11 @@ final class Notifications extends MoonShineComponent
         'mark_as_read_all' => 'moonshine::ui.notifications.mark_as_read_all',
     ];
 
+    private readonly MoonShineNotificationContract $notificationService;
+
     public Collection $notifications;
 
-    private readonly MoonShineNotificationContract $notificationService;
+    public string $readAllRoute = '';
 
     public function __construct()
     {
@@ -33,10 +35,16 @@ final class Notifications extends MoonShineComponent
             ->getAll();
     }
 
+    protected function prepareBeforeRender(): void
+    {
+        $this->readAllRoute = $this->notificationService->getReadAllRoute();
+    }
+
     protected function viewData(): array
     {
         return [
-            'readAllRoute' => $this->notificationService->getReadAllRoute(),
+            'notifications' => $this->notifications,
+            'readAllRoute' => $this->readAllRoute,
         ];
     }
 }

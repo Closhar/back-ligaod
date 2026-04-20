@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MoonShine\Laravel\Resources;
 
+use Illuminate\Contracts\Validation\Rule;
 use MoonShine\Laravel\Enums\Action;
 use MoonShine\Laravel\Models\MoonshineUserRole;
 use MoonShine\MenuManager\Attributes\Group;
@@ -13,6 +14,7 @@ use MoonShine\Support\ListOf;
 use MoonShine\UI\Components\Layout\Box;
 use MoonShine\UI\Fields\ID;
 use MoonShine\UI\Fields\Text;
+use Stringable;
 
 #[Icon('bookmark')]
 #[Group('moonshine::ui.resource.system', 'users', translatable: true)]
@@ -69,7 +71,7 @@ class MoonShineUserRoleResource extends ModelResource
     }
 
     /**
-     * @return array{name: array|string}
+     * @return array<string, string[]|string|list<Rule>|list<Stringable>>
      */
     protected function rules($item): array
     {

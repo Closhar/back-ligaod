@@ -64,7 +64,7 @@ final readonly class MenuAutoloader implements MenuAutoloaderContract
 
         $resolveItems = static function (
             MenuFillerContract $item,
-            &$items,
+            array &$items,
         ): void {
             $skip = Attributes::for($item, SkipMenu::class);
 
@@ -94,7 +94,13 @@ final readonly class MenuAutoloader implements MenuAutoloaderContract
 
                 $items[$label] = [
                     'position' => $position,
-                    'group' => ['class' => $namespace, 'label' => $label, 'icon' => $icon, 'canSee' => $canSee?->method, 'translatable' => $group?->translatable],
+                    'group' => [
+                        'class' => $namespace,
+                        'label' => $label,
+                        'icon' => $icon,
+                        'canSee' => $canSee?->method,
+                        'translatable' => $group?->translatable,
+                    ],
                     'items' => $existingItems->all(),
                 ];
 
@@ -114,17 +120,21 @@ final readonly class MenuAutoloader implements MenuAutoloaderContract
             $resolveItems($item, $items);
         }
 
-        $sort = static fn ($items) => (new Collection($items))->values()
+        $sort = static fn ($items)
+            => (new Collection($items))
+            ->values()
             ->sortBy(fn ($item): mixed => $item['position'] ?? INF)
             ->values();
 
-        $result = $sort($items)->map(function ($item) use ($sort) {
-            if (isset($item['group'])) {
-                $item['items'] = $sort($item['items'])->all();
-            }
+        $result = $sort($items)->map(
+            function ($item) use ($sort) {
+                if (isset($item['group'])) {
+                    $item['items'] = $sort($item['items'])->all();
+                }
 
-            return $item;
-        });
+                return $item;
+            },
+        );
 
         return $result->all();
     }
@@ -155,7 +165,10 @@ final readonly class MenuAutoloader implements MenuAutoloaderContract
                     $group['translatable'] ? __($group['label']) : $group['label'],
                     $this->generateMenu($item['items']),
                     $group['icon'],
-                )->when($group['canSee'], fn (MenuGroup $ctx): MenuGroup => $ctx->canSee($this->canSee($group['class'], $group['canSee'])));
+                )->when(
+                    $group['canSee'],
+                    fn (MenuGroup $ctx): MenuGroup => $ctx->canSee($this->canSee($group['class'], $group['canSee'])),
+                );
 
                 continue;
             }

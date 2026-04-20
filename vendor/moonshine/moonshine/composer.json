@@ -37,12 +37,12 @@
     },
     "require-dev": {
         "friendsofphp/php-cs-fixer": "^3.68",
-        "larastan/larastan": "^3.0",
+        "larastan/larastan": "3.4.0",
         "moonshine/import-export": "^1.0",
         "orchestra/testbench": "^9.9",
         "pestphp/pest": "^3",
         "pestphp/pest-plugin-laravel": "^3",
-        "rector/rector": "^2",
+        "rector/rector": "~2.1.0",
         "symplify/monorepo-builder": "^11.2"
     },
     "replace": {

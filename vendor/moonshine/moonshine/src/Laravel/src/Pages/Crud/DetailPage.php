@@ -6,13 +6,16 @@ namespace MoonShine\Laravel\Pages\Crud;
 
 use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
 use MoonShine\Contracts\UI\ComponentContract;
+use MoonShine\Contracts\UI\TableBuilderContract;
 use MoonShine\Core\Exceptions\PageException;
 use MoonShine\Core\Exceptions\ResourceException;
+use MoonShine\Laravel\Buttons\DeleteButton;
 use MoonShine\Laravel\Collections\Fields;
 use MoonShine\Laravel\Components\Fragment;
 use MoonShine\Laravel\Contracts\Fields\HasTabModeContract;
 use MoonShine\Laravel\Enums\Ability;
 use MoonShine\Laravel\Enums\Action;
+use MoonShine\Laravel\Fields\Relationships\HasOne;
 use MoonShine\Laravel\Fields\Relationships\ModelRelationField;
 use MoonShine\Laravel\Resources\CrudResource;
 use MoonShine\Support\Enums\PageType;
@@ -135,9 +138,33 @@ class DetailPage extends CrudPage
                         ->previewMode();
                 }
 
+                $toOneRenderer = fn (ModelRelationField $field, ?string $redirectBack = null) => Box::make($field->getLabel(), array_filter([
+                    $field instanceof HasOne
+                        ? $field->modifyTable(
+                            fn (TableBuilderContract $table): TableBuilderContract => $table->buttons([
+                            $field->getFormModalButton(__('moonshine::ui.edit'), $redirectBack),
+
+                            DeleteButton::for(
+                                $field->getResource(),
+                                $field->getRelationName(),
+                                redirectAfterDelete: $this->getResource()->getDetailPageUrl(
+                                    $this->getResource()->getItemID(),
+                                ),
+                                modalName: "has-one-{$field->getRelationName()}",
+                            ),
+                        ]),
+                        ) : $field,
+
+                    ! $field->toValue() && $field instanceof HasOne
+                        ? $field->getFormModalButton(__('moonshine::ui.add'), $redirectBack)
+                        : null,
+                ]));
+
                 if ($field instanceof HasTabModeContract && $field->isTabMode()) {
                     $tabs[] = Tab::make($field->getLabel(), [
-                        $field->isToOne() ? Box::make($field->getLabel(), [$field]) : $field,
+                        $field->isToOne() ? $toOneRenderer($field, $this->getResource()->getDetailPageUrl(
+                            $this->getResource()->getItemID(),
+                        )) : $field,
                     ]);
 
                     continue;
@@ -146,7 +173,7 @@ class DetailPage extends CrudPage
                 $components[] = LineBreak::make();
 
                 $blocks = $field->isToOne()
-                    ? [Box::make($field->getLabel(), [$field])]
+                    ? [$toOneRenderer($field)]
                     : [Heading::make($field->getLabel()), $field];
 
                 $components[] = Fragment::make($blocks)

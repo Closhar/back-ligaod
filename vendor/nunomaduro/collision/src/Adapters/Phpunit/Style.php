@@ -11,6 +11,7 @@ use NunoMaduro\Collision\Exceptions\ShouldNotHappen;
 use NunoMaduro\Collision\Exceptions\TestException;
 use NunoMaduro\Collision\Exceptions\TestOutcome;
 use NunoMaduro\Collision\Writer;
+use Pest\Collision\Events;
 use Pest\Expectation;
 use PHPUnit\Event\Code\Throwable;
 use PHPUnit\Event\Telemetry\Info;
@@ -348,8 +349,10 @@ final class Style
             '/vendor\/nunomaduro\/collision/',
             '/vendor\/bin\/pest/',
             '/bin\/pest/',
+            '/vendor\/brianium\/paratest/',
             '/vendor\/pestphp\/pest/',
             '/vendor\/pestphp\/pest-plugin-arch/',
+            '/vendor\/pestphp\/pest-plugin-browser/',
             '/vendor\/phpspec\/prophecy-phpunit/',
             '/vendor\/phpspec\/prophecy/',
             '/vendor\/phpunit\/phpunit\/src/',
@@ -469,8 +472,8 @@ final class Style
         /** @var string $description */
         $description = preg_replace('/`([^`]+)`/', '<span class="text-white">$1</span>', $description);
 
-        if (class_exists(\Pest\Collision\Events::class)) {
-            $description = \Pest\Collision\Events::beforeTestMethodDescription($result, $description);
+        if (class_exists(Events::class)) {
+            $description = Events::beforeTestMethodDescription($result, $description);
         }
 
         renderUsing($this->output);
@@ -482,7 +485,7 @@ final class Style
             </div>
         HTML, $seconds === '' ? '' : 'flex space-x-1 justify-between', $truncateClasses, $result->color, $result->icon, $description, $warning, $seconds));
 
-        class_exists(\Pest\Collision\Events::class) && \Pest\Collision\Events::afterTestMethodDescription($result);
+        class_exists(Events::class) && Events::afterTestMethodDescription($result);
     }
 
     /**

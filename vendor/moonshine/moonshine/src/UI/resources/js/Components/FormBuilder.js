@@ -6,7 +6,7 @@ import {
   prepareFormExtraData,
   prepareFormQueryString,
 } from '../Support/Forms.js'
-import request, {initCallback} from '../Request/Core.js'
+import request, {initCallback, prepareUrl} from '../Request/Core.js'
 import {dispatchEvents as de} from '../Support/DispatchEvents.js'
 import {getInputs, showWhenChange, showWhenVisibilityChange} from '../Support/ShowWhen.js'
 import {formToJSON} from 'axios'
@@ -146,7 +146,7 @@ export default (name = '', initData = {}, reactive = {}) => ({
     submitState(form, true)
 
     axios
-      .post(form.getAttribute('action'), new FormData(form), {
+      .post(prepareUrl(form.getAttribute('action')), new FormData(form), {
         headers: {
           Precognition: true,
           Accept: 'application/json',
@@ -189,11 +189,7 @@ export default (name = '', initData = {}, reactive = {}) => ({
       return
     }
 
-    if (hasSubmitAttribute) {
-      this.$el.dispatchEvent(new Event('submit'))
-    } else {
-      this.$el.submit()
-    }
+    this.$el.requestSubmit()
   },
   async(events = '', callback = {}) {
     const form = this.$el
@@ -227,7 +223,9 @@ export default (name = '', initData = {}, reactive = {}) => ({
           t.toggleModal()
         }
 
-        submitState(form, false, false)
+        if (typeof data !== 'object' || data === null || !('redirect' in data)) {
+          submitState(form, false, false)
+        }
 
         return callback.afterResponse
       })
@@ -324,6 +322,8 @@ export default (name = '', initData = {}, reactive = {}) => ({
     })
 
     this.$el.setAttribute('data-reset', '1')
+
+    this.$el.querySelectorAll('[data-remove-on-form-reset]').forEach(el => el.remove())
   },
 
   showWhenChange,

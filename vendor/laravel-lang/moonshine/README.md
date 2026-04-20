@@ -1,6 +1,9 @@
 # MoonShine Translations
 
-![moonshine translations](https://preview.dragon-code.pro/laravel-lang/translations.svg?brand=moonshine-software)
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://banners.beyondco.de/Moonshine.png?pattern=topography&style=style_2&fontSize=100px&md=1&showWatermark=1&icon=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg&theme=dark&packageManager=composer+require+--dev&packageName=laravel-lang%2Fmoonshine&description=by+Laravel+Lang&images=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg">
+    <img src="https://banners.beyondco.de/Moonshine.png?pattern=topography&style=style_2&fontSize=100px&md=1&showWatermark=1&icon=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg&theme=light&packageManager=composer+require+--dev&packageName=laravel-lang%2Fmoonshine&description=by+Laravel+Lang&images=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg" alt="Moonshine">
+</picture>
 
 [![Stable Version][badge_stable]][link_packagist]
 [![Total Downloads][badge_downloads]][link_packagist]
@@ -41,10 +44,6 @@ Yes, that's all 😊
 
 Now the package is connected to your application and you
 can [manage localizations](https://laravel-lang.com/manage-locales.html).
-
-## Communication
-
-We also have official [chats](https://t.me/addlist/l0XGtvEIBiljMTMy) in Telegram.
 
 ## Contributing
 

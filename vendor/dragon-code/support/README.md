@@ -1,6 +1,9 @@
 # Support
 
-![the dragon code support](https://preview.dragon-code.pro/the-dragon-code/support.svg?brand=php&mode=dark)
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://banners.beyondco.de/Support.png?pattern=topography&style=style_2&fontSize=100px&md=1&showWatermark=1&theme=dark&packageManager=composer+require&packageName=dragon-code%2Fsupport&description=Support+package+is+a+collection+of+helpers+and+tools+for+any+project.&images=https%3A%2F%2Fwww.php.net%2Fimages%2Flogos%2Fnew-php-logo.svg">
+    <img src="https://banners.beyondco.de/Support.png?pattern=topography&style=style_2&fontSize=100px&md=1&showWatermark=1&theme=light&packageManager=composer+require&packageName=dragon-code%2Fsupport&description=Support+package+is+a+collection+of+helpers+and+tools+for+any+project.&images=https%3A%2F%2Fwww.php.net%2Fimages%2Flogos%2Fnew-php-logo.svg" alt="Support">
+</picture>
 
 [![Stable Version][badge_stable]][link_packagist]
 [![Unstable Version][badge_unstable]][link_packagist]

@@ -6,6 +6,7 @@ use Exception;
 use GdImage;
 use Spatie\Image\Drivers\Concerns\AddsWatermark;
 use Spatie\Image\Drivers\Concerns\CalculatesCropOffsets;
+use Spatie\Image\Drivers\Concerns\CalculatesFocalCropAndResizeCoordinates;
 use Spatie\Image\Drivers\Concerns\CalculatesFocalCropCoordinates;
 use Spatie\Image\Drivers\Concerns\GetsOrientationFromExif;
 use Spatie\Image\Drivers\Concerns\PerformsFitCrops;
@@ -32,6 +33,7 @@ class GdDriver implements ImageDriver
 {
     use AddsWatermark;
     use CalculatesCropOffsets;
+    use CalculatesFocalCropAndResizeCoordinates;
     use CalculatesFocalCropCoordinates;
     use GetsOrientationFromExif;
     use PerformsFitCrops;
@@ -86,7 +88,7 @@ class GdDriver implements ImageDriver
         try {
             $image = imagecreatefromstring($contents);
         } catch (Throwable $throwable) {
-            throw CouldNotLoadImage::make(`{$path} : {$throwable->getMessage()}`);
+            throw CouldNotLoadImage::make("{$path} : {$throwable->getMessage()}");
         }
 
         if (! $image) {
@@ -498,6 +500,22 @@ class GdDriver implements ImageDriver
         return $this;
     }
 
+    public function focalCropAndResize(int $width, int $height, ?int $cropCenterX = null, ?int $cropCenterY = null): static
+    {
+        [$cropWidth, $cropHeight, $cropX, $cropY] = $this->calculateFocalCropAndResizeCoordinates(
+            $width,
+            $height,
+            $cropCenterX,
+            $cropCenterY
+        );
+
+        $this->manualCrop($cropWidth, $cropHeight, $cropX, $cropY)
+            ->width($width)
+            ->height($height);
+
+        return $this;
+    }
+
     public function sepia(): static
     {
         return $this
@@ -572,7 +590,6 @@ class GdDriver implements ImageDriver
         }
 
         $info = finfo_file($fInfo, $path);
-        finfo_close($fInfo);
 
         if (! is_string($info) || ! str_contains($info, 'Exif')) {
             return;
@@ -781,16 +798,39 @@ class GdDriver implements ImageDriver
         }
 
         switch ($this->exif['Orientation']) {
-            case 8:
-                $this->image = imagerotate($this->image, 90, 0);
+
+            case 1: // TOPLEFT (normal)
                 break;
-            case 3:
+
+            case 2: // TOPRIGHT (flop)
+                imageflip($this->image, IMG_FLIP_HORIZONTAL);
+                break;
+
+            case 3: // BOTTOMRIGHT (rotate 180)
                 $this->image = imagerotate($this->image, 180, 0);
                 break;
-            case 5:
-            case 7:
-            case 6:
+
+            case 4: // BOTTOMLEFT (flop + rotate 180)
+                imageflip($this->image, IMG_FLIP_HORIZONTAL);
+                $this->image = imagerotate($this->image, 180, 0);
+                break;
+
+            case 5: // LEFTTOP (flop + rotate -90)
+                imageflip($this->image, IMG_FLIP_HORIZONTAL);
+                $this->image = imagerotate($this->image, 90, 0);
+                break;
+
+            case 6: // RIGHTTOP (rotate 90)
                 $this->image = imagerotate($this->image, -90, 0);
+                break;
+
+            case 7: // RIGHTBOTTOM (flop + rotate 90)
+                imageflip($this->image, IMG_FLIP_HORIZONTAL);
+                $this->image = imagerotate($this->image, -90, 0);
+                break;
+
+            case 8: // LEFTBOTTOM (rotate -90)
+                $this->image = imagerotate($this->image, 90, 0);
                 break;
         }
     }

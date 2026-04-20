@@ -28,7 +28,9 @@ use MoonShine\UI\Contracts\DefaultValueTypes\CanBeObject;
 use MoonShine\UI\Contracts\HasDefaultValueContract;
 use MoonShine\UI\Contracts\HasUpdateOnPreviewContract;
 use MoonShine\UI\Contracts\RemovableContract;
+use MoonShine\UI\Contracts\WrapperWithApplyContract;
 use MoonShine\UI\Fields\Field;
+use MoonShine\UI\Fields\File;
 use MoonShine\UI\Fields\Json;
 use MoonShine\UI\Fields\Preview;
 use MoonShine\UI\Traits\Fields\HasVerticalMode;
@@ -228,7 +230,7 @@ class RelationRepeater extends ModelRelationField implements
             $fields->prepareAttributes();
         }
 
-        return $fields->prepareReindexNames(parent: $this, before: function (self $parent, Field $field): void {
+        $fields->onlyFields()->prepareReindexNames(parent: $this, before: function (self $parent, Field $field): void {
             if ($field instanceof HasUpdateOnPreviewContract && $field->isUpdateOnPreview()) {
                 $field->nowOnResource($this->getResource());
             }
@@ -239,6 +241,8 @@ class RelationRepeater extends ModelRelationField implements
                 ->setRequestKeyPrefix($parent->getRequestKeyPrefix())
             ;
         });
+
+        return $fields;
     }
 
     /**
@@ -288,6 +292,15 @@ class RelationRepeater extends ModelRelationField implements
     protected function resolveOldValue(mixed $old): mixed
     {
         foreach ($this->getFields() as $field) {
+            if ($field instanceof File) {
+                $column = $field->getColumn();
+
+                $old = array_map(static fn (array $data): array => [
+                    ...$data,
+                    $column => $data[$field->getHiddenColumn()] ?? null,
+                ], $old);
+            }
+
             if ($field instanceof Json) {
                 foreach ($old as $index => $value) {
                     $column = $field->getColumn();
@@ -325,6 +338,7 @@ class RelationRepeater extends ModelRelationField implements
         }
 
         $component = TableBuilder::make($fields, $this->getValue())
+            ->withoutKey()
             ->name("relation_repeater_{$this->getIdentity()}")
             ->inside('field')
             ->customAttributes(
@@ -416,11 +430,21 @@ class RelationRepeater extends ModelRelationField implements
 
                 $apply = $callback($field, $values, $data);
 
+                if ($field instanceof self) {
+                    continue;
+                }
+
+                if ($field instanceof WrapperWithApplyContract) {
+                    $applyValues[$index] = $apply;
+
+                    continue;
+                }
+
                 data_set(
                     /** @phpstan-ignore-next-line  */
                     $applyValues[$index],
                     $field->getColumn(),
-                    data_get($apply, $field->getColumn())
+                    data_get($apply, $field->getColumn()),
                 );
             }
         }

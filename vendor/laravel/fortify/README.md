@@ -1,4 +1,7 @@
-<p align="center"><img width="358" height="66" src="/art/logo.svg" alt="Logo Laravel Fortify"></p>
+<p align="center">
+    <img alt="Fortify Logo Dark Mode" src="/art/fortify-light.svg#gh-light-mode-only"/>
+    <img alt="Fortify Logo Dark Mode" src="/art/fortify-dark.svg#gh-dark-mode-only"/>
+</p>
 
 <p align="center">
 <a href="https://github.com/laravel/fortify/actions"><img src="https://github.com/laravel/fortify/workflows/tests/badge.svg" alt="Build Status"></a>
@@ -9,7 +12,7 @@
 
 ## Introduction
 
-Laravel Fortify is a frontend agnostic authentication backend for Laravel. Fortify powers the registration, authentication, and two-factor authentication features of [Laravel Jetstream](https://github.com/laravel/jetstream).
+Laravel Fortify is a frontend agnostic authentication backend for Laravel. Fortify powers the registration, authentication, and two-factor authentication features of [Laravel Starter Kits](https://laravel.com/starter-kits).
 
 ## Official Documentation
 

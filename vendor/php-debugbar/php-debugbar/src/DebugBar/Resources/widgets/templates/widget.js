@@ -16,18 +16,23 @@
             this.$status = $('<div />').addClass(csscls('status')).appendTo(this.$el);
 
             this.$list = new  PhpDebugBar.Widgets.ListWidget({ itemRenderer: function(li, tpl) {
-                $('<span />').addClass(csscls('name')).text(tpl.name).appendTo(li);
+                var name = $('<span />').addClass(csscls('name')).appendTo(li);
+                if (tpl.html) {
+                    name.html(tpl.html);
+                } else {
+                    name.text(tpl.name);
+                }
 
                 if (typeof tpl.xdebug_link !== 'undefined' && tpl.xdebug_link !== null) {
                     var header = $('<span />').addClass(csscls('filename')).text(tpl.xdebug_link.filename + ( tpl.xdebug_link.line ? "#" + tpl.xdebug_link.line : ''));
                     if (tpl.xdebug_link) {
-                        if (tpl.xdebug_link.ajax) {
-                            $('<a title="' + tpl.xdebug_link.url + '"></a>').on('click', function () {
+                        $('<a href="' + tpl.xdebug_link.url + '"></a>').on('click', function () {
+                            event.stopPropagation();
+                            if (tpl.xdebug_link.ajax) {
                                 fetch(tpl.xdebug_link.url);
-                            }).addClass(csscls('editor-link')).appendTo(header);
-                        } else {
-                            $('<a href="' + tpl.xdebug_link.url + '"></a>').addClass(csscls('editor-link')).appendTo(header);
-                        }
+                                event.preventDefault();
+                            }
+                        }).addClass(csscls('editor-link')).appendTo(header);
                     }
                     header.appendTo(li);
                 }

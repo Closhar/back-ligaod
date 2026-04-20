@@ -91,6 +91,13 @@ final readonly class AlpineJs
         ]);
     }
 
+    public static function asyncFormDataAttributes(?string $selector = null): array
+    {
+        return [
+            'data-async-form-data' => $selector ?? '',
+        ];
+    }
+
     public static function asyncWithQueryParamsAttributes(): array
     {
         return [
@@ -116,7 +123,7 @@ final readonly class AlpineJs
 
         return implode(
             ';',
-            array_map(static fn ($event): string => "\$dispatch('$event')", $events)
+            array_map(static fn (string $event): string => "\$dispatch('$event')", $events)
         );
     }
 

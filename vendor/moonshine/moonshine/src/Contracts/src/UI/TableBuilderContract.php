@@ -116,4 +116,6 @@ interface TableBuilderContract extends
     public function pushState(): static;
 
     public function removeAfterClone(): static;
+
+    public function withoutKey(): static;
 }

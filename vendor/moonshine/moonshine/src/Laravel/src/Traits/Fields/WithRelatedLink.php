@@ -18,6 +18,8 @@ trait WithRelatedLink
 
     protected ?Closure $modifyRelatedLink = null;
 
+    protected ?int $relatedCount = null;
+
     /**
      * @param  (Closure(int $count, static $ctx): bool)|bool|null  $condition
      */
@@ -47,11 +49,17 @@ trait WithRelatedLink
             return false;
         }
 
-        if (\is_callable($this->isRelatedLink)) {
-            $value = $this->toRelatedCollection();
-            $count = $value->count();
+        if ($this->relatedCount !== null) {
+            return true;
+        }
 
-            return (bool) value($this->isRelatedLink, $count, $this);
+        if (\is_callable($this->isRelatedLink)) {
+            $value = $this->getRelatedModel()?->{$this->getRelationName()}() ?? new Collection();
+            $this->relatedCount = $value->count();
+            $result = (bool) value($this->isRelatedLink, $this->relatedCount, $this);
+            $this->relatedCount = $result === false ? null : $this->relatedCount;
+
+            return $result;
         }
 
         return $this->isRelatedLink;
@@ -80,8 +88,10 @@ trait WithRelatedLink
     {
         $relationName = $this->getRelatedLinkRelation();
 
-        $value = $this->toRelatedCollection();
-        $count = $value->count();
+        if ($this->relatedCount === null) {
+            $value = $this->getRelatedModel()?->{$this->getRelationName()}() ?? new Collection();
+            $this->relatedCount = $value->count();
+        }
 
         return ActionButton::make(
             '',
@@ -89,7 +99,7 @@ trait WithRelatedLink
                 '_parentId' => $relationName . '-' . $this->getRelatedModel()?->getKey(),
             ]),
         )
-            ->badge($count)
+            ->badge($this->relatedCount)
             ->icon('eye')
             ->when(
                 ! \is_null($this->modifyRelatedLink),

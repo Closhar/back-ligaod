@@ -26,14 +26,14 @@ class DateRangeModelApply implements ApplyContract
 
             $query->when(
                 $values['from'] ?? null,
-                static fn ($query, $from) => $query->{$condition}(
+                static fn (Builder $query, string|int $from) => $query->{$condition}(
                     $field->getColumn(),
                     '>=',
                     Carbon::parse($from)
                 )
             )->when(
                 $values['to'] ?? null,
-                static fn ($query, $to) => $query->$condition(
+                static fn (Builder $query, string|int $to) => $query->$condition(
                     $field->getColumn(),
                     '<=',
                     Carbon::parse($to)

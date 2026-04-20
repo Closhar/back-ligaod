@@ -123,7 +123,7 @@ trait FileTrait
             }
 
             return new MoonShineComponentAttributeBag(
-                (array) \call_user_func($this->itemAttributes, $filename, $index),
+                (array)\call_user_func($this->itemAttributes, $filename, $index),
             );
         };
     }
@@ -229,7 +229,8 @@ trait FileTrait
     {
         $dir = empty($this->getDir()) ? '' : $this->getDir() . '/';
 
-        return str($value)->remove($dir)
+        return str($value)
+            ->remove($dir)
             ->prepend($dir)
             ->value();
     }
@@ -237,21 +238,26 @@ trait FileTrait
     public function getHiddenRemainingValuesKey(): string
     {
         $column = str($this->getColumn())->explode('.')->last();
-        $hiddenColumn = str($this->getVirtualColumn())->explode('.')->last();
 
         return str($this->getRequestNameDot())
-            ->replaceLast($column, "hidden_$hiddenColumn")
+            ->replaceLast($column, $this->getHiddenColumn())
             ->value();
     }
 
     public function getHiddenRemainingValuesName(): string
     {
         $column = str($this->getColumn())->explode('.')->last();
-        $hiddenColumn = str($this->getVirtualColumn())->explode('.')->last();
 
         return str($this->getNameAttribute())
-            ->replaceLast($column, "hidden_$hiddenColumn")
+            ->replaceLast($column, $this->getHiddenColumn())
             ->value();
+    }
+
+    public function getHiddenColumn(): string
+    {
+        $column = (string)str($this->getVirtualColumn())->explode('.')->last();
+
+        return "hidden_$column";
     }
 
     public function getHiddenAttributes(): ComponentAttributesBagContract
@@ -302,7 +308,7 @@ trait FileTrait
     public function isAllowedExtension(string $extension): bool
     {
         return empty($this->getAllowedExtensions())
-            || \in_array($extension, $this->getAllowedExtensions(), true);
+               || \in_array($extension, $this->getAllowedExtensions(), true);
     }
 
     public function getAllowedExtensions(): array
@@ -332,6 +338,28 @@ trait FileTrait
                 ->map(fn ($value): string => $this->getPathWithDir($value))
                 ->toArray()
             : [$this->getPathWithDir($values)];
+    }
+
+    /**
+     * @param  string[]|string|null  $newValue
+     *
+     * @return void
+     */
+    public function removeExcludedFilesPatched(null|array|string $newValue = null): void
+    {
+        $values = collect(
+            $this->toValue(withDefault: false),
+        );
+
+        $values->diff($this->getRemainingValues())->each(
+            function (?string $file) use ($newValue): void {
+                $old = array_filter(\is_array($newValue) ? $newValue : [$newValue]);
+
+                if ($file !== null && ! \in_array($file, $old, true)) {
+                    $this->deleteFile($file);
+                }
+            },
+        );
     }
 
     public function removeExcludedFiles(): void

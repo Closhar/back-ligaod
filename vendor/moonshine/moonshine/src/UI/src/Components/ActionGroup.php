@@ -8,7 +8,6 @@ use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
 use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\Contracts\UI\Collection\ActionButtonsContract;
 use MoonShine\UI\Collections\ActionButtons;
-use Throwable;
 
 /**
  * @method static static make(iterable $actions = [])
@@ -72,17 +71,6 @@ final class ActionGroup extends AbstractWithComponents
     {
         return [
             'actions' => $this->getActions()->onlyVisible(),
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     * @throws Throwable
-     */
-    protected function systemViewData(): array
-    {
-        return [
-            ...parent::systemViewData(),
         ];
     }
 }

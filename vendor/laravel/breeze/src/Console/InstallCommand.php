@@ -7,6 +7,7 @@ use Illuminate\Contracts\Console\PromptsForMissingInput;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Str;
+use Pest\TestSuite;
 use RuntimeException;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Input\InputInterface;
@@ -122,13 +123,19 @@ class InstallCommand extends Command implements PromptsForMissingInput
             ->whenNotEmpty(function ($names) use ($bootstrapApp, $group, $modifier) {
                 $names = $names->map(fn ($name) => "$name")->implode(','.PHP_EOL.'            ');
 
-                $bootstrapApp = str_replace(
+                $stubs = [
                     '->withMiddleware(function (Middleware $middleware) {',
-                    '->withMiddleware(function (Middleware $middleware) {'
+                    '->withMiddleware(function (Middleware $middleware): void {',
+                ];
+
+                $bootstrapApp = str_replace(
+                    $stubs,
+                    collect($stubs)->transform(fn ($stub) => $stub
                         .PHP_EOL."        \$middleware->$group($modifier: ["
                         .PHP_EOL."            $names,"
                         .PHP_EOL.'        ]);'
-                        .PHP_EOL,
+                        .PHP_EOL
+                    )->all(),
                     $bootstrapApp,
                 );
 
@@ -151,13 +158,19 @@ class InstallCommand extends Command implements PromptsForMissingInput
             ->whenNotEmpty(function ($aliases) use ($bootstrapApp) {
                 $aliases = $aliases->map(fn ($name, $alias) => "'$alias' => $name")->implode(','.PHP_EOL.'            ');
 
-                $bootstrapApp = str_replace(
+                $stubs = [
                     '->withMiddleware(function (Middleware $middleware) {',
-                    '->withMiddleware(function (Middleware $middleware) {'
+                    '->withMiddleware(function (Middleware $middleware): void {',
+                ];
+
+                $bootstrapApp = str_replace(
+                    $stubs,
+                    collect($stubs)->transform(fn ($stub) => $stub
                         .PHP_EOL.'        $middleware->alias(['
                         .PHP_EOL."            $aliases,"
                         .PHP_EOL.'        ]);'
-                        .PHP_EOL,
+                        .PHP_EOL
+                    )->all(),
                     $bootstrapApp,
                 );
 
@@ -430,6 +443,6 @@ class InstallCommand extends Command implements PromptsForMissingInput
      */
     protected function isUsingPest()
     {
-        return class_exists(\Pest\TestSuite::class);
+        return class_exists(TestSuite::class);
     }
 }

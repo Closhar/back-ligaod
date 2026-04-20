@@ -12,6 +12,7 @@ use MoonShine\Contracts\Core\TypeCasts\DataCasterContract;
 use MoonShine\Contracts\Core\TypeCasts\DataWrapperContract;
 use MoonShine\Contracts\UI\ComponentAttributesBagContract;
 use MoonShine\Contracts\UI\FormElementContract;
+use MoonShine\Contracts\UI\HasFieldsContract;
 use MoonShine\Core\Traits\NowOn;
 use MoonShine\Core\TypeCasts\MixedDataWrapper;
 use MoonShine\Support\Components\MoonShineComponentAttributeBag;
@@ -269,10 +270,15 @@ abstract class FormElement extends MoonShineComponent implements FormElementCont
     public function fill(mixed $value = null, ?DataWrapperContract $casted = null, int $index = 0): static
     {
         $wrapper = $this instanceof WrapperWithApplyContract || $this instanceof FieldsWrapperContract;
+        $empty = [];
 
-        return $this->resolveFill($wrapper ? $value : [
-            $this->getColumn() => $value,
-        ], $casted, $index);
+        return $this->resolveFill(
+            $wrapper
+                ? $value
+                : data_set($empty, $this->getColumn(), $value),
+            $casted,
+            $index
+        );
     }
 
     public function toRawValue(): mixed
@@ -641,5 +647,20 @@ abstract class FormElement extends MoonShineComponent implements FormElementCont
             'value' => $this->getValue(),
             'errors' => data_get($this->getErrors(), $this->getNameDot()),
         ];
+    }
+
+    public function flushState(): void
+    {
+        $this->flushRenderCache();
+        $this->resolvedValue = null;
+    }
+
+    protected function onClone(): void
+    {
+        if ($this instanceof HasFieldsContract) {
+            foreach ($this->getFields()->onlyFields() as $field) {
+                $field->flushState();
+            }
+        }
     }
 }

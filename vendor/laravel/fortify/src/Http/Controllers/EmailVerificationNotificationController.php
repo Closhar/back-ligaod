@@ -14,14 +14,14 @@ class EmailVerificationNotificationController extends Controller
      * Send a new email verification notification.
      *
      * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * @return mixed
      */
     public function store(Request $request)
     {
         if ($request->user()->hasVerifiedEmail()) {
             return $request->wantsJson()
-                        ? new JsonResponse('', 204)
-                        : app(RedirectAsIntended::class, ['name' => 'email-verification']);
+                ? new JsonResponse('', 204)
+                : app(RedirectAsIntended::class, ['name' => 'email-verification']);
         }
 
         $request->user()->sendEmailVerificationNotification();

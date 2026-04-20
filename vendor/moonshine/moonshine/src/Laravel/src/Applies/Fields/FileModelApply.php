@@ -50,7 +50,9 @@ final class FileModelApply implements ApplyContract
                 }
             }
 
-            $field->removeExcludedFiles();
+            $field->removeExcludedFilesPatched(
+                $field->isKeepOriginalFileName() ? $newValue : null,
+            );
 
             return data_set($item, $field->getColumn(), $newValue);
         };

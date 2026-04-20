@@ -129,7 +129,7 @@ abstract class BaseLayout extends AbstractLayout
         return [];
     }
 
-    protected function getTopBarComponent(): Topbar
+    protected function getTopBarComponent(): TopBar
     {
         return TopBar::make([
             Div::make([
@@ -237,11 +237,11 @@ abstract class BaseLayout extends AbstractLayout
         if ($this->withTitle()) {
             $hasSubtitle = $this->withSubTitle() && $this->getPage()->getSubtitle() !== '';
 
-            return [
+            return array_filter([
                 Title::make($this->getPage()->getTitle())->class($hasSubtitle ? '' : 'mb-6'),
                 $hasSubtitle ? Heading::make($this->getPage()->getSubtitle())->class('mb-6') : null,
                 ...$components,
-            ];
+            ]);
         }
 
         return $components;

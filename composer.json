@@ -44,7 +44,7 @@
         "moonshine/ru": "^1.0",
         "moonshine/tinymce": "^1.0",
         "moonshine/trix": "^3.0",
-        "phpoffice/phpspreadsheet": "^4.2",
+        "phpoffice/phpspreadsheet": "^5.0",
         "spatie/image": "^3.8",
         "symfony/css-selector": "^7.2",
         "symfony/dom-crawler": "^7.2",

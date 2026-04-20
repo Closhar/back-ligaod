@@ -197,6 +197,11 @@ return [
             'regional' => 'de_DE',
         ],
 
+        Locale::GermanAustria->value => [
+            'type'     => 'Latn',
+            'regional' => 'de_AT',
+        ],
+
         Locale::GermanSwitzerland->value => [
             'type'     => 'Latn',
             'regional' => 'de_CH',
@@ -210,6 +215,11 @@ return [
         Locale::Gujarati->value => [
             'type'     => 'Gujr',
             'regional' => 'gu_IN',
+        ],
+
+        Locale::HaitianCreole->value => [
+            'type'     => 'Latn',
+            'regional' => 'fr_HT',
         ],
 
         Locale::Hausa->value => [

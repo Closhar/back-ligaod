@@ -1,19 +1,17 @@
 # Native Locale Names
 
-![laravel-lang native locale names](https://preview.dragon-code.pro/laravel-lang/native-locale-names.svg?brand=laravel&mode=dark)
+<picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://banners.beyondco.de/Native%20Locale%20Names.png?pattern=topography&style=style_2&fontSize=100px&md=1&showWatermark=1&icon=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg&theme=dark&packageManager=composer+require&packageName=laravel-lang%2Fnative-locale-names&description=by+Laravel+Lang&images=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg">
+    <img src="https://banners.beyondco.de/Native%20Locale%20Names.png?pattern=topography&style=style_2&fontSize=100px&md=1&showWatermark=1&icon=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg&theme=light&packageManager=composer+require&packageName=laravel-lang%2Fnative-locale-names&description=by+Laravel+Lang&images=https%3A%2F%2Flaravel.com%2Fimg%2Flogomark.min.svg" alt="Native Locale Names">
+</picture>
 
 [![Stable Version][badge_stable]][link_packagist]
-[![Unstable Version][badge_unstable]][link_packagist]
 [![Total Downloads][badge_downloads]][link_packagist]
 [![License][badge_license]][link_license]
 
 ## Documentation
 
 See the [documentation](https://laravel-lang.com/packages-native-locale-names.html) for detailed installation.
-
-## Communication
-
-We also have official [chats](https://t.me/addlist/l0XGtvEIBiljMTMy) in Telegram.
 
 ## Contributing
 
@@ -29,8 +27,6 @@ This package is licensed under the [MIT License](https://laravel-lang.com/licens
 
 
 [badge_stable]:     https://img.shields.io/github/v/release/Laravel-Lang/native-locale-names?label=stable&style=flat-square
-
-[badge_unstable]:   https://img.shields.io/badge/unstable-dev--main-orange?style=flat-square
 
 [badge_downloads]:  https://img.shields.io/packagist/dt/Laravel-Lang/native-locale-names.svg?style=flat-square
 

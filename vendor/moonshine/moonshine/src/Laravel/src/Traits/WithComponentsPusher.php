@@ -19,6 +19,9 @@ trait WithComponentsPusher
         static::$pushedComponents[] = $component;
     }
 
+    /**
+     * @return list<ComponentContract>
+     */
     protected function getPushedComponents(): array
     {
         return collect(static::$pushedComponents)

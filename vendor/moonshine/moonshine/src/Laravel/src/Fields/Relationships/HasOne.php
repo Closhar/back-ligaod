@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Relations\HasOneOrManyThrough;
 use Illuminate\Database\Eloquent\Relations\MorphOneOrMany;
 use MoonShine\Contracts\Core\CrudResourceContract;
 use MoonShine\Contracts\Core\DependencyInjection\FieldsContract;
+use MoonShine\Contracts\UI\ActionButtonContract;
 use MoonShine\Contracts\UI\ComponentContract;
 use MoonShine\Contracts\UI\FieldContract;
 use MoonShine\Contracts\UI\FieldWithComponentContract;
@@ -26,6 +27,8 @@ use MoonShine\Laravel\Contracts\Fields\HasTabModeContract;
 use MoonShine\Laravel\Exceptions\ModelRelationFieldException;
 use MoonShine\Laravel\Resources\ModelResource;
 use MoonShine\Laravel\Traits\Fields\HasModalModeConcern;
+use MoonShine\Support\AlpineJs;
+use MoonShine\Support\Enums\JsEvent;
 use MoonShine\Support\Enums\PageType;
 use MoonShine\UI\Components\FormBuilder;
 use MoonShine\UI\Components\Table\TableBuilder;
@@ -162,13 +165,17 @@ class HasOne extends ModelRelationField implements
                 fn (TableBuilderContract $tableBuilder) => value($this->modifyTable, $tableBuilder)
             );
 
-        return $this->isModalMode()
-            ? (string) $this->getModalButton(
-                Components::make([$table]),
-                $this->getLabel(),
-                $this->getRelationName()
-            )
-            : $table->render();
+        if ($this->isModalMode()) {
+            return $this->toValue() === null
+                ? ''
+                : (string)$this->getModalButton(
+                    Components::make([$table]),
+                    $this->getLabel(),
+                    $this->getRelationName(),
+                );
+        }
+
+        return $table->render();
     }
 
     /**
@@ -241,6 +248,32 @@ class HasOne extends ModelRelationField implements
         $this->modifyTable = $callback;
 
         return $this;
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function getFormModalButton(string $label, ?string $redirectBack = null): ActionButtonContract
+    {
+        return $this->getModalButton(
+            Components::make([
+                $this
+                    ->redirectAfter(fn (): ?string => $redirectBack)
+                    ->getComponent()
+                    ->when(
+                        $redirectBack === null,
+                        fn (FormBuilder $form): FormBuilder => $form->withoutRedirect()
+                    )
+                    ->async(events: [
+                        AlpineJs::event(
+                            JsEvent::FRAGMENT_UPDATED,
+                            $this->getRelationName()
+                        ),
+                    ]),
+            ]),
+            $label,
+            $this->getRelationName()
+        )->primary();
     }
 
     /**
@@ -328,7 +361,7 @@ class HasOne extends ModelRelationField implements
                     $resource->getDeleteButton(
                         redirectAfterDelete: $this->getDefaultRedirect($parentItem->getKey()),
                         isAsync: false,
-                        modalName: "has-one-{$this->getRelationName()}",
+                        modalName: "has-one-{$this->getResource()->getUriKey()}-{$this->getRelationName()}",
                     )->class('btn-lg'),
                 ]
             )
@@ -352,7 +385,7 @@ class HasOne extends ModelRelationField implements
         $this->getResource()
             ->getFormFields()
             ->onlyFields()
-            ->each(static fn (Field $field): mixed => $field->fillData($data)->afterDestroy($data));
+            ->each(fn (Field $field): mixed => $field->setParent($this)->fillData($data)->afterDestroy($data));
 
         return $data;
     }

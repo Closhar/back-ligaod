@@ -4,7 +4,9 @@ namespace Inertia;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Support\MessageBag;
 use Inertia\Support\Header;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -20,9 +22,14 @@ class Middleware
     protected $rootView = 'app';
 
     /**
-     * Determines the current asset version.
+     * Determines if validation errors should be mapped to a single error message per field.
      *
-     * @see https://inertiajs.com/asset-versioning
+     * @var bool
+     */
+    protected $withAllErrors = false;
+
+    /**
+     * Determine the current asset version.
      *
      * @return string|null
      */
@@ -32,11 +39,11 @@ class Middleware
             return hash('xxh128', config('app.asset_url'));
         }
 
-        if (file_exists($manifest = public_path('mix-manifest.json'))) {
+        if (file_exists($manifest = public_path('build/manifest.json'))) {
             return hash_file('xxh128', $manifest);
         }
 
-        if (file_exists($manifest = public_path('build/manifest.json'))) {
+        if (file_exists($manifest = public_path('mix-manifest.json'))) {
             return hash_file('xxh128', $manifest);
         }
 
@@ -44,11 +51,9 @@ class Middleware
     }
 
     /**
-     * Defines the props that are shared by default.
+     * Define the props that are shared by default.
      *
-     * @see https://inertiajs.com/shared-data
-     *
-     * @return array
+     * @return array<string, mixed>
      */
     public function share(Request $request)
     {
@@ -58,15 +63,33 @@ class Middleware
     }
 
     /**
-     * Sets the root template that's loaded on the first page visit.
+     * Define the props that are shared once and remembered across navigations.
      *
-     * @see https://inertiajs.com/server-side-setup#root-template
+     * @return array<string, callable|OnceProp>
+     */
+    public function shareOnce(Request $request): array
+    {
+        return [];
+    }
+
+    /**
+     * Set the root template that is loaded on the first page visit.
      *
      * @return string
      */
     public function rootView(Request $request)
     {
         return $this->rootView;
+    }
+
+    /**
+     * Define a callback that returns the relative URL.
+     *
+     * @return Closure|null
+     */
+    public function urlResolver()
+    {
+        return null;
     }
 
     /**
@@ -81,10 +104,27 @@ class Middleware
         });
 
         Inertia::share($this->share($request));
+
+        foreach ($this->shareOnce($request) as $key => $value) {
+            if ($value instanceof OnceProp) {
+                Inertia::share($key, $value);
+            } else {
+                Inertia::shareOnce($key, $value);
+            }
+        }
+
         Inertia::setRootView($this->rootView($request));
+
+        if ($urlResolver = $this->urlResolver()) {
+            Inertia::resolveUrlUsing($urlResolver);
+        }
 
         $response = $next($request);
         $response->headers->set('Vary', Header::INERTIA);
+
+        if ($response->isRedirect()) {
+            $this->reflash($request);
+        }
 
         if (! $request->header(Header::INERTIA)) {
             return $response;
@@ -106,8 +146,17 @@ class Middleware
     }
 
     /**
-     * Determines what to do when an Inertia action returned with no response.
-     * By default, we'll redirect the user back to where they came from.
+     * Reflash the session data for the next request.
+     */
+    protected function reflash(Request $request): void
+    {
+        if ($flashed = Inertia::getFlashed($request)) {
+            $request->session()->flash(SessionKey::FlashData->value, $flashed);
+        }
+    }
+
+    /**
+     * Handle empty responses.
      */
     public function onEmptyResponse(Request $request, Response $response): Response
     {
@@ -115,21 +164,21 @@ class Middleware
     }
 
     /**
-     * Determines what to do when the Inertia asset version has changed.
-     * By default, we'll initiate a client-side location visit to force an update.
+     * Handle version changes.
      */
     public function onVersionChange(Request $request, Response $response): Response
     {
         if ($request->hasSession()) {
-            $request->session()->reflash();
+            /** @var Store $session */
+            $session = $request->session();
+            $session->reflash();
         }
 
         return Inertia::location($request->fullUrl());
     }
 
     /**
-     * Resolves and prepares validation errors in such
-     * a way that they are easier to use client-side.
+     * Resolve validation errors for client-side use.
      *
      * @return object
      */
@@ -139,9 +188,12 @@ class Middleware
             return (object) [];
         }
 
-        return (object) collect($request->session()->get('errors')->getBags())->map(function ($bag) {
+        /** @var array<string, MessageBag> $bags */
+        $bags = $request->session()->get('errors')->getBags();
+
+        return (object) collect($bags)->map(function ($bag) {
             return (object) collect($bag->messages())->map(function ($errors) {
-                return $errors[0];
+                return $this->withAllErrors ? $errors : $errors[0];
             })->toArray();
         })->pipe(function ($bags) use ($request) {
             if ($bags->has('default') && $request->header(Header::ERROR_BAG)) {

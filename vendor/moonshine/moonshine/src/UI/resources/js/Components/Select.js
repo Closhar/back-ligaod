@@ -5,6 +5,8 @@ import {crudFormQuery, getQueryString, prepareFormExtraData} from '../Support/Fo
 import {dispatchEvents as de} from '../Support/DispatchEvents.js'
 import {formToJSON} from 'axios'
 import {DEFAULT_CONFIG} from '../../../node_modules/choices.js/src/scripts/defaults'
+import request from '../Request/Core.js'
+import {ComponentRequestData} from '../DTOs/ComponentRequestData'
 
 export default (asyncUrl = '') => ({
   choicesInstance: null,
@@ -15,6 +17,8 @@ export default (asyncUrl = '') => ({
   associatedWith: null,
   searchTerms: null,
   isLoadedOptions: false,
+  isMultiple: false,
+  morphClearValue: '',
   customOptions: {},
   resolvedOptions: [
     'silent',
@@ -66,6 +70,7 @@ export default (asyncUrl = '') => ({
 
   init() {
     this.placeholder = this.$el.getAttribute('placeholder')
+    this.isMultiple = this.$el.getAttribute('multiple')
     this.searchEnabled = !!this.$el.dataset.searchEnabled
     this.removeItemButton = !!this.$el.dataset.removeItemButton
     this.shouldSort = !!this.$el.dataset.shouldSort
@@ -234,10 +239,37 @@ export default (asyncUrl = '') => ({
 
     this.setDataValues()
 
+    this.$nextTick(() => {
+      const el = this.$el
+
+      if (el.value === null || el.value === undefined || el.value === '') {
+        return
+      }
+
+      let value = this.isMultiple
+        ? Array.from(el.selectedOptions).map(option => option.value)
+        : el.value
+
+      this.choicesInstance.setChoiceByValue(value)
+    })
+
     this.$el.addEventListener(
       'change',
       () => {
         this.isLoadedOptions = false
+
+        this.$nextTick(() => {
+          const value = this.choicesInstance.getValue(true)
+
+          if (this.isMultiple) {
+            const selectedValues = Array.isArray(value) ? value.map(String) : []
+            for (const option of this.$el.options) {
+              option.selected = selectedValues.includes(option.value)
+            }
+          } else {
+            this.$el.value = value ?? ''
+          }
+        })
 
         this.setDataValues()
       },
@@ -350,8 +382,9 @@ export default (asyncUrl = '') => ({
     }
   },
   morphClear(type) {
-    if (type.value) {
+    if (type.value && this.morphClearValue !== type.value) {
       this.choicesInstance.clearStore()
+      this.morphClearValue = type.value
     }
   },
   async asyncSearch() {
@@ -399,9 +432,18 @@ export default (asyncUrl = '') => ({
     de(componentEvent, '', this, extra)
   },
   async fromUrl(url) {
-    const response = await fetch(url)
-    const json = await response.json()
-    return json
+    let options = []
+
+    try {
+      let componentRequestData = new ComponentRequestData()
+      componentRequestData.withAfterResponse(data => {
+        options = data
+      })
+
+      await request(this, url, 'get', {}, {}, componentRequestData)
+    } catch (e) {}
+
+    return options
   },
   normalizeOptions(items) {
     return items.map(item => {

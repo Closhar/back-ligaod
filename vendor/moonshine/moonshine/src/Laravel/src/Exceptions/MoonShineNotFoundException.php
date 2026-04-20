@@ -11,9 +11,9 @@ use MoonShine\Laravel\Pages\ErrorPage;
 
 final class MoonShineNotFoundException extends MoonShineException
 {
-    public function report(): bool
+    public function report(): void
     {
-        return false;
+        //
     }
 
     public function render(Request $request): Response
