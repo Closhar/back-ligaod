@@ -55,8 +55,10 @@ final class MoonshineIconifyServiceProvider extends ServiceProvider
             __DIR__ . '/../../config/moonshine-iconify.php' => config_path('moonshine-iconify.php'),
         ], 'moonshine-iconify-config');
 
-        $this->commands(
-            DownloadIconifyIconsCommand::class
-        );
+        if (class_exists(DownloadIconifyIconsCommand::class)) {
+            $this->commands(
+                DownloadIconifyIconsCommand::class
+            );
+        }
     }
 }

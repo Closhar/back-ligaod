@@ -8,6 +8,14 @@ return new class extends Migration
 {
     public function up()
     {
+        if (
+            !Schema::hasTable('clubs') ||
+            !Schema::hasTable('rating_regions') ||
+            Schema::hasColumn('clubs', 'rating_region_id')
+        ) {
+            return;
+        }
+
         Schema::table('clubs', function (Blueprint $table) {
             $table->foreignId('rating_region_id')->nullable()->constrained('rating_regions')->onDelete('set null');
         });
@@ -15,6 +23,13 @@ return new class extends Migration
 
     public function down()
     {
+        if (
+            !Schema::hasTable('clubs') ||
+            !Schema::hasColumn('clubs', 'rating_region_id')
+        ) {
+            return;
+        }
+
         Schema::table('clubs', function (Blueprint $table) {
             $table->dropForeign(['rating_region_id']);
             $table->dropColumn('rating_region_id');

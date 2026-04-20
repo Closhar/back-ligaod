@@ -8,10 +8,14 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('region_ratings')) {
+            return;
+        }
+
         Schema::create('region_ratings', function (Blueprint $table) {
             $table->id();
             $table->foreignId('rating_region_id')->constrained('rating_regions')->onDelete('cascade');
-            $table->foreignId('sport_id')->constrained('sports')->onDelete('cascade');
+            $table->unsignedBigInteger('sport_id');
             $table->integer('year'); // Год рейтинга
             $table->decimal('total_points', 10, 2)->default(0); // Общее количество очков
             $table->integer('rank')->nullable(); // Место в рейтинге
@@ -21,6 +25,7 @@ return new class extends Migration
 
             // Уникальный индекс для региона-спорт-год
             $table->unique(['rating_region_id', 'sport_id', 'year']);
+            $table->index('sport_id');
         });
     }
 

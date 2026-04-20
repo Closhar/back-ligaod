@@ -8,9 +8,13 @@ return new class extends Migration
 {
     public function up()
     {
+        if (Schema::hasTable('club_achievements')) {
+            return;
+        }
+
         Schema::create('club_achievements', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('club_id')->constrained('clubs')->onDelete('cascade');
+            $table->unsignedBigInteger('club_id');
             $table->integer('year'); // Год достижения
             $table->string('tournament_type'); // Тип турнира: championship, first_league, cup, supercup
             $table->string('division')->nullable(); // Дивизион: premier, first
