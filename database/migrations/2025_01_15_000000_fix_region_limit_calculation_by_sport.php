@@ -6,21 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
-        // Пересчитываем все достижения с учетом вида спорта при группировке
+        if (
+            !Schema::hasTable('club_achievements') ||
+            !Schema::hasTable('tournament_types') ||
+            !Schema::hasColumn('tournament_types', 'max_participants_per_region')
+        ) {
+            return;
+        }
+
         \App\Models\ClubAchievement::recalculateRegionLimit();
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
-        // В случае отката миграции, пересчитываем по старой логике
-        // (но это не рекомендуется, так как старый алгоритм был неправильным)
+        //
     }
 };
