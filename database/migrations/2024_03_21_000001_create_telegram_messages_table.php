@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('telegram_messages', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('channel_id')->constrained('telegram_channels')->onDelete('cascade');
+            $table->unsignedBigInteger('channel_id');
             $table->bigInteger('message_id')->unsigned(); // ID сообщения в Telegram
             $table->text('content')->nullable(); // Текст сообщения
             $table->json('media')->nullable(); // Медиафайлы (фото, видео и т.д.)
