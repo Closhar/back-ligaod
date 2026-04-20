@@ -21,12 +21,6 @@ return new class extends Migration
             $table->integer('sort_order')->default(0);
             $table->string('score')->nullable();
             $table->timestamps();
-
-            $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
-            $table->foreign('club_id')->references('id')->on('clubs')->onDelete('cascade');
-            $table->foreign('person_id')->references('id')->on('people')->onDelete('set null');
-            $table->foreign('action_type_id')->references('id')->on('action_types')->onDelete('cascade');
-            $table->foreign('related_action_id')->references('id')->on('event_actions')->onDelete('set null');
         });
     }
 

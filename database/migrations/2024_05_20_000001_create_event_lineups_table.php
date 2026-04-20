@@ -19,11 +19,6 @@ return new class extends Migration
             $table->integer('minute_out')->nullable();
             $table->integer('sort_order')->default(0);
             $table->timestamps();
-
-            $table->foreign('event_id')->references('id')->on('events')->onDelete('cascade');
-            $table->foreign('club_id')->references('id')->on('clubs')->onDelete('cascade');
-            $table->foreign('person_id')->references('id')->on('people')->onDelete('set null');
-            $table->foreign('parent_lineup_id')->references('id')->on('event_lineups')->onDelete('set null');
         });
     }
 
