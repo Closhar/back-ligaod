@@ -40,6 +40,12 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI'),
     ],
 
+    'yandex' => [
+        'client_id' => env('YANDEX_CLIENT_ID'),
+        'client_secret' => env('YANDEX_CLIENT_SECRET'),
+        'redirect' => env('YANDEX_REDIRECT_URI'),
+    ],
+
     'telegram' => [
         'bot_token' => env('TELEGRAM_BOT_TOKEN'),
         'api_id' => env('TELEGRAM_API_ID'),

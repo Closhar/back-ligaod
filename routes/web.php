@@ -8,7 +8,9 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Models\User;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
 
@@ -86,4 +88,75 @@ Route::get('/auth/google/callback', function () {
     return redirect(env('NUXT_URL') . '/auth/google/callback?token=' . $token);
 });
 
+Route::get('/auth/yandex/redirect', function () {
+    $query = http_build_query([
+        'response_type' => 'code',
+        'client_id' => config('services.yandex.client_id'),
+        'redirect_uri' => config('services.yandex.redirect'),
+        'force_confirm' => 'yes',
+    ]);
+
+    return redirect('https://oauth.yandex.ru/authorize?' . $query);
+});
+
+Route::get('/auth/yandex/callback', function () {
+    $code = request('code');
+    $frontendUrl = rtrim((string) env('NUXT_URL'), '/');
+
+    if (!$code) {
+        return redirect($frontendUrl . '/account');
+    }
+
+    $tokenResponse = Http::asForm()->post('https://oauth.yandex.ru/token', [
+        'grant_type' => 'authorization_code',
+        'code' => $code,
+        'client_id' => config('services.yandex.client_id'),
+        'client_secret' => config('services.yandex.client_secret'),
+        'redirect_uri' => config('services.yandex.redirect'),
+    ]);
+
+    if (!$tokenResponse->ok() || !$tokenResponse->json('access_token')) {
+        return redirect($frontendUrl . '/account');
+    }
+
+    $profileResponse = Http::withToken($tokenResponse->json('access_token'))
+        ->get('https://login.yandex.ru/info', [
+            'format' => 'json',
+        ]);
+
+    if (!$profileResponse->ok() || !$profileResponse->json('id')) {
+        return redirect($frontendUrl . '/account');
+    }
+
+    $yandexId = (string) $profileResponse->json('id');
+    $email = $profileResponse->json('default_email') ?: "yandex_{$yandexId}@oauth.local";
+    $name = $profileResponse->json('real_name')
+        ?: $profileResponse->json('display_name')
+        ?: $profileResponse->json('login')
+        ?: 'Пользователь Яндекса';
+    $avatarId = $profileResponse->json('default_avatar_id');
+    $avatar = $avatarId ? "https://avatars.yandex.net/get-yapic/{$avatarId}/islands-200" : null;
+
+    $user = User::where('yandex_id', $yandexId)->first()
+        ?: User::where('email', $email)->first()
+        ?: new User();
+
+    $user->fill([
+        'name' => $user->name ?: $name,
+        'email' => $user->email ?: $email,
+        'avatar' => $user->avatar ?: $avatar,
+        'yandex_id' => $yandexId,
+        'password' => $user->password ?: bcrypt(Str::random(32)),
+    ]);
+
+    if (!$user->email_verified_at) {
+        $user->email_verified_at = now();
+    }
+
+    $user->save();
+
+    $token = $user->createToken('yandex-token')->plainTextToken;
+
+    return redirect($frontendUrl . '/auth/yandex/callback?token=' . $token);
+});
 
