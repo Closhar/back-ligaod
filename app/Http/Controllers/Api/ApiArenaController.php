@@ -21,7 +21,7 @@ class ApiArenaController extends Controller
     {
         $homeRegion = $request->input('home_region', 1);
         $showNative = $request->input('show_native', 1);
-        $regionId = $request->input('region_id', 1);
+        $regionId = $request->input('region_id');
 
         $title = $request->query('title');
         $query = Arena::query()
@@ -39,6 +39,9 @@ class ApiArenaController extends Controller
             ->with([
                 'city' => function ($cityQuery) {
                     $cityQuery->select(['id', 'title']);
+                },
+                'region' => function ($regionQuery) {
+                    $regionQuery->select(['id', 'title', 'title_short']);
                 }
             ])
             ->with([

@@ -24,12 +24,13 @@ class ApiClubController extends Controller
         $sportId = $request->query('sport_id');
         $genderId = $request->query('gender_id');
         $isAlien = $request->query('is_alien');
-        $regionId = $request->query('region_id', 1);
+        $regionId = $request->query('region_id');
 
         // Преобразуем region_id в числовое значение
         if (is_string($regionId)) {
-            $regionId = is_numeric($regionId) ? (int)$regionId : 1;
+            $regionId = is_numeric($regionId) ? (int)$regionId : null;
         }
+        $regionCompareId = $regionId ?: 0;
         $perPage = $request->query('per_page', 10); // Количество элементов на странице (по умолчанию 10)
         $page = $request->query('page', 1); // Номер страницы (по умолчанию 1)
         $searchQuery = $request->query('q'); // Параметр поиска
@@ -52,7 +53,7 @@ class ApiClubController extends Controller
                     'gender_id',
                     'age_id',
                     'region_id',
-                    DB::raw('CASE WHEN region_id = ' . $regionId . ' THEN 0 ELSE 1 END as alien'),
+                    DB::raw('CASE WHEN clubs.region_id = ' . $regionCompareId . ' THEN 0 ELSE 1 END as alien'),
                     DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info'),
                     'clubs.tlgs_to_parse'
                 )
@@ -73,7 +74,7 @@ class ApiClubController extends Controller
                     'clubs.gender_id',
                     'clubs.age_id',
                     'clubs.region_id',
-                    DB::raw('CASE WHEN region_id = ' . $regionId . ' THEN 0 ELSE 1 END as alien'),
+                    DB::raw('CASE WHEN clubs.region_id = ' . $regionCompareId . ' THEN 0 ELSE 1 END as alien'),
                     'clubs.tlgs_to_parse'
                 )
                 ->with([
