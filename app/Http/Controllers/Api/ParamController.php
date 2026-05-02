@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Param;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -39,6 +40,12 @@ class ParamController extends Controller
                 'value' => ['nullable', 'string'],
                 'type' => ['required', Rule::in(['string', 'text'])],
             ]);
+            if (($data['value'] ?? null) === null) {
+                Log::warning('[FIX:params-null-value] Empty param value normalized during create', [
+                    'name' => $data['name'],
+                ]);
+                $data['value'] = '';
+            }
 
             $param = Param::create($data);
 
@@ -62,9 +69,16 @@ class ParamController extends Controller
             $data = $request->validate([
                 'title' => ['sometimes', 'required', 'string', 'max:255'],
                 'name' => ['sometimes', 'required', 'string', 'max:255', Rule::unique('params', 'name')->ignore($param->id)],
-                'value' => ['nullable', 'string'],
+                'value' => ['sometimes', 'nullable', 'string'],
                 'type' => ['sometimes', 'required', Rule::in(['string', 'text'])],
             ]);
+            if (array_key_exists('value', $data) && $data['value'] === null) {
+                Log::warning('[FIX:params-null-value] Null param value normalized during update', [
+                    'param_id' => $param->id,
+                    'name' => $param->name,
+                ]);
+                $data['value'] = '';
+            }
 
             $param->update($data);
 
