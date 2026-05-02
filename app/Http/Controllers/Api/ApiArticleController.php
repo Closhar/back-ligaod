@@ -26,6 +26,7 @@ class ApiArticleController extends Controller
         $clubSlug = $request->input('club', ''); // Поиск по clubs.slug
         $competitionId = $request->input('competition_id', ''); // Поиск по competitions.id
         $arenaSlug = $request->input('arena', ''); // Поиск по arenas.slug
+        $tagIds = $this->normalizeIds($request->input('tags', $request->input('tag_ids', [])));
         $sortDirection = $request->input('sort', 'desc'); // Направление сортировки (по умолчанию asc)
 
         // Параметры пагинации
@@ -65,7 +66,10 @@ class ApiArticleController extends Controller
                         'clubs.title',
                         'clubs.slug'
                     ]);
-                }
+                },
+                'tags' => function ($tagQuery) {
+                    $tagQuery->select(['article_tags.id', 'article_tags.title', 'article_tags.slug']);
+                },
             ]);
 
         // Фильтрация по дате
@@ -119,6 +123,12 @@ class ApiArticleController extends Controller
         if (!empty($arenaSlug)) {
             $query->whereHas('arenas', function ($q) use ($arenaSlug) {
                 $q->where('slug', $arenaSlug);
+            });
+        }
+
+        if (!empty($tagIds)) {
+            $query->whereHas('tags', function ($q) use ($tagIds) {
+                $q->whereIn('article_tags.id', $tagIds);
             });
         }
 
@@ -285,6 +295,9 @@ class ApiArticleController extends Controller
                         }
                     ]);
                 },
+                'tags' => function ($tagQuery) {
+                    $tagQuery->select(['article_tags.id', 'article_tags.title', 'article_tags.slug']);
+                },
 
             ])
             ->get()
@@ -305,5 +318,22 @@ class ApiArticleController extends Controller
     public function destroy(Gender $gender)
     {
         //
+    }
+
+    private function normalizeIds($value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        if (is_string($value)) {
+            $value = explode(',', $value);
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('intval', $value)));
     }
 }

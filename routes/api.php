@@ -32,6 +32,7 @@ use App\Http\Controllers\Api\ApiMenuSectionController;
 use App\Http\Controllers\Api\ApiParamsController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
+use App\Http\Controllers\Api\ArticleTagController;
 use App\Http\Controllers\Api\ArticleViewController;
 use App\Http\Controllers\Api\ClubAchievementController;
 use App\Http\Controllers\Api\ClubPlayerController;
@@ -116,6 +117,7 @@ Route::group(['prefix' => '/v1'], function () {
     Route::put('/events/{event}', [\App\Http\Controllers\Api\ApiEventController::class, 'update']);
     Route::get('/articles', [ApiArticleController::class, 'index'])->name('api.articles.index');
     Route::get('/articles/{id}', [ApiArticleController::class, 'show'])->name('api.articles.show');
+    Route::get('/article-tags', [ArticleTagController::class, 'index'])->name('api.article-tags.index');
     Route::get('/galleries', [ApiGalleryController::class, 'index'])->name('api.galleries.index');
     Route::get('/galleries/{id}', [ApiGalleryController::class, 'show'])->name('api.galleries.show');
     Route::get('/params', [ApiParamsController::class, 'index'])->name('params.show');
@@ -572,10 +574,14 @@ Route::post('arenas/{id}/upload-image', [ArenaController::class, 'uploadImage'])
 Route::delete('arenas/{id}/image', [ArenaController::class, 'destroyImage']);
 Route::post('arenas/{id}/delete-image', [ArenaController::class, 'deleteImage']);
 
+Route::post('articles/bulk-delete', [ArticleController::class, 'bulkDelete']);
+Route::post('articles/bulk-add-tags', [ArticleController::class, 'bulkAddTags']);
 Route::apiResource('articles', ArticleController::class);
 Route::post('articles/{id}/upload-image', [ArticleController::class, 'uploadImage']);
 Route::delete('articles/{id}/image', [ArticleController::class, 'destroyImage']);
 Route::post('articles/{id}/delete-image', [ArticleController::class, 'deleteImage']);
+Route::get('article-tags', [ArticleTagController::class, 'index']);
+Route::post('article-tags', [ArticleTagController::class, 'store']);
 
 // Маршрут для сохранения morphedByMany отношений
 Route::post('/relations/save', [App\Http\Controllers\Api\ApiRelationsController::class, 'saveRelations']);

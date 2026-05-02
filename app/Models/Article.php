@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Storage;
 
 class Article extends Model
@@ -83,6 +84,11 @@ class Article extends Model
     public function people(): MorphToMany
     {
         return $this->morphedByMany(Person::class, 'articleable');
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(ArticleTag::class);
     }
 
     // Связь с просмотрами

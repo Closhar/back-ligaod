@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
+use App\Models\ArticleTag;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
@@ -23,7 +24,9 @@ class ArticleController extends Controller
         $sortDirection = $request->input('sort_direction', 'desc');
         $id = $request->input('id');
 
-        $query = Article::query()->with('region');
+        $tagIds = $this->normalizeIds($request->input('tags', $request->input('tag_ids', [])));
+
+        $query = Article::query()->with(['region', 'tags'])->withCount('tags');
 
         if ($id) {
             $query->where('id', $id);
@@ -43,6 +46,12 @@ class ArticleController extends Controller
 
         if ($published !== null) {
             $query->where('published', $published);
+        }
+
+        if (!empty($tagIds)) {
+            $query->whereHas('tags', function ($q) use ($tagIds) {
+                $q->whereIn('article_tags.id', $tagIds);
+            });
         }
 
         $query->orderBy($sortField, $sortDirection);
@@ -77,11 +86,16 @@ class ArticleController extends Controller
                 'region_id' => 'nullable|integer|exists:regions,id',
                 'photo_info' => 'nullable|string',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'tag_ids' => 'nullable|array',
+                'tag_ids.*' => 'integer|exists:article_tags,id',
             ]);
 
             $validated['data'] = date('Y-m-d H:i:s', strtotime($validated['data']));
+            $tagIds = $validated['tag_ids'] ?? [];
+            unset($validated['tag_ids']);
 
             $article = Article::create($validated);
+            $article->tags()->sync($tagIds);
 
             if ($request->hasFile('image')) {
                 $path = $request->file('image')->store('articles', 'public');
@@ -119,7 +133,8 @@ class ArticleController extends Controller
                 'events',
                 'galleries',
                 'videos',
-                'people'
+                'people',
+                'tags'
             ])->findOrFail($id);
 
             return response()->json($article);
@@ -152,7 +167,11 @@ class ArticleController extends Controller
                 'region_id' => 'nullable|integer|exists:regions,id',
                 'published' => 'boolean',
                 'image' => 'nullable|image|mimes:jpeg,png,jpg,gif,webp|max:2048',
+                'tag_ids' => 'nullable|array',
+                'tag_ids.*' => 'integer|exists:article_tags,id',
             ]);
+            $tagIds = $validated['tag_ids'] ?? null;
+            unset($validated['tag_ids']);
 
             if ($request->hasFile('image')) {
                 if ($article->image) {
@@ -163,6 +182,10 @@ class ArticleController extends Controller
             }
 
             $article->update($validated);
+
+            if (is_array($tagIds)) {
+                $article->tags()->sync($tagIds);
+            }
 
             return response()->json([
                 'success' => true,
@@ -281,6 +304,52 @@ class ArticleController extends Controller
         return $this->deleteImage($id);
     }
 
+    public function bulkDelete(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:articles,id',
+        ]);
+
+        $articles = Article::query()->whereIn('id', $validated['ids'])->get();
+
+        foreach ($articles as $article) {
+            if ($article->image) {
+                Storage::disk('public')->delete($article->image);
+            }
+
+            $article->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Выбранные статьи удалены',
+            'deleted' => $articles->count(),
+        ]);
+    }
+
+    public function bulkAddTags(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:articles,id',
+            'tag_ids' => 'required|array|min:1',
+            'tag_ids.*' => 'integer|exists:article_tags,id',
+        ]);
+
+        $articles = Article::query()->whereIn('id', $validated['ids'])->get();
+
+        foreach ($articles as $article) {
+            $article->tags()->syncWithoutDetaching($validated['tag_ids']);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Метки добавлены к выбранным статьям',
+            'updated' => $articles->count(),
+        ]);
+    }
+
     /**
      * Сохранение отношений morphedByMany
      */
@@ -323,5 +392,22 @@ class ArticleController extends Controller
                 'message' => 'Ошибка сохранения отношений: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    private function normalizeIds($value): array
+    {
+        if ($value === null || $value === '') {
+            return [];
+        }
+
+        if (is_string($value)) {
+            $value = explode(',', $value);
+        }
+
+        if (!is_array($value)) {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('intval', $value)));
     }
 }
