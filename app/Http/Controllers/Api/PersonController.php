@@ -5,13 +5,13 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Amplua;
 use App\Models\Club;
-use App\Models\Param;
 use App\Models\Person;
+use App\Models\PersonImage;
 use App\Models\Position;
 use App\Models\Sport;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
@@ -38,9 +38,9 @@ class PersonController extends Controller
                 if ($searchQuery) {
                     $query->where(function ($q) use ($searchQuery) {
                         $q->where('first_name', 'LIKE', "%{$searchQuery}%")
-                          ->orWhere('last_name', 'LIKE', "%{$searchQuery}%")
-                          ->orWhere('middle_name', 'LIKE', "%{$searchQuery}%")
-                          ->orWhere('birth_date', 'LIKE', "%{$searchQuery}%");
+                            ->orWhere('last_name', 'LIKE', "%{$searchQuery}%")
+                            ->orWhere('middle_name', 'LIKE', "%{$searchQuery}%")
+                            ->orWhere('birth_date', 'LIKE', "%{$searchQuery}%");
                     });
                 }
 
@@ -48,22 +48,22 @@ class PersonController extends Controller
 
                 // Формируем title для отображения: ФИО (дата рождения)
                 $people->each(function ($person) {
-                    $fullName = trim($person->last_name . ' ' . $person->first_name . ' ' . ($person->middle_name ?? ''));
+                    $fullName = trim($person->last_name.' '.$person->first_name.' '.($person->middle_name ?? ''));
                     $birthDate = '';
                     if ($person->birth_date) {
                         // Дополнительная защита: убеждаемся что birth_date это Carbon объект
                         if (is_string($person->birth_date)) {
                             try {
-                                $carbonDate = \Carbon\Carbon::parse($person->birth_date);
+                                $carbonDate = Carbon::parse($person->birth_date);
                                 $birthDate = $carbonDate->format('d.m.Y');
                             } catch (\Exception $e) {
                                 $birthDate = $person->birth_date;
                             }
-                        } elseif ($person->birth_date instanceof \Carbon\Carbon) {
+                        } elseif ($person->birth_date instanceof Carbon) {
                             $birthDate = $person->birth_date->format('d.m.Y');
                         }
                     }
-                    $person->title = $fullName . ($birthDate ? " ({$birthDate})" : '');
+                    $person->title = $fullName.($birthDate ? " ({$birthDate})" : '');
                 });
 
                 return response()->json($people);
@@ -96,16 +96,16 @@ class PersonController extends Controller
                 },
                 'activeSportMemberships.sport' => function ($query) {
                     $query->select(['id', 'title', 'icon']); // Выбираем только нужные поля
-                }
+                },
             ]);
 
             // Поиск по имени
-            if ($request->has('search') && !empty($request->search)) {
+            if ($request->has('search') && ! empty($request->search)) {
                 $query->searchByName($request->search);
             }
 
             // Фильтрация по типу персоны
-            if ($request->has('person_type') && !empty($request->person_type)) {
+            if ($request->has('person_type') && ! empty($request->person_type)) {
                 if ($request->person_type === 'sportsman') {
                     $query->sportsmen();
                 } elseif ($request->person_type === 'non_sportsman') {
@@ -125,34 +125,34 @@ class PersonController extends Controller
                 $birthDate = $request->birth_date;
                 if (preg_match('/^\d{2}\.\d{2}\.\d{4}$/', $birthDate)) {
                     $parts = explode('.', $birthDate);
-                    $birthDate = $parts[2] . '-' . $parts[1] . '-' . $parts[0];
+                    $birthDate = $parts[2].'-'.$parts[1].'-'.$parts[0];
                 }
                 $query->whereDate('birth_date', $birthDate);
             }
 
             // Фильтрация по должности
-            if ($request->has('position_id') && !empty($request->position_id)) {
+            if ($request->has('position_id') && ! empty($request->position_id)) {
                 $query->whereHas('positionMemberships', function ($q) use ($request) {
                     $q->where('position_id', $request->position_id);
                 });
             }
 
             // Фильтрация по амплуа
-            if ($request->has('amplua_id') && !empty($request->amplua_id)) {
+            if ($request->has('amplua_id') && ! empty($request->amplua_id)) {
                 $query->whereHas('ampluaMemberships', function ($q) use ($request) {
                     $q->where('amplua_id', $request->amplua_id);
                 });
             }
 
             // Фильтрация по команде
-            if ($request->has('club_id') && !empty($request->club_id)) {
+            if ($request->has('club_id') && ! empty($request->club_id)) {
                 $query->whereHas('clubMemberships', function ($q) use ($request) {
                     $q->where('club_id', $request->club_id);
                 });
             }
 
             // Фильтрация по виду спорта
-            if ($request->has('sport_id') && !empty($request->sport_id)) {
+            if ($request->has('sport_id') && ! empty($request->sport_id)) {
                 $query->whereHas('sportMemberships', function ($q) use ($request) {
                     $q->where('sport_id', $request->sport_id);
                 });
@@ -163,16 +163,16 @@ class PersonController extends Controller
             }
 
             // Фильтрация по дню рождения (месяц и день)
-            if ($request->has('birthday_month') && !empty($request->birthday_month)) {
+            if ($request->has('birthday_month') && ! empty($request->birthday_month)) {
                 $query->whereMonth('birth_date', $request->birthday_month);
             }
 
-            if ($request->has('birthday_day') && !empty($request->birthday_day)) {
+            if ($request->has('birthday_day') && ! empty($request->birthday_day)) {
                 $query->whereDay('birth_date', $request->birthday_day);
             }
 
             // Фильтрация по клубу - пробуем разные варианты связей
-            if ($request->has('club') && !empty($request->club)) {
+            if ($request->has('club') && ! empty($request->club)) {
                 $query->where(function ($q) use ($request) {
                     // Вариант 1: через clubMemberships
                     $q->whereHas('clubMemberships', function ($subQ) use ($request) {
@@ -196,7 +196,7 @@ class PersonController extends Controller
             }
 
             // Фильтрация по спорту - пробуем разные варианты связей
-            if ($request->has('sport') && !empty($request->sport)) {
+            if ($request->has('sport') && ! empty($request->sport)) {
                 $query->where(function ($q) use ($request) {
                     // Вариант 1: через sportMemberships
                     $q->whereHas('sportMemberships', function ($subQ) use ($request) {
@@ -239,16 +239,16 @@ class PersonController extends Controller
                 'debug' => [
                     'total_count' => $totalCount,
                     'query_count' => $people->total(),
-                    'items_count' => count($people->items())
-                ]
+                    'items_count' => count($people->items()),
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка загрузки персон: ' . $e->getMessage(),
+                'message' => 'Ошибка загрузки персон: '.$e->getMessage(),
                 'debug' => [
-                    'total_count' => Person::count()
-                ]
+                    'total_count' => Person::count(),
+                ],
             ], 500);
         }
     }
@@ -264,14 +264,14 @@ class PersonController extends Controller
                     'clubs.id',
                     'clubs.title',
                     'clubs.slug',
-                    'clubs.image'
+                    'clubs.image',
                 ]);
             },
             'sports' => function ($query) {
                 $query->select([
                     'sports.id',
                     'sports.title',
-                    'sports.icon'
+                    'sports.icon',
                 ]);
             },
             'images',
@@ -286,11 +286,11 @@ class PersonController extends Controller
                         'clubs.id',
                         'clubs.title',
                         'clubs.slug',
-                        'clubs.image'
+                        'clubs.image',
                     ]);
                 }]);
             },
-            'mainImage'
+            'mainImage',
         ]);
 
         // Формируем данные для фронтенда
@@ -298,7 +298,7 @@ class PersonController extends Controller
 
         // Добавляем photo_path если есть главное изображение
         if ($person->mainImage && $person->mainImage->image_path) {
-            $personData['photo_path'] = config('app.url') . '/storage/' . $person->mainImage->image_path;
+            $personData['photo_path'] = Storage::disk('public')->url($person->mainImage->image_path);
         }
 
         // Добавляем biography из поля about
@@ -333,16 +333,16 @@ class PersonController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         // Проверка уникальности по ФИО и дате рождения
         $data = $validator->validated();
-        if (!isset($data['gender']) || !$data['gender']) {
+        if (! isset($data['gender']) || ! $data['gender']) {
             $data['gender'] = 'm';
         }
-        $exists = \App\Models\Person::where('first_name', $data['first_name'])
+        $exists = Person::where('first_name', $data['first_name'])
             ->where('last_name', $data['last_name'])
             ->where('middle_name', $data['middle_name'] ?? null)
             ->where('birth_date', $data['birth_date'] ?? null)
@@ -351,8 +351,8 @@ class PersonController extends Controller
             return response()->json([
                 'success' => false,
                 'errors' => [
-                    'unique' => ['Персона с такими ФИО и датой рождения уже существует.']
-                ]
+                    'unique' => ['Персона с такими ФИО и датой рождения уже существует.'],
+                ],
             ], 422);
         }
 
@@ -361,7 +361,7 @@ class PersonController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Персона успешно создана',
-            'data' => $person
+            'data' => $person,
         ], 201);
     }
 
@@ -389,7 +389,7 @@ class PersonController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -398,7 +398,7 @@ class PersonController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Персона успешно обновлена',
-            'data' => $person
+            'data' => $person,
         ]);
     }
 
@@ -418,7 +418,7 @@ class PersonController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Персона успешно удалена'
+            'message' => 'Персона успешно удалена',
         ]);
     }
 
@@ -442,7 +442,7 @@ class PersonController extends Controller
 
         return response()->json([
             'success' => true,
-            'data' => $stats
+            'data' => $stats,
         ]);
     }
 
@@ -473,12 +473,12 @@ class PersonController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $clubs
+                'data' => $clubs,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка загрузки команд: ' . $e->getMessage()
+                'message' => 'Ошибка загрузки команд: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -511,12 +511,12 @@ class PersonController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $sports
+                'data' => $sports,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка загрузки видов спорта: ' . $e->getMessage()
+                'message' => 'Ошибка загрузки видов спорта: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -542,12 +542,12 @@ class PersonController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $positions
+                'data' => $positions,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка загрузки должностей: ' . $e->getMessage()
+                'message' => 'Ошибка загрузки должностей: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -573,12 +573,12 @@ class PersonController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $ampluas
+                'data' => $ampluas,
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка загрузки амплуа: ' . $e->getMessage()
+                'message' => 'Ошибка загрузки амплуа: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -607,7 +607,7 @@ class PersonController extends Controller
             ->when($birthDate, function ($q) use ($birthDate) {
                 $q->whereDate('birth_date', $birthDate);
             })
-            ->when(!$lastName && !$firstName && !$middleName && $query, function ($q) use ($query) {
+            ->when(! $lastName && ! $firstName && ! $middleName && $query, function ($q) use ($query) {
                 $q->where(function ($sub) use ($query) {
                     $sub->where('last_name', 'like', "%$query%")
                         ->orWhere('first_name', 'like', "%$query%")
@@ -626,14 +626,14 @@ class PersonController extends Controller
                 $birthDate = $person->birth_date;
                 if (is_string($birthDate)) {
                     try {
-                        $carbonDate = \Carbon\Carbon::parse($birthDate);
-                        $label .= ' (' . $carbonDate->format('d.m.Y') . ')';
+                        $carbonDate = Carbon::parse($birthDate);
+                        $label .= ' ('.$carbonDate->format('d.m.Y').')';
                     } catch (\Exception $e) {
                         // Если не удалось распарсить дату, добавляем как есть
-                        $label .= ' (' . $birthDate . ')';
+                        $label .= ' ('.$birthDate.')';
                     }
-                } elseif ($birthDate instanceof \Carbon\Carbon) {
-                    $label .= ' (' . $birthDate->format('d.m.Y') . ')';
+                } elseif ($birthDate instanceof Carbon) {
+                    $label .= ' ('.$birthDate->format('d.m.Y').')';
                 }
             }
 
@@ -642,12 +642,12 @@ class PersonController extends Controller
             if ($person->birth_date) {
                 if (is_string($person->birth_date)) {
                     try {
-                        $carbonDate = \Carbon\Carbon::parse($person->birth_date);
+                        $carbonDate = Carbon::parse($person->birth_date);
                         $formattedBirthDate = $carbonDate->format('Y-m-d');
                     } catch (\Exception $e) {
                         $formattedBirthDate = $person->birth_date;
                     }
-                } elseif ($person->birth_date instanceof \Carbon\Carbon) {
+                } elseif ($person->birth_date instanceof Carbon) {
                     $formattedBirthDate = $person->birth_date->format('Y-m-d');
                 }
             }
@@ -681,7 +681,7 @@ class PersonController extends Controller
             ->map(function (Person $person) {
                 $data = $person->toArray();
                 $data['photo_path'] = $person->mainImage?->image_path
-                    ? config('app.url') . '/storage/' . $person->mainImage->image_path
+                    ? Storage::disk('public')->url($person->mainImage->image_path)
                     : null;
                 $data['positions'] = $person->activePositionMemberships
                     ->map(fn ($membership) => $membership->position?->name)
@@ -719,19 +719,161 @@ class PersonController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => $images
+                'data' => $images,
             ]);
         } catch (\Exception $e) {
             Log::error('Ошибка получения изображений персоны', [
                 'person_id' => $person->id,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка получения изображений: ' . $e->getMessage()
+                'message' => 'Ошибка получения изображений: '.$e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Загрузить изображение персоны
+     */
+    public function uploadImage(Request $request, Person $person): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'image' => ['required', 'image', 'mimes:jpeg,png,jpg,gif,webp', 'max:20480'],
+            'alt_text' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка валидации',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $path = $request->file('image')->store("people/{$person->id}", 'public');
+            $position = ((int) $person->images()->max('position')) + 1;
+            $sortOrder = ((int) $person->images()->max('sort_order')) + 1;
+
+            $image = PersonImage::create([
+                'person_id' => $person->id,
+                'image_path' => $path,
+                'alt_text' => $request->input('alt_text'),
+                'position' => $position,
+                'sort_order' => $sortOrder,
+                'is_main' => ! $person->images()->where('is_main', true)->exists(),
+            ]);
+
+            Log::info('[FIX:person-images-s3] Person image uploaded', [
+                'person_id' => $person->id,
+                'image_id' => $image->id,
+                'path' => $path,
+                'disk' => config('filesystems.disks.public.driver'),
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Изображение успешно загружено',
+                'data' => $image->fresh(),
+            ], 201);
+        } catch (\Throwable $e) {
+            Log::error('[FIX:person-images-s3] Person image upload failed', [
+                'person_id' => $person->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Ошибка загрузки изображения',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+            ], 500);
+        }
+    }
+
+    public function deleteImage(Person $person, int $imageId): JsonResponse
+    {
+        $image = $person->images()->whereKey($imageId)->firstOrFail();
+
+        Storage::disk('public')->delete($image->image_path);
+        $image->delete();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Изображение успешно удалено',
+        ]);
+    }
+
+    public function deleteMultipleImages(Request $request, Person $person): JsonResponse
+    {
+        $data = $request->validate([
+            'image_ids' => ['required', 'array'],
+            'image_ids.*' => ['integer'],
+        ]);
+
+        $images = $person->images()->whereIn('id', $data['image_ids'])->get();
+
+        foreach ($images as $image) {
+            Storage::disk('public')->delete($image->image_path);
+            $image->delete();
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Изображения успешно удалены',
+            'deleted_count' => $images->count(),
+        ]);
+    }
+
+    public function setMainImage(Person $person, int $imageId): JsonResponse
+    {
+        $image = $person->images()->whereKey($imageId)->firstOrFail();
+
+        $person->images()->update(['is_main' => false]);
+        $image->update(['is_main' => true]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Главное изображение установлено',
+            'data' => $image->fresh(),
+        ]);
+    }
+
+    public function unsetMainImage(Person $person, int $imageId): JsonResponse
+    {
+        $image = $person->images()->whereKey($imageId)->firstOrFail();
+        $image->update(['is_main' => false]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Главное изображение снято',
+            'data' => $image->fresh(),
+        ]);
+    }
+
+    public function updateImagePositions(Request $request, Person $person): JsonResponse
+    {
+        $data = $request->validate([
+            'positions' => ['required', 'array'],
+            'positions.*.image_id' => ['required', 'integer'],
+            'positions.*.position' => ['required', 'integer', 'min:0'],
+        ]);
+
+        foreach ($data['positions'] as $item) {
+            $person->images()
+                ->whereKey($item['image_id'])
+                ->update([
+                    'position' => $item['position'],
+                    'sort_order' => $item['position'],
+                ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Позиции изображений обновлены',
+        ]);
     }
 }
