@@ -17,7 +17,9 @@ use MoonShine\UI\Components\Layout\Box;
 use MoonShine\UI\Fields\ID;
 use MoonShine\Contracts\UI\FieldContract;
 use MoonShine\Contracts\UI\ComponentContract;
+use MoonShine\UI\Fields\Select;
 use MoonShine\UI\Fields\Text;
+use MoonShine\UI\Fields\Textarea;
 
 /**
  * @extends ModelResource<Param>
@@ -65,6 +67,13 @@ class ParamResource extends ModelResource implements HasImportExportContract
                 ->sortable()
                 ->required()
                 ->updateOnPreview(),
+            Select::make('Тип данных', 'type')
+                ->options([
+                    'string' => 'Строка',
+                    'text' => 'Текст',
+                ])
+                ->sortable()
+                ->updateOnPreview(),
             Text::make(__('admin.field.param_value'), 'value')
                 ->sortable()
                 ->required()
@@ -83,8 +92,13 @@ class ParamResource extends ModelResource implements HasImportExportContract
                     ->required(),
                 Text::make(__('admin.field.param_name'), 'name')
                     ->required(),
-                Text::make(__('admin.field.param_value'), 'value')
-                    ->required()
+                Select::make('Тип данных', 'type')
+                    ->options([
+                        'string' => 'Строка',
+                        'text' => 'Текст',
+                    ])
+                    ->required(),
+                Textarea::make(__('admin.field.param_value'), 'value')
             ])
         ];
     }
@@ -109,8 +123,9 @@ class ParamResource extends ModelResource implements HasImportExportContract
     {
         return [
             'name' => ['required'],
-            'value' => ['required'],
+            'value' => ['nullable'],
             'title' => ['required'],
+            'type' => ['required', 'in:string,text'],
         ];
     }
 
@@ -144,7 +159,7 @@ class ParamResource extends ModelResource implements HasImportExportContract
     // поиск по паолям
     public function search(): array
     {
-        return ['name', 'value'];
+        return ['name', 'title', 'value'];
     }
 
     // поля в экспорте
@@ -152,7 +167,9 @@ class ParamResource extends ModelResource implements HasImportExportContract
     {
         return [
             ID::make(),
+            Text::make('title'),
             Text::make('name'),
+            Text::make('type'),
             Text::make('value'),
         ];
     }
@@ -162,7 +179,9 @@ class ParamResource extends ModelResource implements HasImportExportContract
     {
         return [
             ID::make(),
+            Text::make('title'),
             Text::make('name'),
+            Text::make('type'),
             Text::make('value'),
         ];
     }

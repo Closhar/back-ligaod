@@ -12,6 +12,7 @@ use App\Http\Controllers\Admin\Data\EventStreamController;
 use App\Http\Controllers\Admin\Data\GalleryController;
 use App\Http\Controllers\Admin\Data\GenderController;
 use App\Http\Controllers\Admin\Data\ImageController;
+use App\Http\Controllers\Admin\Data\PageController;
 use App\Http\Controllers\Admin\Data\SportController;
 use App\Http\Controllers\Admin\Data\SportPropertyController;
 use App\Http\Controllers\Admin\Data\StreamController;
@@ -39,6 +40,7 @@ use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\Api\ImageEditorTemplateController;
 use App\Http\Controllers\Api\ImageTemplateController;
 use App\Http\Controllers\Api\ImageTemplateSettingController;
+use App\Http\Controllers\Api\ParamController;
 use App\Http\Controllers\Api\PersonAmpluaMembershipController;
 use App\Http\Controllers\Api\PersonClubMembershipController;
 use App\Http\Controllers\Api\PersonController;
@@ -116,8 +118,10 @@ Route::group(['prefix' => '/v1'], function () {
     Route::get('/galleries', [ApiGalleryController::class, 'index'])->name('api.galleries.index');
     Route::get('/galleries/{id}', [ApiGalleryController::class, 'show'])->name('api.galleries.show');
     Route::get('/params', [ApiParamsController::class, 'index'])->name('params.show');
+    Route::get('/people/leadership', [PersonController::class, 'leadership'])->name('api.people.leadership');
     Route::get('/filters', [ApiParamsController::class, 'getTitle'])->name('params.filters');
     Route::get('/page/{id}', [ApiParamsController::class, 'getPage'])->name('params.page');
+    Route::get('/menu', [ApiParamsController::class, 'getSiteMenu'])->name('params.menu');
     Route::get('/apage/{id}', [ApiParamsController::class, 'getAdminPage'])->name('params.apage');
     Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->name('params.amenu');
 
@@ -793,6 +797,11 @@ Route::prefix('people')->group(function () {
         Route::get('/history', [PersonAmpluaMembershipController::class, 'history']);
     });
 });
+
+Route::apiResource('params', ParamController::class);
+Route::apiResource('pages', PageController::class);
+Route::post('pages/{id}/upload-image', [PageController::class, 'uploadImage']);
+Route::post('pages/{id}/delete-image', [PageController::class, 'deleteImage']);
 
 
 Route::post('/people/import', [PersonController::class, 'import']);

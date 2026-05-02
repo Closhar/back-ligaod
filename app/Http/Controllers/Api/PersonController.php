@@ -158,6 +158,10 @@ class PersonController extends Controller
                 });
             }
 
+            if ($request->has('is_management') && $request->is_management !== '') {
+                $query->where('is_management', filter_var($request->is_management, FILTER_VALIDATE_BOOLEAN));
+            }
+
             // Фильтрация по дню рождения (месяц и день)
             if ($request->has('birthday_month') && !empty($request->birthday_month)) {
                 $query->whereMonth('birth_date', $request->birthday_month);
@@ -293,8 +297,8 @@ class PersonController extends Controller
         $personData = $person->toArray();
 
         // Добавляем photo_path если есть главное изображение
-        if ($person->mainImage && $person->mainImage->path) {
-            $personData['photo_path'] = config('app.url') . '/storage/' . $person->mainImage->path;
+        if ($person->mainImage && $person->mainImage->image_path) {
+            $personData['photo_path'] = config('app.url') . '/storage/' . $person->mainImage->image_path;
         }
 
         // Добавляем biography из поля about
@@ -321,6 +325,8 @@ class PersonController extends Controller
             'player_number' => 'nullable|integer|min:0',
             'gender' => 'required|string|in:m,f',
             'is_active' => 'sometimes|boolean',
+            'is_management' => 'sometimes|boolean',
+            'management_sort' => 'nullable|integer|min:0',
             'about' => 'nullable|string',
         ]);
 
@@ -375,6 +381,8 @@ class PersonController extends Controller
             'player_number' => 'nullable|integer|min:0',
             'gender' => 'nullable|string|in:m,f',
             'is_active' => 'sometimes|boolean',
+            'is_management' => 'sometimes|boolean',
+            'management_sort' => 'nullable|integer|min:0',
             'about' => 'nullable|string',
         ]);
 
@@ -429,6 +437,7 @@ class PersonController extends Controller
             'with_images' => Person::whereHas('images')->count(),
             'with_positions' => Person::whereHas('activePositionMemberships')->count(),
             'with_ampluas' => Person::whereHas('activeAmpluaMemberships')->count(),
+            'management' => Person::where('is_management', true)->count(),
         ];
 
         return response()->json([
@@ -652,6 +661,40 @@ class PersonController extends Controller
         });
 
         return response()->json($result);
+    }
+
+    /**
+     * Получить руководство организации для публичной страницы "О лиге".
+     */
+    public function leadership(): JsonResponse
+    {
+        $people = Person::query()
+            ->with([
+                'mainImage',
+                'activePositionMemberships.position',
+            ])
+            ->where('is_management', true)
+            ->orderBy('management_sort')
+            ->orderBy('last_name')
+            ->orderBy('first_name')
+            ->get()
+            ->map(function (Person $person) {
+                $data = $person->toArray();
+                $data['photo_path'] = $person->mainImage?->image_path
+                    ? config('app.url') . '/storage/' . $person->mainImage->image_path
+                    : null;
+                $data['positions'] = $person->activePositionMemberships
+                    ->map(fn ($membership) => $membership->position?->name)
+                    ->filter()
+                    ->values();
+
+                return $data;
+            });
+
+        return response()->json([
+            'success' => true,
+            'data' => $people,
+        ]);
     }
 
     /**

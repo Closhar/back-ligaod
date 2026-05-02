@@ -23,6 +23,8 @@ class Person extends Model
         'player_number',
         'gender',
         'is_active',
+        'is_management',
+        'management_sort',
         'about',
     ];
 
@@ -30,6 +32,8 @@ class Person extends Model
         'birth_date' => 'datetime',
         'player_number' => 'integer',
         'is_active' => 'boolean',
+        'is_management' => 'boolean',
+        'management_sort' => 'integer',
     ];
 
     protected $appends = [

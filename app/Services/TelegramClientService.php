@@ -4,11 +4,6 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use danog\MadelineProto\API;
-use danog\MadelineProto\Settings;
-use danog\MadelineProto\Settings\Logger;
-use danog\MadelineProto\Settings\AppInfo;
-
 class TelegramClientService
 {
     protected $apiId;
@@ -21,16 +16,26 @@ class TelegramClientService
         $this->apiId = config('services.telegram.api_id');
         $this->apiHash = config('services.telegram.api_hash');
         $this->sessionPath = storage_path('madeline/madeline.madeline');
-
-        $this->initializeMadelineProto();
     }
 
     protected function initializeMadelineProto()
     {
+        if ($this->madelineProto) {
+            return;
+        }
+
+        if (!$this->apiId || !$this->apiHash) {
+            throw new \Exception('Не заданы TELEGRAM_API_ID или TELEGRAM_API_HASH');
+        }
+
+        $bufferLevel = ob_get_level();
+
         try {
+            ob_start();
+
             // Создаем директорию для сессии если её нет
             $sessionDir = dirname($this->sessionPath);
-            if (!file_exists($sessionDir)) {
+            if (!is_dir($sessionDir)) {
                 if (!mkdir($sessionDir, 0777, true)) {
                     throw new \Exception("Не удалось создать директорию для сессии: {$sessionDir}");
                 }
@@ -42,22 +47,22 @@ class TelegramClientService
             }
 
             // Настройки MadelineProto
-            $settings = new Settings;
+            $settings = new \danog\MadelineProto\Settings;
 
             // Настройки логирования
-            $logger = new Logger;
+            $logger = new \danog\MadelineProto\Settings\Logger;
             $logger->setLevel(5); // Устанавливаем уровень логирования (5 = FATAL_ERROR)
             $logger->setExtra(storage_path('logs/madeline.log'));
             $settings->setLogger($logger);
 
             // Настройки приложения
-            $appInfo = new AppInfo;
+            $appInfo = new \danog\MadelineProto\Settings\AppInfo;
             $appInfo->setApiId($this->apiId);
             $appInfo->setApiHash($this->apiHash);
             $settings->setAppInfo($appInfo);
 
             // Инициализация MadelineProto
-            $this->madelineProto = new API($this->sessionPath, $settings);
+            $this->madelineProto = new \danog\MadelineProto\API($this->sessionPath, $settings);
 
             // Проверяем авторизацию
             try {
@@ -76,7 +81,24 @@ class TelegramClientService
             Log::error('Ошибка инициализации MadelineProto: ' . $e->getMessage());
             Log::error('Трейс ошибки: ' . $e->getTraceAsString());
             throw $e;
+        } finally {
+            while (ob_get_level() > $bufferLevel) {
+                $capturedOutput = ob_get_clean();
+
+                if ($capturedOutput) {
+                    Log::warning('MadelineProto output suppressed', [
+                        'output' => trim($capturedOutput),
+                    ]);
+                }
+            }
         }
+    }
+
+    protected function getMadelineProto(): object
+    {
+        $this->initializeMadelineProto();
+
+        return $this->madelineProto;
     }
 
     /**
@@ -86,12 +108,13 @@ class TelegramClientService
     {
         try {
             Log::info('Начинаем процесс авторизации в Telegram');
+            $madelineProto = $this->getMadelineProto();
 
             // Проверяем, существует ли файл сессии
             if (file_exists($this->sessionPath)) {
                 Log::info('Найдена существующая сессия, пробуем использовать её');
                 try {
-                    $self = $this->madelineProto->getSelf();
+                    $self = $madelineProto->getSelf();
                     if ($self) {
                         Log::info('Успешно авторизованы через существующую сессию');
                         return true;
@@ -105,10 +128,10 @@ class TelegramClientService
             Log::info('Начинаем новую авторизацию');
 
             // Запускаем процесс авторизации
-            $this->madelineProto->start();
+            $madelineProto->start();
 
             // Проверяем результат авторизации
-            $self = $this->madelineProto->getSelf();
+            $self = $madelineProto->getSelf();
             if (!$self) {
                 throw new \Exception('Не удалось получить информацию о пользователе после авторизации');
             }
@@ -130,14 +153,15 @@ class TelegramClientService
     {
         try {
             Log::info('Начинаем получение информации о пользователе');
+            $madelineProto = $this->getMadelineProto();
 
             // Проверяем авторизацию
-            if (!$this->madelineProto) {
+            if (!$madelineProto) {
                 throw new \Exception('MadelineProto не инициализирован');
             }
 
             // Пробуем получить информацию о пользователе
-            $self = $this->madelineProto->getSelf();
+            $self = $madelineProto->getSelf();
             Log::info('Получена информация о пользователе:', ['self' => $self]);
 
             if (!$self) {
@@ -146,7 +170,7 @@ class TelegramClientService
                 $this->login();
 
                 // После авторизации пробуем снова получить информацию
-                $self = $this->madelineProto->getSelf();
+                $self = $madelineProto->getSelf();
                 if (!$self) {
                     throw new \Exception('Не удалось получить информацию о пользователе после авторизации');
                 }
@@ -180,10 +204,11 @@ class TelegramClientService
         try {
             // Убираем @ если он есть в начале
             $channelId = ltrim($channelId, '@');
+            $madelineProto = $this->getMadelineProto();
 
             // Проверяем авторизацию
             try {
-                $self = $this->madelineProto->getSelf();
+                $self = $madelineProto->getSelf();
                 if (!$self) {
                     $this->login();
                 }
@@ -203,7 +228,7 @@ class TelegramClientService
             foreach ($channelIdentifiers as $identifier) {
                 try {
                     // Получаем информацию о канале через getFullInfo
-                    $channelInfo = $this->madelineProto->getFullInfo($identifier);
+                    $channelInfo = $madelineProto->getFullInfo($identifier);
                     if ($channelInfo && isset($channelInfo['Chat'])) {
                         $chat = $channelInfo['Chat'];
                         return [
@@ -238,6 +263,7 @@ class TelegramClientService
         try {
             // Убираем @ из начала channelId, если он есть
             $channelId = ltrim($channelId, '@');
+            $madelineProto = $this->getMadelineProto();
 
             \Log::info('Начало получения сообщений из канала', [
                 'channel_id' => $channelId,
@@ -248,7 +274,7 @@ class TelegramClientService
 
             // Проверяем авторизацию
             try {
-                $self = $this->madelineProto->getSelf();
+                $self = $madelineProto->getSelf();
                 if (!$self) {
                     $this->login();
                 }
@@ -270,13 +296,13 @@ class TelegramClientService
             foreach ($channelIdentifiers as $identifier) {
                 try {
                     // Получаем информацию о канале
-                    $channelInfo = $this->madelineProto->getFullInfo($identifier);
+                    $channelInfo = $madelineProto->getFullInfo($identifier);
                     if (!$channelInfo || !isset($channelInfo['Chat'])) {
                         continue;
                     }
 
                     // Получаем сообщения
-                    $messages = $this->madelineProto->messages->getHistory([
+                    $messages = $madelineProto->messages->getHistory([
                         'peer' => $identifier,
                         'offset_id' => 0,
                         'offset_date' => 0,

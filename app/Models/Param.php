@@ -8,4 +8,8 @@ class Param extends Model
 {
     protected $guarded = [];
     public $timestamps = false;
+
+    protected $attributes = [
+        'type' => 'string',
+    ];
 }

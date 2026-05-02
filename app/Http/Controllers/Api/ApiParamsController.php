@@ -83,6 +83,48 @@ class ApiParamsController extends Controller
     }
 
     /**
+     * Получить публичное меню сайта из таблицы pages
+     */
+    public function getSiteMenu(): JsonResponse
+    {
+        try {
+            $mapPage = static function (Page $page): array {
+                $slug = trim((string) $page->slug, '/');
+
+                return [
+                    'id' => $page->id,
+                    'title' => $page->title,
+                    'slug' => $page->slug,
+                    'path' => $slug === '' || $slug === 'index' || $slug === 'home' ? '/' : '/' . $slug,
+                    'icon' => $page->icon ?: 'fluent:document-20-filled',
+                ];
+            };
+
+            return response()->json([
+                'desktop' => Page::query()
+                    ->where('in_menu', true)
+                    ->orderBy('menu_sort')
+                    ->orderBy('title')
+                    ->get()
+                    ->map($mapPage)
+                    ->values(),
+                'mobile' => Page::query()
+                    ->where('in_mobile_menu', true)
+                    ->orderBy('mobile_menu_sort')
+                    ->orderBy('title')
+                    ->get()
+                    ->map($mapPage)
+                    ->values(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'desktop' => [],
+                'mobile' => [],
+            ]);
+        }
+    }
+
+    /**
      * Получить параметры
      */
     public function index(): JsonResponse
@@ -165,7 +207,11 @@ class ApiParamsController extends Controller
                 'image' => $page->image ? $appUrl . '/storage/' . $page->image : null,
                 'image_default' => $page->image_default ? $appUrl . '/storage/' . $page->image_default : null,
                 'html' => $page->html,
-                'icon' => $page->icon
+                'icon' => $page->icon,
+                'in_menu' => $page->in_menu,
+                'menu_sort' => $page->menu_sort,
+                'in_mobile_menu' => $page->in_mobile_menu,
+                'mobile_menu_sort' => $page->mobile_menu_sort,
             ];
 
             return response()->json($pageData);

@@ -9,6 +9,12 @@ class Page extends Model
     protected $guarded = [];
     public $timestamps = false;
     protected $appends = ['page_image', 'default_page_image'];
+    protected $casts = [
+        'in_menu' => 'boolean',
+        'in_mobile_menu' => 'boolean',
+        'menu_sort' => 'integer',
+        'mobile_menu_sort' => 'integer',
+    ];
 
     public function getPageImageAttribute(): ?string
     {
