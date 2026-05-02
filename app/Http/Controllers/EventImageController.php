@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\EventImage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use Spatie\Image\Enums\Fit;
+use Spatie\Image\Enums\ImageDriver;
+use Spatie\Image\Image as SpatieImage;
 
 class EventImageController extends Controller
 {
@@ -38,11 +40,6 @@ class EventImageController extends Controller
                 Storage::disk('public')->makeDirectory($dir);
             }
 
-            // Создаем символическую ссылку на storage если её нет
-            if (!file_exists(public_path('storage'))) {
-                Artisan::call('storage:link');
-            }
-
             // Генерируем уникальное имя файла
             $extension = $file->getClientOriginalExtension();
             $filename = 'event-' . $eventId . '-' . time() . '.' . $extension;
@@ -54,10 +51,15 @@ class EventImageController extends Controller
             // Создаем превью (thumbnail)
             try {
                 $thumbnailPath = $dir . '/thmb_' . $filename;
-                \Spatie\Image\Image::useImageDriver(\Spatie\Image\Enums\ImageDriver::Gd)
+                $thumbnailFormat = strtolower($extension);
+                $thumbnailFormat = in_array($thumbnailFormat, ['jpg', 'jpeg', 'png', 'webp'])
+                    ? $thumbnailFormat
+                    : 'jpg';
+                $thumbnail = SpatieImage::useImageDriver(ImageDriver::Gd)
                     ->loadFile($file)
-                    ->fit(\Spatie\Image\Enums\Fit::Crop, 400, 225)
-                    ->save(public_path('storage/' . $thumbnailPath));
+                    ->fit(Fit::Crop, 400, 225);
+
+                Storage::disk('public')->put($thumbnailPath, base64_decode($thumbnail->base64($thumbnailFormat, false)));
                 $data['preview_path'] = '/storage/' . $thumbnailPath;
             } catch (\Exception $e) {
                 // Если не удалось создать превью, продолжаем без него

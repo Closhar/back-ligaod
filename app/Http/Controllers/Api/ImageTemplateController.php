@@ -49,8 +49,8 @@ class ImageTemplateController extends Controller
                 'type' => $request->type,
                 'width' => $request->width,
                 'height' => $request->height,
-                'path' => Storage::url($path),
-                'preview_path' => Storage::url($path),
+                'path' => Storage::disk('public')->url($path),
+                'preview_path' => Storage::disk('public')->url($path),
             ]);
 
             return response()->json($template, 201);
@@ -103,8 +103,8 @@ class ImageTemplateController extends Controller
                 // Загружаем новое
                 $file = $request->file('image');
                 $path = $file->store('image-templates', 'public');
-                $updateData['path'] = Storage::url($path);
-                $updateData['preview_path'] = Storage::url($path);
+                $updateData['path'] = Storage::disk('public')->url($path);
+                $updateData['preview_path'] = Storage::disk('public')->url($path);
             }
 
             $imageTemplate->update($updateData);

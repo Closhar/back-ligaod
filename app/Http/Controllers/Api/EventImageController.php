@@ -27,7 +27,7 @@ class EventImageController extends Controller
             $path = $file->store('event-images/tmp', 'public');
 
             return response()->json([
-                'image_url' => Storage::url($path),
+                'image_url' => Storage::disk('public')->url($path),
                 'path' => $path,
                 'filename' => $file->getClientOriginalName(),
             ]);

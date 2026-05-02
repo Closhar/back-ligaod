@@ -36,9 +36,18 @@ class GalleryAdminController extends Controller
                 'image' => $filePath,
             ]);
 
-            \Spatie\Image\Image::useImageDriver(ImageDriver::Gd)->loadFile($image)
+            $thumbnailFormat = strtolower($image->getClientOriginalExtension());
+            $thumbnailFormat = in_array($thumbnailFormat, ['jpg', 'jpeg', 'png', 'webp'])
+                ? $thumbnailFormat
+                : 'jpg';
+            $thumbnail = \Spatie\Image\Image::useImageDriver(ImageDriver::Gd)->loadFile($image)
                 ->fit(Fit::Crop, 400, 225)
-                ->save(public_path('storage/galleries/') . $data['gallery_id'] . '/thmb_' . $name);
+                ->base64($thumbnailFormat, false);
+
+            Storage::disk('public')->put(
+                'galleries/' . $data['gallery_id'] . '/thmb_' . $name,
+                base64_decode($thumbnail)
+            );
 
         }
         return response()->json(['message' => 'success']);

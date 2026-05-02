@@ -341,9 +341,11 @@ class AIController extends Controller
             // Если есть file_id, добавляем содержимое файла к промту
             if ($request->has('file_id') && $request->file_id !== null) {
                 \Log::info('Обработка file_id', ['file_id' => $request->file_id]);
-                $filePath = storage_path('app/public/ai_files/' . $request->file_id);
-                if (file_exists($filePath)) {
-                    $fileContent = file_get_contents($filePath);
+                $filePath = 'ai_files/' . $request->file_id;
+                $publicDisk = Storage::disk('public');
+
+                if ($publicDisk->exists($filePath)) {
+                    $fileContent = $publicDisk->get($filePath);
                     if ($fileContent) {
                         $hasFile = true;
                         // Обрезаем содержимое файла если оно превышает лимит для выбранной модели
@@ -580,18 +582,6 @@ class AIController extends Controller
             ]);
 
             $fileName = time() . '_' . $file->getClientOriginalName();
-            $directory = storage_path('app/public/ai_files');
-
-            \Log::info('Directory check', [
-                'path' => $directory,
-                'exists' => file_exists($directory),
-                'writable' => is_writable($directory)
-            ]);
-
-            if (!file_exists($directory)) {
-                \Log::info('Creating directory');
-                mkdir($directory, 0755, true);
-            }
 
             // Читаем содержимое файла
             $content = file_get_contents($file->getRealPath());
@@ -608,7 +598,7 @@ class AIController extends Controller
             $filePath = "ai_files/$fileName";
             \Log::info('Attempting to save file', [
                 'path' => $filePath,
-                'storage_path' => storage_path('app/public/' . $filePath)
+                'disk' => config('filesystems.disks.public.driver')
             ]);
 
             Storage::disk('public')->put($filePath, $content);

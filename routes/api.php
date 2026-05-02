@@ -672,7 +672,8 @@ Route::post('/upload-image', function (Request $request) {
     try {
         $file = $request->file('image');
         $path = $request->file('image')->store('images/' . date('Y/m'), 'public');
-        $url = Storage::url($path);
+        $publicDisk = Storage::disk('public');
+        $url = $publicDisk->url($path);
 
         return response()->json([
             'success' => true,
@@ -680,8 +681,8 @@ Route::post('/upload-image', function (Request $request) {
                 'url' => $url,
                 'path' => $path,
                 'name' => $file->getClientOriginalName(),
-                'size' => Storage::size($path),
-                'mime' => Storage::mimeType($path)
+                'size' => $publicDisk->size($path),
+                'mime' => $publicDisk->mimeType($path)
             ]
         ]);
     } catch (\Exception $e) {
@@ -842,17 +843,17 @@ Route::prefix('ampluas')->group(function () {
 });
 
 Route::get('/storage/{path}', function ($path) {
-    $fullPath = storage_path('app/public/' . $path);
+    $publicDisk = Storage::disk('public');
 
-    if (!file_exists($fullPath)) {
+    if (!$publicDisk->exists($path)) {
         abort(404);
     }
 
-    $file = file_get_contents($fullPath);
-    $type = mime_content_type($fullPath);
+    if (config('filesystems.disks.public.driver') === 's3') {
+        return redirect()->away($publicDisk->url($path));
+    }
 
-    return response($file, 200, [
-        'Content-Type' => $type,
+    return $publicDisk->response($path, null, [
         'Cache-Control' => 'public, max-age=31536000'
     ]);
 })->where('path', '.*');

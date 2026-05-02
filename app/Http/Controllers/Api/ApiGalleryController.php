@@ -792,10 +792,11 @@ class ApiGalleryController extends Controller
 
         $zip = new ZipArchive;
         if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
+            $publicDisk = Storage::disk('public');
+
             foreach ($images as $img) {
-                $filePath = storage_path('app/public/' . $img->image);
-                if (file_exists($filePath)) {
-                    $zip->addFile($filePath, basename($img->image));
+                if ($publicDisk->exists($img->image)) {
+                    $zip->addFromString(basename($img->image), $publicDisk->get($img->image));
                 }
             }
             $zip->close();

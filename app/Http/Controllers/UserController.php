@@ -117,7 +117,7 @@ class UserController extends Controller
         $user = $request->user();
         if ($request->hasFile('avatar')) {
             $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = Storage::url($path);
+            $user->avatar = Storage::disk('public')->url($path);
             $user->save();
         }
         return response()->json($user);

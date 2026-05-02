@@ -18,7 +18,7 @@ public_html/hot
 vendor/
 
 storage/*.key
-storage/app/public
+storage/app/public/
 storage/framework/cache/data
 storage/framework/sessions
 storage/framework/views
