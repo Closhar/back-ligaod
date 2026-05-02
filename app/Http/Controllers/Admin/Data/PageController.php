@@ -45,7 +45,7 @@ class PageController extends Controller
             $query->where('in_mobile_menu', (bool) $request->boolean('in_mobile_menu'));
         }
 
-        if (!in_array($sortField, $allowedSortFields, true)) {
+        if (! in_array($sortField, $allowedSortFields, true)) {
             $sortField = 'id';
         }
 
@@ -136,7 +136,7 @@ class PageController extends Controller
         return response()->json([
             'success' => true,
             'image_path' => $path,
-            'full_path' => config('app.url') . '/storage/' . $path,
+            'full_path' => Storage::disk('public')->url($path),
             'message' => 'Изображение страницы успешно загружено',
         ]);
     }
@@ -146,7 +146,7 @@ class PageController extends Controller
         $page = Page::findOrFail($id);
         $field = $request->input('field', 'image');
 
-        if (!in_array($field, ['image', 'image_default'], true)) {
+        if (! in_array($field, ['image', 'image_default'], true)) {
             return response()->json([
                 'success' => false,
                 'message' => 'Недопустимое поле изображения',

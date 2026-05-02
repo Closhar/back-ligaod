@@ -3,12 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Storage;
 
 class Page extends Model
 {
     protected $guarded = [];
+
     public $timestamps = false;
+
     protected $appends = ['page_image', 'default_page_image'];
+
     protected $casts = [
         'in_menu' => 'boolean',
         'in_mobile_menu' => 'boolean',
@@ -18,13 +22,11 @@ class Page extends Model
 
     public function getPageImageAttribute(): ?string
     {
-        if ($this->image) return config('app.url') . '/storage/' . $this->image;
-        return null;
+        return $this->image ? Storage::disk('public')->url($this->image) : null;
     }
 
     public function getDefaultPageImageAttribute(): ?string
     {
-        if ($this->image_default) return config('app.url') . '/storage/' . $this->image_default;
-        return null;
+        return $this->image_default ? Storage::disk('public')->url($this->image_default) : null;
     }
 }

@@ -20,7 +20,7 @@ class ApiParamsController extends Controller
     {
         return response()->json([
             'message' => 'API работает!',
-            'timestamp' => now()->toISOString()
+            'timestamp' => now()->toISOString(),
         ]);
     }
 
@@ -52,14 +52,14 @@ class ApiParamsController extends Controller
                     $sectionMenu = [
                         'title' => $section->name,
                         'icon' => $section->icon ?: 'fluent:folder-list-20-filled',
-                        'submenu' => []
+                        'submenu' => [],
                     ];
 
                     foreach ($section->activeAdminPages as $page) {
                         $sectionMenu['submenu'][] = [
                             'title' => $page->title,
                             'icon' => $page->icon ?: 'fluent:document-20-filled',
-                            'link' => '/' . $page->slug
+                            'link' => '/'.$page->slug,
                         ];
                     }
 
@@ -72,7 +72,7 @@ class ApiParamsController extends Controller
                 $menu[] = [
                     'title' => $page->title,
                     'icon' => $page->icon ?: 'fluent:document-20-filled',
-                    'slug' => $page->slug
+                    'slug' => $page->slug,
                 ];
             }
 
@@ -96,7 +96,7 @@ class ApiParamsController extends Controller
                     'id' => $page->id,
                     'title' => $page->title,
                     'slug' => $page->slug,
-                    'path' => $slug === '' || $slug === 'index' || $slug === 'home' ? '/' : '/' . $slug,
+                    'path' => $slug === '' || $slug === 'index' || $slug === 'home' ? '/' : '/'.$slug,
                     'icon' => $page->icon ?: 'fluent:document-20-filled',
                 ];
             };
@@ -146,8 +146,9 @@ class ApiParamsController extends Controller
             // Преобразуем в формат name:value с публичным URL текущего public disk.
             $imagesArray = [];
             foreach ($picParams as $picParam) {
-                if (!$picParam->value) {
+                if (! $picParam->value) {
                     $imagesArray[$picParam->name] = '';
+
                     continue;
                 }
 
@@ -158,13 +159,13 @@ class ApiParamsController extends Controller
 
             return response()->json([
                 'params' => $paramsArray,
-                'images' => $imagesArray
+                'images' => $imagesArray,
             ]);
         } catch (\Exception $e) {
             // Если есть ошибка, возвращаем пустые массивы
             return response()->json([
                 'params' => [],
-                'images' => []
+                'images' => [],
             ]);
         }
     }
@@ -194,14 +195,11 @@ class ApiParamsController extends Controller
                 $page = Page::where('slug', $id)->first();
             }
 
-            if (!$page) {
+            if (! $page) {
                 return response()->json([
-                    'error' => 'Страница не найдена'
+                    'error' => 'Страница не найдена',
                 ], 404);
             }
-
-            // Получаем APP_URL из .env
-            $appUrl = config('app.url');
 
             $pageData = [
                 'id' => $page->id,
@@ -209,8 +207,8 @@ class ApiParamsController extends Controller
                 'slug' => $page->slug,
                 'description' => $page->description,
                 'keywords' => $page->keywords,
-                'image' => $page->image ? $appUrl . '/storage/' . $page->image : null,
-                'image_default' => $page->image_default ? $appUrl . '/storage/' . $page->image_default : null,
+                'image' => $page->image ? Storage::disk('public')->url($page->image) : null,
+                'image_default' => $page->image_default ? Storage::disk('public')->url($page->image_default) : null,
                 'html' => $page->html,
                 'icon' => $page->icon,
                 'in_menu' => $page->in_menu,
@@ -224,7 +222,7 @@ class ApiParamsController extends Controller
             // Если есть ошибка, возвращаем ошибку
             return response()->json([
                 'error' => 'Ошибка при получении страницы',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
@@ -238,9 +236,9 @@ class ApiParamsController extends Controller
             // Получаем страницу админки из базы данных
             $page = AdminPage::find($id);
 
-            if (!$page) {
+            if (! $page) {
                 return response()->json([
-                    'error' => 'Страница не найдена'
+                    'error' => 'Страница не найдена',
                 ], 404);
             }
 
@@ -254,15 +252,15 @@ class ApiParamsController extends Controller
                         'id' => 1,
                         'title' => 'Главная',
                         'icon' => 'fluent:home-20-filled',
-                        'slug' => '/'
+                        'slug' => '/',
                     ],
                     [
                         'id' => $page->id,
                         'title' => $page->title,
                         'icon' => $page->icon ?: 'fluent:document-20-filled',
-                        'slug' => '/' . $page->slug
-                    ]
-                ]
+                        'slug' => '/'.$page->slug,
+                    ],
+                ],
             ];
 
             return response()->json($pageData);
@@ -273,7 +271,7 @@ class ApiParamsController extends Controller
                 'title' => 'Страница',
                 'description' => 'Описание страницы',
                 'icon' => 'fluent:document-20-filled',
-                'breadcrumbs' => []
+                'breadcrumbs' => [],
             ]);
         }
     }
