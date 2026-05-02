@@ -276,6 +276,11 @@ class ArticleController extends Controller
         }
     }
 
+    public function destroyImage($id): JsonResponse
+    {
+        return $this->deleteImage($id);
+    }
+
     /**
      * Сохранение отношений morphedByMany
      */

@@ -44,7 +44,7 @@ class ApiArticleController extends Controller
                 'slug',
                 'data',
                 'views',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
+                'image',
                 DB::raw("DATE_FORMAT(data, '%d.%m.%Y %H:%i') as date_formatted") // Форматируем дату
             )
             ->with([
@@ -53,7 +53,7 @@ class ApiArticleController extends Controller
                         'competitions.id',
                         'competitions.title',
                         'competitions.slug',
-                        DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS competition_image')
+                        'competitions.image'
                     ]);
                 },
                 'sports' => function ($cityQuery) {
@@ -125,10 +125,21 @@ class ApiArticleController extends Controller
         // Добавляем сортировку по полю data
         $query->orderBy('data', $sortDirection === 'desc' ? 'desc' : 'asc');
 
-        if ($limit) return $query->limit($limit)->get()->toArray();
+        if ($limit) {
+            return $query->limit($limit)->get()->map(function (Article $article) {
+                $article->full_image_path = $article->article_image_path;
+
+                return $article;
+            })->toArray();
+        }
 
         // Пагинация
         $articles = $query->paginate($perPage, ['*'], 'page', $page);
+        $articles->getCollection()->transform(function (Article $article) {
+            $article->full_image_path = $article->article_image_path;
+
+            return $article;
+        });
 
         // Возвращаем результат с пагинацией
         return [
@@ -167,7 +178,6 @@ class ApiArticleController extends Controller
                 'slug',
                 'image',
                 'photo_info',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS article_image_path'),
                 DB::raw("DATE_FORMAT(data, '%d.%m.%Y %H:%i') as date_formatted")
             )
             ->where('published', 1) // Показываем только опубликованные статьи

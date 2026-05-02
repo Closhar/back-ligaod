@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 class Article extends Model
 {
@@ -97,7 +98,7 @@ class Article extends Model
 
     public function getArticleImagePathAttribute()
     {
-        if ($this->image) return config('app.url') . '/storage/' . $this->image;
+        if ($this->image) return Storage::disk('public')->url($this->image);
         return null;
     }
 
