@@ -49,6 +49,7 @@ use App\Http\Controllers\Api\PersonPositionMembershipController;
 use App\Http\Controllers\Api\PersonRoleMembershipController;
 use App\Http\Controllers\Api\PersonSportMembershipController;
 use App\Http\Controllers\Api\PersonSurnameChangeController;
+use App\Http\Controllers\Api\PicParamController;
 use App\Http\Controllers\Api\PositionController;
 use App\Http\Controllers\Api\RatingController;
 use App\Http\Controllers\Api\RoleController;
@@ -800,6 +801,9 @@ Route::prefix('people')->group(function () {
 });
 
 Route::apiResource('params', ParamController::class);
+Route::apiResource('pic-params', PicParamController::class);
+Route::post('pic-params/{id}/upload-image', [PicParamController::class, 'uploadImage']);
+Route::post('pic-params/{id}/delete-image', [PicParamController::class, 'deleteImage']);
 Route::apiResource('pages', PageController::class);
 Route::post('pages/{id}/upload-image', [PageController::class, 'uploadImage']);
 Route::post('pages/{id}/delete-image', [PageController::class, 'deleteImage']);

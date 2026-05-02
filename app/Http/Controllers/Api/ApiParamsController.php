@@ -9,6 +9,7 @@ use App\Models\Page;
 use App\Models\Param;
 use App\Models\PicParam;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Storage;
 
 class ApiParamsController extends Controller
 {
@@ -142,13 +143,17 @@ class ApiParamsController extends Controller
             // Получаем все параметры изображений из таблицы pic_params
             $picParams = PicParam::all();
 
-            // Получаем APP_URL из .env
-            $appUrl = config('app.url');
-
-            // Преобразуем в формат name:value с добавлением APP_URL
+            // Преобразуем в формат name:value с публичным URL текущего public disk.
             $imagesArray = [];
             foreach ($picParams as $picParam) {
-                $imagesArray[$picParam->name] = $appUrl . '/storage/' . $picParam->value;
+                if (!$picParam->value) {
+                    $imagesArray[$picParam->name] = '';
+                    continue;
+                }
+
+                $imagesArray[$picParam->name] = str_starts_with($picParam->value, 'http')
+                    ? $picParam->value
+                    : Storage::disk('public')->url($picParam->value);
             }
 
             return response()->json([
