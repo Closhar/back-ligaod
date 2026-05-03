@@ -74,6 +74,7 @@ class PersonController extends Controller
 
             $query = Person::with([
                 'mainImage',
+                'images',
                 'activePositionMemberships' => function ($query) {
                     $query->whereHas('position'); // Исключаем членства с несуществующими должностями
                 },

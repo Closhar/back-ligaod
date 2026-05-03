@@ -1,6 +1,6 @@
 <?php
 
-$publicFilesystemDriver = env('PUBLIC_FILESYSTEM_DRIVER', 'local');
+$publicFilesystemDriver = env('PUBLIC_FILESYSTEM_DRIVER', env('FILESYSTEM_DISK', 'local'));
 $localPublicFilesystemUrl = env('PUBLIC_FILESYSTEM_URL', env('APP_URL').'/storage');
 $s3PublicFilesystemUrl = env('PUBLIC_FILESYSTEM_URL', env('AWS_URL'));
 

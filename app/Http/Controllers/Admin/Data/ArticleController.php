@@ -4,9 +4,9 @@ namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
 use App\Models\Article;
-use App\Models\ArticleTag;
-use Illuminate\Http\Request;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -48,7 +48,7 @@ class ArticleController extends Controller
             $query->where('published', $published);
         }
 
-        if (!empty($tagIds)) {
+        if (! empty($tagIds)) {
             $query->whereHas('tags', function ($q) use ($tagIds) {
                 $q->whereIn('article_tags.id', $tagIds);
             });
@@ -108,12 +108,12 @@ class ArticleController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -123,7 +123,7 @@ class ArticleController extends Controller
         try {
             $article = Article::select([
                 'id', 'title', 'description', 'data', 'slug', 'region_id',
-                'published', 'image', 'content', 'photo_info', 'created_at', 'updated_at'
+                'published', 'image', 'content', 'photo_info', 'created_at', 'updated_at',
             ])->with([
                 'region',
                 'sports',
@@ -134,16 +134,16 @@ class ArticleController extends Controller
                 'galleries',
                 'videos',
                 'people',
-                'tags'
+                'tags',
             ])->findOrFail($id);
 
             return response()->json($article);
-        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+        } catch (ModelNotFoundException $e) {
             return response()->json(['message' => 'Статья не найдена'], 404);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Внутренняя ошибка сервера',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -159,7 +159,7 @@ class ArticleController extends Controller
 
             $validated = $request->validate([
                 'title' => 'string|max:255',
-                'data' => 'date_format:Y-m-d H:i:s',
+                'data' => 'date',
                 'slug' => 'string|max:255',
                 'description' => 'string|max:1000',
                 'content' => 'nullable|string',
@@ -181,6 +181,10 @@ class ArticleController extends Controller
                 $validated['image'] = $path;
             }
 
+            if (array_key_exists('data', $validated)) {
+                $validated['data'] = date('Y-m-d H:i:s', strtotime($validated['data']));
+            }
+
             $article->update($validated);
 
             if (is_array($tagIds)) {
@@ -190,20 +194,20 @@ class ArticleController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $article,
-                'message' => 'Updated successfully'
+                'message' => 'Updated successfully',
             ]);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -235,15 +239,15 @@ class ArticleController extends Controller
                     'required',
                     'image',
                     'mimes:jpeg,png,jpg,gif,webp',
-                    'max:2048'
-                ]
+                    'max:2048',
+                ],
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка валидации',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -259,13 +263,13 @@ class ArticleController extends Controller
                 'success' => true,
                 'image_path' => $path,
                 'full_path' => Storage::disk('public')->url($path),
-                'message' => 'Изображение успешно загружено'
+                'message' => 'Изображение успешно загружено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка сервера: ' . $e->getMessage()
+                'message' => 'Ошибка сервера: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -275,10 +279,10 @@ class ArticleController extends Controller
         try {
             $article = Article::findOrFail($id);
 
-            if (!$article->image) {
+            if (! $article->image) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Нет изображения для удаления'
+                    'message' => 'Нет изображения для удаления',
                 ], 404);
             }
 
@@ -288,13 +292,13 @@ class ArticleController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Изображение успешно удалено'
+                'message' => 'Изображение успешно удалено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+                'message' => 'Ошибка при удалении изображения: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -361,7 +365,7 @@ class ArticleController extends Controller
             $validated = $request->validate([
                 'relation_type' => 'required|string|in:sports,clubs,arenas,competitions,events,galleries,videos,people',
                 'relation_ids' => 'required|array',
-                'relation_ids.*' => 'integer'
+                'relation_ids.*' => 'integer',
             ]);
 
             $relationType = $validated['relation_type'];
@@ -371,25 +375,25 @@ class ArticleController extends Controller
             $article->$relationType()->detach();
 
             // Добавляем новые связи
-            if (!empty($relationIds)) {
+            if (! empty($relationIds)) {
                 $article->$relationType()->attach($relationIds);
             }
 
             return response()->json([
                 'success' => true,
-                'message' => 'Отношения успешно сохранены'
+                'message' => 'Отношения успешно сохранены',
             ]);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Ошибка валидации',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка сохранения отношений: ' . $e->getMessage()
+                'message' => 'Ошибка сохранения отношений: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -404,7 +408,7 @@ class ArticleController extends Controller
             $value = explode(',', $value);
         }
 
-        if (!is_array($value)) {
+        if (! is_array($value)) {
             return [];
         }
 
