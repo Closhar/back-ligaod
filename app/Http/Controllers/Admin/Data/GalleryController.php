@@ -5,8 +5,8 @@ namespace App\Http\Controllers\Admin\Data;
 use App\Http\Controllers\Controller;
 use App\Models\Gallery;
 use DB;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Storage;
 use Validator;
@@ -23,14 +23,14 @@ class GalleryController extends Controller
         $id = $request->input('id');
 
         $query = Gallery::query()
-        ->select([
-            'galleries.id',
-            'galleries.title',
-            'galleries.image',
-            //DB::raw('CONCAT("' . config('app.url') . '", "/storage/", galleries.image) AS gallery_image_path')
-        ])
-        ->with('main_image')
-        ->with('images');
+            ->select([
+                'galleries.id',
+                'galleries.title',
+                'galleries.image',
+                // DB::raw('CONCAT("' . config('app.url') . '", "/storage/", galleries.image) AS gallery_image_path')
+            ])
+            ->with('main_image')
+            ->with('images');
 
         if ($id) {
             $query->where('id', $id);
@@ -76,12 +76,12 @@ class GalleryController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -90,6 +90,7 @@ class GalleryController extends Controller
     {
         try {
             $gallery = Gallery::findOrFail($id);
+
             return response()->json($gallery);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Not Found'], 404);
@@ -112,20 +113,20 @@ class GalleryController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $gallery,
-                'message' => 'Updated successfully'
+                'message' => 'Updated successfully',
             ]);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -153,26 +154,26 @@ class GalleryController extends Controller
                     'required',
                     'image',
                     'mimes:jpeg,png,jpg,gif,webp',
-                    'max:2048' // 10MB
+                    'max:2048', // 10MB
                 ],
-                'field' => 'sometimes|string'
+                'field' => 'sometimes|string',
             ], [
                 'image.required' => 'Файл изображения обязателен',
                 'image.image' => 'Файл должен быть изображением',
                 'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
-                'image.max' => 'Максимальный размер файла 2MB'
+                'image.max' => 'Максимальный размер файла 2MB',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка валидации',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
             // Обработка изображения
-            $path = $request->file('image')->store($folder, 'public');
+            $path = $request->file('image')->store("{$folder}/{$model->id}", 'public');
 
             // Удаляем старое изображение
             if ($model->{$field}) {
@@ -186,13 +187,13 @@ class GalleryController extends Controller
                 'success' => true,
                 'image_path' => $path,
                 'full_path' => Storage::disk('public')->url($path),
-                'message' => 'Изображение успешно загружено'
+                'message' => 'Изображение успешно загружено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка сервера: ' . $e->getMessage()
+                'message' => 'Ошибка сервера: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -203,10 +204,10 @@ class GalleryController extends Controller
             $model = Gallery::findOrFail($id);
             $field = $request->input('field', 'image');
 
-            if (!$model->{$field}) {
+            if (! $model->{$field}) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Нет изображения для удаления'
+                    'message' => 'Нет изображения для удаления',
                 ], 404);
             }
 
@@ -216,13 +217,13 @@ class GalleryController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Изображение успешно удалено'
+                'message' => 'Изображение успешно удалено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+                'message' => 'Ошибка при удалении изображения: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -232,10 +233,10 @@ class GalleryController extends Controller
         try {
             $model = Gallery::findOrFail($id);
 
-            if (!$model->{$field}) {
+            if (! $model->{$field}) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No image to delete'
+                    'message' => 'No image to delete',
                 ], 404);
             }
 
@@ -245,16 +246,15 @@ class GalleryController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Image deleted successfully'
+                'message' => 'Image deleted successfully',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error deleting image',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
-
 }

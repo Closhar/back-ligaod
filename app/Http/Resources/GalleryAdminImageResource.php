@@ -4,6 +4,7 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use Illuminate\Support\Facades\Storage;
 
 class GalleryAdminImageResource extends JsonResource
 {
@@ -17,9 +18,9 @@ class GalleryAdminImageResource extends JsonResource
         return [
             'id' => $this->id,
             'title' => $this->title,
-            'image' => url('/storage/' . $this->image),
-            'thmb' => url('/storage/' . preg_replace('~^(.*/)([^/]+)$~', '$1thmb_$2', $this->image)),
-            'position' => $this->position
+            'image' => Storage::disk('public')->url($this->image),
+            'thmb' => Storage::disk('public')->url(preg_replace('~^(.*/)([^/]+)$~', '$1thmb_$2', $this->image)),
+            'position' => $this->position,
         ];
     }
 }

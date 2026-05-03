@@ -3,12 +3,12 @@
 namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\ApiGenderRequest;
-use App\Models\Age;
+use App\Models\City;
 use App\Models\Club;
 use App\Models\Event;
-use App\Models\Gender;
-use App\Models\Sport;
+use App\Models\PersonClubMembership;
+use App\Models\PersonImage;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -66,9 +66,7 @@ class ClubController extends Controller
                     'clubs.image_bg',
                     'clubs.tlgs_to_parse',
                     DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short) AS club_info'),
-                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image) AS full_image_path'),
-                    DB::raw('CONCAT("' . config('app.url') . '", "/storage/", clubs.image_bg) AS full_image_bg_path')
-                    ])
+                ])
                 ->join('sports as sport', 'clubs.sport_id', '=', 'sport.id')
                 ->join('cities as city', 'clubs.city_id', '=', 'city.id')
                 ->join('genders as gender', 'clubs.gender_id', '=', 'gender.id')
@@ -84,10 +82,10 @@ class ClubController extends Controller
                 ->orderBy($sortField, $sortDirection); // Применение сортировки
 
             // Общий поиск (работает только по заголовку, если нет параметра field)
-            if ($searchQuery && !$request->has('field')) {
-                $query->where(function($q) use ($searchQuery) {
+            if ($searchQuery && ! $request->has('field')) {
+                $query->where(function ($q) use ($searchQuery) {
                     $q->where('clubs.title', 'LIKE', "%{$searchQuery}%")
-                      ->orWhere(DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short)'), 'LIKE', "%{$searchQuery}%");
+                        ->orWhere(DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short)'), 'LIKE', "%{$searchQuery}%");
                 });
             }
 
@@ -101,7 +99,7 @@ class ClubController extends Controller
                 $allowedFields = [
                     'id', 'title', 'title_short', 'about', 'address', 'slug',
                     'city_id', 'sport_id', 'gender_id', 'age_id', 'region_id', 'rating_region_id', 'is_alien',
-                    'club_info', 'tlgs_to_parse'
+                    'club_info', 'tlgs_to_parse',
                 ];
 
                 if (in_array($field, $allowedFields)) {
@@ -110,18 +108,18 @@ class ClubController extends Controller
                         if ($field === 'club_info') {
                             $query->where(DB::raw('CONCAT(clubs.title, " (", city.title_short, ") | ", sport.title_short, " | ", gender.title_short)'), 'LIKE', "%{$value}%");
                         } else {
-                            $query->where('clubs.' . $field, 'LIKE', "%{$value}%");
+                            $query->where('clubs.'.$field, 'LIKE', "%{$value}%");
                         }
                     } else {
                         // Для других полей используем точное соответствие
-                        $query->where('clubs.' . $field, $value);
+                        $query->where('clubs.'.$field, $value);
                     }
                 }
             }
 
             // Дополнительные фильтры (остаются без изменений)
             if ($request->has('sport') && $request->input('sport') !== null) {
-                $query->whereHas('sport', fn($q) => $q->where('slug', $request->input('sport')));
+                $query->whereHas('sport', fn ($q) => $q->where('slug', $request->input('sport')));
             }
 
             if ($request->has('gender_id') && $request->input('gender_id') !== null) {
@@ -150,9 +148,10 @@ class ClubController extends Controller
             // ... остальные фильтры
 
             // Если запрошен простой вывод или указан лимит, но не запрошена пагинация
-            if ($type || ($request->has('limit') && !$request->has('page'))) {
+            if ($type || ($request->has('limit') && ! $request->has('page'))) {
                 // Используем указанный лимит или значение по умолчанию
                 $resultLimit = $request->input('limit', 10);
+
                 return $query->limit($resultLimit)->get()->toArray();
             }
 
@@ -196,7 +195,7 @@ class ClubController extends Controller
                     'requested_q' => $request->input('q'),
                     'decoded_q' => $value ?? null,
                     'count_results' => $countResults,
-                    'limit' => $request->input('limit')
+                    'limit' => $request->input('limit'),
                 ];
             }
 
@@ -205,18 +204,18 @@ class ClubController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Server Error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ], 500);
         }
     }
 
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function store(Request $request): JsonResponse
     {
         try {
             // Логируем входящие данные
             Log::info('Club creation request', [
                 'data' => $request->all(),
-                'headers' => $request->headers->all()
+                'headers' => $request->headers->all(),
             ]);
 
             $validated = $request->validate([
@@ -246,22 +245,22 @@ class ClubController extends Controller
                 'image' => 'nullable|string|max:255',
                 'image_bg' => 'nullable|string|max:255',
                 'region_id' => 'nullable|exists:regions,id',
-                'rating_region_id' => 'nullable|exists:rating_regions,id'
+                'rating_region_id' => 'nullable|exists:rating_regions,id',
             ]);
 
             Log::info('Validation passed', ['validated_data' => $validated]);
 
             // Обработка city_title
-            if (isset($validated['city_title']) && !empty($validated['city_title'])) {
+            if (isset($validated['city_title']) && ! empty($validated['city_title'])) {
                 Log::info('Processing city_title', ['city_title' => $validated['city_title']]);
 
-                $city = \App\Models\City::where('title', $validated['city_title'])->first();
+                $city = City::where('title', $validated['city_title'])->first();
 
-                if (!$city) {
+                if (! $city) {
                     Log::info('Creating new city', ['city_title' => $validated['city_title']]);
-                    $city = \App\Models\City::create([
+                    $city = City::create([
                         'title' => $validated['city_title'],
-                        'title_short' => mb_substr($validated['city_title'], 0, 3)
+                        'title_short' => mb_substr($validated['city_title'], 0, 3),
                     ]);
                     Log::info('City created', ['city_id' => $city->id]);
                 }
@@ -271,11 +270,12 @@ class ClubController extends Controller
             }
 
             // Убеждаемся, что обязательные поля присутствуют
-            if (!isset($validated['city_id'])) {
+            if (! isset($validated['city_id'])) {
                 Log::warning('City ID is missing');
+
                 return response()->json([
                     'message' => 'Validation failed',
-                    'errors' => ['city_id' => ['City is required']]
+                    'errors' => ['city_id' => ['City is required']],
                 ], 422);
             }
 
@@ -290,12 +290,12 @@ class ClubController extends Controller
         } catch (ValidationException $e) {
             Log::warning('Validation failed', [
                 'errors' => $e->errors(),
-                'request_data' => $request->all()
+                'request_data' => $request->all(),
             ]);
 
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             Log::error('Club creation error', [
@@ -303,12 +303,12 @@ class ClubController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'request_data' => $request->all(),
                 'memory_usage' => memory_get_usage(true),
-                'memory_peak' => memory_get_peak_usage(true)
+                'memory_peak' => memory_get_peak_usage(true),
             ]);
 
             return response()->json([
                 'message' => 'Internal Server Error',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -329,8 +329,8 @@ class ClubController extends Controller
                 $item = $query->where('slug', $id)->firstOrFail();
             }
 
-                        // Получаем активные членства (игроки этого клуба, у которых left_at = null)
-            $activeMemberships = \App\Models\PersonClubMembership::with([
+            // Получаем активные членства (игроки этого клуба, у которых left_at = null)
+            $activeMemberships = PersonClubMembership::with([
                 'person.activeAmpluaMemberships.amplua',
                 'person.mainImage',
                 'person.positionMemberships.position', // добавлено для сотрудников
@@ -342,7 +342,7 @@ class ClubController extends Controller
             // Загружаем изображения отдельно для каждого игрока
             foreach ($activeMemberships as $membership) {
                 if ($membership->person) {
-                    $images = \App\Models\PersonImage::where('person_id', $membership->person->id)
+                    $images = PersonImage::where('person_id', $membership->person->id)
                         ->orderBy('position')
                         ->get();
                     $membership->person->setRelation('images', $images);
@@ -351,6 +351,7 @@ class ClubController extends Controller
 
             $itemArr = $item->toArray();
             $itemArr['active_memberships'] = $activeMemberships->toArray();
+
             return response()->json($itemArr);
 
         } catch (\Exception $e) {
@@ -377,7 +378,7 @@ class ClubController extends Controller
                 'xs' => 'nullable|string',
                 'map' => 'nullable|string',
                 'tlgs_to_parse' => 'nullable|string',
-                'slug' => 'nullable|string|max:255|unique:clubs,slug,' . $id,
+                'slug' => 'nullable|string|max:255|unique:clubs,slug,'.$id,
                 'city_id' => 'exists:cities,id',
                 'gallery_id' => 'nullable|exists:galleries,id',
                 'sport_id' => 'exists:sports,id',
@@ -387,7 +388,7 @@ class ClubController extends Controller
                 'image' => 'nullable|string|max:255',
                 'image_bg' => 'nullable|string|max:255',
                 'region_id' => 'nullable|exists:regions,id',
-                'rating_region_id' => 'nullable|exists:rating_regions,id'
+                'rating_region_id' => 'nullable|exists:rating_regions,id',
             ]);
 
             $item = Club::findOrFail($id);
@@ -396,20 +397,20 @@ class ClubController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $item,
-                'message' => 'Updated successfully'
+                'message' => 'Updated successfully',
             ]);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
@@ -438,21 +439,21 @@ class ClubController extends Controller
                     'required',
                     'image',
                     'mimes:jpeg,png,jpg,gif,webp',
-                    'max:2048' // 10MB
+                    'max:2048', // 10MB
                 ],
-                'field' => 'sometimes|string'
+                'field' => 'sometimes|string',
             ], [
                 'image.required' => 'Файл изображения обязателен',
                 'image.image' => 'Файл должен быть изображением',
                 'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
-                'image.max' => 'Максимальный размер файла 2MB'
+                'image.max' => 'Максимальный размер файла 2MB',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка валидации',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -470,14 +471,14 @@ class ClubController extends Controller
             return response()->json([
                 'success' => true,
                 'image_path' => $path,
-                'full_path' => config('app.url') . '/storage/' . $path,
-                'message' => 'Изображение успешно загружено'
+                'full_path' => Storage::disk('public')->url($path),
+                'message' => 'Изображение успешно загружено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка сервера: ' . $e->getMessage()
+                'message' => 'Ошибка сервера: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -488,10 +489,10 @@ class ClubController extends Controller
             $model = Club::findOrFail($id);
             $field = $request->input('field', 'image');
 
-            if (!$model->{$field}) {
+            if (! $model->{$field}) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Нет изображения для удаления'
+                    'message' => 'Нет изображения для удаления',
                 ], 404);
             }
 
@@ -501,13 +502,13 @@ class ClubController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Изображение успешно удалено'
+                'message' => 'Изображение успешно удалено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+                'message' => 'Ошибка при удалении изображения: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -517,10 +518,10 @@ class ClubController extends Controller
         try {
             $model = Event::findOrFail($id);
 
-            if (!$model->{$field}) {
+            if (! $model->{$field}) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No image to delete'
+                    'message' => 'No image to delete',
                 ], 404);
             }
 
@@ -530,14 +531,14 @@ class ClubController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Image deleted successfully'
+                'message' => 'Image deleted successfully',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error deleting image',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }

@@ -3,20 +3,24 @@
 namespace App\Models;
 
 use App\Traits\KTranslateTrait;
-use DB;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Competition extends Model
 {
-    use KTranslateTrait, HasFactory;
+    use HasFactory, KTranslateTrait;
 
     protected $guarded = [];
+
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
-    protected $appends = ['date_from_formatted', 'date_to_formatted', 'competition_image_path', 'competition_bg_image_path', 'event_name'];
+
+    protected $appends = ['date_from_formatted', 'date_to_formatted', 'competition_image_path', 'competition_bg_image_path', 'full_image_path', 'full_bg_image_path', 'event_name'];
 
     public function arenas(): MorphToMany
     {
@@ -61,7 +65,7 @@ class Competition extends Model
     public function newSeasons()
     {
         return $this->belongsToMany(Season::class, 'competition_seasons')
-                    ->withTimestamps();
+            ->withTimestamps();
     }
 
     public function activeSeasons(): HasMany
@@ -100,28 +104,41 @@ class Competition extends Model
 
     public function getDateFromFormattedAttribute()
     {
-        if ($this->date_from) return \Carbon\Carbon::parse($this->date_from)->format('d.m.Y.');
+        if ($this->date_from) {
+            return Carbon::parse($this->date_from)->format('d.m.Y.');
+        }
+
         return null;
     }
 
     public function getDateToFormattedAttribute()
     {
-        if ($this->date_to) return \Carbon\Carbon::parse($this->date_to)->format('d.m.Y.');
+        if ($this->date_to) {
+            return Carbon::parse($this->date_to)->format('d.m.Y.');
+        }
+
         return null;
 
     }
 
     public function getCompetitionImagePathAttribute()
     {
-        if ($this->image) return config('app.url') . '/storage/' . $this->image;
-        return null;
+        return $this->image ? Storage::disk('public')->url($this->image) : null;
     }
 
     public function getCompetitionBgImagePathAttribute()
     {
-        if ($this->bg_image) return config('app.url') . '/storage/' . $this->bg_image;
-        return null;
+        return $this->bg_image ? Storage::disk('public')->url($this->bg_image) : null;
+    }
 
+    public function getFullImagePathAttribute()
+    {
+        return $this->competition_image_path;
+    }
+
+    public function getFullBgImagePathAttribute()
+    {
+        return $this->competition_bg_image_path;
     }
 
     public function getEventNameAttribute()
@@ -144,9 +161,8 @@ class Competition extends Model
     /**
      * Получить все сезоны, отсортированные по дате начала
      */
-    public function getSeasonsOrdered(): \Illuminate\Database\Eloquent\Collection
+    public function getSeasonsOrdered(): Collection
     {
         return $this->seasons()->orderBy('date_from', 'desc')->get();
     }
-
 }

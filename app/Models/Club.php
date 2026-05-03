@@ -8,10 +8,11 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Club extends Model
 {
-    use KTranslateTrait, HasFactory;
+    use HasFactory, KTranslateTrait;
 
     protected $fillable = [
         'title',
@@ -39,11 +40,12 @@ class Club extends Model
         'rating_region_id',
         'gallery_id',
         'region_id',
-        'is_alien'
+        'is_alien',
     ];
 
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
-    protected $appends = ['club_image_path', 'bg_club_image_path', 'event_name', 'full_info', 'name', 'logo_url'];
+
+    protected $appends = ['club_image_path', 'bg_club_image_path', 'full_image_path', 'full_image_bg_path', 'event_name', 'full_info', 'name', 'logo_url'];
 
     protected static function booted(): void
     {
@@ -124,19 +126,29 @@ class Club extends Model
 
     public function getClubImagePathAttribute()
     {
-        return config('app.url') . '/storage/' . $this->image;
+        return $this->image ? Storage::disk('public')->url($this->image) : null;
     }
 
     public function getBgClubImagePathAttribute()
     {
-        if ($this->image_bg) return config('app.url') . '/storage/' . $this->image_bg;
-        return null;
+        return $this->image_bg ? Storage::disk('public')->url($this->image_bg) : null;
+    }
+
+    public function getFullImagePathAttribute()
+    {
+        return $this->club_image_path;
+    }
+
+    public function getFullImageBgPathAttribute()
+    {
+        return $this->bg_club_image_path;
     }
 
     public function getEventNameAttribute()
     {
         $cityTitle = $this->city ? $this->city->title : 'Город не указан';
-        return $this->title . ' (' . $cityTitle . ')';
+
+        return $this->title.' ('.$cityTitle.')';
     }
 
     public function getFullInfoAttribute()
@@ -157,7 +169,8 @@ class Club extends Model
         }
 
         $info = implode(' | ', $parts);
-        return $this->title . ' ' . $info;
+
+        return $this->title.' '.$info;
     }
 
     /**

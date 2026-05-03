@@ -6,17 +6,19 @@ use App\Traits\KTranslateTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 class Image extends Model
 {
-    use KTranslateTrait, HasFactory;
+    use HasFactory, KTranslateTrait;
 
     const POSITION_GAP = 60000;
+
     protected $guarded = [];
+
     protected $hidden = ['created_at', 'updated_at', 'position', 'gallery_id'];
 
     protected $appends = ['thumbnail', 'gallery_image_path']; // Добавляем thumbnail в JSON-ответ
-
 
     public static function booted()
     {
@@ -34,16 +36,19 @@ class Image extends Model
     {
         if ($this->image) {
             $thumbnail = preg_replace('~^(.*/)([^/]+)$~', '$1thmb_$2', $this->image);
-            return config('app.url') . '/storage/' . $thumbnail; // Добавляем базовый URL
+
+            return Storage::disk('public')->url($thumbnail);
         }
+
         return null; // Если image отсутствует, вернется null
     }
 
     public function getGalleryImagePathAttribute()
     {
         if ($this->image) {
-            return config('app.url') . '/storage/' . $this->image; // Добавляем базовый URL
+            return Storage::disk('public')->url($this->image);
         }
+
         return null; // Если image отсутствует, вернется null
     }
 }

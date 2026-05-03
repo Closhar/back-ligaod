@@ -3,14 +3,10 @@
 namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\ApiGenderRequest;
-use App\Models\Age;
 use App\Models\Arena;
-use App\Models\Gender;
-use App\Models\Sport;
+use App\Models\City;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\ValidationException;
@@ -20,7 +16,6 @@ class ArenaController extends Controller
     /**
      * Display a listing of the resource.
      */
-
     public function index(Request $request)
     {
         // Получаем параметры фильтрации из запроса
@@ -57,7 +52,7 @@ class ArenaController extends Controller
                 'competitions' => function ($query) {
                     $query->select('competitions.id', 'competitions.title')
                         ->withCount(['arenas', 'events']);
-                }
+                },
             ])
             ->withCount(['sports', 'clubs', 'competitions']);
 
@@ -118,15 +113,15 @@ class ArenaController extends Controller
                         return [
                             'id' => $image->id,
                             'path' => $image->path,
-                            'full_path' => config('app.url') . '/storage/' . $image->path,
+                            'full_path' => Storage::disk('public')->url($image->path),
                             'alt' => $image->alt,
                             'title' => $image->title,
                         ];
-                    })
+                    }),
                 ] : null,
                 'region' => $arena->region,
                 'city' => $arena->city,
-                'image_path' => $arena->image ? config('app.url') . '/storage/' . $arena->image : null,
+                'image_path' => $arena->arena_image_path,
                 'sports_count' => $arena->sports_count,
                 'clubs_count' => $arena->clubs_count,
                 'competitions_count' => $arena->competitions_count,
@@ -203,12 +198,12 @@ class ArenaController extends Controller
             ]);
 
             if (isset($validated['city_title'])) {
-                $city = \App\Models\City::where('title', $validated['city_title'])->first();
+                $city = City::where('title', $validated['city_title'])->first();
 
-                if (!$city) {
-                    $city = \App\Models\City::create([
+                if (! $city) {
+                    $city = City::create([
                         'title' => mb_convert_encoding($validated['city_title'], 'UTF-8', 'auto'),
-                        'title_short' => mb_substr(mb_convert_encoding($validated['city_title'], 'UTF-8', 'auto'), 0, 3)
+                        'title_short' => mb_substr(mb_convert_encoding($validated['city_title'], 'UTF-8', 'auto'), 0, 3),
                     ]);
                 }
 
@@ -223,12 +218,12 @@ class ArenaController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -255,10 +250,10 @@ class ArenaController extends Controller
                 'competitions' => function ($query) {
                     $query->select('competitions.id', 'competitions.title')
                         ->withCount(['arenas', 'events']);
-                }
+                },
             ])
-            ->withCount(['sports', 'clubs', 'competitions'])
-            ->findOrFail($id);
+                ->withCount(['sports', 'clubs', 'competitions'])
+                ->findOrFail($id);
 
             // Трансформируем данные для ответа
             $transformedItem = [
@@ -284,7 +279,7 @@ class ArenaController extends Controller
                 'longitude' => $item->longitude,
                 'region' => $item->region,
                 'city' => $item->city,
-                'image_path' => $item->image ? config('app.url') . '/storage/' . $item->image : null,
+                'image_path' => $item->arena_image_path,
                 'sports' => $item->sports->map(function ($sport) {
                     return [
                         'id' => $sport->id,
@@ -329,7 +324,7 @@ class ArenaController extends Controller
 
             $validated = $request->validate([
                 'title' => 'sometimes|string|max:255',
-                'slug' => 'sometimes|string|max:255|unique:arenas,slug,' . $id,
+                'slug' => 'sometimes|string|max:255|unique:arenas,slug,'.$id,
                 'region_id' => 'integer|exists:regions,id',
                 'city_id' => 'integer|exists:cities,id',
                 'about' => 'nullable|string',
@@ -355,20 +350,20 @@ class ArenaController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $arena,
-                'message' => 'Updated successfully'
+                'message' => 'Updated successfully',
             ]);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error',
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ], 500);
         }
     }
@@ -397,21 +392,21 @@ class ArenaController extends Controller
                     'required',
                     'image',
                     'mimes:jpeg,png,jpg,gif,webp',
-                    'max:2048' // 2MB
+                    'max:2048', // 2MB
                 ],
-                'field' => 'sometimes|string'
+                'field' => 'sometimes|string',
             ], [
                 'image.required' => 'Файл изображения обязателен',
                 'image.image' => 'Файл должен быть изображением',
                 'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
-                'image.max' => 'Максимальный размер файла 2MB'
+                'image.max' => 'Максимальный размер файла 2MB',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка валидации',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -429,14 +424,14 @@ class ArenaController extends Controller
             return response()->json([
                 'success' => true,
                 'image_path' => $path,
-                'full_path' => asset('storage/' . $path),
-                'message' => 'Изображение успешно загружено'
+                'full_path' => Storage::disk('public')->url($path),
+                'message' => 'Изображение успешно загружено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка сервера: ' . $e->getMessage()
+                'message' => 'Ошибка сервера: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -447,10 +442,10 @@ class ArenaController extends Controller
             $model = Arena::findOrFail($id);
             $field = $request->input('field', 'image');
 
-            if (!$model->{$field}) {
+            if (! $model->{$field}) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Нет изображения для удаления'
+                    'message' => 'Нет изображения для удаления',
                 ], 404);
             }
 
@@ -460,13 +455,13 @@ class ArenaController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Изображение успешно удалено'
+                'message' => 'Изображение успешно удалено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+                'message' => 'Ошибка при удалении изображения: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -477,19 +472,19 @@ class ArenaController extends Controller
             $field = $request->query('field');
             $value = $request->query('value');
 
-            if (!$field) {
+            if (! $field) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Параметр field обязателен'
+                    'message' => 'Параметр field обязателен',
                 ], 400);
             }
 
             $arena = Arena::findOrFail($id);
 
-            if (!array_key_exists($field, $arena->getAttributes())) {
+            if (! array_key_exists($field, $arena->getAttributes())) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Указанное поле не существует'
+                    'message' => 'Указанное поле не существует',
                 ], 400);
             }
 
@@ -499,13 +494,13 @@ class ArenaController extends Controller
             return response()->json([
                 'is_fresh' => $isFresh,
                 'server_value' => $isFresh ? null : $serverValue,
-                'updated_at' => $isFresh ? null : $arena->updated_at
+                'updated_at' => $isFresh ? null : $arena->updated_at,
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка: ' . $e->getMessage()
+                'message' => 'Ошибка: '.$e->getMessage(),
             ], 500);
         }
     }

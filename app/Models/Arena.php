@@ -8,15 +8,17 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Arena extends Model
 {
-    use KTranslateTrait, HasFactory;
+    use HasFactory, KTranslateTrait;
 
     protected $guarded = [];
 
     protected $hidden = ['created_at', 'updated_at', 'pivot'];
-    protected $appends = ['arena_image_path', 'event_name'];
+
+    protected $appends = ['arena_image_path', 'full_image_path', 'event_name'];
 
     protected static function booted(): void
     {
@@ -67,13 +69,16 @@ class Arena extends Model
 
     public function getArenaImagePathAttribute()
     {
-        return config('app.url') . '/storage/' . $this->image;
+        return $this->image ? Storage::disk('public')->url($this->image) : null;
+    }
 
+    public function getFullImagePathAttribute()
+    {
+        return $this->arena_image_path;
     }
 
     public function getEventNameAttribute()
     {
         return $this->title;
     }
-
 }

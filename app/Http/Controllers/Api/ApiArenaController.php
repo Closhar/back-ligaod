@@ -3,20 +3,16 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Api\ApiGenderRequest;
-use App\Models\Age;
 use App\Models\Arena;
 use App\Models\Gender;
 use App\Models\Sport;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ApiArenaController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
-
     public function index(Request $request): array
     {
         $homeRegion = $request->input('home_region', 1);
@@ -31,7 +27,7 @@ class ApiArenaController extends Controller
                 'address',
                 'slug',
                 'region_id',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
+                'image',
                 'city_id',
                 'latitude',
                 'longitude'
@@ -42,12 +38,12 @@ class ApiArenaController extends Controller
                 },
                 'region' => function ($regionQuery) {
                     $regionQuery->select(['id', 'title', 'title_short']);
-                }
+                },
             ])
             ->with([
                 'sports' => function ($cityQuery) {
                     $cityQuery->select(['sports.id', 'sports.title', 'sports.title_short', 'sports.slug', 'sports.icon']);
-                }
+                },
             ])
             ->with([
                 'clubs' => function ($cityQuery) {
@@ -55,9 +51,9 @@ class ApiArenaController extends Controller
                         'clubs.id',
                         'clubs.title',
                         'clubs.city_id',
-                        'clubs.slug'
+                        'clubs.slug',
                     ]);
-                }
+                },
             ]);
 
         if ($regionId) {
@@ -75,7 +71,6 @@ class ApiArenaController extends Controller
             $query->where('title', '=', "{$title}");
         }
 
-
         // Фильтрация по команде (club.slug)
         if ($request->has('club') && $request->input('club')) {
             $query->whereHas('clubs', function ($clubQuery) use ($request) {
@@ -85,15 +80,16 @@ class ApiArenaController extends Controller
 
         // Поиск по названию (like по title)
         if ($request->has('q') && $request->input('q')) {
-            $query->where('title', 'like', '%' . $request->input('q') . '%');
+            $query->where('title', 'like', '%'.$request->input('q').'%');
         }
 
-        if ($request->input('type')) return $query->limit($request->input('limit', 10))->get()->toArray();
+        if ($request->input('type')) {
+            return $query->limit($request->input('limit', 10))->get()->toArray();
+        }
 
         // Пагинация
         $perPage = $request->input('per_page', 15); // Количество элементов на странице, по умолчанию 15
         $arenas = $query->paginate($perPage);
-
 
         // Возвращаем данные с пагинацией
         return [
@@ -126,22 +122,21 @@ class ApiArenaController extends Controller
         $showNative = $request->input('show_native', 1);
 
         return Arena::select(
-            '*',
-            DB::raw('CONCAT("' . config('app.url') . '", "/storage/", arenas.image) AS full_image_path')
+            '*'
         )
             ->where('slug', $slug)
             ->with([
-                'clubs' => function ($query) use ($homeRegion, $showNative) {
+                'clubs' => function ($query) {
                     $query->select([
                         'clubs.id', // Явно указываем таблицу
                         'clubs.title',
-                        DB::raw('CASE WHEN clubs.image IS NOT NULL AND clubs.image != "" THEN CONCAT("' . config('app.url') . '", "/storage/", clubs.image) ELSE NULL END AS full_image_path'),
+                        'clubs.image',
                         'clubs.slug',
                         'clubs.city_id',
                         'clubs.age_id',
                         'clubs.gender_id',
                         'clubs.sport_id', // Для HasMany!!!!
-                        'clubs.region_id'
+                        'clubs.region_id',
                     ])
                         // Убираем фильтрацию по региону для арен - показываем все команды стадиона
                         ->with([
@@ -156,7 +151,7 @@ class ApiArenaController extends Controller
                             },
                             'sport' => function ($genderQuery) {
                                 $genderQuery->select(['sports.id', 'sports.title', 'sports.icon']);
-                            }
+                            },
                         ]);
                 },
                 'city' => function ($cityQuery) {
@@ -167,7 +162,7 @@ class ApiArenaController extends Controller
                     $galleryQuery->select([
                         'galleries.id',
                         'galleries.title',
-                        'galleries.image_id'
+                        'galleries.image_id',
                     ])
                         ->with([
                             'images' => function ($q) {
@@ -182,11 +177,11 @@ class ApiArenaController extends Controller
                             'main_image' => function ($q) {
                                 $q->select([
                                     'images.id',
-                                    'images.title'
+                                    'images.title',
                                 ]);
-                            }
+                            },
                         ]);
-                }
+                },
             ])
             ->get()
             ->toArray();
@@ -198,17 +193,22 @@ class ApiArenaController extends Controller
     public function updateContacts(Request $request)
     {
         $arena = Arena::find($request->input('id'));
-        if (!$arena) {
+        if (! $arena) {
             return response()->json(['error' => 'Арена не найдена'], 404);
         }
         $emails = $request->input('emails');
         $phones = $request->input('phones');
-        if ($emails !== null) $arena->emails = $emails;
-        if ($phones !== null) $arena->phones = $phones;
+        if ($emails !== null) {
+            $arena->emails = $emails;
+        }
+        if ($phones !== null) {
+            $arena->phones = $phones;
+        }
         $arena->save();
+
         return response()->json([
             'success' => true,
-            'arena' => $arena->only(['id', 'emails', 'phones'])
+            'arena' => $arena->only(['id', 'emails', 'phones']),
         ]);
     }
 

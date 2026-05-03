@@ -5,13 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Gallery;
 use App\Models\Image;
-use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use ZipArchive;
-use Illuminate\Support\Facades\Response;
 
 class ApiGalleryController extends Controller
 {
@@ -43,18 +42,18 @@ class ApiGalleryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
         $gallery = Gallery::create([
-            'title' => $request->title
+            'title' => $request->title,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Gallery created successfully',
-            'data' => $gallery
+            'data' => $gallery,
         ], 201);
     }
 
@@ -65,10 +64,10 @@ class ApiGalleryController extends Controller
     {
         $gallery = Gallery::with('images')->find($id);
 
-        if (!$gallery) {
+        if (! $gallery) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
+                'message' => 'Gallery not found',
             ], 404);
         }
 
@@ -82,10 +81,10 @@ class ApiGalleryController extends Controller
     {
         $gallery = Gallery::find($id);
 
-        if (!$gallery) {
+        if (! $gallery) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
+                'message' => 'Gallery not found',
             ], 404);
         }
 
@@ -97,7 +96,7 @@ class ApiGalleryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -106,7 +105,7 @@ class ApiGalleryController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Gallery updated successfully',
-            'data' => $gallery
+            'data' => $gallery,
         ]);
     }
 
@@ -117,10 +116,10 @@ class ApiGalleryController extends Controller
     {
         $gallery = Gallery::with('images')->find($id);
 
-        if (!$gallery) {
+        if (! $gallery) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
+                'message' => 'Gallery not found',
             ], 404);
         }
 
@@ -134,7 +133,7 @@ class ApiGalleryController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Gallery deleted successfully'
+            'message' => 'Gallery deleted successfully',
         ]);
     }
 
@@ -145,18 +144,18 @@ class ApiGalleryController extends Controller
     {
         $gallery = Gallery::find($id);
 
-        if (!$gallery) {
+        if (! $gallery) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
+                'message' => 'Gallery not found',
             ], 404);
         }
 
         // Проверяем, есть ли файлы для загрузки
-        if (!$request->hasFile('image') && !$request->hasFile('images')) {
+        if (! $request->hasFile('image') && ! $request->hasFile('images')) {
             return response()->json([
                 'success' => false,
-                'message' => 'No images provided'
+                'message' => 'No images provided',
             ], 422);
         }
 
@@ -181,8 +180,9 @@ class ApiGalleryController extends Controller
             if ($validator->fails()) {
                 $errors[] = [
                     'file' => $file->getClientOriginalName(),
-                    'errors' => $validator->errors()->first()
+                    'errors' => $validator->errors()->first(),
                 ];
+
                 continue;
             }
 
@@ -192,7 +192,7 @@ class ApiGalleryController extends Controller
             } catch (\Exception $e) {
                 $errors[] = [
                     'file' => $file->getClientOriginalName(),
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ];
             }
         }
@@ -209,6 +209,7 @@ class ApiGalleryController extends Controller
         }
 
         $statusCode = count($uploadedImages) > 0 ? 201 : 422;
+
         return response()->json($response, $statusCode);
     }
 
@@ -217,17 +218,17 @@ class ApiGalleryController extends Controller
      */
     private function processAndSaveImage($file, $gallery): array
     {
-        $fileName = Str::random(32) . '.jpg'; // Всегда сохраняем как JPEG
+        $fileName = Str::random(32).'.jpg'; // Всегда сохраняем как JPEG
 
         // Создаем папку для галереи если её нет
         $galleryPath = "galleries/{$gallery->id}";
-        if (!Storage::disk('public')->exists($galleryPath)) {
+        if (! Storage::disk('public')->exists($galleryPath)) {
             Storage::disk('public')->makeDirectory($galleryPath);
         }
 
         // Получаем информацию об изображении
         $imageInfo = getimagesize($file->getPathname());
-        if (!$imageInfo) {
+        if (! $imageInfo) {
             throw new \Exception('Invalid image file');
         }
 
@@ -237,7 +238,7 @@ class ApiGalleryController extends Controller
 
         // Загружаем изображение в зависимости от типа
         $sourceImage = $this->loadImage($file->getPathname(), $imageType);
-        if (!$sourceImage) {
+        if (! $sourceImage) {
             throw new \Exception('Failed to load image');
         }
 
@@ -270,11 +271,15 @@ class ApiGalleryController extends Controller
 
         // Сохраняем основное изображение
         $imagePath = "{$galleryPath}/{$fileName}";
-        $fullImagePath = storage_path("app/public/{$imagePath}");
+        ob_start();
+        $mainSaved = imagejpeg($resizedImage, null, 80);
+        $mainContents = ob_get_clean();
 
-        if (!imagejpeg($resizedImage, $fullImagePath, 80)) {
+        if (! $mainSaved || $mainContents === false) {
             throw new \Exception('Failed to save main image');
         }
+
+        Storage::disk('public')->put($imagePath, $mainContents);
 
         // Создаем thumbnail (300px ширина)
         $thumbWidth = 300;
@@ -296,11 +301,16 @@ class ApiGalleryController extends Controller
         $this->applyLogoToImage($thumbnailImage, request(), true);
 
         $thumbnailPath = "{$galleryPath}/thmb_{$fileName}";
-        $fullThumbnailPath = storage_path("app/public/{$thumbnailPath}");
 
-        if (!imagejpeg($thumbnailImage, $fullThumbnailPath, 80)) {
+        ob_start();
+        $thumbnailSaved = imagejpeg($thumbnailImage, null, 80);
+        $thumbnailContents = ob_get_clean();
+
+        if (! $thumbnailSaved || $thumbnailContents === false) {
             throw new \Exception('Failed to save thumbnail');
         }
+
+        Storage::disk('public')->put($thumbnailPath, $thumbnailContents);
 
         // Освобождаем память
         imagedestroy($sourceImage);
@@ -371,10 +381,10 @@ class ApiGalleryController extends Controller
     {
         $gallery = Gallery::find($id);
 
-        if (!$gallery) {
+        if (! $gallery) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
+                'message' => 'Gallery not found',
             ], 404);
         }
 
@@ -387,7 +397,7 @@ class ApiGalleryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -395,21 +405,21 @@ class ApiGalleryController extends Controller
             ->where('gallery_id', $gallery->id)
             ->first();
 
-        if (!$image) {
+        if (! $image) {
             return response()->json([
                 'success' => false,
-                'message' => 'Image not found in this gallery'
+                'message' => 'Image not found in this gallery',
             ], 404);
         }
 
         $image->update([
-            'title' => $request->title
+            'title' => $request->title,
         ]);
 
         return response()->json([
             'success' => true,
             'message' => 'Image updated successfully',
-            'data' => $image
+            'data' => $image,
         ]);
     }
 
@@ -420,10 +430,10 @@ class ApiGalleryController extends Controller
     {
         $gallery = Gallery::find($id);
 
-        if (!$gallery) {
+        if (! $gallery) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
+                'message' => 'Gallery not found',
             ], 404);
         }
 
@@ -435,7 +445,7 @@ class ApiGalleryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -443,10 +453,10 @@ class ApiGalleryController extends Controller
             ->where('gallery_id', $gallery->id)
             ->first();
 
-        if (!$image) {
+        if (! $image) {
             return response()->json([
                 'success' => false,
-                'message' => 'Image not found in this gallery'
+                'message' => 'Image not found in this gallery',
             ], 404);
         }
 
@@ -455,7 +465,7 @@ class ApiGalleryController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => 'Image deleted successfully'
+            'message' => 'Image deleted successfully',
         ]);
     }
 
@@ -484,10 +494,10 @@ class ApiGalleryController extends Controller
     {
         $gallery = Gallery::find($id);
 
-        if (!$gallery) {
+        if (! $gallery) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
+                'message' => 'Gallery not found',
             ], 404);
         }
 
@@ -500,7 +510,7 @@ class ApiGalleryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -521,7 +531,7 @@ class ApiGalleryController extends Controller
                 } catch (\Exception $e) {
                     $errors[] = [
                         'image_id' => $imageId,
-                        'error' => $e->getMessage()
+                        'error' => $e->getMessage(),
                     ];
                 }
             }
@@ -529,14 +539,14 @@ class ApiGalleryController extends Controller
 
         $message = "Successfully deleted {$deletedCount} image(s)";
         if (count($errors) > 0) {
-            $message .= ", " . count($errors) . " failed";
+            $message .= ', '.count($errors).' failed';
         }
 
         return response()->json([
             'success' => $deletedCount > 0,
             'message' => $message,
             'deleted_count' => $deletedCount,
-            'errors' => $errors
+            'errors' => $errors,
         ]);
     }
 
@@ -547,10 +557,10 @@ class ApiGalleryController extends Controller
     {
         $gallery = Gallery::find($id);
 
-        if (!$gallery) {
+        if (! $gallery) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gallery not found'
+                'message' => 'Gallery not found',
             ], 404);
         }
 
@@ -564,7 +574,7 @@ class ApiGalleryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -582,7 +592,7 @@ class ApiGalleryController extends Controller
         if (count($imageIds) !== count($galleryImages)) {
             return response()->json([
                 'success' => false,
-                'message' => 'Some images do not belong to this gallery'
+                'message' => 'Some images do not belong to this gallery',
             ], 422);
         }
 
@@ -600,21 +610,21 @@ class ApiGalleryController extends Controller
             } catch (\Exception $e) {
                 $errors[] = [
                     'image_id' => $positionData['image_id'],
-                    'error' => $e->getMessage()
+                    'error' => $e->getMessage(),
                 ];
             }
         }
 
         $message = "Successfully updated positions for {$updatedCount} image(s)";
         if (count($errors) > 0) {
-            $message .= ", " . count($errors) . " failed";
+            $message .= ', '.count($errors).' failed';
         }
 
         return response()->json([
             'success' => $updatedCount > 0,
             'message' => $message,
             'updated_count' => $updatedCount,
-            'errors' => $errors
+            'errors' => $errors,
         ]);
     }
 
@@ -641,7 +651,7 @@ class ApiGalleryController extends Controller
      */
     private function applyLogoToImage(&$image, $request, $isThumbnail = false)
     {
-        if (!$request->has('logo_enabled') || $request->logo_enabled !== 'true') {
+        if (! $request->has('logo_enabled') || $request->logo_enabled !== 'true') {
             return;
         }
 
@@ -654,7 +664,7 @@ class ApiGalleryController extends Controller
                 if ($logoInfo) {
                     $logoImage = $this->loadImage($logoFile->getPathname(), $logoInfo[2]);
                 }
-            } elseif ($request->has('default_logo_url') && !empty($request->default_logo_url)) {
+            } elseif ($request->has('default_logo_url') && ! empty($request->default_logo_url)) {
                 $logoUrl = $request->default_logo_url;
                 if (filter_var($logoUrl, FILTER_VALIDATE_URL)) {
                     $tempFile = tempnam(sys_get_temp_dir(), 'logo_');
@@ -676,7 +686,7 @@ class ApiGalleryController extends Controller
                     }
                 }
             }
-            if (!$logoImage) {
+            if (! $logoImage) {
                 return;
             }
             $position = $request->get('logo_position', 'bottom-right');
@@ -742,8 +752,8 @@ class ApiGalleryController extends Controller
         $opacity = max(0, min(1, $opacity));
         $alpha = 127 * (1 - $opacity);
 
-        for ($x = 0; $x < $w; ++$x) {
-            for ($y = 0; $y < $h; ++$y) {
+        for ($x = 0; $x < $w; $x++) {
+            for ($y = 0; $y < $h; $y++) {
                 $rgba = imagecolorat($im, $x, $y);
                 $a = ($rgba & 0x7F000000) >> 24;
                 $color = imagecolorsforindex($im, $rgba);
@@ -768,7 +778,7 @@ class ApiGalleryController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $validator->errors()
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -779,19 +789,19 @@ class ApiGalleryController extends Controller
         if ($images->isEmpty()) {
             return response()->json([
                 'success' => false,
-                'message' => 'No images found'
+                'message' => 'No images found',
             ], 404);
         }
 
-        $zipFileName = 'gallery_images_' . time() . '.zip';
-        $zipPath = storage_path('app/tmp/' . $zipFileName);
+        $zipFileName = 'gallery_images_'.time().'.zip';
+        $zipPath = storage_path('app/tmp/'.$zipFileName);
 
-        if (!file_exists(storage_path('app/tmp'))) {
+        if (! file_exists(storage_path('app/tmp'))) {
             mkdir(storage_path('app/tmp'), 0777, true);
         }
 
         $zip = new ZipArchive;
-        if ($zip->open($zipPath, ZipArchive::CREATE) === TRUE) {
+        if ($zip->open($zipPath, ZipArchive::CREATE) === true) {
             $publicDisk = Storage::disk('public');
 
             foreach ($images as $img) {
@@ -803,7 +813,7 @@ class ApiGalleryController extends Controller
         } else {
             return response()->json([
                 'success' => false,
-                'message' => 'Could not create zip'
+                'message' => 'Could not create zip',
             ], 500);
         }
 

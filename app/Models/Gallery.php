@@ -8,25 +8,28 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
+use Illuminate\Support\Facades\Storage;
 
 class Gallery extends Model
 {
-    use KTranslateTrait, HasFactory;
+    use HasFactory, KTranslateTrait;
 
     protected $guarded = [];
 
     protected $hidden = ['created_at', 'updated_at'];
+
     protected $appends = ['gallery_image_path'];
+
     public function main_image(): BelongsTo
     {
         return $this->belongsTo(Image::class, 'image_id', 'id');
-        //->whereColumn('images.gallery_id', 'galleries.id');
+        // ->whereColumn('images.gallery_id', 'galleries.id');
     }
 
     public function images(): HasMany
     {
         return $this->hasMany(Image::class, 'gallery_id', 'id')
-            ->orderBy('position');;
+            ->orderBy('position');
     }
 
     public function articles(): MorphToMany
@@ -36,9 +39,6 @@ class Gallery extends Model
 
     public function getGalleryImagePathAttribute()
     {
-        if ($this->image)  return config('app.url') . '/storage/' . $this->image;
-        return null;
-
+        return $this->image ? Storage::disk('public')->url($this->image) : null;
     }
-
 }

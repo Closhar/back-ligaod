@@ -5,7 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
 use App\Models\Gender;
-use DB;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 
 class ApiCompetitionController extends Controller
@@ -37,9 +37,15 @@ class ApiCompetitionController extends Controller
         $arenaSlugItem = $request->input('arena_item');
         $clubSlugItem = $request->input('club_item');
 
-        if ($sportSlugItem) $sportSlug = $sportSlugItem;
-        if ($arenaSlugItem) $arenaSlug = $arenaSlugItem;
-        if ($clubSlugItem) $clubSlug = $clubSlugItem;
+        if ($sportSlugItem) {
+            $sportSlug = $sportSlugItem;
+        }
+        if ($arenaSlugItem) {
+            $arenaSlug = $arenaSlugItem;
+        }
+        if ($clubSlugItem) {
+            $clubSlug = $clubSlugItem;
+        }
 
         $type = $request->query('type'); // если =='async', возвращаем простую структуру для async поиска
 
@@ -54,9 +60,10 @@ class ApiCompetitionController extends Controller
                 'gender_id',
                 'date_from',
                 'date_to',
+                'image',
+                'bg_image',
                 'parse_table_id',
                 'tlgs_to_parse',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path')
             )
             ->with([
                 'gender',
@@ -68,7 +75,7 @@ class ApiCompetitionController extends Controller
                 },
                 'parseTable' => function ($query) {
                     $query->select(['id', 'title']);
-                }
+                },
             ]);
 
         $show_all = false;
@@ -90,11 +97,11 @@ class ApiCompetitionController extends Controller
             $show_all = true;
         }
 
-        if (!$show_all) {
+        if (! $show_all) {
             // Применяем фильтр по show
             // Используем московское время для определения сегодняшней даты
             // так как события в базе данных сохранены в московском времени
-            $today = \Carbon\Carbon::now('Europe/Moscow')->toDateString();
+            $today = Carbon::now('Europe/Moscow')->toDateString();
             switch ($show) {
                 case 1: // date_from >= актуальные: сегодня и будущие
                     $query->where(function ($q) use ($today) {
@@ -196,7 +203,9 @@ class ApiCompetitionController extends Controller
                 break;
         }
 
-        if ($type === 'async') return $query->limit($limit)->get()->toArray();
+        if ($type === 'async') {
+            return $query->limit($limit)->get()->toArray();
+        }
 
         // Обработка параметра get_competitions
         if ($getCompetitions !== null) {
@@ -210,14 +219,13 @@ class ApiCompetitionController extends Controller
         // Форматируем даты и добавляем дополнительные поля
         $competitions->transform(function ($competition) {
             // Преобразуем date_from в формат "DD.MM.YYYY."
-            $competition->date_from_formatted = \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.');
+            $competition->date_from_formatted = Carbon::parse($competition->date_from)->format('d.m.Y.');
 
             // Преобразуем date_to в формат "DD.MM.YYYY."
-            $competition->date_to_formatted = \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.');
+            $competition->date_to_formatted = Carbon::parse($competition->date_to)->format('d.m.Y.');
 
             return $competition;
         });
-
 
         // Формируем ответ с пагинацией
         if ($getCompetitions !== null) {
@@ -257,7 +265,7 @@ class ApiCompetitionController extends Controller
     {
         return Competition::query()
             ->select([
-                '*'
+                '*',
             ])
             ->where('id', $id)
             ->orWhere('slug', $id)
@@ -268,18 +276,18 @@ class ApiCompetitionController extends Controller
                         'arenas.title',
                         'arenas.city_id',
                         'arenas.slug',
-                        'arenas.image'
+                        'arenas.image',
                     ])->with([
                         'city' => function ($cityQuery) {
                             $cityQuery->select(['id', 'title']);
-                        }
+                        },
                     ]);
                 },
                 'articles' => function ($query) {
                     $query->select([
                         'articles.id', // Явно указываем таблицу
                         'articles.title',
-                        'articles.slug'
+                        'articles.slug',
                     ]);
                 },
                 'sport' => function ($cityQuery) {
@@ -293,7 +301,7 @@ class ApiCompetitionController extends Controller
                 },
                 'gallery' => function ($galleryQuery) {
                     $galleryQuery->select(['galleries.id', 'galleries.title'])->with([
-                        'images'
+                        'images',
                     ]);
                 },
                 'clubs1' => function ($clubsQuery) {
@@ -304,7 +312,7 @@ class ApiCompetitionController extends Controller
                         'clubs.gender_id',
                         'clubs.sport_id',
                         'clubs.slug',
-                        'clubs.image'
+                        'clubs.image',
                     ])
                         ->with(['city', 'gender', 'sport']);
                 },
@@ -316,10 +324,10 @@ class ApiCompetitionController extends Controller
                         'clubs.gender_id',
                         'clubs.sport_id',
                         'clubs.slug',
-                        'clubs.image'
+                        'clubs.image',
                     ])
                         ->with(['city', 'gender', 'sport']);
-                }
+                },
             ])
             ->get()
             ->map(function ($competition) {
@@ -328,6 +336,7 @@ class ApiCompetitionController extends Controller
                 $competition->clubs = $clubs;
                 unset($competition->clubs1);
                 unset($competition->clubs2);
+
                 return $competition;
             })
             ->toArray();

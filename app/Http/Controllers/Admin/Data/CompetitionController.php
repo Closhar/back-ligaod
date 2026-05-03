@@ -4,11 +4,10 @@ namespace App\Http\Controllers\Admin\Data;
 
 use App\Http\Controllers\Controller;
 use App\Models\Competition;
-use App\Models\Gender;
-use DB;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
-use App\Models\Event;
 use Storage;
 use Validator;
 
@@ -45,9 +44,15 @@ class CompetitionController extends Controller
         $arenaSlugItem = $request->input('arena_item');
         $clubSlugItem = $request->input('club_item');
 
-        if ($sportSlugItem) $sportSlug = $sportSlugItem;
-        if ($arenaSlugItem) $arenaSlug = $arenaSlugItem;
-        if ($clubSlugItem) $clubSlug = $clubSlugItem;
+        if ($sportSlugItem) {
+            $sportSlug = $sportSlugItem;
+        }
+        if ($arenaSlugItem) {
+            $arenaSlug = $arenaSlugItem;
+        }
+        if ($clubSlugItem) {
+            $clubSlug = $clubSlugItem;
+        }
 
         $type = $request->query('type');
 
@@ -75,13 +80,11 @@ class CompetitionController extends Controller
                 'gallery_id',
                 'parse_table_id',
                 'tlgs_to_parse',
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", image) AS full_image_path'),
-                DB::raw('CONCAT("' . config('app.url') . '", "/storage/", bg_image) AS full_bg_image_path')
             )
             ->withCount('arenas')
             ->with([
                 'gender' => function ($query) {
-                    $query->select(['id', 'title','title_short', 'icon']);
+                    $query->select(['id', 'title', 'title_short', 'icon']);
                 },
                 'sport' => function ($query) {
                     $query->select(['id', 'title', 'icon']);
@@ -94,7 +97,7 @@ class CompetitionController extends Controller
                 },
                 'parseTable' => function ($query) {
                     $query->select(['id', 'title']);
-                }
+                },
             ]);
 
         $show_all = false;
@@ -113,7 +116,7 @@ class CompetitionController extends Controller
             $show_all = true;
         }
 
-        if (!$show_all) {
+        if (! $show_all) {
             $today = now()->toDateString();
             switch ($show) {
                 case 1:
@@ -245,13 +248,13 @@ class CompetitionController extends Controller
                     'parse_table_id' => $competition->parse_table_id,
                     'tlgs_to_parse' => $competition->tlgs_to_parse,
                     'arenas_count' => $competition->arenas_count,
-                    'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
-                    'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
+                    'date_from_formatted' => Carbon::parse($competition->date_from)->format('d.m.Y.'),
+                    'date_to_formatted' => Carbon::parse($competition->date_to)->format('d.m.Y.'),
                     'gender' => $competition->gender,
                     'sport' => $competition->sport,
                     'arenas' => $competition->arenas,
                     'gallery' => $competition->gallery,
-                    'parseTable' => $competition->parseTable
+                    'parseTable' => $competition->parseTable,
                 ];
             })->toArray();
         }
@@ -268,7 +271,7 @@ class CompetitionController extends Controller
         // Логируем первый элемент для проверки полей
         if ($competitions->count() > 0) {
             \Log::info('Competition fields check:', [
-                'first_item' => $competitions->first()->toArray()
+                'first_item' => $competitions->first()->toArray(),
             ]);
         }
 
@@ -299,13 +302,13 @@ class CompetitionController extends Controller
                 'parse_table_id' => $competition->parse_table_id,
                 'tlgs_to_parse' => $competition->tlgs_to_parse,
                 'arenas_count' => $competition->arenas_count,
-                'date_from_formatted' => \Carbon\Carbon::parse($competition->date_from)->format('d.m.Y.'),
-                'date_to_formatted' => \Carbon\Carbon::parse($competition->date_to)->format('d.m.Y.'),
+                'date_from_formatted' => Carbon::parse($competition->date_from)->format('d.m.Y.'),
+                'date_to_formatted' => Carbon::parse($competition->date_to)->format('d.m.Y.'),
                 'gender' => $competition->gender,
                 'sport' => $competition->sport,
                 'arenas' => $competition->arenas,
                 'gallery' => $competition->gallery,
-                'parseTable' => $competition->parseTable
+                'parseTable' => $competition->parseTable,
             ];
         });
 
@@ -331,7 +334,7 @@ class CompetitionController extends Controller
         }
     }
 
-    public function store(Request $request): \Illuminate\Http\JsonResponse
+    public function store(Request $request): JsonResponse
     {
         try {
             $validated = $request->validate([
@@ -354,7 +357,7 @@ class CompetitionController extends Controller
                 'xs' => 'nullable|string',
                 'gallery_id' => 'nullable|exists:galleries,id',
                 'parse_table_id' => 'nullable|exists:parse_tables,id',
-                'tlgs_to_parse' => 'nullable|string'
+                'tlgs_to_parse' => 'nullable|string',
             ]);
 
             $item = Competition::create($validated);
@@ -364,7 +367,7 @@ class CompetitionController extends Controller
         } catch (ValidationException $e) {
             return response()->json([
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json(['message' => 'Internal Server Error'], 500);
@@ -375,6 +378,7 @@ class CompetitionController extends Controller
     {
         try {
             $item = Competition::with('gallery')->findOrFail($id);
+
             return response()->json($item);
 
         } catch (\Exception $e) {
@@ -404,7 +408,7 @@ class CompetitionController extends Controller
                 'xs' => 'nullable|string',
                 'gallery_id' => 'nullable|exists:galleries,id',
                 'parse_table_id' => 'nullable|exists:parse_tables,id',
-                'tlgs_to_parse' => 'nullable|string'
+                'tlgs_to_parse' => 'nullable|string',
             ]);
 
             // Затем поиск и обновление
@@ -414,24 +418,23 @@ class CompetitionController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => $item,
-                'message' => 'Updated successfully'
+                'message' => 'Updated successfully',
             ]);
 
         } catch (ValidationException $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation failed',
-                'errors' => $e->errors()
+                'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Internal Server Error',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
-
 
     public function destroy($id)
     {
@@ -457,21 +460,21 @@ class CompetitionController extends Controller
                     'required',
                     'image',
                     'mimes:jpeg,png,jpg,gif,webp',
-                    'max:2048' // 10MB
+                    'max:2048', // 10MB
                 ],
-                'field' => 'sometimes|string'
+                'field' => 'sometimes|string',
             ], [
                 'image.required' => 'Файл изображения обязателен',
                 'image.image' => 'Файл должен быть изображением',
                 'image.mimes' => 'Допустимые форматы: jpeg, png, jpg, gif, webp',
-                'image.max' => 'Максимальный размер файла 2MB'
+                'image.max' => 'Максимальный размер файла 2MB',
             ]);
 
             if ($validator->fails()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Ошибка валидации',
-                    'errors' => $validator->errors()
+                    'errors' => $validator->errors(),
                 ], 422);
             }
 
@@ -490,13 +493,13 @@ class CompetitionController extends Controller
                 'success' => true,
                 'image_path' => $path,
                 'full_path' => Storage::disk('public')->url($path),
-                'message' => 'Изображение успешно загружено'
+                'message' => 'Изображение успешно загружено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка сервера: ' . $e->getMessage()
+                'message' => 'Ошибка сервера: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -507,10 +510,10 @@ class CompetitionController extends Controller
             $model = Competition::findOrFail($id);
             $field = $request->input('field', 'image');
 
-            if (!$model->{$field}) {
+            if (! $model->{$field}) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Нет изображения для удаления'
+                    'message' => 'Нет изображения для удаления',
                 ], 404);
             }
 
@@ -520,13 +523,13 @@ class CompetitionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Изображение успешно удалено'
+                'message' => 'Изображение успешно удалено',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Ошибка при удалении изображения: ' . $e->getMessage()
+                'message' => 'Ошибка при удалении изображения: '.$e->getMessage(),
             ], 500);
         }
     }
@@ -536,10 +539,10 @@ class CompetitionController extends Controller
         try {
             $model = Competition::findOrFail($id);
 
-            if (!$model->{$field}) {
+            if (! $model->{$field}) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'No image to delete'
+                    'message' => 'No image to delete',
                 ], 404);
             }
 
@@ -549,18 +552,15 @@ class CompetitionController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => 'Image deleted successfully'
+                'message' => 'Image deleted successfully',
             ]);
 
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Error deleting image',
-                'error' => config('app.debug') ? $e->getMessage() : null
+                'error' => config('app.debug') ? $e->getMessage() : null,
             ], 500);
         }
     }
-
-
-
 }
