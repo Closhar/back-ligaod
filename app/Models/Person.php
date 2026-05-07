@@ -24,6 +24,9 @@ class Person extends Model
         'gender',
         'is_active',
         'is_management',
+        'is_president',
+        'is_vice',
+        'is_popech',
         'management_sort',
         'about',
     ];
@@ -33,6 +36,9 @@ class Person extends Model
         'player_number' => 'integer',
         'is_active' => 'boolean',
         'is_management' => 'boolean',
+        'is_president' => 'boolean',
+        'is_vice' => 'boolean',
+        'is_popech' => 'boolean',
         'management_sort' => 'integer',
     ];
 

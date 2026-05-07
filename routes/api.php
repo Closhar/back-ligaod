@@ -36,6 +36,7 @@ use App\Http\Controllers\Api\ArticleTagController;
 use App\Http\Controllers\Api\ArticleViewController;
 use App\Http\Controllers\Api\ClubAchievementController;
 use App\Http\Controllers\Api\ClubPlayerController;
+use App\Http\Controllers\Api\DocumentController;
 use App\Http\Controllers\Api\EventImageController;
 use App\Http\Controllers\Api\GalleryAdminController;
 use App\Http\Controllers\Api\ImageEditorTemplateController;
@@ -122,6 +123,7 @@ Route::group(['prefix' => '/v1'], function () {
     Route::get('/galleries/{id}', [ApiGalleryController::class, 'show'])->name('api.galleries.show');
     Route::get('/params', [ApiParamsController::class, 'index'])->name('params.show');
     Route::get('/people/leadership', [PersonController::class, 'leadership'])->name('api.people.leadership');
+    Route::get('/documents/about', [DocumentController::class, 'about'])->name('api.documents.about');
     Route::get('/filters', [ApiParamsController::class, 'getTitle'])->name('params.filters');
     Route::get('/page/{id}', [ApiParamsController::class, 'getPage'])->name('params.page');
     Route::get('/menu', [ApiParamsController::class, 'getSiteMenu'])->name('params.menu');
@@ -813,6 +815,8 @@ Route::post('pic-params/{id}/delete-image', [PicParamController::class, 'deleteI
 Route::apiResource('pages', PageController::class);
 Route::post('pages/{id}/upload-image', [PageController::class, 'uploadImage']);
 Route::post('pages/{id}/delete-image', [PageController::class, 'deleteImage']);
+Route::apiResource('documents', DocumentController::class);
+Route::post('documents/{document}', [DocumentController::class, 'update']);
 
 
 Route::post('/people/import', [PersonController::class, 'import']);

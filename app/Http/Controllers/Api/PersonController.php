@@ -163,6 +163,12 @@ class PersonController extends Controller
                 $query->where('is_management', filter_var($request->is_management, FILTER_VALIDATE_BOOLEAN));
             }
 
+            foreach (['is_president', 'is_vice', 'is_popech'] as $flag) {
+                if ($request->has($flag) && $request->input($flag) !== '') {
+                    $query->where($flag, filter_var($request->input($flag), FILTER_VALIDATE_BOOLEAN));
+                }
+            }
+
             // Фильтрация по дню рождения (месяц и день)
             if ($request->has('birthday_month') && ! empty($request->birthday_month)) {
                 $query->whereMonth('birth_date', $request->birthday_month);
@@ -327,6 +333,9 @@ class PersonController extends Controller
             'gender' => 'required|string|in:m,f',
             'is_active' => 'sometimes|boolean',
             'is_management' => 'sometimes|boolean',
+            'is_president' => 'sometimes|boolean',
+            'is_vice' => 'sometimes|boolean',
+            'is_popech' => 'sometimes|boolean',
             'management_sort' => 'nullable|integer|min:0',
             'about' => 'nullable|string',
         ]);
@@ -383,6 +392,9 @@ class PersonController extends Controller
             'gender' => 'nullable|string|in:m,f',
             'is_active' => 'sometimes|boolean',
             'is_management' => 'sometimes|boolean',
+            'is_president' => 'sometimes|boolean',
+            'is_vice' => 'sometimes|boolean',
+            'is_popech' => 'sometimes|boolean',
             'management_sort' => 'nullable|integer|min:0',
             'about' => 'nullable|string',
         ]);
@@ -439,6 +451,9 @@ class PersonController extends Controller
             'with_positions' => Person::whereHas('activePositionMemberships')->count(),
             'with_ampluas' => Person::whereHas('activeAmpluaMemberships')->count(),
             'management' => Person::where('is_management', true)->count(),
+            'presidents' => Person::where('is_president', true)->count(),
+            'vice' => Person::where('is_vice', true)->count(),
+            'popech' => Person::where('is_popech', true)->count(),
         ];
 
         return response()->json([
@@ -674,7 +689,15 @@ class PersonController extends Controller
                 'mainImage',
                 'activePositionMemberships.position',
             ])
-            ->where('is_management', true)
+            ->where(function ($query) {
+                $query->where('is_management', true)
+                    ->orWhere('is_president', true)
+                    ->orWhere('is_vice', true)
+                    ->orWhere('is_popech', true);
+            })
+            ->orderByDesc('is_president')
+            ->orderByDesc('is_popech')
+            ->orderByDesc('is_vice')
             ->orderBy('management_sort')
             ->orderBy('last_name')
             ->orderBy('first_name')
