@@ -57,7 +57,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth_token')->plainTextToken;
 
         return response()->json([
-            'user' => $user,
+            'user' => $this->userPayload($user),
             'token' => $token,
         ]);
     }
@@ -130,7 +130,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Пользователь успешно зарегистрирован. Проверьте вашу почту для подтверждения email.',
-            'user' => $user,
+            'user' => $this->userPayload($user),
             'token' => $token, // Опционально
         ], 201);
     }
@@ -309,6 +309,22 @@ class AuthController extends Controller
         $user->markEmailAsVerified();
 
         return response()->json(['message' => 'Email успешно подтвержден.']);
+    }
+
+    private function userPayload(User $user): array
+    {
+        $user->loadMissing('adminRoles:id,name,slug,is_active');
+
+        $activeAdminRoles = $user->adminRoles
+            ->where('is_active', true)
+            ->values();
+
+        return [
+            ...$user->toArray(),
+            'admin_roles' => $activeAdminRoles,
+            'has_admin_access' => $user->hasAnyAdminAccess(),
+            'has_custom_admin_role' => $user->isAdmin() || $activeAdminRoles->where('slug', '!=', 'user')->isNotEmpty(),
+        ];
     }
 
 }

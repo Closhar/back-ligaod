@@ -7,6 +7,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class UserController extends Controller
 {
@@ -20,7 +21,7 @@ class UserController extends Controller
             // Возвращаем сообщение или статус, указывающий, что пользователь не найден
             return response()->json(['message' => 'Пользователь не найден'], 404);
         } // Если пользователь найден, возвращаем его данные
-        else return $request->user();
+        else return response()->json($this->userPayload($request->user()));
     }
 
     public function update(Request $request): JsonResponse
@@ -36,7 +37,7 @@ class UserController extends Controller
         // Валидация данных
         $request->validate([
             'name' => 'sometimes|string|max:255',
-            'avatar' => 'sometimes|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'avatar' => 'sometimes|image|mimes:jpeg,png,jpg,gif,webp|max:4096',
         ]);
 
         // Обновление имени
@@ -46,17 +47,17 @@ class UserController extends Controller
 
         // Обновление аватара
         if ($request->hasFile('avatar')) {
-            if ($user->avatar) {
+            if ($this->isStoredAvatar($user->avatar)) {
                 Storage::disk('public')->delete($user->avatar);
             }
 
-            $path = $request->file('avatar')->store('avatars', 'public');
+            $path = $request->file('avatar')->store('users', 'public');
             $user->avatar = $path;
         }
 
         $user->save();
 
-        return response()->json($user)
+        return response()->json($this->userPayload($user->fresh()))
             ->header('Access-Control-Allow-Origin', '*');
     }
 
@@ -66,11 +67,12 @@ class UserController extends Controller
         $user = $request->user();
 
         // Проверяем, есть ли у пользователя аватар
-        if ($user->avatar) {
+        if ($this->isStoredAvatar($user->avatar)) {
             // Удаляем файл аватара из хранилища
             Storage::disk('public')->delete($user->avatar);
+        }
 
-            // Обновляем запись пользователя, удаляя ссылку на аватар
+        if ($user->avatar) {
             $user->avatar = null;
             $user->save();
         }
@@ -78,7 +80,7 @@ class UserController extends Controller
         // Возвращаем успешный ответ
         return response()->json([
             'message' => 'Аватар успешно удален.',
-            'user' => $user,
+            'user' => $this->userPayload($user->fresh()),
         ]);
     }
 
@@ -116,10 +118,35 @@ class UserController extends Controller
     {
         $user = $request->user();
         if ($request->hasFile('avatar')) {
-            $path = $request->file('avatar')->store('avatars', 'public');
-            $user->avatar = Storage::disk('public')->url($path);
+            if ($this->isStoredAvatar($user->avatar)) {
+                Storage::disk('public')->delete($user->avatar);
+            }
+
+            $path = $request->file('avatar')->store('users', 'public');
+            $user->avatar = $path;
             $user->save();
         }
-        return response()->json($user);
+        return response()->json($this->userPayload($user->fresh()));
+    }
+
+    private function isStoredAvatar(?string $avatar): bool
+    {
+        return filled($avatar) && ! Str::startsWith($avatar, ['http://', 'https://']);
+    }
+
+    private function userPayload($user): array
+    {
+        $user->loadMissing('adminRoles:id,name,slug,is_active');
+
+        $activeAdminRoles = $user->adminRoles
+            ->where('is_active', true)
+            ->values();
+
+        return [
+            ...$user->toArray(),
+            'admin_roles' => $activeAdminRoles,
+            'has_admin_access' => $user->hasAnyAdminAccess(),
+            'has_custom_admin_role' => $user->isAdmin() || $activeAdminRoles->where('slug', '!=', 'user')->isNotEmpty(),
+        ];
     }
 }

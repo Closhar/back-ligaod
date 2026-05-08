@@ -8,6 +8,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -74,8 +75,7 @@ class User extends Authenticatable implements MustVerifyEmail
             return $this->avatar; // Возвращаем avatar без изменений
         }
 
-        // Если avatar не начинается с 'http', добавляем базовый URL
-        return config('app.url') . '/storage/' . $this->avatar;
+        return Storage::disk('public')->url($this->avatar);
     }
 
     protected static function booted(): void
