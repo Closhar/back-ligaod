@@ -24,7 +24,14 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
-        if (!$user->is_admin) {
+        if ($user->is_blocked) {
+            Auth::logout();
+            throw ValidationException::withMessages([
+                'email' => 'Пользователь заблокирован.',
+            ]);
+        }
+
+        if (!$user->hasAnyAdminAccess()) {
             Auth::logout();
             throw ValidationException::withMessages([
                 'email' => __('auth.admin_only'),
@@ -35,7 +42,11 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => $user->only('id', 'name', 'email', 'is_admin')
+            'user' => [
+                ...$user->only('id', 'name', 'email', 'is_admin'),
+                'is_blocked' => (bool) $user->is_blocked,
+                'admin_roles' => $user->activeAdminRoles()->get(['admin_roles.id', 'admin_roles.name', 'admin_roles.slug']),
+            ],
         ]);
     }
 

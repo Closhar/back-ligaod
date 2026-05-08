@@ -10,7 +10,7 @@ class AdminMiddleware
 {
     public function handle(Request $request, Closure $next)
     {
-        if (!auth()->check() || !auth()->user()->is_admin) {
+        if (! $request->user()?->isAdmin()) {
             abort(403, 'Доступ запрещен');
         }
 

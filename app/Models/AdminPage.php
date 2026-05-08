@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class AdminPage extends Model
 {
@@ -30,6 +31,11 @@ class AdminPage extends Model
     public function menuSection()
     {
         return $this->belongsTo(MenuSection::class);
+    }
+
+    public function adminRoles(): BelongsToMany
+    {
+        return $this->belongsToMany(AdminRole::class, 'admin_role_admin_page')->withTimestamps();
     }
 
     /**

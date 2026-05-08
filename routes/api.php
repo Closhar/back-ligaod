@@ -30,6 +30,8 @@ use App\Http\Controllers\Api\ApiGalleryController;
 use App\Http\Controllers\Api\ApiGenderController;
 use App\Http\Controllers\Api\ApiMenuSectionController;
 use App\Http\Controllers\Api\ApiParamsController;
+use App\Http\Controllers\Api\AdminAccessRoleController;
+use App\Http\Controllers\Api\AdminUserController;
 use App\Http\Controllers\Api\ApiSportController;
 use App\Http\Controllers\Api\ApiSportPropertyController;
 use App\Http\Controllers\Api\ArticleTagController;
@@ -128,7 +130,7 @@ Route::group(['prefix' => '/v1'], function () {
     Route::get('/page/{id}', [ApiParamsController::class, 'getPage'])->name('params.page');
     Route::get('/menu', [ApiParamsController::class, 'getSiteMenu'])->name('params.menu');
     Route::get('/apage/{id}', [ApiParamsController::class, 'getAdminPage'])->name('params.apage');
-    Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->name('params.amenu');
+    Route::get('/amenu', [ApiParamsController::class, 'getAdminMenu'])->middleware('auth:sanctum')->name('params.amenu');
 
     // Маршруты для рейтинга SRRR
     Route::prefix('rating')->group(function () {
@@ -817,6 +819,9 @@ Route::post('pages/{id}/upload-image', [PageController::class, 'uploadImage']);
 Route::post('pages/{id}/delete-image', [PageController::class, 'deleteImage']);
 Route::apiResource('documents', DocumentController::class);
 Route::post('documents/{document}', [DocumentController::class, 'update']);
+Route::apiResource('admin-access-roles', AdminAccessRoleController::class)->middleware(['auth:sanctum', 'admin']);
+Route::apiResource('admin-users', AdminUserController::class)->middleware(['auth:sanctum', 'admin']);
+Route::post('admin-users/{adminUser}/password', [AdminUserController::class, 'updatePassword'])->middleware(['auth:sanctum', 'admin']);
 
 
 Route::post('/people/import', [PersonController::class, 'import']);

@@ -9,6 +9,7 @@ use App\Models\Page;
 use App\Models\Param;
 use App\Models\PicParam;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 
 class ApiParamsController extends Controller
@@ -27,9 +28,11 @@ class ApiParamsController extends Controller
     /**
      * Получить меню админки с разделами
      */
-    public function getAdminMenu(): JsonResponse
+    public function getAdminMenu(Request $request): JsonResponse
     {
         try {
+            $user = $request->user('sanctum');
+
             // Получаем все активные разделы меню с их страницами
             $sections = MenuSection::active()
                 ->with(['activeAdminPages' => function ($query) {
@@ -49,6 +52,10 @@ class ApiParamsController extends Controller
             // Добавляем разделы с их страницами
             foreach ($sections as $section) {
                 if ($section->activeAdminPages->count() > 0) {
+                    if ($section->name === 'Система' && ! $user?->isAdmin()) {
+                        continue;
+                    }
+
                     $sectionMenu = [
                         'title' => $section->name,
                         'icon' => $section->icon ?: 'fluent:folder-list-20-filled',
@@ -56,6 +63,10 @@ class ApiParamsController extends Controller
                     ];
 
                     foreach ($section->activeAdminPages as $page) {
+                        if ($user && ! $user->canAccessAdminPage($page->slug)) {
+                            continue;
+                        }
+
                         $sectionMenu['submenu'][] = [
                             'title' => $page->title,
                             'icon' => $page->icon ?: 'fluent:document-20-filled',
@@ -63,12 +74,18 @@ class ApiParamsController extends Controller
                         ];
                     }
 
-                    $menu[] = $sectionMenu;
+                    if (count($sectionMenu['submenu']) > 0) {
+                        $menu[] = $sectionMenu;
+                    }
                 }
             }
 
             // Добавляем страницы без раздела
             foreach ($pagesWithoutSection as $page) {
+                if ($user && ! $user->canAccessAdminPage($page->slug)) {
+                    continue;
+                }
+
                 $menu[] = [
                     'title' => $page->title,
                     'icon' => $page->icon ?: 'fluent:document-20-filled',

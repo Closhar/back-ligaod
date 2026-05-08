@@ -38,6 +38,14 @@ class AuthController extends Controller
 
         $user = Auth::user();
 
+        if ($user->is_blocked) {
+            Auth::logout();
+
+            return response()->json([
+                'message' => 'User is blocked',
+            ], 403);
+        }
+
         // Проверяем, подтвержден ли email
         if ($user->email_verified_at === null) {
             Auth::logout(); // Выход из системы
@@ -69,6 +77,12 @@ class AuthController extends Controller
 
     public function user(Request $request): JsonResponse
     {
+        if ($request->user()?->is_blocked) {
+            return response()->json([
+                'message' => 'User is blocked',
+            ], 403);
+        }
+
         return response()->json($request->user());
     }
 
