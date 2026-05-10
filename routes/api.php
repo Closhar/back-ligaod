@@ -821,6 +821,7 @@ Route::apiResource('pages', PageController::class);
 Route::post('pages/{id}/upload-image', [PageController::class, 'uploadImage']);
 Route::post('pages/{id}/delete-image', [PageController::class, 'deleteImage']);
 Route::apiResource('documents', DocumentController::class);
+Route::post('documents/{document}/articles', [DocumentController::class, 'syncArticles']);
 Route::post('documents/{document}', [DocumentController::class, 'update']);
 Route::apiResource('admin-access-roles', AdminAccessRoleController::class)->middleware(['auth:sanctum', 'admin']);
 Route::apiResource('admin-users', AdminUserController::class)->middleware(['auth:sanctum', 'admin']);

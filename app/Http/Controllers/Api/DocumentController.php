@@ -17,6 +17,7 @@ class DocumentController extends Controller
         $search = trim((string) $request->input('q', ''));
 
         $query = Document::query()
+            ->withCount('articles')
             ->when($request->has('in_about') && $request->input('in_about') !== '', function ($query) use ($request) {
                 $query->where('in_about', filter_var($request->input('in_about'), FILTER_VALIDATE_BOOLEAN));
             })
@@ -105,7 +106,33 @@ class DocumentController extends Controller
     {
         return response()->json([
             'success' => true,
-            'data' => $document,
+            'data' => $document->load(['articles' => function ($query) {
+                $query->select('articles.id', 'articles.title', 'articles.slug', 'articles.data')
+                    ->orderByDesc('data');
+            }])->loadCount('articles'),
+        ]);
+    }
+
+    public function syncArticles(Request $request, Document $document): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'article_ids' => ['array'],
+            'article_ids.*' => ['integer', 'exists:articles,id'],
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validator->errors(),
+            ], 422);
+        }
+
+        $document->articles()->sync($request->input('article_ids', []));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Связи документа со статьями обновлены',
+            'data' => $document->fresh()->loadCount('articles'),
         ]);
     }
 

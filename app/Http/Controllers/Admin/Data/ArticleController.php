@@ -20,6 +20,8 @@ class ArticleController extends Controller
         $searchQuery = $request->input('q');
         $regionId = $request->input('region_id');
         $published = $request->input('published');
+        $galleriesFilter = $request->input('galleries');
+        $documentsFilter = $request->input('documents');
         $sortField = $request->input('sort_field', 'id');
         $sortDirection = $request->input('sort_direction', 'desc');
         $id = $request->input('id');
@@ -28,7 +30,7 @@ class ArticleController extends Controller
 
         $query = Article::query()
             ->with(['region', 'tags'])
-            ->withCount(['tags', 'galleries']);
+            ->withCount(['tags', 'galleries', 'documents']);
 
         if ($id) {
             $query->where('id', $id);
@@ -54,6 +56,18 @@ class ArticleController extends Controller
             $query->whereHas('tags', function ($q) use ($tagIds) {
                 $q->whereIn('article_tags.id', $tagIds);
             });
+        }
+
+        if ($galleriesFilter === 'with') {
+            $query->has('galleries');
+        } elseif ($galleriesFilter === 'without') {
+            $query->doesntHave('galleries');
+        }
+
+        if ($documentsFilter === 'with') {
+            $query->has('documents');
+        } elseif ($documentsFilter === 'without') {
+            $query->doesntHave('documents');
         }
 
         if ($request->boolean('ids_only')) {
@@ -372,7 +386,7 @@ class ArticleController extends Controller
             $article = Article::findOrFail($id);
 
             $validated = $request->validate([
-                'relation_type' => 'required|string|in:sports,clubs,arenas,competitions,events,galleries,videos,people',
+                'relation_type' => 'required|string|in:sports,clubs,arenas,competitions,events,galleries,videos,people,documents',
                 'relation_ids' => 'required|array',
                 'relation_ids.*' => 'integer',
             ]);
