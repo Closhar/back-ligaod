@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 use Illuminate\Support\Facades\Storage;
 
 class Document extends Model
@@ -37,5 +38,10 @@ class Document extends Model
         }
 
         return Storage::disk('public')->url($this->file_path);
+    }
+
+    public function articles(): MorphToMany
+    {
+        return $this->morphToMany(Article::class, 'articleable');
     }
 }

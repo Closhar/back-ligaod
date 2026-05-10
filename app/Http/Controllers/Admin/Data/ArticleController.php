@@ -133,6 +133,7 @@ class ArticleController extends Controller
                 'events',
                 'galleries',
                 'videos',
+                'documents',
                 'people',
                 'tags',
             ])->findOrFail($id);

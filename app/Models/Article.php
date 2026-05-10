@@ -81,6 +81,11 @@ class Article extends Model
         return $this->morphedByMany(Video::class, 'articleable');
     }
 
+    public function documents(): MorphToMany
+    {
+        return $this->morphedByMany(Document::class, 'articleable');
+    }
+
     public function people(): MorphToMany
     {
         return $this->morphedByMany(Person::class, 'articleable');

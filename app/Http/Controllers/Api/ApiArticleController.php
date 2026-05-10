@@ -206,6 +206,16 @@ class ApiArticleController extends Controller
                         ]);
                 },
                 'videos',
+                'documents' => function ($documentQuery) {
+                    $documentQuery->select([
+                        'documents.id',
+                        'documents.title',
+                        'documents.file_path',
+                        'documents.original_name',
+                        'documents.mime_type',
+                        'documents.size',
+                    ]);
+                },
                 'clubs' => function ($query) {
                     $query->select([
                         'clubs.id',

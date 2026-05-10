@@ -13,12 +13,28 @@ class DocumentController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
+        $isAsync = $request->input('type') === 'async';
+        $search = trim((string) $request->input('q', ''));
+
         $query = Document::query()
             ->when($request->has('in_about') && $request->input('in_about') !== '', function ($query) use ($request) {
                 $query->where('in_about', filter_var($request->input('in_about'), FILTER_VALIDATE_BOOLEAN));
             })
+            ->when($search !== '', function ($query) use ($search) {
+                $query->where(function ($query) use ($search) {
+                    $query->where('title', 'like', "%{$search}%")
+                        ->orWhere('original_name', 'like', "%{$search}%")
+                        ->orWhere('file_path', 'like', "%{$search}%");
+                });
+            })
             ->orderBy('sort_order')
             ->orderBy('title');
+
+        if ($isAsync) {
+            return response()->json($query
+                ->limit((int) $request->input('limit', 50))
+                ->get(['id', 'title', 'file_path', 'original_name', 'mime_type', 'size']));
+        }
 
         $perPage = (int) $request->input('per_page', 50);
         $documents = $query->paginate($perPage);

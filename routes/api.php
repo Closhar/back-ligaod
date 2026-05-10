@@ -629,6 +629,9 @@ Route::post('articles/{id}/relations', function (Request $request, $id) {
         case 'videos':
             $article->videos()->sync($relationIds);
             break;
+        case 'documents':
+            $article->documents()->sync($relationIds);
+            break;
         case 'people':
             $article->people()->sync($relationIds);
             break;
