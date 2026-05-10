@@ -17,9 +17,33 @@ class ApiGalleryController extends Controller
     /**
      * Получить список всех галерей
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
-        $galleries = Gallery::with('images')->get();
+        $query = Gallery::query()
+            ->select(['id', 'title', 'image', 'image_id', 'created_at', 'updated_at'])
+            ->withCount('images');
+
+        if ($request->filled('q')) {
+            $search = $request->string('q')->toString();
+            $query->where('title', 'LIKE', "%{$search}%");
+        }
+
+        if ($request->boolean('include_images')) {
+            $query->with('images');
+        }
+
+        $query->orderByDesc('id');
+
+        if ($request->has('per_page')) {
+            return response()->json($query->paginate((int) $request->input('per_page', 50)));
+        }
+
+        $limit = (int) $request->input('limit', 0);
+        if ($limit > 0) {
+            $query->limit(min($limit, 1000));
+        }
+
+        $galleries = $query->get();
 
         return response()->json($galleries);
     }

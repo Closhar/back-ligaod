@@ -26,7 +26,9 @@ class ArticleController extends Controller
 
         $tagIds = $this->normalizeIds($request->input('tags', $request->input('tag_ids', [])));
 
-        $query = Article::query()->with(['region', 'tags'])->withCount('tags');
+        $query = Article::query()
+            ->with(['region', 'tags'])
+            ->withCount(['tags', 'galleries']);
 
         if ($id) {
             $query->where('id', $id);
@@ -52,6 +54,12 @@ class ArticleController extends Controller
             $query->whereHas('tags', function ($q) use ($tagIds) {
                 $q->whereIn('article_tags.id', $tagIds);
             });
+        }
+
+        if ($request->boolean('ids_only')) {
+            return response()->json([
+                'ids' => $query->pluck('id')->values(),
+            ]);
         }
 
         $query->orderBy($sortField, $sortDirection);
