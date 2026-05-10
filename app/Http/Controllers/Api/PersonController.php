@@ -100,9 +100,22 @@ class PersonController extends Controller
                 },
             ]);
 
-            // Поиск по имени
-            if ($request->has('search') && ! empty($request->search)) {
-                $query->searchByName($request->search);
+            // Поиск по ФИО и должности
+            $search = $request->input('search') ?: $request->input('q');
+            if ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('first_name', 'like', "%{$search}%")
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('middle_name', 'like', "%{$search}%")
+                        ->orWhereRaw("CONCAT(last_name, ' ', first_name, ' ', COALESCE(middle_name, '')) like ?", ["%{$search}%"])
+                        ->orWhereHas('activePositionMemberships.position', function ($positionQuery) use ($search) {
+                            $positionQuery->where('name', 'like', "%{$search}%");
+                        });
+                });
+            }
+
+            if ($request->filled('letter')) {
+                $query->where('last_name', 'LIKE', $request->input('letter').'%');
             }
 
             // Фильтрация по типу персоны
@@ -229,7 +242,11 @@ class PersonController extends Controller
             // Сортировка
             $sortBy = $request->get('sort_by', 'created_at');
             $sortOrder = $request->get('sort_order', 'desc');
-            $query->orderBy($sortBy, $sortOrder);
+            if ($sortBy === 'name') {
+                $query->orderBy('last_name')->orderBy('first_name')->orderBy('middle_name');
+            } else {
+                $query->orderBy($sortBy, $sortOrder);
+            }
 
             $perPage = $request->get('per_page', 15);
             $people = $query->paginate($perPage);
@@ -287,6 +304,17 @@ class PersonController extends Controller
             'sportMemberships.sport',
             'positionMemberships.position',
             'ampluaMemberships.amplua',
+            'articles' => function ($query) {
+                $query->select([
+                    'articles.id',
+                    'articles.title',
+                    'articles.slug',
+                    'articles.description',
+                    'articles.data',
+                    'articles.image',
+                    'articles.published',
+                ])->where('published', true)->orderByDesc('data')->limit(6);
+            },
             'activeClubMemberships' => function ($query) {
                 $query->with(['club' => function ($clubQuery) {
                     $clubQuery->select([

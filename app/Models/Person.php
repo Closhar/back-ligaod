@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphToMany;
 
 class Person extends Model
 {
@@ -323,5 +324,10 @@ class Person extends Model
     public function eventActions()
     {
         return $this->hasMany(EventAction::class);
+    }
+
+    public function articles(): MorphToMany
+    {
+        return $this->morphToMany(Article::class, 'articleable');
     }
 }
