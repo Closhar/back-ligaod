@@ -480,8 +480,7 @@ class ApiGalleryController extends Controller
         }
 
         // Удаляем thumbnail
-        $thumbnailPath = str_replace('.jpg', '', $image->image);
-        $thumbnailPath = str_replace('galleries/', 'galleries/thmb_', $thumbnailPath);
+        $thumbnailPath = preg_replace('~^(.*/)([^/]+)$~', '$1thmb_$2', (string) $image->image);
         if (Storage::disk('public')->exists($thumbnailPath)) {
             Storage::disk('public')->delete($thumbnailPath);
         }

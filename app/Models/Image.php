@@ -37,7 +37,9 @@ class Image extends Model
         if ($this->image) {
             $thumbnail = preg_replace('~^(.*/)([^/]+)$~', '$1thmb_$2', $this->image);
 
-            return Storage::disk('public')->url($thumbnail);
+            return Storage::disk('public')->exists($thumbnail)
+                ? Storage::disk('public')->url($thumbnail)
+                : Storage::disk('public')->url($this->image);
         }
 
         return null; // Если image отсутствует, вернется null
