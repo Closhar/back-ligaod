@@ -9,13 +9,15 @@ use Illuminate\Http\Request;
 use Illuminate\Mail\Message;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use Mail;
 use URL;
+use Throwable;
 
 // Для отправки письма с подтверждением
 
@@ -183,8 +185,16 @@ class AuthController extends Controller
      */
     public function sendResetLinkEmail(Request $request): JsonResponse
     {
-        // Валидация email
-        $request->validate(['email' => 'required|email']);
+        $validator = Validator::make($request->all(), [
+            'email' => 'required|email',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'message' => 'Введите корректный email',
+                'errors' => $validator->errors(),
+            ], 422);
+        }
 
         // Находим пользователя по email
         $user = User::where('email', $request->email)->first();
@@ -193,17 +203,37 @@ class AuthController extends Controller
             return response()->json(['message' => 'Пользователь с таким email не найден'], 404);
         }
 
-        // Генерируем токен для сброса пароля
-        $token = Password::createToken($user);
+        try {
+            // Генерируем токен для сброса пароля
+            $token = Password::createToken($user);
 
-        // Формируем ссылку для сброса пароля с параметрами token и email
-        $resetUrl = env('NUXT_URL') . '/auth/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+            $resetBaseUrl = rtrim(
+                env('CRM_URL')
+                ?: env('NUXT_CRM_URL')
+                ?: env('NUXT_URL')
+                ?: config('app.url'),
+                '/'
+            );
 
-        // Отправляем письмо с кастомной ссылкой
-        Mail::send('emails.password_reset', ['resetUrl' => $resetUrl], function ($message) use ($user) {
-            $message->to($user->email);
-            $message->subject('Сброс пароля');
-        });
+            // Формируем ссылку для сброса пароля с параметрами token и email
+            $resetUrl = $resetBaseUrl . '/auth/reset-password?token=' . $token . '&email=' . urlencode($user->email);
+
+            // Отправляем письмо с кастомной ссылкой
+            Mail::send('emails.password_reset', ['resetUrl' => $resetUrl], function ($message) use ($user) {
+                $message->to($user->email);
+                $message->subject('Сброс пароля');
+            });
+        } catch (Throwable $exception) {
+            Log::error('Password reset email sending failed', [
+                'email' => $request->email,
+                'message' => $exception->getMessage(),
+                'exception' => get_class($exception),
+            ]);
+
+            return response()->json([
+                'message' => 'Не удалось отправить письмо для восстановления пароля. Проверьте настройки почты на сервере.',
+            ], 500);
+        }
 
         return response()->json(['message' => 'Ссылка для восстановления отправлена']);
     }
