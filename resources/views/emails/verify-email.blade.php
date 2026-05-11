@@ -73,18 +73,26 @@
     </style>
 </head>
 <body>
+@php
+    $siteName = $brand['siteName'] ?? config('app.name', 'сайте');
+    $siteDescription = $brand['siteDescription'] ?? '';
+    $siteLogo = $brand['siteLogo'] ?? '';
+@endphp
 <div class="email-container">
     <!-- Шапка письма -->
     <div class="email-header">
-        <img src="{{ url('/logo.png') }}" alt="Логотип SPORTREP">
+        @if($siteLogo)
+            <img src="{{ $siteLogo }}" alt="Логотип {{ $siteName }}">
+        @endif
     </div>
 
     <!-- Тело письма -->
     <div class="email-body">
         <h1>Подтвердите ваш email</h1>
-        <p>Спасибо за регистрацию на сайте <strong>SPORTREP.RU</strong>! Мы рады видеть вас в нашем сообществе.</p>
-        <p>SPORTREP — это платформа для любителей спорта, где вы можете найти актуальные анонсы спортивных
-            мероприятий.</p>
+        <p>Спасибо за регистрацию на сайте <strong>{{ $siteName }}</strong>! Мы рады видеть вас в нашем сообществе.</p>
+        @if($siteDescription)
+            <p>{{ $siteDescription }}</p>
+        @endif
         <p>Чтобы завершить регистрацию, нажмите на кнопку ниже:</p>
         <p>
             <a href="{{ $verificationUrl }}" class="button">Подтвердить email</a>
@@ -94,8 +102,8 @@
 
     <!-- Подвал письма -->
     <div class="email-footer">
-        <p>© {{ date('Y') }} SPORTREP. Все права защищены.</p>
-        <p>С уважением, команда SPORTREP.</p>
+        <p>© {{ date('Y') }} {{ $siteName }}. Все права защищены.</p>
+        <p>С уважением, команда {{ $siteName }}.</p>
     </div>
 </div>
 </body>

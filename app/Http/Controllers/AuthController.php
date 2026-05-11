@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\VerifyEmail;
 use App\Models\User;
+use App\Support\SiteMailBranding;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Mail\Message;
@@ -219,7 +220,10 @@ class AuthController extends Controller
             $resetUrl = $resetBaseUrl . '/auth/reset-password?token=' . $token . '&email=' . urlencode($user->email);
 
             // Отправляем письмо с кастомной ссылкой
-            Mail::send('emails.password_reset', ['resetUrl' => $resetUrl], function ($message) use ($user) {
+            Mail::send('emails.password_reset', [
+                'resetUrl' => $resetUrl,
+                'brand' => SiteMailBranding::data(),
+            ], function ($message) use ($user) {
                 $message->to($user->email);
                 $message->subject('Сброс пароля');
             });

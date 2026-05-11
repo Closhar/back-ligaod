@@ -73,16 +73,22 @@
     </style>
 </head>
 <body>
+@php
+    $siteName = $brand['siteName'] ?? config('app.name', 'сайте');
+    $siteLogo = $brand['siteLogo'] ?? '';
+@endphp
 <div class="email-container">
     <!-- Шапка письма -->
     <div class="email-header">
-        <img src="{{ url('/logo.png') }}" alt="Логотип SPORTREP">
+        @if($siteLogo)
+            <img src="{{ $siteLogo }}" alt="Логотип {{ $siteName }}">
+        @endif
     </div>
 
     <!-- Тело письма -->
     <div class="email-body">
         <p>Вы получили это письмо, потому что мы получили запрос на сброс пароля для вашей учетной записи на сайте
-            SPORTREP.RU.</p>
+            {{ $siteName }}.</p>
         <p>Нажмите на кнопку ниже, чтобы сбросить пароль:</p>
         <p>
             <a href="{{ $resetUrl }}" class="button">Сбросить пароль</a>
@@ -92,10 +98,9 @@
 
     <!-- Подвал письма -->
     <div class="email-footer">
-        <p>© {{ date('Y') }} SPORTREP. Все права защищены.</p>
-        <p>С уважением, команда SPORTREP.</p>
+        <p>© {{ date('Y') }} {{ $siteName }}. Все права защищены.</p>
+        <p>С уважением, команда {{ $siteName }}.</p>
     </div>
 </div>
 </body>
 </html>
-
