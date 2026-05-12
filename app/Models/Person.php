@@ -33,7 +33,7 @@ class Person extends Model
     ];
 
     protected $casts = [
-        'birth_date' => 'datetime',
+        'birth_date' => 'date:Y-m-d',
         'player_number' => 'integer',
         'is_active' => 'boolean',
         'is_management' => 'boolean',
