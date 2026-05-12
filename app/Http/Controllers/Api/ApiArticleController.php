@@ -37,6 +37,7 @@ class ApiArticleController extends Controller
 
         // Строим запрос
         $query = Article::query()
+            ->withoutGlobalScope('order')
             ->where('published', 1) // Показываем только опубликованные статьи
             ->select(
                 'id',
@@ -132,8 +133,9 @@ class ApiArticleController extends Controller
             });
         }
 
-        // Добавляем сортировку по полю data
+        // Добавляем сортировку по дате публикации, без глобальной сортировки модели по заголовку.
         $query->orderBy('data', $sortDirection === 'desc' ? 'desc' : 'asc');
+        $query->orderBy('id', $sortDirection === 'desc' ? 'desc' : 'asc');
 
         if ($limit) {
             return $query->limit($limit)->get()->map(function (Article $article) {
