@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\RegistrationVerificationCode;
 use App\Mail\VerifyEmail;
+use App\Models\EmailVerificationCode;
 use App\Models\User;
 use App\Support\SiteMailBranding;
 use Illuminate\Http\JsonResponse;
@@ -17,6 +19,7 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use URL;
 use Throwable;
 
@@ -97,45 +100,119 @@ class AuthController extends Controller
 
     public function register(Request $request): JsonResponse
     {
-        // Валидация данных
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'email' => 'required|string|email|max:255',
+            'password' => ['required', 'string', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
         ]);
 
         if ($validator->fails()) {
             return response()->json(['errors' => $validator->errors()], 422);
         }
 
-        // Создание пользователя
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
+        $user = User::where('email', $request->email)->first();
+
+        if ($user?->email_verified_at) {
+            return response()->json(['errors' => ['email' => ['Этот email уже зарегистрирован.']]], 422);
+        }
+
+        if ($user && ! Hash::check($request->password, $user->password)) {
+            return response()->json(['errors' => ['email' => ['Для незавершённой регистрации укажите исходный пароль или восстановите пароль.']]], 422);
+        }
+
+        if (! $user) {
+            $user = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+            ]);
+        }
+
+        try {
+            $this->sendRegistrationVerificationCode($user);
+        } catch (Throwable $exception) {
+            Log::error('Registration verification code sending failed', [
+                'user_id' => $user->id,
+                'message' => $exception->getMessage(),
+            ]);
+
+            return response()->json(['message' => 'Не удалось отправить код. Попробуйте ещё раз через минуту.'], 500);
+        }
+
+        return response()->json([
+            'message' => 'Код подтверждения отправлен на вашу почту.',
+            'verification_required' => true,
+            'email' => $user->email,
+        ], 201);
+    }
+
+    public function verifyRegistrationCode(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|string|email',
+            'code' => 'required|digits:6',
         ]);
 
-        // Генерация подписанной ссылки
-        $verificationUrl = URL::temporarySignedRoute(
-            'api.verification.verify', // Имя маршрута с префиксом /api
-            now()->addMinutes(60), // Срок действия ссылки
+        $user = User::where('email', $request->email)->first();
+        $verification = $user ? EmailVerificationCode::where('user_id', $user->id)->first() : null;
+
+        if (! $user || ! $verification || $verification->expires_at->isPast()) {
+            return response()->json(['message' => 'Код недействителен или срок его действия истёк. Запросите новый код.'], 422);
+        }
+
+        if ($verification->attempts >= 5) {
+            return response()->json(['message' => 'Превышено число попыток. Запросите новый код.'], 429);
+        }
+
+        if (! hash_equals($verification->code_hash, hash('sha256', $request->code))) {
+            $verification->increment('attempts');
+
+            return response()->json(['message' => 'Неверный код. Проверьте цифры и попробуйте ещё раз.'], 422);
+        }
+
+        $user->markEmailAsVerified();
+        $verification->delete();
+
+        return response()->json([
+            'message' => 'Email подтверждён.',
+            'user' => $this->userPayload($user),
+            'token' => $user->createToken('auth_token')->plainTextToken,
+        ]);
+    }
+
+    public function resendRegistrationCode(Request $request): JsonResponse
+    {
+        $request->validate(['email' => 'required|string|email']);
+
+        $user = User::where('email', $request->email)->first();
+        if ($user && ! $user->email_verified_at) {
+            try {
+                $this->sendRegistrationVerificationCode($user);
+            } catch (Throwable $exception) {
+                Log::error('Registration verification code resend failed', ['user_id' => $user->id, 'message' => $exception->getMessage()]);
+
+                return response()->json(['message' => 'Не удалось отправить код. Попробуйте ещё раз через минуту.'], 500);
+            }
+        }
+
+        return response()->json(['message' => 'Если регистрация не завершена, новый код отправлен на почту.']);
+    }
+
+    private function sendRegistrationVerificationCode(User $user): void
+    {
+        $code = (string) random_int(100000, 999999);
+
+        EmailVerificationCode::updateOrCreate(
+            ['user_id' => $user->id],
             [
-                'id' => $user->getKey(),
-                'hash' => sha1($user->getEmailForVerification()),
+                'code_hash' => hash('sha256', $code),
+                'expires_at' => now()->addMinutes(15),
+                'attempts' => 0,
+                'last_sent_at' => now(),
             ]
         );
 
-        // Отправка письма
-        Mail::to($user->email)->send(new VerifyEmail($verificationUrl));
-
-        // Создание токена Sanctum (если нужно сразу авторизовать пользователя)
-        $token = $user->createToken('auth_token')->plainTextToken;
-
-        return response()->json([
-            'message' => 'Пользователь успешно зарегистрирован. Проверьте вашу почту для подтверждения email.',
-            'user' => $this->userPayload($user),
-            'token' => $token, // Опционально
-        ], 201);
+        Mail::to($user->email)->send(new RegistrationVerificationCode($code));
     }
 
 
@@ -144,37 +221,7 @@ class AuthController extends Controller
      */
     public function resendVerificationEmail(Request $request): JsonResponse
     {
-        $request->validate([
-            'email' => 'required|string|email',
-        ]);
-
-        $user = User::where('email', $request->email)->first();
-
-        if (!$user) {
-            return response()->json([
-                'message' => 'User not found.',
-            ], 404);
-        }
-
-        if ($user->email_verified_at !== null) {
-            return response()->json([
-                'message' => 'Email already verified.',
-            ], 400);
-        }
-
-        // Генерация URL для подтверждения email
-        $verificationUrl = URL::temporarySignedRoute(
-            'api.verification.verify', // Имя маршрута
-            now()->addMinutes(60), // Срок действия ссылки
-            ['id' => $user->id, 'hash' => sha1($user->email)] // Параметры
-        );
-
-        // Отправляем письмо с использованием вашего шаблона
-        Mail::to($user->email)->send(new VerifyEmail($verificationUrl));
-
-        return response()->json([
-            'message' => 'Verification email sent.',
-        ]);
+        return $this->resendRegistrationCode($request);
     }
 
 
@@ -242,7 +289,7 @@ class AuthController extends Controller
         $request->validate([
             'token' => 'required',
             'email' => 'required|email',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => ['required', 'string', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
         ]);
 
         // Сброс пароля

@@ -6,6 +6,7 @@ use Auth;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -97,7 +98,7 @@ class UserController extends Controller
         // Валидация данных
         $request->validate([
             'old_password' => 'required|string|min:8',
-            'new_password' => 'required|string|min:8|confirmed',
+            'new_password' => ['required', 'string', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
         ]);
 
         // Проверка старого пароля

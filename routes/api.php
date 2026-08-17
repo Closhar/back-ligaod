@@ -251,7 +251,9 @@ Route::prefix('image-editor-templates')->group(function () {
 });
 
 // Аутентификация
-Route::post('/register', [AuthController::class, 'register']);
+Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:5,1');
+Route::post('/register/verify-code', [AuthController::class, 'verifyRegistrationCode'])->middleware('throttle:10,1');
+Route::post('/register/resend-code', [AuthController::class, 'resendRegistrationCode'])->middleware('throttle:3,1');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 // Восстановление пароля

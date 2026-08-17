@@ -13,6 +13,11 @@ use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Laravel\Socialite\Facades\Socialite;
 
+// Compatibility for password-reset letters that were sent before the CRM URL fix.
+Route::get('/auth/reset-password', function () {
+    return redirect()->away(rtrim((string) config('app.crm_url'), '/') . '/auth/reset-password?' . request()->getQueryString());
+});
+
 //Route::get('/', function () {
 //    return Inertia::render('Welcome', [
 //        'canLogin' => Route::has('login'),
