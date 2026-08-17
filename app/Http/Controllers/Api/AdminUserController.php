@@ -50,13 +50,14 @@ class AdminUserController extends Controller
             'name' => ['sometimes', 'required', 'string', 'max:255'],
             'email' => ['sometimes', 'required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($adminUser->id)],
             'email_verified' => ['sometimes', 'boolean'],
+            'is_admin' => ['sometimes', 'boolean'],
             'is_blocked' => ['sometimes', 'boolean'],
             'admin_role_ids' => ['sometimes', 'array'],
             'admin_role_ids.*' => ['integer', 'exists:admin_roles,id'],
         ]);
 
+        $emailVerified = $data['email_verified'] ?? null;
         if (array_key_exists('email_verified', $data)) {
-            $data['email_verified_at'] = $data['email_verified'] ? now() : null;
             unset($data['email_verified']);
         }
 
@@ -68,6 +69,12 @@ class AdminUserController extends Controller
         unset($data['admin_role_ids']);
 
         $adminUser->update($data);
+
+        if ($emailVerified !== null) {
+            $adminUser->forceFill([
+                'email_verified_at' => $emailVerified ? now() : null,
+            ])->save();
+        }
 
         if (is_array($roleIds)) {
             $adminUser->adminRoles()->sync($roleIds);
