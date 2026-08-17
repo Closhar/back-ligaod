@@ -255,7 +255,7 @@ class AuthController extends Controller
             // Генерируем токен для сброса пароля
             $token = Password::createToken($user);
 
-            $resetBaseUrl = rtrim((string) config('app.crm_url'), '/');
+            $resetBaseUrl = rtrim((string) config('app.frontend_url'), '/');
 
             // Формируем ссылку для сброса пароля с параметрами token и email
             $resetUrl = $resetBaseUrl . '/auth/reset-password?token=' . $token . '&email=' . urlencode($user->email);

@@ -66,6 +66,8 @@ return [
 
     'crm_url' => env('CRM_URL', env('NUXT_CRM_URL', env('NUXT_URL', env('APP_URL', 'http://localhost')))),
 
+    'frontend_url' => env('FRONTEND_URL', env('NUXT_URL', 'https://ligaod.ru')),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
