@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Mail\RegistrationVerificationCode;
+use App\Mail\PasswordResetCode as PasswordResetCodeMail;
 use App\Mail\VerifyEmail;
 use App\Models\EmailVerificationCode;
+use App\Models\PasswordResetCode;
 use App\Models\User;
 use App\Support\SiteMailBranding;
 use Illuminate\Http\JsonResponse;
@@ -252,22 +254,7 @@ class AuthController extends Controller
         }
 
         try {
-            // Генерируем токен для сброса пароля
-            $token = Password::createToken($user);
-
-            $resetBaseUrl = rtrim((string) config('app.frontend_url'), '/');
-
-            // Формируем ссылку для сброса пароля с параметрами token и email
-            $resetUrl = $resetBaseUrl . '/auth/reset-password?token=' . $token . '&email=' . urlencode($user->email);
-
-            // Отправляем письмо с кастомной ссылкой
-            Mail::send('emails.password_reset', [
-                'resetUrl' => $resetUrl,
-                'brand' => SiteMailBranding::data(),
-            ], function ($message) use ($user) {
-                $message->to($user->email);
-                $message->subject('Сброс пароля');
-            });
+            $this->sendPasswordResetCode($user);
         } catch (Throwable $exception) {
             Log::error('Password reset email sending failed', [
                 'email' => $request->email,
@@ -280,11 +267,15 @@ class AuthController extends Controller
             ], 500);
         }
 
-        return response()->json(['message' => 'Ссылка для восстановления отправлена']);
+        return response()->json(['message' => 'Код для восстановления отправлен', 'code_required' => true]);
     }
 
     public function resetPassword(Request $request): JsonResponse
     {
+        if ($request->filled('code')) {
+            return $this->resetPasswordWithCode($request);
+        }
+
         // Валидация данных
         $request->validate([
             'token' => 'required',
@@ -317,6 +308,45 @@ class AuthController extends Controller
                 'message' => 'Ошибка сброса пароля',
             ], 400);
         }
+    }
+
+    private function sendPasswordResetCode(User $user): void
+    {
+        $code = (string) random_int(100000, 999999);
+        PasswordResetCode::updateOrCreate(
+            ['user_id' => $user->id],
+            ['code_hash' => hash('sha256', $code), 'expires_at' => now()->addMinutes(15), 'attempts' => 0, 'last_sent_at' => now()]
+        );
+        Mail::to($user->email)->send(new PasswordResetCodeMail($code));
+    }
+
+    private function resetPasswordWithCode(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email' => 'required|email',
+            'code' => 'required|digits:6',
+            'password' => ['required', 'string', 'confirmed', PasswordRule::min(8)->mixedCase()->numbers()],
+        ]);
+
+        $user = User::where('email', $request->email)->first();
+        $reset = $user ? PasswordResetCode::where('user_id', $user->id)->first() : null;
+        if (! $user || ! $reset || $reset->expires_at->isPast()) {
+            return response()->json(['message' => 'Код недействителен или срок его действия истёк. Запросите новый код.'], 422);
+        }
+        if ($reset->attempts >= 5) {
+            return response()->json(['message' => 'Превышено число попыток. Запросите новый код.'], 429);
+        }
+        if (! hash_equals($reset->code_hash, hash('sha256', $request->code))) {
+            $reset->increment('attempts');
+            return response()->json(['message' => 'Неверный код. Проверьте цифры и попробуйте ещё раз.'], 422);
+        }
+
+        $user->forceFill(['password' => Hash::make($request->password)])->setRememberToken(Str::random(60));
+        $user->save();
+        $reset->delete();
+        event(new PasswordReset($user));
+
+        return response()->json(['message' => 'Пароль успешно изменен']);
     }
 
 // ВОССТАНОВЛЕНИЕ ПАРОЛЯ

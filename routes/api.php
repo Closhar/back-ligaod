@@ -257,7 +257,7 @@ Route::post('/register/resend-code', [AuthController::class, 'resendRegistration
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
 // Восстановление пароля
-Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail']);
+Route::post('/forgot-password', [AuthController::class, 'sendResetLinkEmail'])->middleware('throttle:3,1');
 Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 Route::post('/resend-verification-email', [AuthController::class, 'resendVerificationEmail']);
 
