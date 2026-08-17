@@ -4,7 +4,6 @@ use App\Http\Controllers\Auth\AuthenticatedSessionController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
-use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ProfileController;
 use App\Models\User;
 use Illuminate\Foundation\Application;
@@ -40,11 +39,6 @@ use Laravel\Socialite\Facades\Socialite;
 //Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 Route::middleware('guest')->group(function () {
-    Route::get('register', [RegisteredUserController::class, 'create'])
-        ->name('register');
-
-    Route::post('register', [RegisteredUserController::class, 'store']);
-
 //    Route::get('login', [AuthenticatedSessionController::class, 'create'])
 //        ->name('login');
 //
@@ -159,4 +153,3 @@ Route::get('/auth/yandex/callback', function () {
 
     return redirect($frontendUrl . '/auth/yandex/callback?token=' . $token);
 });
-

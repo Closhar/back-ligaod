@@ -56,6 +56,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | CRM URL
+    |--------------------------------------------------------------------------
+    |
+    | Public URL of the Nuxt CRM. Password reset links must lead to its
+    | client-side reset page, not to the API host.
+    |
+    */
+
+    'crm_url' => env('CRM_URL', env('NUXT_CRM_URL', env('NUXT_URL', env('APP_URL', 'http://localhost')))),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
