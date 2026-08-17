@@ -168,7 +168,7 @@ class PageController extends Controller
 
     private function validatedData(Request $request, ?int $pageId = null, bool $creating = false): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'title' => [$creating ? 'required' : 'sometimes', 'string', 'max:255'],
             'slug' => [$creating ? 'required' : 'sometimes', 'string', 'max:255', Rule::unique('pages', 'slug')->ignore($pageId)],
             'description' => ['nullable', 'string', 'max:5000'],
@@ -182,5 +182,21 @@ class PageController extends Controller
             'in_mobile_menu' => ['nullable', 'boolean'],
             'mobile_menu_sort' => ['nullable', 'integer', 'min:0'],
         ]);
+
+        // The database columns are NOT NULL, while an untouched number input
+        // reaches Laravel as null. Keep page creation usable without forcing
+        // editors to enter technical ordering values.
+        if ($creating) {
+            $data['in_menu'] ??= false;
+            $data['in_mobile_menu'] ??= false;
+        }
+
+        foreach (['menu_sort', 'mobile_menu_sort'] as $field) {
+            if (($creating && ! array_key_exists($field, $data)) || array_key_exists($field, $data) && $data[$field] === null) {
+                $data[$field] = 500;
+            }
+        }
+
+        return $data;
     }
 }
